@@ -1,0 +1,23 @@
+[package]
+name = "bevy_rapier2d"
+version = "0.1.0"
+authors = ["Sébastien Crozet <developer@crozet.re>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+path = "../src/lib.rs"
+required-features = [ "dim2" ]
+
+[features]
+default = [ "dim2" ]
+dim2 = []
+
+[dependencies]
+bevy = "0.1"
+nalgebra = "0.21"
+rapier2d = { path = "../../rapier/build/rapier2d", features = [ "simd-nightly" ] }
+concurrent-queue = "1"
+
+[dev-dependencies]
+bevy_fly_camera = "0.1"
