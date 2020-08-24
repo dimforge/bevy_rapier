@@ -1,6 +1,7 @@
 use crate::render::systems;
 use bevy::prelude::*;
 
+/// Plugin responsible for creating meshes to render the Rapier physics scene.
 pub struct RapierRenderPlugin;
 
 impl Plugin for RapierRenderPlugin {

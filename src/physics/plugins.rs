@@ -6,6 +6,16 @@ use rapier::geometry::{BroadPhase, ColliderSet, NarrowPhase};
 use rapier::math::Vector;
 use rapier::pipeline::PhysicsPipeline;
 
+/// A plugin responsible for setting up a full Rapier physics simulation pipeline and resources.
+///
+/// This will automatically setup all the resources needed to run a Rapier physics simulation including:
+/// - The physics pipeline.
+/// - The integration parameters.
+/// - The rigid-body, collider, and joint, sets.
+/// - The gravity.
+/// - The broad phase and narrow-phase.
+/// - The event queue.
+/// - Systems responsible for executing one physics timestep at each Bevy update stage.
 pub struct RapierPhysicsPlugin;
 
 impl Plugin for RapierPhysicsPlugin {

@@ -37,6 +37,7 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
 
 fn setup_graphics(mut commands: Commands, mut scale: ResMut<RapierPhysicsScale>) {
     scale.0 = 15.0;
+
     commands
         .spawn(LightComponents {
             translation: Translation::new(1000.0, 100.0, 2000.0),

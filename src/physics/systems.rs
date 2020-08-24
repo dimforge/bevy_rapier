@@ -16,6 +16,8 @@ use rapier::pipeline::PhysicsPipeline;
 // system runs before the body creation system, then it won't be able to create
 // the colliders because the related rigid-body handles don't exist yet. This
 // causes things to be initialized during multiple frames instead of just one.
+/// System responsible for creating a Rapier rigid-body and collider from their
+/// builder resources.
 pub fn create_body_and_collider_system(
     mut commands: Commands,
     mut bodies: ResMut<RigidBodySet>,
@@ -35,6 +37,7 @@ pub fn create_body_and_collider_system(
     commands.remove_one::<ColliderBuilder>(entity);
 }
 
+/// System responsible for creating Rapier joints from their builder resources.
 pub fn create_joints_system(
     mut commands: Commands,
     mut bodies: ResMut<RigidBodySet>,
@@ -57,6 +60,7 @@ pub fn create_joints_system(
     }
 }
 
+/// System responsible for performing one timestep of the physics world.
 pub fn step_world_system(
     gravity: Res<Gravity>,
     integration_parameters: Res<IntegrationParameters>,
@@ -84,6 +88,7 @@ pub fn step_world_system(
     );
 }
 
+/// System responsible for writing the rigid-bodies positions into the Bevy translation and rotation components.
 pub fn sync_transform_system(
     bodies: ResMut<RigidBodySet>,
     scale: Res<RapierPhysicsScale>,
