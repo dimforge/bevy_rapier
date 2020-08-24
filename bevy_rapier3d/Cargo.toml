@@ -12,11 +12,17 @@ required-features = [ "dim3" ]
 [features]
 default = [ "dim3" ]
 dim3 = []
+parallel = [ "rapier3d/parallel" ]
+simd-stable = [ "rapier3d/simd-stable" ]
+simd-nightly = [ "rapier3d/simd-nightly" ]
+wasm-bindgen = [ "rapier3d/wasm-bindgen" ]
+serde-serialize = [ "rapier3d/serde-serialize" ]
+enhanced-determinism = [ "rapier3d/enhanced-determinism" ]
 
 [dependencies]
 bevy = "0.1"
 nalgebra = "0.21"
-rapier3d = { path = "../../rapier/build/rapier3d", features = [ "simd-nightly" ] }
+rapier3d = { path = "../../rapier/build/rapier3d" }
 concurrent-queue = "1"
 
 [dev-dependencies]

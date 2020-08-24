@@ -12,11 +12,17 @@ required-features = [ "dim2" ]
 [features]
 default = [ "dim2" ]
 dim2 = []
+parallel = [ "rapier2d/parallel" ]
+simd-stable = [ "rapier2d/simd-stable" ]
+simd-nightly = [ "rapier2d/simd-nightly" ]
+wasm-bindgen = [ "rapier2d/wasm-bindgen" ]
+serde-serialize = [ "rapier2d/serde-serialize" ]
+enhanced-determinism = [ "rapier2d/enhanced-determinism" ]
 
 [dependencies]
 bevy = "0.1"
 nalgebra = "0.21"
-rapier2d = { path = "../../rapier/build/rapier2d", features = [ "simd-nightly" ] }
+rapier2d = { path = "../../rapier/build/rapier2d" }
 concurrent-queue = "1"
 
 [dev-dependencies]
