@@ -1,5 +1,5 @@
 //!
-//! # Official of Rapier to the Bevy game engine
+//! # Official integration of Rapier to the Bevy game engine
 //!
 //! Rapier is a set of two Rust crates `rapier2d` and `rapier3d` for efficient cross-platform
 //! physics simulation. It target application include video games, animation, robotics, etc.
