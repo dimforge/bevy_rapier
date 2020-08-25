@@ -1,11 +1,5 @@
 [workspace]
 members = ["bevy_rapier2d", "bevy_rapier3d"]
 
-[patch.crates-io]
-nalgebra = { path = "../nalgebra" }
-simba = { path = "../simba" }
-ncollide2d = { path = "../ncollide/build/ncollide2d" }
-ncollide3d = { path = "../ncollide/build/ncollide3d" }
-
 [profile.release]
 codegen-units = 1
