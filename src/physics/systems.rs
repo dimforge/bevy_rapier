@@ -103,8 +103,8 @@ pub fn sync_transform_system(
         {
             let rot = na::UnitQuaternion::new(na::Vector3::z() * pos.rotation.angle());
 
-            translation.0 =
-                Vec3::new(pos.translation.vector.x, pos.translation.vector.y, 0.0) * scale.0;
+            *translation.0.x_mut() = pos.translation.vector.x * scale.0;
+            *translation.0.y_mut() = pos.translation.vector.y * scale.0;
             rotation.0 = Quat::from_xyzw(rot.i, rot.j, rot.k, rot.w);
         }
 
