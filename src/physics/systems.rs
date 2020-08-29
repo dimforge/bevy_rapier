@@ -1,62 +1,64 @@
 use crate::physics::{
-    ColliderHandleComponent, EntityToBody, EventQueue, Gravity, JointBuilderComponent,
-    JointHandleComponent, RapierPhysicsScale, RigidBodyHandleComponent,
+    ColliderHandleComponent, EventQueue, Gravity, JointBuilderComponent, JointHandleComponent,
+    RapierPhysicsScale, RigidBodyHandleComponent,
 };
 
+use crate::rapier::dynamics::RigidBody;
+use crate::rapier::geometry::Collider;
 use bevy::ecs::Mut;
 use bevy::prelude::*;
-use rapier::dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodySet};
-use rapier::geometry::{BroadPhase, ColliderBuilder, ColliderSet, NarrowPhase};
+use rapier::dynamics::{IntegrationParameters, JointSet, RigidBodySet};
+use rapier::geometry::{BroadPhase, ColliderSet, NarrowPhase};
 use rapier::pipeline::PhysicsPipeline;
 
-// TODO: right now we only support one collider attached to one body.
-// This should be extanded to multiple bodies.
-// The reason why we build the body and the collider in the same system is
-// because systems run in parallel. This implies that if the collider creation
-// system runs before the body creation system, then it won't be able to create
-// the colliders because the related rigid-body handles don't exist yet. This
-// causes things to be initialized during multiple frames instead of just one.
-/// System responsible for creating a Rapier rigid-body and collider from their
-/// builder resources.
-pub fn create_body_and_collider_system(
+/// System responsible for creating a rigid-body on the `RigidBodySet` using the `RigidBody` component.
+pub fn add_bodies_system(
     mut commands: Commands,
     mut bodies: ResMut<RigidBodySet>,
-    mut colliders: ResMut<ColliderSet>,
-    mut entity2body: ResMut<EntityToBody>,
     entity: Entity,
-    body_builder: &RigidBodyBuilder,
-    collider_builder: &ColliderBuilder,
+    body: Added<RigidBody>,
 ) {
-    let handle = bodies.insert(body_builder.build());
-    entity2body.0.insert(entity, handle);
+    let handle = bodies.insert((*body).clone());
     commands.insert_one(entity, RigidBodyHandleComponent::from(handle));
-    commands.remove_one::<RigidBodyBuilder>(entity);
+}
 
-    let handle = colliders.insert(collider_builder.build(), handle, &mut bodies);
+/// System responsible for creating a collider on the `ColliderSet` using the `Collider` component.
+pub fn add_colliders_system(
+    mut commands: Commands,
+    mut colliders: ResMut<ColliderSet>,
+    mut bodies: ResMut<RigidBodySet>,
+    entity: Entity,
+    parent: &RigidBodyHandleComponent,
+    collider: Added<Collider>,
+) {
+    let handle = colliders.insert(collider.clone(), parent.handle(), &mut *bodies);
     commands.insert_one(entity, ColliderHandleComponent::from(handle));
-    commands.remove_one::<ColliderBuilder>(entity);
 }
 
 /// System responsible for creating Rapier joints from their builder resources.
 pub fn create_joints_system(
     mut commands: Commands,
     mut bodies: ResMut<RigidBodySet>,
-    entity2body: Res<EntityToBody>,
     mut joints: ResMut<JointSet>,
-    mut query: Query<(Entity, &JointBuilderComponent)>,
+    mut joint_builders: Query<(Entity, &JointBuilderComponent)>,
+    handles: Query<&RigidBodyHandleComponent>,
 ) {
-    for (entity, joint) in &mut query.iter() {
-        let body1 = entity2body.0.get(&joint.entity1);
-        let body2 = entity2body.0.get(&joint.entity2);
+    for (entity, joint) in &mut joint_builders.iter() {
+        let body1 = handles
+            .get::<RigidBodyHandleComponent>(joint.entity1)
+            .unwrap();
+        let body2 = handles
+            .get::<RigidBodyHandleComponent>(joint.entity2)
+            .unwrap();
 
-        if let (Some(body1), Some(body2)) = (body1, body2) {
-            let handle = joints.insert(&mut bodies, *body1, *body2, joint.params);
-            commands.insert_one(
-                entity,
-                JointHandleComponent::new(handle, joint.entity1, joint.entity2),
-            );
-            commands.remove_one::<JointBuilderComponent>(entity);
-        }
+        // if let (Ok(body1), Ok(body2)) = (body1, body2) {
+        let handle = joints.insert(&mut bodies, body1.handle(), body2.handle(), joint.params);
+        commands.insert_one(
+            entity,
+            JointHandleComponent::new(handle, joint.entity1, joint.entity2),
+        );
+        commands.remove_one::<JointBuilderComponent>(entity);
+        // }
     }
 }
 

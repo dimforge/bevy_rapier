@@ -1,10 +1,7 @@
 use crate::rapier::geometry::{ContactEvent, ProximityEvent};
 use crate::rapier::pipeline::EventHandler;
-use bevy::ecs::Entity;
 use concurrent_queue::ConcurrentQueue;
-use rapier::dynamics::RigidBodyHandle;
 use rapier::math::Vector;
-use std::collections::HashMap;
 
 #[derive(Copy, Clone)]
 /// A component describing a scale ration between the physics world and the bevy transforms.
@@ -12,18 +9,6 @@ use std::collections::HashMap;
 /// This resource will affect the transform synchronization between Bevy and Rapier.
 /// Each Rapier rigid-body position will have its coordinates multiplied by this scale factor.
 pub struct RapierPhysicsScale(pub f32);
-
-/// A map between bevy's entities and Rapier's handles.
-///
-/// This map will likely be removed in the future.
-pub struct EntityToBody(pub(crate) HashMap<Entity, RigidBodyHandle>);
-
-impl EntityToBody {
-    /// Create a new empty map.
-    pub fn new() -> Self {
-        EntityToBody(HashMap::new())
-    }
-}
 
 /// A resource for specifying the gravity of the physics simulation.
 pub struct Gravity(pub Vector<f32>);

@@ -57,15 +57,21 @@ fn create_prismatic_joints(commands: &mut Commands, origin: Point3<f32>, num: us
     let rad = 0.4;
     let shift = 1.0;
 
-    let ground = RigidBodyBuilder::new_static().translation(origin.x, origin.y, origin.z);
-    let collider = ColliderBuilder::cuboid(rad, rad, rad);
+    let ground = RigidBodyBuilder::new_static()
+        .translation(origin.x, origin.y, origin.z)
+        .build();
+    let collider = ColliderBuilder::cuboid(rad, rad, rad).build();
     let mut curr_parent = commands.spawn((ground, collider)).current_entity().unwrap();
 
     for i in 0..num {
         let z = origin.z + (i + 1) as f32 * shift;
         let density = 1.0;
-        let rigid_body = RigidBodyBuilder::new_dynamic().translation(origin.x, origin.y, z);
-        let collider = ColliderBuilder::cuboid(rad, rad, rad).density(density);
+        let rigid_body = RigidBodyBuilder::new_dynamic()
+            .translation(origin.x, origin.y, z)
+            .build();
+        let collider = ColliderBuilder::cuboid(rad, rad, rad)
+            .density(density)
+            .build();
         let curr_child = commands
             .spawn((rigid_body, collider))
             .current_entity()
@@ -100,8 +106,10 @@ fn create_revolute_joints(commands: &mut Commands, origin: Point3<f32>, num: usi
     let rad = 0.4;
     let shift = 2.0;
 
-    let ground = RigidBodyBuilder::new_static().translation(origin.x, origin.y, 0.0);
-    let collider = ColliderBuilder::cuboid(rad, rad, rad);
+    let ground = RigidBodyBuilder::new_static()
+        .translation(origin.x, origin.y, 0.0)
+        .build();
+    let collider = ColliderBuilder::cuboid(rad, rad, rad).build();
     let mut curr_parent = commands.spawn((ground, collider)).current_entity().unwrap();
 
     for i in 0..num {
@@ -117,8 +125,12 @@ fn create_revolute_joints(commands: &mut Commands, origin: Point3<f32>, num: usi
         let mut handles = [curr_parent; 4];
         for k in 0..4 {
             let density = 1.0;
-            let rigid_body = RigidBodyBuilder::new_dynamic().position(positions[k]);
-            let collider = ColliderBuilder::cuboid(rad, rad, rad).density(density);
+            let rigid_body = RigidBodyBuilder::new_dynamic()
+                .position(positions[k])
+                .build();
+            let collider = ColliderBuilder::cuboid(rad, rad, rad)
+                .density(density)
+                .build();
             handles[k] = commands
                 .spawn((rigid_body, collider))
                 .current_entity()
@@ -166,12 +178,10 @@ fn create_fixed_joints(commands: &mut Commands, origin: Point3<f32>, num: usize)
                 BodyStatus::Dynamic
             };
 
-            let rigid_body = RigidBodyBuilder::new(status).translation(
-                origin.x + fk * shift,
-                origin.y,
-                origin.z + fi * shift,
-            );
-            let collider = ColliderBuilder::ball(rad).density(1.0);
+            let rigid_body = RigidBodyBuilder::new(status)
+                .translation(origin.x + fk * shift, origin.y, origin.z + fi * shift)
+                .build();
+            let collider = ColliderBuilder::ball(rad).density(1.0).build();
             let child_entity = commands
                 .spawn((rigid_body, collider))
                 .current_entity()
@@ -228,8 +238,10 @@ fn create_ball_joints(commands: &mut Commands, num: usize) {
                 BodyStatus::Dynamic
             };
 
-            let rigid_body = RigidBodyBuilder::new(status).translation(fk * shift, 0.0, fi * shift);
-            let collider = ColliderBuilder::ball(rad).density(1.0);
+            let rigid_body = RigidBodyBuilder::new(status)
+                .translation(fk * shift, 0.0, fi * shift)
+                .build();
+            let collider = ColliderBuilder::ball(rad).density(1.0).build();
             let child_entity = commands
                 .spawn((collider, rigid_body))
                 .current_entity()

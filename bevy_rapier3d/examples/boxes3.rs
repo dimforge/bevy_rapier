@@ -57,8 +57,10 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_size = 200.1;
     let ground_height = 0.1;
 
-    let rigid_body = RigidBodyBuilder::new_static().translation(0.0, -ground_height, 0.0);
-    let collider = ColliderBuilder::cuboid(ground_size, ground_height, ground_size);
+    let rigid_body = RigidBodyBuilder::new_static()
+        .translation(0.0, -ground_height, 0.0)
+        .build();
+    let collider = ColliderBuilder::cuboid(ground_size, ground_height, ground_size).build();
     commands.spawn((rigid_body, collider));
 
     /*
@@ -82,8 +84,8 @@ pub fn setup_physics(mut commands: Commands) {
                 let z = k as f32 * shift - centerz + offset;
 
                 // Build the rigid body.
-                let rigid_body = RigidBodyBuilder::new_dynamic().translation(x, y, z);
-                let collider = ColliderBuilder::cuboid(rad, rad, rad).density(1.0);
+                let rigid_body = RigidBodyBuilder::new_dynamic().translation(x, y, z).build();
+                let collider = ColliderBuilder::cuboid(rad, rad, rad).density(1.0).build();
                 commands.spawn((rigid_body, collider));
             }
         }
