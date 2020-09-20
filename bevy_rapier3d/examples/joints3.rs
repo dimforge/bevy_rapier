@@ -22,7 +22,7 @@ fn main() {
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .add_resource(Msaa { samples: 2 })
+        .add_resource(Msaa::default())
         .add_default_plugins()
         .add_plugin(RapierPhysicsPlugin)
         .add_plugin(RapierRenderPlugin)
