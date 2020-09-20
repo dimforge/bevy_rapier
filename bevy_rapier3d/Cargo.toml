@@ -34,4 +34,3 @@ rapier3d = "0.1"
 concurrent-queue = "1"
 
 [dev-dependencies]
-bevy_fly_camera = "0.1"
