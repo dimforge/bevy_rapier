@@ -28,7 +28,7 @@ serde-serialize = [ "rapier3d/serde-serialize" ]
 enhanced-determinism = [ "rapier3d/enhanced-determinism" ]
 
 [dependencies]
-bevy = "0.1"
+bevy = "0.2"
 nalgebra = "0.22"
 rapier3d = "0.1"
 concurrent-queue = "1"
