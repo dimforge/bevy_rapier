@@ -85,23 +85,11 @@ pub fn create_collider_renders_system(
                 let ground_pbr = PbrComponents {
                     mesh: meshes.add(mesh),
                     material: materials.add(color.into()),
+                    transform: Transform::from_non_uniform_scale(scale),
                     ..Default::default()
                 };
 
-                commands.insert(
-                    entity,
-                    (
-                        ground_pbr.mesh,
-                        ground_pbr.material,
-                        ground_pbr.main_pass,
-                        ground_pbr.draw,
-                        ground_pbr.render_pipelines,
-                        ground_pbr.transform,
-                        ground_pbr.translation,
-                        ground_pbr.rotation,
-                        NonUniformScale(scale),
-                    ),
-                );
+                commands.insert(entity, ground_pbr);
             }
         }
     }

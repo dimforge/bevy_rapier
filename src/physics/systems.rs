@@ -93,8 +93,7 @@ pub fn sync_transform_system(
     bodies: ResMut<RigidBodySet>,
     scale: Res<RapierPhysicsScale>,
     rigid_body: &RigidBodyHandleComponent,
-    mut translation: Mut<Translation>,
-    mut rotation: Mut<Rotation>,
+    mut transform: Mut<Transform>,
 ) {
     if let Some(rb) = bodies.get(rigid_body.handle()) {
         let pos = rb.position;
@@ -102,26 +101,24 @@ pub fn sync_transform_system(
         #[cfg(feature = "dim2")]
         {
             let rot = na::UnitQuaternion::new(na::Vector3::z() * pos.rotation.angle());
-
-            *translation.0.x_mut() = pos.translation.vector.x * scale.0;
-            *translation.0.y_mut() = pos.translation.vector.y * scale.0;
-            rotation.0 = Quat::from_xyzw(rot.i, rot.j, rot.k, rot.w);
+            transform.set_translation(Vec3::new(pos.translation.vector.x * scale.0, pos.translation.vector.y * scale.0, 0.0));
+            transform.set_rotation(Quat::from_xyzw(rot.i, rot.j, rot.k, rot.w));
         }
 
         #[cfg(feature = "dim3")]
         {
-            translation.0 = Vec3::new(
+            transform.set_translation(Vec3::new(
                 pos.translation.vector.x,
                 pos.translation.vector.y,
                 pos.translation.vector.z,
-            ) * scale.0;
+            ) * scale.0);
 
-            rotation.0 = Quat::from_xyzw(
+            transform.set_rotation(Quat::from_xyzw(
                 pos.rotation.i,
                 pos.rotation.j,
                 pos.rotation.k,
                 pos.rotation.w,
-            );
+            ));
         }
     }
 }

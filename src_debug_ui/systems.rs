@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use rapier::pipeline::PhysicsPipeline;
 
 pub fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let font_handle = asset_server.load("assets/FiraSans-Bold.ttf").unwrap();
+    let font_handle = asset_server.load("../assets/FiraSans-Bold.ttf").unwrap();
     commands
         // 2d camera
         .spawn(UiCameraComponents::default())
