@@ -89,17 +89,7 @@ pub fn create_collider_renders_system(
                     ..Default::default()
                 };
 
-                commands.insert(
-                    entity,
-                    (
-                        ground_pbr.mesh,
-                        ground_pbr.material,
-                        ground_pbr.main_pass,
-                        ground_pbr.draw,
-                        ground_pbr.render_pipelines,
-                        ground_pbr.transform,
-                    ),
-                );
+                commands.insert(entity, ground_pbr);
             }
         }
     }
