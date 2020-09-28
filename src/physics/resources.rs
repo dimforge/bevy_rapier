@@ -3,15 +3,27 @@ use crate::rapier::pipeline::EventHandler;
 use concurrent_queue::ConcurrentQueue;
 use rapier::math::Vector;
 
-#[derive(Copy, Clone)]
-/// A component describing a scale ration between the physics world and the bevy transforms.
-///
-/// This resource will affect the transform synchronization between Bevy and Rapier.
-/// Each Rapier rigid-body position will have its coordinates multiplied by this scale factor.
-pub struct RapierPhysicsScale(pub f32);
+/// A resource for specifying configuration information for the physics simulation
+pub struct RapierConfiguration {
+    /// Specifying the gravity of the physics simulation.
+    pub gravity: Vector<f32>,
+    /// Specifies a scale ratio between the physics world and the bevy transforms.
+    /// This will affect the transform synchronization between Bevy and Rapier.
+    /// Each Rapier rigid-body position will have its coordinates multiplied by this scale factor.
+    pub scale: f32,
+    /// Specifies if the physics simulation is active and update the physics world.
+    pub active: bool,
+}
 
-/// A resource for specifying the gravity of the physics simulation.
-pub struct Gravity(pub Vector<f32>);
+impl Default for RapierConfiguration {
+    fn default() -> Self {
+        Self {
+            gravity: Vector::y() * -9.81,
+            scale: 1.0,
+            active: true,
+        }
+    }
+}
 
 // TODO: it may be more efficient to use crossbeam channel.
 // However crossbeam channels cause a Segfault (I have not

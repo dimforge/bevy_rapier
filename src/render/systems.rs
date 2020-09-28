@@ -1,4 +1,4 @@
-use crate::physics::{ColliderHandleComponent, RapierPhysicsScale};
+use crate::physics::{ColliderHandleComponent, RapierConfiguration};
 use crate::render::RapierRenderColor;
 use bevy::prelude::*;
 use rapier::dynamics::RigidBodySet;
@@ -9,7 +9,7 @@ pub fn create_collider_renders_system(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    scale: Res<RapierPhysicsScale>,
+    configuration: Res<RapierConfiguration>,
     bodies: Res<RigidBodySet>,
     colliders: ResMut<ColliderSet>,
     mut query: Query<
@@ -76,7 +76,7 @@ pub fn create_collider_renders_system(
                     Shape::Cuboid(c) => Vec3::from_slice_unaligned(c.half_extents.as_slice()),
                     Shape::Ball(b) => Vec3::new(b.radius, b.radius, b.radius),
                     _ => unimplemented!(),
-                } * scale.0;
+                } * configuration.scale;
 
                 // NOTE: we can't have both the Scale and NonUniformScale components.
                 // However PbrComponents automatically adds a Scale component. So

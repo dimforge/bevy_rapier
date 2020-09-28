@@ -1,6 +1,6 @@
 use crate::physics::{
-    ColliderHandleComponent, EventQueue, Gravity, JointBuilderComponent, JointHandleComponent,
-    RapierPhysicsScale, RigidBodyHandleComponent,
+    ColliderHandleComponent, EventQueue, JointBuilderComponent,
+    JointHandleComponent, RapierConfiguration, RigidBodyHandleComponent,
 };
 
 use bevy::ecs::Mut;
@@ -59,7 +59,7 @@ pub fn create_joints_system(
 
 /// System responsible for performing one timestep of the physics world.
 pub fn step_world_system(
-    gravity: Res<Gravity>,
+    configuration: Res<RapierConfiguration>,
     integration_parameters: Res<IntegrationParameters>,
     mut pipeline: ResMut<PhysicsPipeline>,
     mut broad_phase: ResMut<BroadPhase>,
@@ -73,22 +73,24 @@ pub fn step_world_system(
         events.clear();
     }
 
-    pipeline.step(
-        &gravity.0,
-        &integration_parameters,
-        &mut broad_phase,
-        &mut narrow_phase,
-        &mut bodies,
-        &mut colliders,
-        &mut joints,
-        &*events,
-    );
+    if configuration.active {
+        pipeline.step(
+            &configuration.gravity,
+            &integration_parameters,
+            &mut broad_phase,
+            &mut narrow_phase,
+            &mut bodies,
+            &mut colliders,
+            &mut joints,
+            &*events,
+        );
+    }
 }
 
 /// System responsible for writing the rigid-bodies positions into the Bevy translation and rotation components.
 pub fn sync_transform_system(
     bodies: ResMut<RigidBodySet>,
-    scale: Res<RapierPhysicsScale>,
+    configuration: Res<RapierConfiguration>,
     rigid_body: &RigidBodyHandleComponent,
     mut transform: Mut<Transform>,
 ) {
@@ -99,8 +101,8 @@ pub fn sync_transform_system(
         {
             let rot = na::UnitQuaternion::new(na::Vector3::z() * pos.rotation.angle());
             // Do not touch the 'z' part of the translation, used in Bevy for 2d layering
-            *transform.translation_mut().x_mut() = pos.translation.vector.x * scale.0;
-            *transform.translation_mut().y_mut() = pos.translation.vector.y * scale.0;
+            *transform.translation_mut().x_mut() = pos.translation.vector.x * configuration.scale;
+            *transform.translation_mut().y_mut() = pos.translation.vector.y * configuration.scale;
             transform.set_rotation(Quat::from_xyzw(rot.i, rot.j, rot.k, rot.w));
         }
 
@@ -111,7 +113,7 @@ pub fn sync_transform_system(
                     pos.translation.vector.x,
                     pos.translation.vector.y,
                     pos.translation.vector.z,
-                ) * scale.0,
+                ) * configuration.scale,
             );
 
             transform.set_rotation(Quat::from_xyzw(

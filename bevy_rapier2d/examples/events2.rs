@@ -2,7 +2,7 @@ extern crate rapier2d as rapier; // For the debug UI.
 
 use bevy::prelude::*;
 use bevy::render::pass::ClearColor;
-use bevy_rapier2d::physics::{EventQueue, RapierPhysicsPlugin, RapierPhysicsScale};
+use bevy_rapier2d::physics::{EventQueue, RapierConfiguration, RapierPhysicsPlugin};
 use bevy_rapier2d::render::RapierRenderPlugin;
 use rapier2d::dynamics::RigidBodyBuilder;
 use rapier2d::geometry::ColliderBuilder;
@@ -35,8 +35,8 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(mut commands: Commands, mut scale: ResMut<RapierPhysicsScale>) {
-    scale.0 = 15.0;
+fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
+    configuration.scale = 15.0;
 
     commands
         .spawn(LightComponents {

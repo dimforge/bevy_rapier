@@ -1,9 +1,8 @@
 use crate::physics;
-use crate::physics::{EventQueue, Gravity, RapierPhysicsScale};
+use crate::physics::{EventQueue, RapierConfiguration};
 use bevy::prelude::*;
 use rapier::dynamics::{IntegrationParameters, JointSet, RigidBodySet};
 use rapier::geometry::{BroadPhase, ColliderSet, NarrowPhase};
-use rapier::math::Vector;
 use rapier::pipeline::PhysicsPipeline;
 
 /// A plugin responsible for setting up a full Rapier physics simulation pipeline and resources.
@@ -21,14 +20,13 @@ pub struct RapierPhysicsPlugin;
 impl Plugin for RapierPhysicsPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_resource(PhysicsPipeline::new())
+            .add_resource(RapierConfiguration::default())
             .add_resource(IntegrationParameters::default())
-            .add_resource(Gravity(Vector::y() * -9.81))
             .add_resource(BroadPhase::new())
             .add_resource(NarrowPhase::new())
             .add_resource(RigidBodySet::new())
             .add_resource(ColliderSet::new())
             .add_resource(JointSet::new())
-            .add_resource(RapierPhysicsScale(1.0))
             .add_resource(EventQueue::new(true))
             // TODO: can we avoid this map? We are only using this
             // to avoid some borrowing issue when joints creations
