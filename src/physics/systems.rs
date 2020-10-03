@@ -1,6 +1,6 @@
 use crate::physics::{
-    ColliderHandleComponent, EntityToBody, EventQueue, Gravity, JointBuilderComponent,
-    JointHandleComponent, RapierPhysicsScale, RigidBodyHandleComponent,
+    ColliderHandleComponent, EventQueue, Gravity, JointBuilderComponent, JointHandleComponent,
+    RapierPhysicsScale, RigidBodyHandleComponent,
 };
 
 use bevy::ecs::Mut;
@@ -22,13 +22,11 @@ pub fn create_body_and_collider_system(
     mut commands: Commands,
     mut bodies: ResMut<RigidBodySet>,
     mut colliders: ResMut<ColliderSet>,
-    mut entity2body: ResMut<EntityToBody>,
     entity: Entity,
     body_builder: &RigidBodyBuilder,
     collider_builder: &ColliderBuilder,
 ) {
     let handle = bodies.insert(body_builder.build());
-    entity2body.0.insert(entity, handle);
     commands.insert_one(entity, RigidBodyHandleComponent::from(handle));
     commands.remove_one::<RigidBodyBuilder>(entity);
 
@@ -41,16 +39,15 @@ pub fn create_body_and_collider_system(
 pub fn create_joints_system(
     mut commands: Commands,
     mut bodies: ResMut<RigidBodySet>,
-    entity2body: Res<EntityToBody>,
     mut joints: ResMut<JointSet>,
     mut query: Query<(Entity, &JointBuilderComponent)>,
+    query_bodyhandle: Query<&RigidBodyHandleComponent>,
 ) {
     for (entity, joint) in &mut query.iter() {
-        let body1 = entity2body.0.get(&joint.entity1);
-        let body2 = entity2body.0.get(&joint.entity2);
-
-        if let (Some(body1), Some(body2)) = (body1, body2) {
-            let handle = joints.insert(&mut bodies, *body1, *body2, joint.params);
+        let body1 = query_bodyhandle.get::<RigidBodyHandleComponent>(joint.entity1);
+        let body2 = query_bodyhandle.get::<RigidBodyHandleComponent>(joint.entity2);
+        if let (Ok(body1), Ok(body2)) = (body1, body2) {
+            let handle = joints.insert(&mut bodies, body1.handle(), body2.handle(), joint.params);
             commands.insert_one(
                 entity,
                 JointHandleComponent::new(handle, joint.entity1, joint.entity2),
@@ -101,17 +98,23 @@ pub fn sync_transform_system(
         #[cfg(feature = "dim2")]
         {
             let rot = na::UnitQuaternion::new(na::Vector3::z() * pos.rotation.angle());
-            transform.set_translation(Vec3::new(pos.translation.vector.x * scale.0, pos.translation.vector.y * scale.0, 0.0));
+            transform.set_translation(Vec3::new(
+                pos.translation.vector.x * scale.0,
+                pos.translation.vector.y * scale.0,
+                0.0,
+            ));
             transform.set_rotation(Quat::from_xyzw(rot.i, rot.j, rot.k, rot.w));
         }
 
         #[cfg(feature = "dim3")]
         {
-            transform.set_translation(Vec3::new(
-                pos.translation.vector.x,
-                pos.translation.vector.y,
-                pos.translation.vector.z,
-            ) * scale.0);
+            transform.set_translation(
+                Vec3::new(
+                    pos.translation.vector.x,
+                    pos.translation.vector.y,
+                    pos.translation.vector.z,
+                ) * scale.0,
+            );
 
             transform.set_rotation(Quat::from_xyzw(
                 pos.rotation.i,
