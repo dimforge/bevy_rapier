@@ -98,11 +98,9 @@ pub fn sync_transform_system(
         #[cfg(feature = "dim2")]
         {
             let rot = na::UnitQuaternion::new(na::Vector3::z() * pos.rotation.angle());
-            transform.set_translation(Vec3::new(
-                pos.translation.vector.x * scale.0,
-                pos.translation.vector.y * scale.0,
-                0.0,
-            ));
+            // Do not touch the 'z' part of the translation, used in Bevy for 2d layering
+            *transform.translation_mut().x_mut() = pos.translation.vector.x * scale.0;
+            *transform.translation_mut().y_mut() = pos.translation.vector.y * scale.0;
             transform.set_rotation(Quat::from_xyzw(rot.i, rot.j, rot.k, rot.w));
         }
 
