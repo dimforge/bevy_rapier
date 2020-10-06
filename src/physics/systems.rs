@@ -1,8 +1,9 @@
 use crate::physics::{
-    ColliderHandleComponent, EventQueue, JointBuilderComponent,
-    JointHandleComponent, RapierConfiguration, RigidBodyHandleComponent,
+    ColliderHandleComponent, EventQueue, JointBuilderComponent, JointHandleComponent,
+    RapierConfiguration, RigidBodyHandleComponent,
 };
 
+use crate::rapier::pipeline::QueryPipeline;
 use bevy::ecs::Mut;
 use bevy::prelude::*;
 use rapier::dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodySet};
@@ -62,6 +63,7 @@ pub fn step_world_system(
     configuration: Res<RapierConfiguration>,
     integration_parameters: Res<IntegrationParameters>,
     mut pipeline: ResMut<PhysicsPipeline>,
+    mut query_pipeline: ResMut<QueryPipeline>,
     mut broad_phase: ResMut<BroadPhase>,
     mut narrow_phase: ResMut<NarrowPhase>,
     mut bodies: ResMut<RigidBodySet>,
@@ -73,7 +75,7 @@ pub fn step_world_system(
         events.clear();
     }
 
-    if configuration.active {
+    if configuration.physics_pipeline_active {
         pipeline.step(
             &configuration.gravity,
             &integration_parameters,
@@ -84,6 +86,10 @@ pub fn step_world_system(
             &mut joints,
             &*events,
         );
+    }
+
+    if configuration.query_pipeline_active {
+        query_pipeline.update(&mut bodies, &colliders);
     }
 }
 

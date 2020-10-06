@@ -12,7 +12,9 @@ pub struct RapierConfiguration {
     /// Each Rapier rigid-body position will have its coordinates multiplied by this scale factor.
     pub scale: f32,
     /// Specifies if the physics simulation is active and update the physics world.
-    pub active: bool,
+    pub physics_pipeline_active: bool,
+    /// Specifies if the query pipeline is active and update the query pipeline.
+    pub query_pipeline_active: bool,
 }
 
 impl Default for RapierConfiguration {
@@ -20,7 +22,8 @@ impl Default for RapierConfiguration {
         Self {
             gravity: Vector::y() * -9.81,
             scale: 1.0,
-            active: true,
+            physics_pipeline_active: true,
+            query_pipeline_active: true,
         }
     }
 }

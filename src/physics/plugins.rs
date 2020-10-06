@@ -1,5 +1,6 @@
 use crate::physics;
 use crate::physics::{EventQueue, RapierConfiguration};
+use crate::rapier::pipeline::QueryPipeline;
 use bevy::prelude::*;
 use rapier::dynamics::{IntegrationParameters, JointSet, RigidBodySet};
 use rapier::geometry::{BroadPhase, ColliderSet, NarrowPhase};
@@ -20,6 +21,7 @@ pub struct RapierPhysicsPlugin;
 impl Plugin for RapierPhysicsPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_resource(PhysicsPipeline::new())
+            .add_resource(QueryPipeline::new())
             .add_resource(RapierConfiguration::default())
             .add_resource(IntegrationParameters::default())
             .add_resource(BroadPhase::new())
