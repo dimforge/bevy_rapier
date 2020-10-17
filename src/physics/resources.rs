@@ -68,3 +68,10 @@ impl EventHandler for EventQueue {
         let _ = self.contact_events.push(event);
     }
 }
+
+/// Difference between simulation and rendering time
+#[derive(Default)]
+pub struct SimulationToRenderTime {
+    /// Difference between simulation and rendering time
+    pub diff: f32,
+}

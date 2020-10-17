@@ -1,6 +1,6 @@
 use crate::physics::{
     ColliderHandleComponent, EventQueue, JointBuilderComponent, JointHandleComponent,
-    RapierConfiguration, RigidBodyHandleComponent,
+    RapierConfiguration, RigidBodyHandleComponent, SimulationToRenderTime,
 };
 
 use crate::rapier::pipeline::QueryPipeline;
@@ -60,12 +60,11 @@ pub fn create_joints_system(
 
 /// System responsible for performing one timestep of the physics world.
 pub fn step_world_system(
+    (time, mut sim_to_render_time): (Res<Time>, ResMut<SimulationToRenderTime>),
     configuration: Res<RapierConfiguration>,
     integration_parameters: Res<IntegrationParameters>,
-    mut pipeline: ResMut<PhysicsPipeline>,
-    mut query_pipeline: ResMut<QueryPipeline>,
-    mut broad_phase: ResMut<BroadPhase>,
-    mut narrow_phase: ResMut<NarrowPhase>,
+    (mut pipeline, mut query_pipeline): (ResMut<PhysicsPipeline>, ResMut<QueryPipeline>),
+    (mut broad_phase, mut narrow_phase): (ResMut<BroadPhase>, ResMut<NarrowPhase>),
     mut bodies: ResMut<RigidBodySet>,
     mut colliders: ResMut<ColliderSet>,
     mut joints: ResMut<JointSet>,
@@ -75,17 +74,23 @@ pub fn step_world_system(
         events.clear();
     }
 
-    if configuration.physics_pipeline_active {
-        pipeline.step(
-            &configuration.gravity,
-            &integration_parameters,
-            &mut broad_phase,
-            &mut narrow_phase,
-            &mut bodies,
-            &mut colliders,
-            &mut joints,
-            &*events,
-        );
+    sim_to_render_time.diff += time.delta_seconds;
+
+    let sim_dt = integration_parameters.dt();
+    while sim_to_render_time.diff - sim_dt > 0.0 {
+        if configuration.physics_pipeline_active {
+            pipeline.step(
+                &configuration.gravity,
+                &integration_parameters,
+                &mut broad_phase,
+                &mut narrow_phase,
+                &mut bodies,
+                &mut colliders,
+                &mut joints,
+                &*events,
+            );
+        }
+        sim_to_render_time.diff -= sim_dt;
     }
 
     if configuration.query_pipeline_active {
@@ -95,39 +100,61 @@ pub fn step_world_system(
 
 /// System responsible for writing the rigid-bodies positions into the Bevy translation and rotation components.
 pub fn sync_transform_system(
+    sim_to_render_time: Res<SimulationToRenderTime>,
     bodies: ResMut<RigidBodySet>,
     configuration: Res<RapierConfiguration>,
     rigid_body: &RigidBodyHandleComponent,
     mut transform: Mut<Transform>,
 ) {
+    let dt = sim_to_render_time.diff;
     if let Some(rb) = bodies.get(rigid_body.handle()) {
-        let pos = rb.position;
-
         #[cfg(feature = "dim2")]
         {
-            let rot = na::UnitQuaternion::new(na::Vector3::z() * pos.rotation.angle());
+            // Predict position at render time
+            let pos_0 = Vec2::new(
+                rb.position.translation.vector.x,
+                rb.position.translation.vector.y,
+            );
+            let vel_0 = Vec2::new(rb.linvel.x, rb.linvel.y);
+            let pos_t = pos_0 + vel_0 * dt;
+
+            // Predict rotation at render time
+            let rot_0 = Quat::from_axis_angle(Vec3::unit_z(), rb.position.rotation.angle());
+            let drot = Quat::from_rotation_z(rb.angvel.z * dt);
+            let rot_t = drot * rot_0;
+
             // Do not touch the 'z' part of the translation, used in Bevy for 2d layering
-            *transform.translation_mut().x_mut() = pos.translation.vector.x * configuration.scale;
-            *transform.translation_mut().y_mut() = pos.translation.vector.y * configuration.scale;
-            transform.set_rotation(Quat::from_xyzw(rot.i, rot.j, rot.k, rot.w));
+            *transform.translation_mut().x_mut() = pos_t.x() * configuration.scale;
+            *transform.translation_mut().y_mut() = pos_t.y() * configuration.scale;
+            transform.set_rotation(rot_t);
         }
 
         #[cfg(feature = "dim3")]
         {
-            transform.set_translation(
-                Vec3::new(
-                    pos.translation.vector.x,
-                    pos.translation.vector.y,
-                    pos.translation.vector.z,
-                ) * configuration.scale,
+            // Predict position at render time
+            let pos_0 = Vec3::new(
+                rb.position.translation.vector.x,
+                rb.position.translation.vector.y,
+                rb.position.translation.vector.z,
             );
+            let vel_0 = Vec3::new(rb.linvel.x, rb.linvel.y, rb.linvel.z);
+            let pos_t = pos_0 + vel_0 * dt;
 
-            transform.set_rotation(Quat::from_xyzw(
-                pos.rotation.i,
-                pos.rotation.j,
-                pos.rotation.k,
-                pos.rotation.w,
-            ));
+            transform.set_translation(pos_t * configuration.scale);
+
+            // Predict rotation at render time
+            if let Some(axis_na) = rb.position.rotation.axis() {
+                let axis = Vec3::new(axis_na.x, axis_na.y, axis_na.z);
+                let rot_0 = Quat::from_axis_angle(axis, rb.position.rotation.angle());
+                let drot = Quat::from_rotation_ypr(
+                    rb.angvel.y * dt,
+                    rb.angvel.x * dt,
+                    rb.angvel.z * dt,
+                );
+                let rot_t = drot * rot_0;
+
+                transform.set_rotation(rot_t);
+            }
         }
     }
 }

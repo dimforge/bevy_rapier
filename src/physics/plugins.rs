@@ -1,5 +1,5 @@
 use crate::physics;
-use crate::physics::{EventQueue, RapierConfiguration};
+use crate::physics::{EventQueue, RapierConfiguration, SimulationToRenderTime};
 use crate::rapier::pipeline::QueryPipeline;
 use bevy::prelude::*;
 use rapier::dynamics::{IntegrationParameters, JointSet, RigidBodySet};
@@ -30,6 +30,7 @@ impl Plugin for RapierPhysicsPlugin {
             .add_resource(ColliderSet::new())
             .add_resource(JointSet::new())
             .add_resource(EventQueue::new(true))
+            .add_resource(SimulationToRenderTime::default())
             // TODO: can we avoid this map? We are only using this
             // to avoid some borrowing issue when joints creations
             // are needed.
