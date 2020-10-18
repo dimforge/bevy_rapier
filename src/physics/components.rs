@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use rapier::dynamics::{JointHandle, JointParams, RigidBodyHandle};
 use rapier::geometry::ColliderHandle;
+use rapier::math::Isometry;
 
 /// A component representing a rigid-body that is being handled by
 /// a Rapier physics World.
@@ -98,3 +99,7 @@ impl JointBuilderComponent {
         }
     }
 }
+
+/// A component to store the previous position of a body to use for
+/// interpolation between steps
+pub struct PhysicsInterpolationComponent(pub Isometry<f32>);
