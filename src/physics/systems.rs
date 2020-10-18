@@ -144,6 +144,7 @@ pub fn sync_transform_system(
     sim_to_render_time: Res<SimulationToRenderTime>,
     bodies: ResMut<RigidBodySet>,
     configuration: Res<RapierConfiguration>,
+    integration_parameters: Res<IntegrationParameters>,
     mut interpolation_query: Query<(
         &RigidBodyHandleComponent,
         &PhysicsInterpolationComponent,
@@ -154,10 +155,12 @@ pub fn sync_transform_system(
     >,
 ) {
     let dt = sim_to_render_time.diff;
+    let sim_dt = integration_parameters.dt();
+    let alpha = dt / sim_dt;
     for (rigid_body, previous_pos, mut transform) in &mut interpolation_query.iter() {
         if let Some(rb) = bodies.get(rigid_body.handle()) {
             // Predict position and orientation at render time
-            let pos = previous_pos.0.lerp_slerp(&rb.position, dt);
+            let pos = previous_pos.0.lerp_slerp(&rb.position, alpha);
             #[cfg(feature = "dim2")]
             sync_transform_2d(pos, configuration.scale, &mut transform);
 
