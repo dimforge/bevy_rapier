@@ -84,7 +84,7 @@ pub fn step_world_system(
     sim_to_render_time.diff += time.delta_seconds;
 
     let sim_dt = integration_parameters.dt();
-    while sim_to_render_time.diff > sim_dt {
+    while sim_to_render_time.diff >= sim_dt {
         if configuration.physics_pipeline_active {
             if sim_to_render_time.diff < 2.0 * sim_dt {
                 // This is the last simulation step to be executed in the loop
