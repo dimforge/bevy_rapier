@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use rapier::dynamics::{JointHandle, JointParams, RigidBodyHandle};
 use rapier::geometry::ColliderHandle;
+use rapier::math::{Translation, Vector, Isometry};
+use rapier::na::{Quaternion, UnitQuaternion};
 
 /// A component representing a rigid-body that is being handled by
 /// a Rapier physics World.
@@ -96,5 +98,19 @@ impl JointBuilderComponent {
             entity1,
             entity2,
         }
+    }
+}
+
+/// A component to store the previous position of a body to use for
+/// interpolation between steps
+pub struct PhysicsInterpolationComponent(pub Isometry<f32>);
+
+impl PhysicsInterpolationComponent {
+    /// Create a new PhysicsInterpolationComponent from a translation and rotation
+    pub fn new(translation: Vec3, rotation: Quat) -> Self {
+        Self(Isometry::from_parts(
+            Translation::from(Vector::new(translation.x(), translation.y(), translation.z())),
+            UnitQuaternion::from_quaternion(Quaternion::new(rotation.x(), rotation.y(), rotation.z(), rotation.w())),
+        ))
     }
 }

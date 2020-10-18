@@ -1,6 +1,7 @@
 use crate::physics::{
     ColliderHandleComponent, EventQueue, JointBuilderComponent, JointHandleComponent,
-    RapierConfiguration, RigidBodyHandleComponent,
+    PhysicsInterpolationComponent, RapierConfiguration, RigidBodyHandleComponent,
+    SimulationToRenderTime,
 };
 
 use crate::rapier::pipeline::QueryPipeline;
@@ -8,6 +9,8 @@ use bevy::ecs::Mut;
 use bevy::prelude::*;
 use rapier::dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodySet};
 use rapier::geometry::{BroadPhase, ColliderBuilder, ColliderSet, NarrowPhase};
+use rapier::math::Isometry;
+use rapier::ncollide::utils::IsometryOps;
 use rapier::pipeline::PhysicsPipeline;
 
 // TODO: right now we only support one collider attached to one body.
@@ -60,32 +63,53 @@ pub fn create_joints_system(
 
 /// System responsible for performing one timestep of the physics world.
 pub fn step_world_system(
+    (time, mut sim_to_render_time): (Res<Time>, ResMut<SimulationToRenderTime>),
     configuration: Res<RapierConfiguration>,
     integration_parameters: Res<IntegrationParameters>,
-    mut pipeline: ResMut<PhysicsPipeline>,
-    mut query_pipeline: ResMut<QueryPipeline>,
-    mut broad_phase: ResMut<BroadPhase>,
-    mut narrow_phase: ResMut<NarrowPhase>,
+    (mut pipeline, mut query_pipeline): (ResMut<PhysicsPipeline>, ResMut<QueryPipeline>),
+    (mut broad_phase, mut narrow_phase): (ResMut<BroadPhase>, ResMut<NarrowPhase>),
     mut bodies: ResMut<RigidBodySet>,
     mut colliders: ResMut<ColliderSet>,
     mut joints: ResMut<JointSet>,
     events: Res<EventQueue>,
+    mut query: Query<(
+        &RigidBodyHandleComponent,
+        &mut PhysicsInterpolationComponent,
+    )>,
 ) {
     if events.auto_clear {
         events.clear();
     }
 
-    if configuration.physics_pipeline_active {
-        pipeline.step(
-            &configuration.gravity,
-            &integration_parameters,
-            &mut broad_phase,
-            &mut narrow_phase,
-            &mut bodies,
-            &mut colliders,
-            &mut joints,
-            &*events,
-        );
+    sim_to_render_time.diff += time.delta_seconds;
+
+    let sim_dt = integration_parameters.dt();
+    while sim_to_render_time.diff >= sim_dt {
+        if configuration.physics_pipeline_active {
+            // NOTE: in this comparison we do the same computations we
+            // will do for the next `while` iteration test, to make sure we
+            // don't get bit by potential float inaccuracy.
+            if sim_to_render_time.diff - sim_dt < sim_dt {
+                // This is the last simulation step to be executed in the loop
+                // Update the previous state transforms
+                for (body_handle, mut previous_state) in &mut query.iter() {
+                    if let Some(body) = bodies.get(body_handle.handle()) {
+                        previous_state.0 = body.position;
+                    }
+                }
+            }
+            pipeline.step(
+                &configuration.gravity,
+                &integration_parameters,
+                &mut broad_phase,
+                &mut narrow_phase,
+                &mut bodies,
+                &mut colliders,
+                &mut joints,
+                &*events,
+            );
+        }
+        sim_to_render_time.diff -= sim_dt;
     }
 
     if configuration.query_pipeline_active {
@@ -93,41 +117,68 @@ pub fn step_world_system(
     }
 }
 
+fn sync_transform_2d(pos: Isometry<f32>, scale: f32, transform: &mut Mut<Transform>) {
+    // Do not touch the 'z' part of the translation, used in Bevy for 2d layering
+    *transform.translation_mut().x_mut() = pos.translation.vector.x * scale;
+    *transform.translation_mut().y_mut() = pos.translation.vector.y * scale;
+
+    let rot = na::UnitQuaternion::new(na::Vector3::z() * pos.rotation.angle());
+    transform.set_rotation(Quat::from_xyzw(rot.i, rot.j, rot.k, rot.w));
+}
+
+fn sync_transform_3d(pos: Isometry<f32>, scale: f32, transform: &mut Mut<Transform>) {
+    transform.set_translation(
+        Vec3::new(
+            pos.translation.vector.x,
+            pos.translation.vector.y,
+            pos.translation.vector.z,
+        ) * scale,
+    );
+    transform.set_rotation(Quat::from_xyzw(
+        pos.rotation.i,
+        pos.rotation.j,
+        pos.rotation.k,
+        pos.rotation.w,
+    ));
+}
+
 /// System responsible for writing the rigid-bodies positions into the Bevy translation and rotation components.
 pub fn sync_transform_system(
+    sim_to_render_time: Res<SimulationToRenderTime>,
     bodies: ResMut<RigidBodySet>,
     configuration: Res<RapierConfiguration>,
-    rigid_body: &RigidBodyHandleComponent,
-    mut transform: Mut<Transform>,
+    integration_parameters: Res<IntegrationParameters>,
+    mut interpolation_query: Query<(
+        &RigidBodyHandleComponent,
+        &PhysicsInterpolationComponent,
+        &mut Transform,
+    )>,
+    mut direct_query: Query<
+        Without<PhysicsInterpolationComponent, (&RigidBodyHandleComponent, &mut Transform)>,
+    >,
 ) {
-    if let Some(rb) = bodies.get(rigid_body.handle()) {
-        let pos = rb.position;
+    let dt = sim_to_render_time.diff;
+    let sim_dt = integration_parameters.dt();
+    let alpha = dt / sim_dt;
+    for (rigid_body, previous_pos, mut transform) in &mut interpolation_query.iter() {
+        if let Some(rb) = bodies.get(rigid_body.handle()) {
+            // Predict position and orientation at render time
+            let pos = previous_pos.0.lerp_slerp(&rb.position, alpha);
+            #[cfg(feature = "dim2")]
+            sync_transform_2d(pos, configuration.scale, &mut transform);
 
-        #[cfg(feature = "dim2")]
-        {
-            let rot = na::UnitQuaternion::new(na::Vector3::z() * pos.rotation.angle());
-            // Do not touch the 'z' part of the translation, used in Bevy for 2d layering
-            *transform.translation_mut().x_mut() = pos.translation.vector.x * configuration.scale;
-            *transform.translation_mut().y_mut() = pos.translation.vector.y * configuration.scale;
-            transform.set_rotation(Quat::from_xyzw(rot.i, rot.j, rot.k, rot.w));
+            #[cfg(feature = "dim3")]
+            sync_transform_3d(pos, configuration.scale, &mut transform);
         }
+    }
+    for (rigid_body, mut transform) in &mut direct_query.iter() {
+        if let Some(rb) = bodies.get(rigid_body.handle()) {
+            let pos = rb.position;
+            #[cfg(feature = "dim2")]
+            sync_transform_2d(pos, configuration.scale, &mut transform);
 
-        #[cfg(feature = "dim3")]
-        {
-            transform.set_translation(
-                Vec3::new(
-                    pos.translation.vector.x,
-                    pos.translation.vector.y,
-                    pos.translation.vector.z,
-                ) * configuration.scale,
-            );
-
-            transform.set_rotation(Quat::from_xyzw(
-                pos.rotation.i,
-                pos.rotation.j,
-                pos.rotation.k,
-                pos.rotation.w,
-            ));
+            #[cfg(feature = "dim3")]
+            sync_transform_3d(pos, configuration.scale, &mut transform);
         }
     }
 }
