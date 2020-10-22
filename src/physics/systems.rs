@@ -1,5 +1,5 @@
 use crate::physics::{
-    ColliderHandleComponent, EventQueue, InteractionPairFilters, JointBuilderComponent,
+    ColliderHandleComponent, EntityMaps, EventQueue, InteractionPairFilters, JointBuilderComponent,
     JointHandleComponent, PhysicsInterpolationComponent, RapierConfiguration,
     RigidBodyHandleComponent, SimulationToRenderTime,
 };
@@ -11,6 +11,7 @@ use rapier::dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidB
 use rapier::geometry::{BroadPhase, ColliderBuilder, ColliderSet, NarrowPhase};
 use rapier::math::Isometry;
 use rapier::pipeline::PhysicsPipeline;
+use std::collections::HashSet;
 
 // TODO: right now we only support one collider attached to one body.
 // This should be extanded to multiple bodies.
@@ -25,6 +26,7 @@ pub fn create_body_and_collider_system(
     mut commands: Commands,
     mut bodies: ResMut<RigidBodySet>,
     mut colliders: ResMut<ColliderSet>,
+    mut entity_maps: ResMut<EntityMaps>,
     entity: Entity,
     body_builder: &RigidBodyBuilder,
     collider_builder: &ColliderBuilder,
@@ -32,10 +34,12 @@ pub fn create_body_and_collider_system(
     let handle = bodies.insert(body_builder.build());
     commands.insert_one(entity, RigidBodyHandleComponent::from(handle));
     commands.remove_one::<RigidBodyBuilder>(entity);
+    entity_maps.bodies.insert(entity, handle);
 
     let handle = colliders.insert(collider_builder.build(), handle, &mut bodies);
     commands.insert_one(entity, ColliderHandleComponent::from(handle));
     commands.remove_one::<ColliderBuilder>(entity);
+    entity_maps.colliders.insert(entity, handle);
 }
 
 /// System responsible for creating Rapier joints from their builder resources.
@@ -43,6 +47,7 @@ pub fn create_joints_system(
     mut commands: Commands,
     mut bodies: ResMut<RigidBodySet>,
     mut joints: ResMut<JointSet>,
+    mut entity_maps: ResMut<EntityMaps>,
     query: Query<(Entity, &JointBuilderComponent)>,
     query_bodyhandle: Query<&RigidBodyHandleComponent>,
 ) {
@@ -55,6 +60,9 @@ pub fn create_joints_system(
                 entity,
                 JointHandleComponent::new(handle, joint.entity1, joint.entity2),
             );
+            entity_maps
+                .joints
+                .insert(entity, (handle, joint.entity1, joint.entity2));
             commands.remove_one::<JointBuilderComponent>(entity);
         }
     }
@@ -181,5 +189,88 @@ pub fn sync_transform_system(
             #[cfg(feature = "dim3")]
             sync_transform_3d(pos, configuration.scale, &mut transform);
         }
+    }
+}
+
+/// System responsible for removing joints, colliders, and bodies that have
+/// been removed from the scene
+pub fn destroy_body_and_collider_system(
+    mut commands: Commands,
+    mut bodies: ResMut<RigidBodySet>,
+    mut colliders: ResMut<ColliderSet>,
+    mut joints: ResMut<JointSet>,
+    mut entity_maps: ResMut<EntityMaps>,
+    collider_query: Query<(Entity, &ColliderHandleComponent)>,
+    joint_query: Query<(Entity, &JointHandleComponent)>,
+    body_query: Query<(Entity, &RigidBodyHandleComponent)>,
+) {
+    // Components removed before this system
+    let mut bodies_removed: HashSet<Entity> = body_query
+        .removed::<RigidBodyHandleComponent>()
+        .into_iter()
+        .map(|e| *e)
+        .collect();
+    let mut colliders_removed: HashSet<Entity> = collider_query
+        .removed::<ColliderHandleComponent>()
+        .into_iter()
+        .map(|e| *e)
+        .collect();
+    let mut joints_removed: HashSet<Entity> = joint_query
+        .removed::<JointHandleComponent>()
+        .into_iter()
+        .map(|e| *e)
+        .collect();
+
+    for entity in &bodies_removed.clone() {
+        if let Some(body) = entity_maps.bodies.get(&entity) {
+            bodies.remove(*body, &mut colliders, &mut joints);
+            entity_maps.bodies.remove(&entity);
+            bodies_removed.remove(entity);
+            // Removing a body also removes its colliders and joints. If they were
+            // not also removed then we must remove them here.
+            if !colliders_removed.contains(&entity) {
+                commands.remove_one::<ColliderHandleComponent>(*entity);
+            } else {
+                colliders_removed.remove(&entity);
+            }
+            if !joints_removed.contains(&entity) {
+                commands.remove_one::<JointHandleComponent>(*entity);
+            } else {
+                joints_removed.remove(&entity);
+            }
+        }
+    }
+    for entity in &colliders_removed.clone() {
+        if let Some(collider) = entity_maps.colliders.get(entity) {
+            colliders.remove(*collider, &mut bodies);
+            colliders_removed.remove(entity);
+            entity_maps.colliders.remove(&entity);
+        }
+    }
+    // FIXME: How should joints be removed?
+    // for entity in &joints_removed.clone() {
+    //     if let Some((joint, entity1, entity2)) = entity_maps.joints.get(entity) {
+    //         ??? joints.remove(*joint, &mut bodies);
+    //         joints_removed.remove(entity);
+    //         entity_maps.joints.remove(entity);
+    //     }
+    // }
+    if !bodies_removed.is_empty() {
+        println!(
+            "WARNING: {} Rapier RigidBodys could not be removed from the simulation",
+            bodies_removed.len()
+        );
+    }
+    if !colliders_removed.is_empty() {
+        println!(
+            "WARNING: {} Rapier Colliders could not be removed from the simulation",
+            colliders_removed.len()
+        );
+    }
+    if !joints_removed.is_empty() {
+        println!(
+            "WARNING: {} Rapier Joints could not be removed from the simulation",
+            joints_removed.len()
+        );
     }
 }
