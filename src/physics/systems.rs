@@ -117,6 +117,7 @@ pub fn step_world_system(
     }
 }
 
+#[cfg(feature = "dim2")]
 fn sync_transform_2d(pos: Isometry<f32>, scale: f32, transform: &mut Mut<Transform>) {
     // Do not touch the 'z' part of the translation, used in Bevy for 2d layering
     *transform.translation_mut().x_mut() = pos.translation.vector.x * scale;
@@ -126,6 +127,7 @@ fn sync_transform_2d(pos: Isometry<f32>, scale: f32, transform: &mut Mut<Transfo
     transform.set_rotation(Quat::from_xyzw(rot.i, rot.j, rot.k, rot.w));
 }
 
+#[cfg(feature = "dim3")]
 fn sync_transform_3d(pos: Isometry<f32>, scale: f32, transform: &mut Mut<Transform>) {
     transform.set_translation(
         Vec3::new(

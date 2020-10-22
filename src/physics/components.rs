@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 use rapier::dynamics::{JointHandle, JointParams, RigidBodyHandle};
 use rapier::geometry::ColliderHandle;
-use rapier::math::{Translation, Vector, Isometry};
+use rapier::math::{Isometry, Translation, Vector};
+#[cfg(feature = "dim2")]
+use rapier::na::{Complex, UnitComplex};
+#[cfg(feature = "dim3")]
 use rapier::na::{Quaternion, UnitQuaternion};
 
 /// A component representing a rigid-body that is being handled by
@@ -107,10 +110,30 @@ pub struct PhysicsInterpolationComponent(pub Isometry<f32>);
 
 impl PhysicsInterpolationComponent {
     /// Create a new PhysicsInterpolationComponent from a translation and rotation
+    #[cfg(feature = "dim2")]
+    pub fn new(translation: Vec2, rotation: f32) -> Self {
+        let (s, c) = rotation.sin_cos();
+        Self(Isometry::from_parts(
+            Translation::from(Vector::new(translation.x(), translation.y())),
+            UnitComplex::from_complex(Complex::new(c, s)),
+        ))
+    }
+
+    /// Create a new PhysicsInterpolationComponent from a translation and rotation
+    #[cfg(feature = "dim3")]
     pub fn new(translation: Vec3, rotation: Quat) -> Self {
         Self(Isometry::from_parts(
-            Translation::from(Vector::new(translation.x(), translation.y(), translation.z())),
-            UnitQuaternion::from_quaternion(Quaternion::new(rotation.x(), rotation.y(), rotation.z(), rotation.w())),
+            Translation::from(Vector::new(
+                translation.x(),
+                translation.y(),
+                translation.z(),
+            )),
+            UnitQuaternion::from_quaternion(Quaternion::new(
+                rotation.x(),
+                rotation.y(),
+                rotation.z(),
+                rotation.w(),
+            )),
         ))
     }
 }
