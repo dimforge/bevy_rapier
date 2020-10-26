@@ -111,11 +111,10 @@ pub struct PhysicsInterpolationComponent(pub Isometry<f32>);
 impl PhysicsInterpolationComponent {
     /// Create a new PhysicsInterpolationComponent from a translation and rotation
     #[cfg(feature = "dim2")]
-    pub fn new(translation: Vec2, rotation: f32) -> Self {
-        let (s, c) = rotation.sin_cos();
+    pub fn new(translation: Vec2, rotation_angle: f32) -> Self {
         Self(Isometry::from_parts(
             Translation::from(Vector::new(translation.x(), translation.y())),
-            UnitComplex::from_complex(Complex::new(c, s)),
+            UnitComplex::new(rotation_angle),
         ))
     }
 
