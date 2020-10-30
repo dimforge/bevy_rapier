@@ -2,7 +2,7 @@ use crate::physics::{ColliderHandleComponent, RapierConfiguration};
 use crate::render::RapierRenderColor;
 use bevy::prelude::*;
 use rapier::dynamics::RigidBodySet;
-use rapier::geometry::{ColliderSet, Shape};
+use rapier::geometry::{ColliderSet, ShapeType};
 
 /// System responsible for attaching a PbrComponents to each entity having a collider.
 pub fn create_collider_renders_system(
@@ -50,31 +50,43 @@ pub fn create_collider_renders_system(
                     icolor += 1;
                     palette[icolor % palette.len()]
                 };
+
+                let shape = collider.shape();
+
                 let color = debug_color
                     .map(|c| Color::rgb(c.0, c.1, c.2))
                     .unwrap_or(default_color);
 
-                let mesh = match collider.shape() {
+                let mesh = match shape.shape_type() {
                     #[cfg(feature = "dim3")]
-                    Shape::Cuboid(_) => Mesh::from(shape::Cube { size: 1.0 }),
+                    ShapeType::Cuboid => Mesh::from(shape::Cube { size: 1.0 }),
                     #[cfg(feature = "dim2")]
-                    Shape::Cuboid(_) => Mesh::from(shape::Quad {
+                    ShapeType::Cuboid => Mesh::from(shape::Quad {
                         size: Vec2::new(2.0, 2.0),
                         flip: false,
                     }),
-                    Shape::Ball(_) => Mesh::from(shape::Icosphere {
+                    ShapeType::Ball => Mesh::from(shape::Icosphere {
                         subdivisions: 2,
                         radius: 1.0,
                     }),
                     _ => unimplemented!(),
                 };
 
-                let scale = match collider.shape() {
+                let scale = match shape.shape_type() {
                     #[cfg(feature = "dim2")]
-                    Shape::Cuboid(c) => Vec3::new(c.half_extents.x, c.half_extents.y, 1.0),
+                    ShapeType::Cuboid => {
+                        let c = shape.as_cuboid().unwrap();
+                        Vec3::new(c.half_extents.x, c.half_extents.y, 1.0)
+                    },
                     #[cfg(feature = "dim3")]
-                    Shape::Cuboid(c) => Vec3::from_slice_unaligned(c.half_extents.as_slice()),
-                    Shape::Ball(b) => Vec3::new(b.radius, b.radius, b.radius),
+                    ShapeType::Cuboid => {
+                        let c = shape.as_cuboid().unwrap();
+                        Vec3::from_slice_unaligned(c.half_extents.as_slice())
+                    },
+                    ShapeType::Ball => {
+                        let b = shape.as_ball().unwrap();
+                        Vec3::new(b.radius, b.radius, b.radius)
+                    },
                     _ => unimplemented!(),
                 } * configuration.scale;
 
