@@ -28,10 +28,9 @@ serde-serialize = [ "rapier2d/serde-serialize" ]
 enhanced-determinism = [ "rapier2d/enhanced-determinism" ]
 
 [dependencies]
-bevy = "0.2"
+bevy = "0.3"
 nalgebra = "0.23"
 rapier2d = "0.3"
 concurrent-queue = "1"
 
 [dev-dependencies]
-

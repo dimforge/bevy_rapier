@@ -43,12 +43,12 @@ pub fn create_joints_system(
     mut commands: Commands,
     mut bodies: ResMut<RigidBodySet>,
     mut joints: ResMut<JointSet>,
-    mut query: Query<(Entity, &JointBuilderComponent)>,
+    query: Query<(Entity, &JointBuilderComponent)>,
     query_bodyhandle: Query<&RigidBodyHandleComponent>,
 ) {
     for (entity, joint) in &mut query.iter() {
-        let body1 = query_bodyhandle.get::<RigidBodyHandleComponent>(joint.entity1);
-        let body2 = query_bodyhandle.get::<RigidBodyHandleComponent>(joint.entity2);
+        let body1 = query_bodyhandle.get_component::<RigidBodyHandleComponent>(joint.entity1);
+        let body2 = query_bodyhandle.get_component::<RigidBodyHandleComponent>(joint.entity2);
         if let (Ok(body1), Ok(body2)) = (body1, body2) {
             let handle = joints.insert(&mut bodies, body1.handle(), body2.handle(), joint.params);
             commands.insert_one(
@@ -91,7 +91,7 @@ pub fn step_world_system(
             if sim_to_render_time.diff - sim_dt < sim_dt {
                 // This is the last simulation step to be executed in the loop
                 // Update the previous state transforms
-                for (body_handle, mut previous_state) in &mut query.iter() {
+                for (body_handle, mut previous_state) in query.iter_mut() {
                     if let Some(body) = bodies.get(body_handle.handle()) {
                         previous_state.0 = body.position;
                     }
@@ -121,28 +121,28 @@ pub fn step_world_system(
 #[cfg(feature = "dim2")]
 fn sync_transform_2d(pos: Isometry<f32>, scale: f32, transform: &mut Mut<Transform>) {
     // Do not touch the 'z' part of the translation, used in Bevy for 2d layering
-    *transform.translation_mut().x_mut() = pos.translation.vector.x * scale;
-    *transform.translation_mut().y_mut() = pos.translation.vector.y * scale;
+    *transform.translation.x_mut() = pos.translation.vector.x * scale;
+    *transform.translation.y_mut() = pos.translation.vector.y * scale;
 
     let rot = na::UnitQuaternion::new(na::Vector3::z() * pos.rotation.angle());
-    transform.set_rotation(Quat::from_xyzw(rot.i, rot.j, rot.k, rot.w));
+    transform.rotation = Quat::from_xyzw(rot.i, rot.j, rot.k, rot.w);
 }
 
 #[cfg(feature = "dim3")]
 fn sync_transform_3d(pos: Isometry<f32>, scale: f32, transform: &mut Mut<Transform>) {
-    transform.set_translation(
+    transform.translation =
         Vec3::new(
             pos.translation.vector.x,
             pos.translation.vector.y,
             pos.translation.vector.z,
-        ) * scale,
-    );
-    transform.set_rotation(Quat::from_xyzw(
+        ) * scale
+    ;
+    transform.rotation = Quat::from_xyzw(
         pos.rotation.i,
         pos.rotation.j,
         pos.rotation.k,
         pos.rotation.w,
-    ));
+    );
 }
 
 /// System responsible for writing the rigid-bodies positions into the Bevy translation and rotation components.
@@ -163,7 +163,7 @@ pub fn sync_transform_system(
     let dt = sim_to_render_time.diff;
     let sim_dt = integration_parameters.dt();
     let alpha = dt / sim_dt;
-    for (rigid_body, previous_pos, mut transform) in &mut interpolation_query.iter() {
+    for (rigid_body, previous_pos, mut transform) in interpolation_query.iter_mut() {
         if let Some(rb) = bodies.get(rigid_body.handle()) {
             // Predict position and orientation at render time
             let pos = previous_pos.0.lerp_slerp(&rb.position, alpha);
@@ -174,7 +174,7 @@ pub fn sync_transform_system(
             sync_transform_3d(pos, configuration.scale, &mut transform);
         }
     }
-    for (rigid_body, mut transform) in &mut direct_query.iter() {
+    for (rigid_body, mut transform) in direct_query.iter_mut() {
         if let Some(rb) = bodies.get(rigid_body.handle()) {
             let pos = rb.position;
             #[cfg(feature = "dim2")]

@@ -2,7 +2,7 @@ extern crate rapier3d as rapier; // For the debug UI.
 
 use bevy::prelude::*;
 use bevy::render::pass::ClearColor;
-use bevy_rapier3d::physics::{InteractionPairFilters, RapierConfiguration, RapierPhysicsPlugin};
+use bevy_rapier3d::physics::{InteractionPairFilters, RapierPhysicsPlugin};
 use bevy_rapier3d::render::RapierRenderPlugin;
 use rapier::geometry::{ContactPairFilter, PairFilterContext, SolverFlags};
 use rapier3d::dynamics::RigidBodyBuilder;
@@ -36,7 +36,7 @@ fn main() {
             0xFF as f32 / 255.0,
         )))
         .add_resource(Msaa::default())
-        .add_default_plugins()
+        .add_plugins(DefaultPlugins)
         .add_plugin(RapierPhysicsPlugin)
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)
@@ -57,7 +57,7 @@ fn setup_graphics(mut commands: Commands) {
             ..Default::default()
         })
         .spawn(Camera3dComponents {
-            transform: Transform::new(Mat4::face_toward(
+            transform: Transform::from_matrix(Mat4::face_toward(
                 Vec3::new(-30.0, 30.0, 100.0),
                 Vec3::new(0.0, 10.0, 0.0),
                 Vec3::new(0.0, 1.0, 0.0),
