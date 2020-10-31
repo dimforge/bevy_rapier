@@ -10,7 +10,6 @@ use bevy::prelude::*;
 use rapier::dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodySet};
 use rapier::geometry::{BroadPhase, ColliderBuilder, ColliderSet, NarrowPhase};
 use rapier::math::Isometry;
-use rapier::ncollide::utils::IsometryOps;
 use rapier::pipeline::PhysicsPipeline;
 
 // TODO: right now we only support one collider attached to one body.
@@ -106,6 +105,8 @@ pub fn step_world_system(
                 &mut bodies,
                 &mut colliders,
                 &mut joints,
+                None,
+                None,
                 &*events,
             );
         }
