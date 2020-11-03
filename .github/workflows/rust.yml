@@ -1,0 +1,31 @@
+name: Rust
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check-fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check formatting
+        run: cargo fmt -- --check
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - run: sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
+    - name: Build bevy_rapier2d
+      run: cargo build --verbose -p bevy_rapier2d;
+    - name: Build bevy_rapier3d
+      run: cargo build --verbose -p bevy_rapier3d;
+    - name: Check bevy_rapier2d examples
+      run: cargo test --verbose -p bevy_rapier2d;
+    - name: Check bevy_rapier3d examples
+      run: cargo test --verbose -p bevy_rapier3d;

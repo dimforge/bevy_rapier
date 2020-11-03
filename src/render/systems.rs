@@ -77,16 +77,16 @@ pub fn create_collider_renders_system(
                     ShapeType::Cuboid => {
                         let c = shape.as_cuboid().unwrap();
                         Vec3::new(c.half_extents.x, c.half_extents.y, 1.0)
-                    },
+                    }
                     #[cfg(feature = "dim3")]
                     ShapeType::Cuboid => {
                         let c = shape.as_cuboid().unwrap();
                         Vec3::from_slice_unaligned(c.half_extents.as_slice())
-                    },
+                    }
                     ShapeType::Ball => {
                         let b = shape.as_ball().unwrap();
                         Vec3::new(b.radius, b.radius, b.radius)
-                    },
+                    }
                     _ => unimplemented!(),
                 } * configuration.scale;
 
