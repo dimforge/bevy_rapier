@@ -1,4 +1,6 @@
-use crate::rapier::geometry::{ContactEvent, ProximityEvent};
+use crate::rapier::geometry::{
+    ContactEvent, ContactPairFilter, ProximityEvent, ProximityPairFilter,
+};
 use crate::rapier::pipeline::EventHandler;
 use concurrent_queue::ConcurrentQueue;
 use rapier::math::Vector;
@@ -74,4 +76,34 @@ impl EventHandler for EventQueue {
 pub struct SimulationToRenderTime {
     /// Difference between simulation and rendering time
     pub diff: f32,
+}
+
+/// Custom filters for proximity and contact pairs.
+pub struct InteractionPairFilters {
+    /// Custom proximity pair filter.
+    pub proximity_filter: Option<Box<dyn ProximityPairFilter>>,
+    /// Custom contact pair filter.
+    pub contact_filter: Option<Box<dyn ContactPairFilter>>,
+}
+
+impl InteractionPairFilters {
+    /// A new interaction pair filter with no custom proximity and contact pair filters.
+    pub fn new() -> Self {
+        Self {
+            proximity_filter: None,
+            contact_filter: None,
+        }
+    }
+
+    /// Sets the custom contact pair filter.
+    pub fn contact_filter(mut self, filter: impl ContactPairFilter + 'static) -> Self {
+        self.contact_filter = Some(Box::new(filter) as Box<dyn ContactPairFilter>);
+        self
+    }
+
+    /// Sets the custom proximity pair filter.
+    pub fn proximity_filter(mut self, filter: impl ProximityPairFilter + 'static) -> Self {
+        self.proximity_filter = Some(Box::new(filter) as Box<dyn ProximityPairFilter>);
+        self
+    }
 }
