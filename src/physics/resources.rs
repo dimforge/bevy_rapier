@@ -1,6 +1,8 @@
 use crate::rapier::{
     dynamics::{JointHandle, RigidBodyHandle},
-    geometry::{ColliderHandle, ContactEvent, ContactPairFilter, ProximityEvent, ProximityPairFilter},
+    geometry::{
+        ColliderHandle, ContactEvent, ContactPairFilter, ProximityEvent, ProximityPairFilter,
+    },
     pipeline::EventHandler,
 };
 use bevy::prelude::*;
@@ -119,5 +121,5 @@ pub struct EntityMaps {
     /// HashMap of Bevy Entity to Rapier ColliderHandle
     pub(crate) colliders: HashMap<Entity, ColliderHandle>,
     /// HashMap of Bevy Entity to Rapier JointHandle
-    pub(crate) joints: HashMap<Entity, (JointHandle, Entity, Entity)>,
+    pub(crate) joints: HashMap<Entity, JointHandle>,
 }

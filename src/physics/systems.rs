@@ -11,7 +11,6 @@ use rapier::dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidB
 use rapier::geometry::{BroadPhase, ColliderBuilder, ColliderSet, NarrowPhase};
 use rapier::math::Isometry;
 use rapier::pipeline::PhysicsPipeline;
-use std::collections::HashSet;
 
 // TODO: right now we only support one collider attached to one body.
 // This should be extanded to multiple bodies.
@@ -60,10 +59,8 @@ pub fn create_joints_system(
                 entity,
                 JointHandleComponent::new(handle, joint.entity1, joint.entity2),
             );
-            entity_maps
-                .joints
-                .insert(entity, (handle, joint.entity1, joint.entity2));
             commands.remove_one::<JointBuilderComponent>(entity);
+            entity_maps.joints.insert(entity, handle);
         }
     }
 }
@@ -205,72 +202,33 @@ pub fn destroy_body_and_collider_system(
     body_query: Query<(Entity, &RigidBodyHandleComponent)>,
 ) {
     // Components removed before this system
-    let mut bodies_removed: HashSet<Entity> = body_query
-        .removed::<RigidBodyHandleComponent>()
-        .into_iter()
-        .map(|e| *e)
-        .collect();
-    let mut colliders_removed: HashSet<Entity> = collider_query
-        .removed::<ColliderHandleComponent>()
-        .into_iter()
-        .map(|e| *e)
-        .collect();
-    let mut joints_removed: HashSet<Entity> = joint_query
-        .removed::<JointHandleComponent>()
-        .into_iter()
-        .map(|e| *e)
-        .collect();
+    let bodies_removed = body_query.removed::<RigidBodyHandleComponent>();
+    let colliders_removed = collider_query.removed::<ColliderHandleComponent>();
+    let joints_removed = joint_query.removed::<JointHandleComponent>();
 
-    for entity in &bodies_removed.clone() {
-        if let Some(body) = entity_maps.bodies.get(&entity) {
-            bodies.remove(*body, &mut colliders, &mut joints);
-            entity_maps.bodies.remove(&entity);
-            bodies_removed.remove(entity);
+    for entity in bodies_removed {
+        if let Some(body_handle) = entity_maps.bodies.get(entity) {
+            bodies.remove(*body_handle, &mut colliders, &mut joints);
+            entity_maps.bodies.remove(entity);
+
             // Removing a body also removes its colliders and joints. If they were
             // not also removed then we must remove them here.
-            if !colliders_removed.contains(&entity) {
-                commands.remove_one::<ColliderHandleComponent>(*entity);
-            } else {
-                colliders_removed.remove(&entity);
-            }
-            if !joints_removed.contains(&entity) {
-                commands.remove_one::<JointHandleComponent>(*entity);
-            } else {
-                joints_removed.remove(&entity);
-            }
+            commands.remove_one::<ColliderHandleComponent>(*entity);
+            entity_maps.colliders.remove(entity);
+            commands.remove_one::<JointHandleComponent>(*entity);
+            entity_maps.joints.remove(entity);
         }
     }
-    for entity in &colliders_removed.clone() {
-        if let Some(collider) = entity_maps.colliders.get(entity) {
-            colliders.remove(*collider, &mut bodies);
-            colliders_removed.remove(entity);
-            entity_maps.colliders.remove(&entity);
+    for entity in colliders_removed {
+        if let Some(collider_handle) = entity_maps.colliders.get(entity) {
+            colliders.remove(*collider_handle, &mut bodies);
+            entity_maps.colliders.remove(entity);
         }
     }
-    // FIXME: How should joints be removed?
-    // for entity in &joints_removed.clone() {
-    //     if let Some((joint, entity1, entity2)) = entity_maps.joints.get(entity) {
-    //         ??? joints.remove(*joint, &mut bodies);
-    //         joints_removed.remove(entity);
-    //         entity_maps.joints.remove(entity);
-    //     }
-    // }
-    if !bodies_removed.is_empty() {
-        println!(
-            "WARNING: {} Rapier RigidBodys could not be removed from the simulation",
-            bodies_removed.len()
-        );
-    }
-    if !colliders_removed.is_empty() {
-        println!(
-            "WARNING: {} Rapier Colliders could not be removed from the simulation",
-            colliders_removed.len()
-        );
-    }
-    if !joints_removed.is_empty() {
-        println!(
-            "WARNING: {} Rapier Joints could not be removed from the simulation",
-            joints_removed.len()
-        );
+    for entity in joints_removed {
+        if let Some(joint_handle) = entity_maps.joints.get(entity) {
+            joints.remove(*joint_handle, &mut bodies, true);
+            entity_maps.joints.remove(entity);
+        }
     }
 }

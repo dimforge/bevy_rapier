@@ -26,7 +26,7 @@ fn main() {
         )))
         .add_resource(Msaa::default())
         .add_resource(DespawnResource::default())
-        .add_default_plugins()
+        .add_plugins(DefaultPlugins)
         .add_plugin(RapierPhysicsPlugin)
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)
