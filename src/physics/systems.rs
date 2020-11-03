@@ -1,7 +1,7 @@
 use crate::physics::{
-    ColliderHandleComponent, EventQueue, JointBuilderComponent, JointHandleComponent,
-    PhysicsInterpolationComponent, RapierConfiguration, RigidBodyHandleComponent,
-    SimulationToRenderTime,
+    ColliderHandleComponent, EventQueue, InteractionPairFilters, JointBuilderComponent,
+    JointHandleComponent, PhysicsInterpolationComponent, RapierConfiguration,
+    RigidBodyHandleComponent, SimulationToRenderTime,
 };
 
 use crate::rapier::pipeline::QueryPipeline;
@@ -63,8 +63,8 @@ pub fn create_joints_system(
 /// System responsible for performing one timestep of the physics world.
 pub fn step_world_system(
     (time, mut sim_to_render_time): (Res<Time>, ResMut<SimulationToRenderTime>),
-    configuration: Res<RapierConfiguration>,
-    integration_parameters: Res<IntegrationParameters>,
+    (configuration, integration_parameters): (Res<RapierConfiguration>, Res<IntegrationParameters>),
+    filter: Res<InteractionPairFilters>,
     (mut pipeline, mut query_pipeline): (ResMut<PhysicsPipeline>, ResMut<QueryPipeline>),
     (mut broad_phase, mut narrow_phase): (ResMut<BroadPhase>, ResMut<NarrowPhase>),
     mut bodies: ResMut<RigidBodySet>,
@@ -105,8 +105,8 @@ pub fn step_world_system(
                 &mut bodies,
                 &mut colliders,
                 &mut joints,
-                None,
-                None,
+                filter.contact_filter.as_deref(),
+                filter.proximity_filter.as_deref(),
                 &*events,
             );
         }
