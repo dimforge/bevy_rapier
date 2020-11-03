@@ -130,13 +130,11 @@ fn sync_transform_2d(pos: Isometry<f32>, scale: f32, transform: &mut Mut<Transfo
 
 #[cfg(feature = "dim3")]
 fn sync_transform_3d(pos: Isometry<f32>, scale: f32, transform: &mut Mut<Transform>) {
-    transform.translation =
-        Vec3::new(
-            pos.translation.vector.x,
-            pos.translation.vector.y,
-            pos.translation.vector.z,
-        ) * scale
-    ;
+    transform.translation = Vec3::new(
+        pos.translation.vector.x,
+        pos.translation.vector.y,
+        pos.translation.vector.z,
+    ) * scale;
     transform.rotation = Quat::from_xyzw(
         pos.rotation.i,
         pos.rotation.j,
