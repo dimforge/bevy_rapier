@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0
+### Changed
+- We now use the latest version of Bevy: 0.3.0
+
+### Added
+- Rigid-bodies, colliders, and joints, will automatically removed from the Rapier
+  sets when their corresponding Bevy components are removed.
+
 ## 0.4.0
 This release update the plugin to the latest version of Rapier, which itself
 includes lots of new features. Refer to the Rapier changelogs for details.
