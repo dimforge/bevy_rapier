@@ -20,7 +20,7 @@ fn main() {
             0xFF as f32 / 255.0,
         )))
         .add_resource(Msaa::default())
-        .add_default_plugins()
+        .add_plugins(DefaultPlugins)
         .add_plugin(RapierPhysicsPlugin)
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)

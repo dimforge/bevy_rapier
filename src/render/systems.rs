@@ -12,7 +12,7 @@ pub fn create_collider_renders_system(
     configuration: Res<RapierConfiguration>,
     bodies: Res<RigidBodySet>,
     colliders: ResMut<ColliderSet>,
-    mut query: Query<
+    query: Query<
         Without<Handle<Mesh>, (Entity, &ColliderHandleComponent, Option<&RapierRenderColor>)>,
     >,
 ) {
@@ -97,7 +97,7 @@ pub fn create_collider_renders_system(
                 let ground_pbr = PbrComponents {
                     mesh: meshes.add(mesh),
                     material: materials.add(color.into()),
-                    transform: Transform::from_non_uniform_scale(scale),
+                    transform: Transform::from_scale(scale),
                     ..Default::default()
                 };
 

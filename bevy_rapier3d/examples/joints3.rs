@@ -23,7 +23,7 @@ fn main() {
             0xFF as f32 / 255.0,
         )))
         .add_resource(Msaa::default())
-        .add_default_plugins()
+        .add_plugins(DefaultPlugins)
         .add_plugin(RapierPhysicsPlugin)
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)
@@ -44,7 +44,7 @@ fn setup_graphics(mut commands: Commands) {
             ..Default::default()
         })
         .spawn(Camera3dComponents {
-            transform: Transform::new(Mat4::face_toward(
+            transform: Transform::from_matrix(Mat4::face_toward(
                 Vec3::new(15.0, 5.0, 42.0),
                 Vec3::new(13.0, 1.0, 1.0),
                 Vec3::new(0.0, 1.0, 0.0),

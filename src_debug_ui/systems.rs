@@ -2,7 +2,8 @@ use bevy::prelude::*;
 use rapier::pipeline::PhysicsPipeline;
 
 pub fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let font_handle = asset_server.load("../assets/FiraSans-Bold.ttf").unwrap();
+    let font_handle = asset_server
+        .load(format!("{}/../assets/FiraSans-Bold.ttf", env!("CARGO_MANIFEST_DIR")).as_str());
     commands
         // 2d camera
         .spawn(UiCameraComponents::default())
@@ -25,7 +26,7 @@ pub fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 pub fn text_update_system(pipeline: Res<PhysicsPipeline>, mut query: Query<&mut Text>) {
-    for mut text in &mut query.iter() {
+    for mut text in query.iter_mut() {
         text.value = format!("Physics time: {:.2}", pipeline.counters.step_time())
     }
 }
