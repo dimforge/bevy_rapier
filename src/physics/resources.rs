@@ -1,9 +1,14 @@
-use crate::rapier::geometry::{
-    ContactEvent, ContactPairFilter, ProximityEvent, ProximityPairFilter,
+use crate::rapier::{
+    dynamics::{JointHandle, RigidBodyHandle},
+    geometry::{
+        ColliderHandle, ContactEvent, ContactPairFilter, ProximityEvent, ProximityPairFilter,
+    },
+    pipeline::EventHandler,
 };
-use crate::rapier::pipeline::EventHandler;
+use bevy::prelude::*;
 use concurrent_queue::ConcurrentQueue;
 use rapier::math::Vector;
+use std::collections::HashMap;
 
 /// A resource for specifying configuration information for the physics simulation
 pub struct RapierConfiguration {
@@ -106,4 +111,15 @@ impl InteractionPairFilters {
         self.proximity_filter = Some(Box::new(filter) as Box<dyn ProximityPairFilter>);
         self
     }
+}
+
+/// HashMaps of Bevy Entity to Rapier handles
+#[derive(Default)]
+pub struct EntityMaps {
+    /// HashMap of Bevy Entity to Rapier RigidBodyHandle
+    pub(crate) bodies: HashMap<Entity, RigidBodyHandle>,
+    /// HashMap of Bevy Entity to Rapier ColliderHandle
+    pub(crate) colliders: HashMap<Entity, ColliderHandle>,
+    /// HashMap of Bevy Entity to Rapier JointHandle
+    pub(crate) joints: HashMap<Entity, JointHandle>,
 }
