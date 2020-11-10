@@ -29,7 +29,7 @@ pub fn create_body_and_collider_system(
         commands.remove_one::<RigidBodyBuilder>(entity);
         entity_maps.bodies.insert(entity, handle);
     }
-    
+
     for (entity, body_builder, collider_builder) in body_and_collider_query.iter() {
         let handle = bodies.insert(body_builder.build());
         commands.insert_one(entity, RigidBodyHandleComponent::from(handle));
@@ -41,7 +41,7 @@ pub fn create_body_and_collider_system(
         commands.remove_one::<ColliderBuilder>(entity);
         entity_maps.colliders.insert(entity, handle);
     }
-    
+
     for (entity, parent, collider_builder) in parented_collider_query.iter() {
         if let Some(body_handle) = entity_maps.bodies.get(&parent.0) {
             let handle = colliders.insert(collider_builder.build(), *body_handle, &mut bodies);
@@ -55,73 +55,96 @@ pub fn create_body_and_collider_system(
 #[test]
 fn test_create_body_and_collider_system() {
     use bevy::ecs::Schedule;
-    
+
     let mut resources = Resources::default();
     resources.insert(RigidBodySet::new());
     resources.insert(ColliderSet::new());
     resources.insert(EntityMaps::default());
-    
+
     let mut world = World::new();
-    let body_and_collider_entity = world.spawn((
-        RigidBodyBuilder::new_dynamic(),
-        ColliderBuilder::ball(1.0),
-    ));
-        
+    let body_and_collider_entity =
+        world.spawn((RigidBodyBuilder::new_dynamic(), ColliderBuilder::ball(1.0)));
+
     let body_only_entity = world.spawn((
         RigidBodyBuilder::new_static(),
         Parent(body_and_collider_entity),
     ));
-    
-    let parented_collider_entity_1 = world.spawn((
-        Parent(body_and_collider_entity),
-        ColliderBuilder::ball(0.5),
-    ));
 
-    let parented_collider_entity_2 = world.spawn((
-        Parent(body_only_entity),
-        ColliderBuilder::ball(0.25),
-    ));
-        
+    let parented_collider_entity_1 =
+        world.spawn((Parent(body_and_collider_entity), ColliderBuilder::ball(0.5)));
+
+    let parented_collider_entity_2 =
+        world.spawn((Parent(body_only_entity), ColliderBuilder::ball(0.25)));
+
     let mut schedule = Schedule::default();
     schedule.add_stage("physics_test");
     schedule.add_system_to_stage("physics_test", create_body_and_collider_system.system());
     schedule.run(&mut world, &mut resources);
-    
+
     let body_set = resources.get::<RigidBodySet>().unwrap();
     let collider_set = resources.get::<ColliderSet>().unwrap();
     let entity_maps = resources.get::<EntityMaps>().unwrap();
-    
+
     // body attached alongside collider
-    let attached_body_handle = world.get::<RigidBodyHandleComponent>(body_and_collider_entity).unwrap().handle();
-    assert_eq!(entity_maps.bodies[&body_and_collider_entity], attached_body_handle);
+    let attached_body_handle = world
+        .get::<RigidBodyHandleComponent>(body_and_collider_entity)
+        .unwrap()
+        .handle();
+    assert_eq!(
+        entity_maps.bodies[&body_and_collider_entity],
+        attached_body_handle
+    );
     assert!(body_set.get(attached_body_handle).unwrap().is_dynamic());
-    
+
     // collider attached from same entity
-    let collider_handle = world.get::<ColliderHandleComponent>(body_and_collider_entity).unwrap().handle();
-    assert_eq!(entity_maps.colliders[&body_and_collider_entity], collider_handle);
+    let collider_handle = world
+        .get::<ColliderHandleComponent>(body_and_collider_entity)
+        .unwrap()
+        .handle();
+    assert_eq!(
+        entity_maps.colliders[&body_and_collider_entity],
+        collider_handle
+    );
     let collider = collider_set.get(collider_handle).unwrap();
     assert_eq!(attached_body_handle, collider.parent());
     assert_eq!(collider.shape().as_ball().unwrap().radius, 1.0);
-    
+
     // collider attached to child entity of body with collider
-    let collider_handle = world.get::<ColliderHandleComponent>(parented_collider_entity_1).unwrap().handle();
-    assert_eq!(entity_maps.colliders[&parented_collider_entity_1], collider_handle);
+    let collider_handle = world
+        .get::<ColliderHandleComponent>(parented_collider_entity_1)
+        .unwrap()
+        .handle();
+    assert_eq!(
+        entity_maps.colliders[&parented_collider_entity_1],
+        collider_handle
+    );
     let collider = collider_set.get(collider_handle).unwrap();
     assert_eq!(attached_body_handle, collider.parent());
     assert_eq!(collider.shape().as_ball().unwrap().radius, 0.5);
 
     // standalone body with no collider, jointed to the attached body
-    let standalone_body_handle = world.get::<RigidBodyHandleComponent>(body_only_entity).unwrap().handle();
-    assert_eq!(entity_maps.bodies[&body_only_entity], standalone_body_handle);
+    let standalone_body_handle = world
+        .get::<RigidBodyHandleComponent>(body_only_entity)
+        .unwrap()
+        .handle();
+    assert_eq!(
+        entity_maps.bodies[&body_only_entity],
+        standalone_body_handle
+    );
     assert!(body_set.get(standalone_body_handle).unwrap().is_static());
 
     // collider attached to child entity of standlone body
-    let collider_handle = world.get::<ColliderHandleComponent>(parented_collider_entity_2).unwrap().handle();
-    assert_eq!(entity_maps.colliders[&parented_collider_entity_2], collider_handle);
+    let collider_handle = world
+        .get::<ColliderHandleComponent>(parented_collider_entity_2)
+        .unwrap()
+        .handle();
+    assert_eq!(
+        entity_maps.colliders[&parented_collider_entity_2],
+        collider_handle
+    );
     let collider = collider_set.get(collider_handle).unwrap();
     assert_eq!(standalone_body_handle, collider.parent());
     assert_eq!(collider.shape().as_ball().unwrap().radius, 0.25);
-    
 }
 
 /// System responsible for creating Rapier joints from their builder resources.
