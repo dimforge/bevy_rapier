@@ -1,6 +1,9 @@
 use crate::physics::{ColliderHandleComponent, RapierConfiguration};
 use crate::render::RapierRenderColor;
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    render::mesh::{Indices, VertexAttributeValues},
+};
 use rapier::dynamics::RigidBodySet;
 use rapier::geometry::{ColliderSet, ShapeType};
 
@@ -69,6 +72,31 @@ pub fn create_collider_renders_system(
                         subdivisions: 2,
                         radius: 1.0,
                     }),
+                    #[cfg(feature = "dim2")]
+                    ShapeType::Trimesh => {
+                        let mut mesh =
+                            Mesh::new(bevy::render::pipeline::PrimitiveTopology::TriangleList);
+                        let trimesh = shape.as_trimesh().unwrap();
+                        mesh.set_attribute(
+                            Mesh::ATTRIBUTE_POSITION,
+                            VertexAttributeValues::from(
+                                trimesh
+                                    .vertices()
+                                    .iter()
+                                    .map(|vertice| [vertice.x, vertice.y])
+                                    .collect::<Vec<_>>(),
+                            ),
+                        );
+                        mesh.set_indices(Some(Indices::U32(
+                            trimesh
+                                .indices()
+                                .iter()
+                                .flat_map(|triangle| triangle.iter())
+                                .cloned()
+                                .collect(),
+                        )));
+                        mesh
+                    }
                     _ => unimplemented!(),
                 };
 
@@ -87,6 +115,7 @@ pub fn create_collider_renders_system(
                         let b = shape.as_ball().unwrap();
                         Vec3::new(b.radius, b.radius, b.radius)
                     }
+                    ShapeType::Trimesh => Vec3::one(),
                     _ => unimplemented!(),
                 } * configuration.scale;
 
