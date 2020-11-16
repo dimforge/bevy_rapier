@@ -29,9 +29,9 @@ fn main() {
         .add_plugin(RapierPhysicsPlugin)
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)
-        .add_startup_system(setup_graphics.system())
-        .add_startup_system(setup_physics.system())
-        .add_startup_system(enable_physics_profiling.system())
+        .add_startup_system(setup_graphics)
+        .add_startup_system(setup_physics)
+        .add_startup_system(enable_physics_profiling)
         .run();
 }
 
@@ -39,13 +39,13 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(mut commands: Commands) {
+fn setup_graphics(commands: &mut Commands) {
     commands
-        .spawn(LightComponents {
+        .spawn(LightBundle {
             transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
             ..Default::default()
         })
-        .spawn(Camera3dComponents {
+        .spawn(Camera3dBundle {
             transform: Transform::from_matrix(Mat4::face_toward(
                 Vec3::new(15.0, 5.0, 42.0),
                 Vec3::new(13.0, 1.0, 1.0),
@@ -265,9 +265,9 @@ fn create_ball_joints(commands: &mut Commands, num: usize) {
     }
 }
 
-pub fn setup_physics(mut commands: Commands) {
-    create_prismatic_joints(&mut commands, Point3::new(20.0, 10.0, 0.0), 5);
-    create_revolute_joints(&mut commands, Point3::new(20.0, 0.0, 0.0), 3);
-    create_fixed_joints(&mut commands, Point3::new(0.0, 10.0, 0.0), 5);
-    create_ball_joints(&mut commands, 15);
+pub fn setup_physics(commands: &mut Commands) {
+    create_prismatic_joints(commands, Point3::new(20.0, 10.0, 0.0), 5);
+    create_revolute_joints(commands, Point3::new(20.0, 0.0, 0.0), 3);
+    create_fixed_joints(commands, Point3::new(0.0, 10.0, 0.0), 5);
+    create_ball_joints(commands, 15);
 }

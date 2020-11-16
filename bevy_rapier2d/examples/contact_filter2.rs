@@ -42,9 +42,9 @@ fn main() {
         .add_plugin(RapierPhysicsPlugin)
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)
-        .add_startup_system(setup_graphics.system())
-        .add_startup_system(setup_physics.system())
-        .add_startup_system(enable_physics_profiling.system())
+        .add_startup_system(setup_graphics)
+        .add_startup_system(setup_physics)
+        .add_startup_system(enable_physics_profiling)
         .run();
 }
 
@@ -52,21 +52,21 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
+fn setup_graphics(commands: &mut Commands, mut configuration: ResMut<RapierConfiguration>) {
     configuration.scale = 10.0;
 
     commands
-        .spawn(LightComponents {
+        .spawn(LightBundle {
             transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
             ..Default::default()
         })
-        .spawn(Camera2dComponents {
+        .spawn(Camera2dBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 200.0, 0.0)),
-            ..Camera2dComponents::default()
+            ..Camera2dBundle::default()
         });
 }
 
-pub fn setup_physics(mut commands: Commands) {
+pub fn setup_physics(commands: &mut Commands) {
     /*
      * Ground
      */

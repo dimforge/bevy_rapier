@@ -34,10 +34,10 @@ fn main() {
         .add_plugin(RapierPhysicsPlugin)
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)
-        .add_startup_system(setup_graphics.system())
-        .add_startup_system(setup_physics.system())
-        .add_startup_system(enable_physics_profiling.system())
-        .add_system(despawn.system())
+        .add_startup_system(setup_graphics)
+        .add_startup_system(setup_physics)
+        .add_startup_system(enable_physics_profiling)
+        .add_system(despawn)
         .run();
 }
 
@@ -45,21 +45,21 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
+fn setup_graphics(commands: &mut Commands, mut configuration: ResMut<RapierConfiguration>) {
     configuration.scale = 12.0;
 
     commands
-        .spawn(LightComponents {
+        .spawn(LightBundle {
             transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
             ..Default::default()
         })
-        .spawn(Camera2dComponents {
+        .spawn(Camera2dBundle {
             transform: Transform::from_translation(Vec3::new(200.0, -200.0, 0.0)),
-            ..Camera2dComponents::default()
+            ..Camera2dBundle::default()
         });
 }
 
-pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource>) {
+pub fn setup_physics(commands: &mut Commands, mut despawn: ResMut<DespawnResource>) {
     /*
      * Create the balls
      */
@@ -132,7 +132,7 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
     }
 }
 
-pub fn despawn(mut commands: Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
+pub fn despawn(commands: &mut Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
     if time.seconds_since_startup > 10.0 {
         for entity in &despawn.entities {
             println!("Despawning joint entity");

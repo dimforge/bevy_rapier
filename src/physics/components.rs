@@ -119,7 +119,7 @@ impl PhysicsInterpolationComponent {
     #[cfg(feature = "dim2")]
     pub fn new(translation: Vec2, rotation_angle: f32) -> Self {
         Self(Some(Isometry::from_parts(
-            Translation::from(Vector::new(translation.x(), translation.y())),
+            Translation::from(Vector::new(translation.x, translation.y)),
             UnitComplex::new(rotation_angle),
         )))
     }
@@ -128,16 +128,9 @@ impl PhysicsInterpolationComponent {
     #[cfg(feature = "dim3")]
     pub fn new(translation: Vec3, rotation: Quat) -> Self {
         Self(Some(Isometry::from_parts(
-            Translation::from(Vector::new(
-                translation.x(),
-                translation.y(),
-                translation.z(),
-            )),
+            Translation::from(Vector::new(translation.x, translation.y, translation.z)),
             UnitQuaternion::from_quaternion(Quaternion::new(
-                rotation.x(),
-                rotation.y(),
-                rotation.z(),
-                rotation.w(),
+                rotation.x, rotation.y, rotation.z, rotation.w,
             )),
         )))
     }
