@@ -29,6 +29,8 @@ fn main() {
         .add_resource(Msaa::default())
         .add_resource(DespawnResource::default())
         .add_plugins(DefaultPlugins)
+        .add_plugin(bevy_winit::WinitPlugin::default())
+        .add_plugin(bevy_wgpu::WgpuPlugin::default())
         .add_plugin(RapierPhysicsPlugin)
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)

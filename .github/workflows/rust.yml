@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
+    - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
     - name: Build bevy_rapier2d
       run: cargo build --verbose -p bevy_rapier2d;
     - name: Build bevy_rapier3d
