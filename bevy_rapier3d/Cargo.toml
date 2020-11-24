@@ -34,3 +34,5 @@ rapier3d = "0.3"
 concurrent-queue = "1"
 
 [dev-dependencies]
+bevy_wgpu = "0.3.0"
+bevy_winit = { version = "0.3.0", features = [ "x11" ] }
