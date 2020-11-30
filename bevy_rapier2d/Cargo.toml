@@ -30,7 +30,7 @@ enhanced-determinism = [ "rapier2d/enhanced-determinism" ]
 [dependencies]
 bevy = { version = "0.3", default-features = false, features = ["render"] }
 nalgebra = "0.23"
-rapier2d = "0.3"
+rapier2d = "0.4"
 concurrent-queue = "1"
 
 [dev-dependencies]

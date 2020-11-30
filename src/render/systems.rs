@@ -1,9 +1,8 @@
 use crate::physics::{ColliderHandleComponent, RapierConfiguration};
 use crate::render::RapierRenderColor;
-use bevy::{
-    prelude::*,
-    render::mesh::{Indices, VertexAttributeValues},
-};
+use bevy::prelude::*;
+#[cfg(feature = "dim2")]
+use bevy::render::mesh::{Indices, VertexAttributeValues};
 use rapier::dynamics::RigidBodySet;
 use rapier::geometry::{ColliderSet, ShapeType};
 

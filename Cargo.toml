@@ -3,3 +3,7 @@ members = ["bevy_rapier2d", "bevy_rapier3d"]
 
 [profile.release]
 codegen-units = 1
+
+[patch.crates-io]
+rapier2d = { path = "../rapier/build/rapier2d" }
+rapier3d = { path = "../rapier/build/rapier3d" }

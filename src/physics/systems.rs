@@ -181,7 +181,7 @@ pub fn step_world_system(
     mut bodies: ResMut<RigidBodySet>,
     mut colliders: ResMut<ColliderSet>,
     mut joints: ResMut<JointSet>,
-    events: Res<EventQueue>,
+    events: ResMut<EventQueue>,
     mut query: Query<(
         &RigidBodyHandleComponent,
         &mut PhysicsInterpolationComponent,
@@ -204,7 +204,7 @@ pub fn step_world_system(
                 // Update the previous state transforms
                 for (body_handle, mut previous_state) in query.iter_mut() {
                     if let Some(body) = bodies.get(body_handle.handle()) {
-                        previous_state.0 = body.position;
+                        previous_state.0 = *body.position();
                     }
                 }
             }
@@ -275,7 +275,7 @@ pub fn sync_transform_system(
     for (rigid_body, previous_pos, mut transform) in interpolation_query.iter_mut() {
         if let Some(rb) = bodies.get(rigid_body.handle()) {
             // Predict position and orientation at render time
-            let pos = previous_pos.0.lerp_slerp(&rb.position, alpha);
+            let pos = previous_pos.0.lerp_slerp(rb.position(), alpha);
             #[cfg(feature = "dim2")]
             sync_transform_2d(pos, configuration.scale, &mut transform);
 
@@ -285,7 +285,7 @@ pub fn sync_transform_system(
     }
     for (rigid_body, mut transform) in direct_query.iter_mut() {
         if let Some(rb) = bodies.get(rigid_body.handle()) {
-            let pos = rb.position;
+            let pos = *rb.position();
             #[cfg(feature = "dim2")]
             sync_transform_2d(pos, configuration.scale, &mut transform);
 
@@ -327,7 +327,7 @@ pub fn destroy_body_and_collider_system(
     }
     for entity in colliders_removed {
         if let Some(collider_handle) = entity_maps.colliders.get(entity) {
-            colliders.remove(*collider_handle, &mut bodies);
+            colliders.remove(*collider_handle, &mut bodies, true);
             entity_maps.colliders.remove(entity);
         }
     }
