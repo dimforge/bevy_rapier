@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.0
+### Added
+- It is now possible to attach multiple colliders to a single
+  rigid-body by using Bevy hierarchy: an entity contains
+  the `RigidBodyBuider` whereas its children contain the `ColliderBuilder`. 
+
+### Changed
+- We now use the latest version of Rapier: 0.4.0. See the
+  [Rapier changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md#v040)
+  for details. In particular, this includes the ability to lock the rotations of a rigid-body.
+
 ## 0.5.0
 ### Changed
 - We now use the latest version of Bevy: 0.3.0
