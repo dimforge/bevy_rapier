@@ -105,7 +105,7 @@ pub fn setup_physics(commands: &mut Commands, mut despawn: ResMut<DespawnResourc
 }
 
 pub fn despawn(commands: &mut Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
-    if time.seconds_since_startup > 5.0 {
+    if time.seconds_since_startup() > 5.0 {
         if let Some(entity) = despawn.entity {
             println!("Despawning ground entity");
             commands.despawn(entity);
