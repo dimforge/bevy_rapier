@@ -106,22 +106,28 @@ impl JointBuilderComponent {
 
 /// A component to store the previous position of a body to use for
 /// interpolation between steps
-pub struct PhysicsInterpolationComponent(pub Isometry<f32>);
+pub struct PhysicsInterpolationComponent(pub Option<Isometry<f32>>);
+
+impl Default for PhysicsInterpolationComponent {
+    fn default() -> Self {
+        PhysicsInterpolationComponent(None)
+    }
+}
 
 impl PhysicsInterpolationComponent {
     /// Create a new PhysicsInterpolationComponent from a translation and rotation
     #[cfg(feature = "dim2")]
     pub fn new(translation: Vec2, rotation_angle: f32) -> Self {
-        Self(Isometry::from_parts(
+        Self(Some(Isometry::from_parts(
             Translation::from(Vector::new(translation.x(), translation.y())),
             UnitComplex::new(rotation_angle),
-        ))
+        )))
     }
 
     /// Create a new PhysicsInterpolationComponent from a translation and rotation
     #[cfg(feature = "dim3")]
     pub fn new(translation: Vec3, rotation: Quat) -> Self {
-        Self(Isometry::from_parts(
+        Self(Some(Isometry::from_parts(
             Translation::from(Vector::new(
                 translation.x(),
                 translation.y(),
@@ -133,6 +139,6 @@ impl PhysicsInterpolationComponent {
                 rotation.z(),
                 rotation.w(),
             )),
-        ))
+        )))
     }
 }

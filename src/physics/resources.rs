@@ -22,6 +22,9 @@ pub struct RapierConfiguration {
     pub physics_pipeline_active: bool,
     /// Specifies if the query pipeline is active and update the query pipeline.
     pub query_pipeline_active: bool,
+    /// Specifies if the number of physics steps run at each frame should depend
+    /// of the real-world time elapsed since the last step.
+    pub time_dependent_number_of_timesteps: bool,
 }
 
 impl Default for RapierConfiguration {
@@ -31,6 +34,7 @@ impl Default for RapierConfiguration {
             scale: 1.0,
             physics_pipeline_active: true,
             query_pipeline_active: true,
+            time_dependent_number_of_timesteps: false,
         }
     }
 }
