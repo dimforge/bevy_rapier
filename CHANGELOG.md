@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.1
+### Changed
+- The adaptive change of number of timesteps executed during each render loop
+  (introduced in the version 0.4.0 with position interpolation) is
+  now disabled by default. It needs to be enabled explicitly by setting
+  `RapierConfiguration.time_dependent_number_of_timesteps` to `true`.
+
 ## 0.6.0
 ### Added
 - It is now possible to attach multiple colliders to a single
