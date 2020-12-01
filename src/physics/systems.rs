@@ -191,37 +191,52 @@ pub fn step_world_system(
         events.clear();
     }
 
-    sim_to_render_time.diff += time.delta_seconds;
+    if configuration.time_dependent_number_of_timesteps {
+        sim_to_render_time.diff += time.delta_seconds;
 
-    let sim_dt = integration_parameters.dt();
-    while sim_to_render_time.diff >= sim_dt {
-        if configuration.physics_pipeline_active {
-            // NOTE: in this comparison we do the same computations we
-            // will do for the next `while` iteration test, to make sure we
-            // don't get bit by potential float inaccuracy.
-            if sim_to_render_time.diff - sim_dt < sim_dt {
-                // This is the last simulation step to be executed in the loop
-                // Update the previous state transforms
-                for (body_handle, mut previous_state) in query.iter_mut() {
-                    if let Some(body) = bodies.get(body_handle.handle()) {
-                        previous_state.0 = *body.position();
+        let sim_dt = integration_parameters.dt();
+        while sim_to_render_time.diff >= sim_dt {
+            if configuration.physics_pipeline_active {
+                // NOTE: in this comparison we do the same computations we
+                // will do for the next `while` iteration test, to make sure we
+                // don't get bit by potential float inaccuracy.
+                if sim_to_render_time.diff - sim_dt < sim_dt {
+                    // This is the last simulation step to be executed in the loop
+                    // Update the previous state transforms
+                    for (body_handle, mut previous_state) in query.iter_mut() {
+                        if let Some(body) = bodies.get(body_handle.handle()) {
+                            previous_state.0 = Some(*body.position());
+                        }
                     }
                 }
+                pipeline.step(
+                    &configuration.gravity,
+                    &integration_parameters,
+                    &mut broad_phase,
+                    &mut narrow_phase,
+                    &mut bodies,
+                    &mut colliders,
+                    &mut joints,
+                    filter.contact_filter.as_deref(),
+                    filter.proximity_filter.as_deref(),
+                    &*events,
+                );
             }
-            pipeline.step(
-                &configuration.gravity,
-                &integration_parameters,
-                &mut broad_phase,
-                &mut narrow_phase,
-                &mut bodies,
-                &mut colliders,
-                &mut joints,
-                filter.contact_filter.as_deref(),
-                filter.proximity_filter.as_deref(),
-                &*events,
-            );
+            sim_to_render_time.diff -= sim_dt;
         }
-        sim_to_render_time.diff -= sim_dt;
+    } else {
+        pipeline.step(
+            &configuration.gravity,
+            &integration_parameters,
+            &mut broad_phase,
+            &mut narrow_phase,
+            &mut bodies,
+            &mut colliders,
+            &mut joints,
+            filter.contact_filter.as_deref(),
+            filter.proximity_filter.as_deref(),
+            &*events,
+        );
     }
 
     if configuration.query_pipeline_active {
@@ -275,7 +290,12 @@ pub fn sync_transform_system(
     for (rigid_body, previous_pos, mut transform) in interpolation_query.iter_mut() {
         if let Some(rb) = bodies.get(rigid_body.handle()) {
             // Predict position and orientation at render time
-            let pos = previous_pos.0.lerp_slerp(rb.position(), alpha);
+            let mut pos = *rb.position();
+
+            if configuration.time_dependent_number_of_timesteps && previous_pos.0.is_some() {
+                pos = previous_pos.0.unwrap().lerp_slerp(rb.position(), alpha);
+            }
+
             #[cfg(feature = "dim2")]
             sync_transform_2d(pos, configuration.scale, &mut transform);
 
@@ -286,6 +306,7 @@ pub fn sync_transform_system(
     for (rigid_body, mut transform) in direct_query.iter_mut() {
         if let Some(rb) = bodies.get(rigid_body.handle()) {
             let pos = *rb.position();
+
             #[cfg(feature = "dim2")]
             sync_transform_2d(pos, configuration.scale, &mut transform);
 

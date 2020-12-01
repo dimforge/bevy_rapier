@@ -20,6 +20,11 @@ use rapier::pipeline::PhysicsPipeline;
 /// - Systems responsible for executing one physics timestep at each Bevy update stage.
 pub struct RapierPhysicsPlugin;
 
+/// The stage where the physics transform are output to the Bevy Transform.
+///
+/// This stage is added right before the `POST_UPDATE` stage.
+pub const TRANSFORM_SYNC_STAGE: &'static str = "rapier::transform_sync_stage";
+
 impl Plugin for RapierPhysicsPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_resource(PhysicsPipeline::new())
@@ -44,10 +49,13 @@ impl Plugin for RapierPhysicsPlugin {
             )
             .add_system_to_stage(stage::PRE_UPDATE, physics::create_joints_system.system())
             .add_system_to_stage(stage::UPDATE, physics::step_world_system.system())
-            .add_stage_before(stage::POST_UPDATE, "physics_sync")
-            .add_system_to_stage("physics_sync", physics::sync_transform_system.system())
+            .add_stage_before(stage::POST_UPDATE, TRANSFORM_SYNC_STAGE)
             .add_system_to_stage(
-                "physics_sync",
+                TRANSFORM_SYNC_STAGE,
+                physics::sync_transform_system.system(),
+            )
+            .add_system_to_stage(
+                TRANSFORM_SYNC_STAGE,
                 physics::destroy_body_and_collider_system.system(),
             );
     }
