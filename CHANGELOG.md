@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.2
+### Changed
+- Fix the rendering of colliders attached to an entity children of another
+  entity containing the rigid-body it is attached to.
+
 ## 0.6.1
 ### Changed
 - The adaptive change of number of timesteps executed during each render loop
