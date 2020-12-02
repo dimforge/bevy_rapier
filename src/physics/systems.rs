@@ -5,7 +5,6 @@ use crate::physics::{
 };
 
 use crate::rapier::pipeline::QueryPipeline;
-use bevy::ecs::Mut;
 use bevy::prelude::*;
 use rapier::dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodySet};
 use rapier::geometry::{BroadPhase, ColliderBuilder, ColliderSet, NarrowPhase};
@@ -245,7 +244,7 @@ pub fn step_world_system(
 }
 
 #[cfg(feature = "dim2")]
-fn sync_transform_2d(pos: Isometry<f32>, scale: f32, transform: &mut Mut<Transform>) {
+pub(crate) fn sync_transform(pos: &Isometry<f32>, scale: f32, transform: &mut Transform) {
     // Do not touch the 'z' part of the translation, used in Bevy for 2d layering
     *transform.translation.x_mut() = pos.translation.vector.x * scale;
     *transform.translation.y_mut() = pos.translation.vector.y * scale;
@@ -255,7 +254,7 @@ fn sync_transform_2d(pos: Isometry<f32>, scale: f32, transform: &mut Mut<Transfo
 }
 
 #[cfg(feature = "dim3")]
-fn sync_transform_3d(pos: Isometry<f32>, scale: f32, transform: &mut Mut<Transform>) {
+pub(crate) fn sync_transform(pos: &Isometry<f32>, scale: f32, transform: &mut Transform) {
     transform.translation = Vec3::new(
         pos.translation.vector.x,
         pos.translation.vector.y,
@@ -296,22 +295,12 @@ pub fn sync_transform_system(
                 pos = previous_pos.0.unwrap().lerp_slerp(rb.position(), alpha);
             }
 
-            #[cfg(feature = "dim2")]
-            sync_transform_2d(pos, configuration.scale, &mut transform);
-
-            #[cfg(feature = "dim3")]
-            sync_transform_3d(pos, configuration.scale, &mut transform);
+            sync_transform(&pos, configuration.scale, &mut transform);
         }
     }
     for (rigid_body, mut transform) in direct_query.iter_mut() {
         if let Some(rb) = bodies.get(rigid_body.handle()) {
-            let pos = *rb.position();
-
-            #[cfg(feature = "dim2")]
-            sync_transform_2d(pos, configuration.scale, &mut transform);
-
-            #[cfg(feature = "dim3")]
-            sync_transform_3d(pos, configuration.scale, &mut transform);
+            sync_transform(rb.position(), configuration.scale, &mut transform);
         }
     }
 }
