@@ -5,6 +5,7 @@ use bevy::prelude::*;
 use bevy::render::mesh::{Indices, VertexAttributeValues};
 use rapier::dynamics::RigidBodySet;
 use rapier::geometry::{ColliderSet, ShapeType};
+use std::collections::HashMap;
 
 /// System responsible for attaching a PbrComponents to each entity having a collider.
 pub fn create_collider_renders_system(
@@ -43,14 +44,18 @@ pub fn create_collider_renders_system(
     ];
 
     let mut icolor = 0;
+    let mut body_colors = HashMap::new();
+
     for (entity, collider, debug_color) in &mut query.iter() {
         if let Some(collider) = colliders.get(collider.handle()) {
             if let Some(body) = bodies.get(collider.parent()) {
                 let default_color = if body.is_static() {
                     ground_color
                 } else {
-                    icolor += 1;
-                    palette[icolor % palette.len()]
+                    *body_colors.entry(collider.parent()).or_insert_with(|| {
+                        icolor += 1;
+                        palette[icolor % palette.len()]
+                    })
                 };
 
                 let shape = collider.shape();
@@ -118,14 +123,17 @@ pub fn create_collider_renders_system(
                     _ => unimplemented!(),
                 } * configuration.scale;
 
-                // NOTE: we can't have both the Scale and NonUniformScale components.
-                // However PbrComponents automatically adds a Scale component. So
-                // we add each of its field manually except for Scale.
-                // That's a bit messy so surely there is a better way?
+                let mut transform = Transform::from_scale(scale);
+                crate::physics::sync_transform(
+                    collider.position_wrt_parent(),
+                    configuration.scale,
+                    &mut transform,
+                );
+
                 let ground_pbr = PbrComponents {
                     mesh: meshes.add(mesh),
                     material: materials.add(color.into()),
-                    transform: Transform::from_scale(scale),
+                    transform,
                     ..Default::default()
                 };
 
