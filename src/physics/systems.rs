@@ -223,7 +223,7 @@ pub fn step_world_system(
             }
             sim_to_render_time.diff -= sim_dt;
         }
-    } else {
+    } else if configuration.physics_pipeline_active {
         pipeline.step(
             &configuration.gravity,
             &integration_parameters,
