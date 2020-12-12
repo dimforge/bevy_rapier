@@ -18,7 +18,7 @@ impl From<RigidBodyHandle> for RigidBodyHandleComponent {
 }
 
 impl RigidBodyHandleComponent {
-    /// The handle of thi rigid-body managed by a Rapier physics World.
+    /// The handle of the rigid-body managed by a Rapier physics World.
     ///
     /// This can be passed to a `RigidBodySet` to retrieve a reference to a Rapier rigid-body.
     pub fn handle(&self) -> RigidBodyHandle {
