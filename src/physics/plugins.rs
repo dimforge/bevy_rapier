@@ -43,13 +43,17 @@ impl Plugin for RapierPhysicsPlugin {
             // TODO: can we avoid this map? We are only using this
             // to avoid some borrowing issue when joints creations
             // are needed.
-            .add_system_to_stage_front(
+            .add_system_to_stage(
                 stage::PRE_UPDATE,
                 physics::create_body_and_collider_system.system(),
             )
             .add_system_to_stage(stage::PRE_UPDATE, physics::create_joints_system.system())
             .add_system_to_stage(stage::UPDATE, physics::step_world_system.system())
-            .add_stage_before(stage::POST_UPDATE, TRANSFORM_SYNC_STAGE)
+            .add_stage_before(
+                stage::POST_UPDATE,
+                TRANSFORM_SYNC_STAGE,
+                SystemStage::parallel(),
+            )
             .add_system_to_stage(
                 TRANSFORM_SYNC_STAGE,
                 physics::sync_transform_system.system(),
