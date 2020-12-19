@@ -38,21 +38,21 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
+fn setup_graphics(commands: &mut Commands, mut configuration: ResMut<RapierConfiguration>) {
     configuration.scale = 12.0;
 
     commands
-        .spawn(LightComponents {
+        .spawn(LightBundle {
             transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
             ..Default::default()
         })
-        .spawn(Camera2dComponents {
+        .spawn(Camera2dBundle {
             transform: Transform::from_translation(Vec3::new(200.0, -200.0, 0.0)),
-            ..Camera2dComponents::default()
+            ..Camera2dBundle::default()
         });
 }
 
-pub fn setup_physics(mut commands: Commands) {
+pub fn setup_physics(commands: &mut Commands) {
     /*
      * Create the balls
      */
