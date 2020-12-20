@@ -67,7 +67,7 @@ pub fn create_collider_renders_system(
 
                 let mesh = match shape.shape_type() {
                     #[cfg(feature = "dim3")]
-                    ShapeType::Cuboid => Mesh::from(shape::Cube { size: 1.0 }),
+                    ShapeType::Cuboid => Mesh::from(shape::Cube { size: 2.0 }),
                     #[cfg(feature = "dim2")]
                     ShapeType::Cuboid => Mesh::from(shape::Quad {
                         size: Vec2::new(2.0, 2.0),
