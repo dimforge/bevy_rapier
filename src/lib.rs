@@ -19,4 +19,5 @@ pub extern crate rapier3d as rapier;
 /// Plugins, resources, and components for physics simulation.
 pub mod physics;
 /// Plugins, resources, and components for debug rendering.
+#[cfg(feature = "render")]
 pub mod render;
