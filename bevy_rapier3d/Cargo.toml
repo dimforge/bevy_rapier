@@ -18,8 +18,9 @@ path = "../src/lib.rs"
 required-features = [ "dim3" ]
 
 [features]
-default = [ "dim3" ]
+default = [ "dim3", "render" ]
 dim3 = []
+render = [ "bevy/render" ]
 parallel = [ "rapier3d/parallel" ]
 simd-stable = [ "rapier3d/simd-stable" ]
 simd-nightly = [ "rapier3d/simd-nightly" ]
@@ -28,7 +29,7 @@ serde-serialize = [ "rapier3d/serde-serialize" ]
 enhanced-determinism = [ "rapier3d/enhanced-determinism" ]
 
 [dependencies]
-bevy = { version = "0.4", default-features = false, features = ["render"] }
+bevy = { version = "0.4", default-features = false }
 nalgebra = "0.23"
 rapier3d = "0.4"
 concurrent-queue = "1"
