@@ -52,13 +52,13 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(mut commands: Commands) {
+fn setup_graphics(commands: &mut Commands) {
     commands
-        .spawn(LightComponents {
+        .spawn(LightBundle {
             transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
             ..Default::default()
         })
-        .spawn(Camera3dComponents {
+        .spawn(Camera3dBundle {
             transform: Transform::from_matrix(Mat4::face_toward(
                 Vec3::new(-30.0, 30.0, 100.0),
                 Vec3::new(0.0, 10.0, 0.0),
@@ -68,7 +68,7 @@ fn setup_graphics(mut commands: Commands) {
         });
 }
 
-pub fn setup_physics(mut commands: Commands) {
+pub fn setup_physics(commands: &mut Commands) {
     /*
      * Ground
      */

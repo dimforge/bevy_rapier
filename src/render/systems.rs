@@ -7,16 +7,17 @@ use rapier::dynamics::RigidBodySet;
 use rapier::geometry::{ColliderSet, ShapeType};
 use std::collections::HashMap;
 
-/// System responsible for attaching a PbrComponents to each entity having a collider.
+/// System responsible for attaching a PbrBundle to each entity having a collider.
 pub fn create_collider_renders_system(
-    mut commands: Commands,
+    commands: &mut Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     configuration: Res<RapierConfiguration>,
     bodies: Res<RigidBodySet>,
     colliders: ResMut<ColliderSet>,
     query: Query<
-        Without<Handle<Mesh>, (Entity, &ColliderHandleComponent, Option<&RapierRenderColor>)>,
+        (Entity, &ColliderHandleComponent, Option<&RapierRenderColor>),
+        Without<Handle<Mesh>>,
     >,
 ) {
     let ground_color = Color::rgb(
@@ -66,7 +67,7 @@ pub fn create_collider_renders_system(
 
                 let mesh = match shape.shape_type() {
                     #[cfg(feature = "dim3")]
-                    ShapeType::Cuboid => Mesh::from(shape::Cube { size: 1.0 }),
+                    ShapeType::Cuboid => Mesh::from(shape::Cube { size: 2.0 }),
                     #[cfg(feature = "dim2")]
                     ShapeType::Cuboid => Mesh::from(shape::Quad {
                         size: Vec2::new(2.0, 2.0),
@@ -130,7 +131,7 @@ pub fn create_collider_renders_system(
                     &mut transform,
                 );
 
-                let ground_pbr = PbrComponents {
+                let ground_pbr = PbrBundle {
                     mesh: meshes.add(mesh),
                     material: materials.add(color.into()),
                     transform,

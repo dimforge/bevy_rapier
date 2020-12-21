@@ -1,14 +1,14 @@
 use bevy::prelude::*;
 use rapier::pipeline::PhysicsPipeline;
 
-pub fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn setup_ui(commands: &mut Commands, asset_server: Res<AssetServer>) {
     let font_handle = asset_server
         .load(format!("{}/../assets/FiraSans-Bold.ttf", env!("CARGO_MANIFEST_DIR")).as_str());
     commands
         // 2d camera
-        .spawn(UiCameraComponents::default())
+        .spawn(CameraUiBundle::default())
         // texture
-        .spawn(TextComponents {
+        .spawn(TextBundle {
             style: Style {
                 align_self: AlignSelf::FlexEnd,
                 ..Default::default()
@@ -19,7 +19,9 @@ pub fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                 style: TextStyle {
                     font_size: 30.0,
                     color: Color::BLACK,
+                    ..Default::default()
                 },
+                ..Default::default()
             },
             ..Default::default()
         });

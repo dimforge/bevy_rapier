@@ -28,11 +28,11 @@ serde-serialize = [ "rapier2d/serde-serialize" ]
 enhanced-determinism = [ "rapier2d/enhanced-determinism" ]
 
 [dependencies]
-bevy = { version = "0.3", default-features = false, features = ["render"] }
+bevy = { version = "0.4", default-features = false, features = ["render"] }
 nalgebra = "0.23"
 rapier2d = "0.4"
 concurrent-queue = "1"
 
 [dev-dependencies]
-bevy_wgpu = "0.3.0"
-bevy_winit = { version = "0.3.0", features = [ "x11" ] }
+bevy_wgpu = "0.4.0"
+bevy_winit = { version = "0.4.0", features = [ "x11" ] }
