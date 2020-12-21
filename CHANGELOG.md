@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.0
+### Changed
+- Use the version 0.4.0 of Bevy.
+
 ## 0.6.2
 ### Changed
 - Fix the rendering of colliders attached to an entity children of another
