@@ -8,14 +8,16 @@ fn main() {
     App::build()
         .add_resource(WindowDescriptor {
             title: "Player Movement Example".to_string(),
-            width: 1000,
-            height: 1000,
+            width: 1000.0,
+            height: 1000.0,
             ..Default::default()
         })
+        .add_plugins(DefaultPlugins)
+        .add_plugin(bevy_winit::WinitPlugin::default())
+        .add_plugin(bevy_wgpu::WgpuPlugin::default())
         .add_startup_system(spawn_player.system())
         .add_system(player_movement.system())
         .add_plugin(RapierPhysicsPlugin)
-        .add_plugins(DefaultPlugins)
         .run();
 }
 
@@ -23,13 +25,13 @@ fn main() {
 struct Player(f32);
 
 fn spawn_player(
-    mut commands: Commands,
+    commands: &mut Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut rapier_config: ResMut<RapierConfiguration>,
 ) {
     // Set gravity to 0.0 and spawn camera.
     rapier_config.gravity = Vector2::zeros();
-    commands.spawn(Camera2dComponents::default());
+    commands.spawn(Camera2dBundle::default());
 
     let sprite_size_x = 40.0;
     let sprite_size_y = 40.0;
@@ -37,12 +39,12 @@ fn spawn_player(
     // Spawn entity with `Player` struct as a component for access in movement query.
     // If `can_sleep` is not set to false, entity will not respond to input after idle time.
     commands
-        .spawn(SpriteComponents {
+        .spawn(SpriteBundle {
             material: materials.add(Color::rgb(0.0, 0.0, 0.0).into()),
             sprite: Sprite::new(Vec2::new(sprite_size_x, sprite_size_y)),
             ..Default::default()
         })
-        .with(RigidBodyBuilder::new_dynamic().can_sleep(false))
+        .with(RigidBodyBuilder::new_dynamic())
         .with(ColliderBuilder::cuboid(
             sprite_size_x / 2.0,
             sprite_size_y / 2.0,
@@ -67,8 +69,8 @@ fn player_movement(
 
         // Write player rigid_body velocity directly to component,
         // the bevy_rapier plugin will update the Sprite transform.
-        if let Some(mut rb) = rigid_bodies.get_mut(rigid_body_component.handle()) {
-            rb.linvel = move_delta * player.0;
+        if let Some(rb) = rigid_bodies.get_mut(rigid_body_component.handle()) {
+            rb.set_linvel(move_delta * player.0, true);
         }
     }
 }
