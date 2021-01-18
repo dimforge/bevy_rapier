@@ -37,7 +37,6 @@ fn spawn_player(
     let sprite_size_y = 40.0;
 
     // Spawn entity with `Player` struct as a component for access in movement query.
-    // If `can_sleep` is not set to false, entity will not respond to input after idle time.
     commands
         .spawn(SpriteBundle {
             material: materials.add(Color::rgb(0.0, 0.0, 0.0).into()),
@@ -67,7 +66,7 @@ fn player_movement(
             move_delta /= move_delta.magnitude();
         }
 
-        // Write player rigid_body velocity directly to component,
+        // Update the velocity on the rigid_body_component,
         // the bevy_rapier plugin will update the Sprite transform.
         if let Some(rb) = rigid_bodies.get_mut(rigid_body_component.handle()) {
             rb.set_linvel(move_delta * player.0, true);
