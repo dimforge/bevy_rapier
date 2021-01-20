@@ -21,7 +21,7 @@ fn main() {
         .run();
 }
 
-// The float value is essentially a player movement speed factor.
+// The float value is the player movemnt speed in 'pixels/second'.
 struct Player(f32);
 
 fn spawn_player(
@@ -36,6 +36,13 @@ fn spawn_player(
     let sprite_size_x = 40.0;
     let sprite_size_y = 40.0;
 
+    // While we want our sprite to look ~40 px square, we want to keep the physics units smaller
+    // to prevent float rounding problems. To do this, we set the scale factor in RapierConfiguration
+    // and divide our sprite_size by the scale.
+    rapier_config.scale = 20.0;
+    let collider_size_x = sprite_size_x / rapier_config.scale;
+    let collider_size_y = sprite_size_y / rapier_config.scale;
+
     // Spawn entity with `Player` struct as a component for access in movement query.
     commands
         .spawn(SpriteBundle {
@@ -45,14 +52,15 @@ fn spawn_player(
         })
         .with(RigidBodyBuilder::new_dynamic())
         .with(ColliderBuilder::cuboid(
-            sprite_size_x / 2.0,
-            sprite_size_y / 2.0,
+            collider_size_x / 2.0,
+            collider_size_y / 2.0,
         ))
         .with(Player(300.0));
 }
 
 fn player_movement(
     keyboard_input: Res<Input<KeyCode>>,
+    rapier_parameters: Res<RapierConfiguration>,
     mut rigid_bodies: ResMut<RigidBodySet>,
     player_info: Query<(&Player, &RigidBodyHandleComponent)>,
 ) {
@@ -61,9 +69,12 @@ fn player_movement(
             + (keyboard_input.pressed(KeyCode::D) as i8);
         let y_axis = -(keyboard_input.pressed(KeyCode::S) as i8)
             + (keyboard_input.pressed(KeyCode::W) as i8);
+
         let mut move_delta = Vector2::new(x_axis as f32, y_axis as f32);
         if move_delta != Vector2::zeros() {
-            move_delta /= move_delta.magnitude();
+            // Note that the RapierConfiguration::Scale factor is also used here to transform
+            // the move_delta from: 'pixels/second' to 'physics_units/second'
+            move_delta /= move_delta.magnitude() * rapier_parameters.scale;
         }
 
         // Update the velocity on the rigid_body_component,
