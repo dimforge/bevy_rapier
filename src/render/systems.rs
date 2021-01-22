@@ -102,7 +102,7 @@ pub fn create_collider_renders_system(
                         )));
                         mesh
                     }
-                    _ => unimplemented!(),
+                    _ => continue,
                 };
 
                 let scale = match shape.shape_type() {
