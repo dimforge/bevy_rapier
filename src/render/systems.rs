@@ -1,7 +1,6 @@
 use crate::physics::{ColliderHandleComponent, RapierConfiguration};
 use crate::render::RapierRenderColor;
 use bevy::prelude::*;
-#[cfg(feature = "dim2")]
 use bevy::render::mesh::{Indices, VertexAttributeValues};
 use rapier::dynamics::RigidBodySet;
 use rapier::geometry::{ColliderSet, ShapeType};
@@ -89,6 +88,69 @@ pub fn create_collider_renders_system(
                                     .vertices()
                                     .iter()
                                     .map(|vertice| [vertice.x, vertice.y])
+                                    .collect::<Vec<_>>(),
+                            ),
+                        );
+                        mesh.set_indices(Some(Indices::U32(
+                            trimesh
+                                .indices()
+                                .iter()
+                                .flat_map(|triangle| triangle.iter())
+                                .cloned()
+                                .collect(),
+                        )));
+                        mesh
+                    }
+                    #[cfg(feature = "dim3")]
+                    ShapeType::Trimesh => {
+                        let mut mesh =
+                            Mesh::new(bevy::render::pipeline::PrimitiveTopology::TriangleList);
+                        let trimesh = shape.as_trimesh().unwrap();
+                        mesh.set_attribute(
+                            Mesh::ATTRIBUTE_POSITION,
+                            VertexAttributeValues::from(
+                                trimesh
+                                    .vertices()
+                                    .iter()
+                                    .map(|vertex| [vertex.x, vertex.y, vertex.z])
+                                    .collect::<Vec<_>>(),
+                            ),
+                        );
+                        // Compute vertex normals by averaging the normals
+                        // of every triangle they appear in.
+                        // NOTE: This is a bit shonky, but good enough for visualisation.
+                        let verts = trimesh.vertices();
+                        let mut normals: Vec<Vec3> = vec![Vec3::zero(); trimesh.vertices().len()];
+                        for triangle in trimesh.indices().iter() {
+                            let ab = verts[triangle[1] as usize] - verts[triangle[0] as usize];
+                            let ac = verts[triangle[2] as usize] - verts[triangle[0] as usize];
+                            let normal = ab.cross(&ac);
+                            // Contribute this normal to each vertex in the triangle.
+                            for i in 0..3 {
+                                normals[triangle[i] as usize] +=
+                                    Vec3::new(normal.x, normal.y, normal.z);
+                            }
+                        }
+                        let normals: Vec<[f32; 3]> = normals
+                            .iter()
+                            .map(|normal| {
+                                let normal = normal.normalize();
+                                [normal.x, normal.y, normal.z]
+                            })
+                            .collect();
+                        mesh.set_attribute(
+                            Mesh::ATTRIBUTE_NORMAL,
+                            VertexAttributeValues::from(normals),
+                        );
+                        // There's nothing particularly meaningful we can do
+                        // for this one without knowing anything about the overall topology.
+                        mesh.set_attribute(
+                            Mesh::ATTRIBUTE_UV_0,
+                            VertexAttributeValues::from(
+                                trimesh
+                                    .vertices()
+                                    .iter()
+                                    .map(|_vertex| [0.0, 0.0])
                                     .collect::<Vec<_>>(),
                             ),
                         );
