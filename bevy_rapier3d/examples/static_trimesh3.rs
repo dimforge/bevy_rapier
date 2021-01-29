@@ -65,7 +65,7 @@ pub fn setup_physics(commands: &mut Commands) {
 
     // Create the ramp.
     let mut vertices: Vec<Point3<f32>> = Vec::new();
-    let mut indices: Vec<Point3<u32>> = Vec::new();
+    let mut indices: Vec<[u32; 3]> = Vec::new();
     let segments = 32;
     let ramp_size = ramp_size();
     for i in 0..=segments {
@@ -77,8 +77,8 @@ pub fn setup_physics(commands: &mut Commands) {
     }
     for i in 0..segments {
         // Two triangles making up a flat quad for each segment of the ramp.
-        indices.push(Point3::new(2 * i + 0, 2 * i + 1, 2 * i + 2));
-        indices.push(Point3::new(2 * i + 2, 2 * i + 1, 2 * i + 3));
+        indices.push([2 * i + 0, 2 * i + 1, 2 * i + 2]);
+        indices.push([2 * i + 2, 2 * i + 1, 2 * i + 3]);
     }
     let rigid_body = RigidBodyBuilder::new_static().translation(0.0, 0.0, 0.0);
     let collider = ColliderBuilder::trimesh(vertices, indices);
@@ -88,7 +88,7 @@ pub fn setup_physics(commands: &mut Commands) {
     // so that we can join the end of the ramp smoothly
     // to the lip of the bowl.
     let mut vertices: Vec<Point3<f32>> = Vec::new();
-    let mut indices: Vec<Point3<u32>> = Vec::new();
+    let mut indices: Vec<[u32; 3]> = Vec::new();
     let segments = 32;
     let bowl_size = Vec3::new(10.0, 3.0, 10.0);
     for ix in 0..=segments {
@@ -110,8 +110,8 @@ pub fn setup_physics(commands: &mut Commands) {
             let row0 = ix * (segments + 1);
             let row1 = (ix + 1) * (segments + 1);
             // Two triangles making up a not-very-flat quad for each segment of the bowl.
-            indices.push(Point3::new(row0 + iz + 0, row0 + iz + 1, row1 + iz + 0));
-            indices.push(Point3::new(row1 + iz + 0, row0 + iz + 1, row1 + iz + 1));
+            indices.push([row0 + iz + 0, row0 + iz + 1, row1 + iz + 0]);
+            indices.push([row1 + iz + 0, row0 + iz + 1, row1 + iz + 1]);
         }
     }
     // Position so ramp connects smoothly
@@ -154,7 +154,7 @@ fn ball_spawner(
 
     // NOTE: The timing here only works properly with `time_dependent_number_of_timesteps`
     // disabled, as it is for examples.
-    ball_state.seconds_until_next_spawn -= integration_parameters.dt();
+    ball_state.seconds_until_next_spawn -= integration_parameters.dt;
     if ball_state.seconds_until_next_spawn > 0.0 {
         return;
     }

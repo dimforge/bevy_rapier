@@ -54,8 +54,8 @@ fn setup_graphics(commands: &mut Commands) {
 }
 
 fn display_events(events: Res<EventQueue>) {
-    while let Ok(proximity_event) = events.proximity_events.pop() {
-        println!("Received proximity event: {:?}", proximity_event);
+    while let Ok(intersection_event) = events.intersection_events.pop() {
+        println!("Received intersection event: {:?}", intersection_event);
     }
 
     while let Ok(contact_event) = events.contact_events.pop() {
