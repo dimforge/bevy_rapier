@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.0
+### Changed
+- Use the version 0.5.0 of Rapier.
+
+### Added
+- The debug rendering of 3D trimesh now work.
+- The debug rendering won't crash any more if a not-yet-supported shape
+  is used. It will silently ignore the shape instead.
+- The crate has now a `render` feature that allows building it without any
+  rendering support (avoiding some dependencies that may not compile when
+  targetting WASM).
+
 ## 0.7.0
 ### Changed
 - Use the version 0.4.0 of Bevy.
