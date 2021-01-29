@@ -77,7 +77,7 @@ pub fn create_collider_renders_system(
                         radius: 1.0,
                     }),
                     #[cfg(feature = "dim2")]
-                    ShapeType::Trimesh => {
+                    ShapeType::TriMesh => {
                         let mut mesh =
                             Mesh::new(bevy::render::pipeline::PrimitiveTopology::TriangleList);
                         let trimesh = shape.as_trimesh().unwrap();
@@ -102,7 +102,7 @@ pub fn create_collider_renders_system(
                         mesh
                     }
                     #[cfg(feature = "dim3")]
-                    ShapeType::Trimesh => {
+                    ShapeType::TriMesh => {
                         let mut mesh =
                             Mesh::new(bevy::render::pipeline::PrimitiveTopology::TriangleList);
                         let trimesh = shape.as_trimesh().unwrap();
@@ -182,7 +182,7 @@ pub fn create_collider_renders_system(
                         let b = shape.as_ball().unwrap();
                         Vec3::new(b.radius, b.radius, b.radius)
                     }
-                    ShapeType::Trimesh => Vec3::one(),
+                    ShapeType::TriMesh => Vec3::one(),
                     _ => unimplemented!(),
                 } * configuration.scale;
 

@@ -70,7 +70,7 @@ pub fn setup_physics(commands: &mut Commands) {
     let rigid_body = RigidBodyBuilder::new_dynamic()
         .translation(0.0, 3.0, 0.0)
         .lock_translations()
-        .principal_angular_inertia(Vector3::zeros(), Vector3::new(true, false, false));
+        .restrict_rotations(true, false, false);
     let collider = ColliderBuilder::cuboid(0.2, 0.6, 2.0);
     commands.spawn((rigid_body, collider));
 
