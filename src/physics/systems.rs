@@ -193,7 +193,7 @@ pub fn step_world_system(
     if configuration.time_dependent_number_of_timesteps {
         sim_to_render_time.diff += time.delta_seconds();
 
-        let sim_dt = integration_parameters.dt();
+        let sim_dt = integration_parameters.dt;
         while sim_to_render_time.diff >= sim_dt {
             if configuration.physics_pipeline_active {
                 // NOTE: in this comparison we do the same computations we
@@ -217,7 +217,7 @@ pub fn step_world_system(
                     &mut colliders,
                     &mut joints,
                     filter.contact_filter.as_deref(),
-                    filter.proximity_filter.as_deref(),
+                    filter.intersection_filter.as_deref(),
                     &*events,
                 );
             }
@@ -233,7 +233,7 @@ pub fn step_world_system(
             &mut colliders,
             &mut joints,
             filter.contact_filter.as_deref(),
-            filter.proximity_filter.as_deref(),
+            filter.intersection_filter.as_deref(),
             &*events,
         );
     }
@@ -285,7 +285,7 @@ pub fn sync_transform_system(
     >,
 ) {
     let dt = sim_to_render_time.diff;
-    let sim_dt = integration_parameters.dt();
+    let sim_dt = integration_parameters.dt;
     let alpha = dt / sim_dt;
     for (rigid_body, previous_pos, mut transform) in interpolation_query.iter_mut() {
         if let Some(rb) = bodies.get(rigid_body.handle()) {

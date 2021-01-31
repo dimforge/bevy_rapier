@@ -1,6 +1,6 @@
 [package]
 name = "bevy_rapier3d"
-version = "0.7.0"
+version = "0.8.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 description = "3-dimensional physics engine in Rust, official Bevy plugin."
 documentation = "http://docs.rs/bevy_rapier3d"
@@ -30,8 +30,8 @@ enhanced-determinism = [ "rapier3d/enhanced-determinism" ]
 
 [dependencies]
 bevy = { version = "0.4", default-features = false }
-nalgebra = "0.23"
-rapier3d = "0.4"
+nalgebra = "0.24"
+rapier3d = "0.5"
 concurrent-queue = "1"
 
 [dev-dependencies]

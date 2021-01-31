@@ -1,7 +1,7 @@
 use crate::rapier::{
     dynamics::{JointHandle, RigidBodyHandle},
     geometry::{
-        ColliderHandle, ContactEvent, ContactPairFilter, ProximityEvent, ProximityPairFilter,
+        ColliderHandle, ContactEvent, ContactPairFilter, IntersectionEvent, IntersectionPairFilter,
     },
     pipeline::EventHandler,
 };
@@ -47,8 +47,8 @@ impl Default for RapierConfiguration {
 pub struct EventQueue {
     /// The unbounded contact event queue.
     pub contact_events: ConcurrentQueue<ContactEvent>,
-    /// The unbounded proximity event queue.
-    pub proximity_events: ConcurrentQueue<ProximityEvent>,
+    /// The unbounded intersection event queue.
+    pub intersection_events: ConcurrentQueue<IntersectionEvent>,
     /// Are these queues automatically cleared before each simulation timestep?
     pub auto_clear: bool,
 }
@@ -58,7 +58,7 @@ impl EventQueue {
     pub fn new(auto_clear: bool) -> Self {
         Self {
             contact_events: ConcurrentQueue::unbounded(),
-            proximity_events: ConcurrentQueue::unbounded(),
+            intersection_events: ConcurrentQueue::unbounded(),
             auto_clear,
         }
     }
@@ -66,13 +66,13 @@ impl EventQueue {
     /// Removes all events contained by this queue.
     pub fn clear(&self) {
         while let Ok(_) = self.contact_events.pop() {}
-        while let Ok(_) = self.proximity_events.pop() {}
+        while let Ok(_) = self.intersection_events.pop() {}
     }
 }
 
 impl EventHandler for EventQueue {
-    fn handle_proximity_event(&self, event: ProximityEvent) {
-        let _ = self.proximity_events.push(event);
+    fn handle_intersection_event(&self, event: IntersectionEvent) {
+        let _ = self.intersection_events.push(event);
     }
 
     fn handle_contact_event(&self, event: ContactEvent) {
@@ -87,19 +87,19 @@ pub struct SimulationToRenderTime {
     pub diff: f32,
 }
 
-/// Custom filters for proximity and contact pairs.
+/// Custom filters for intersection and contact pairs.
 pub struct InteractionPairFilters {
-    /// Custom proximity pair filter.
-    pub proximity_filter: Option<Box<dyn ProximityPairFilter>>,
+    /// Custom intersection pair filter.
+    pub intersection_filter: Option<Box<dyn IntersectionPairFilter>>,
     /// Custom contact pair filter.
     pub contact_filter: Option<Box<dyn ContactPairFilter>>,
 }
 
 impl InteractionPairFilters {
-    /// A new interaction pair filter with no custom proximity and contact pair filters.
+    /// A new interaction pair filter with no custom intersection and contact pair filters.
     pub fn new() -> Self {
         Self {
-            proximity_filter: None,
+            intersection_filter: None,
             contact_filter: None,
         }
     }
@@ -110,9 +110,9 @@ impl InteractionPairFilters {
         self
     }
 
-    /// Sets the custom proximity pair filter.
-    pub fn proximity_filter(mut self, filter: impl ProximityPairFilter + 'static) -> Self {
-        self.proximity_filter = Some(Box::new(filter) as Box<dyn ProximityPairFilter>);
+    /// Sets the custom intersection pair filter.
+    pub fn intersection_filter(mut self, filter: impl IntersectionPairFilter + 'static) -> Self {
+        self.intersection_filter = Some(Box::new(filter) as Box<dyn IntersectionPairFilter>);
         self
     }
 }
