@@ -3,7 +3,7 @@ extern crate rapier2d as rapier; // For the debug UI.
 use bevy::prelude::*;
 use bevy::render::pass::ClearColor;
 use bevy_rapier2d::physics::{RapierConfiguration, RapierPhysicsPlugin};
-use bevy_rapier2d::render::RapierRenderPlugin;
+use bevy_rapier2d::render::{DebugColliderShape, RapierRenderPlugin};
 use rapier2d::dynamics::RigidBodyBuilder;
 use rapier2d::geometry::ColliderBuilder;
 use rapier2d::pipeline::PhysicsPipeline;
@@ -59,7 +59,7 @@ pub fn setup_physics(commands: &mut Commands) {
 
     let rigid_body = RigidBodyBuilder::new_static().translation(0.0, -ground_height);
     let collider = ColliderBuilder::cuboid(ground_size, ground_height);
-    commands.spawn((rigid_body, collider));
+    commands.spawn((rigid_body, collider, DebugColliderShape::default()));
 
     /*
      * A rectangle that only rotate.
@@ -68,7 +68,7 @@ pub fn setup_physics(commands: &mut Commands) {
         .translation(0.0, 3.0)
         .lock_translations();
     let collider = ColliderBuilder::cuboid(2.0, 0.6);
-    commands.spawn((rigid_body, collider));
+    commands.spawn((rigid_body, collider, DebugColliderShape::default()));
 
     /*
      * A tilted cuboid that cannot rotate.
@@ -78,5 +78,5 @@ pub fn setup_physics(commands: &mut Commands) {
         .rotation(1.0)
         .lock_rotations();
     let collider = ColliderBuilder::cuboid(0.6, 0.4);
-    commands.spawn((rigid_body, collider));
+    commands.spawn((rigid_body, collider, DebugColliderShape::default()));
 }

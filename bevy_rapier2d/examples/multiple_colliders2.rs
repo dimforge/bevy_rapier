@@ -3,7 +3,7 @@ extern crate rapier2d as rapier; // For the debug UI.
 use bevy::prelude::*;
 use bevy::render::pass::ClearColor;
 use bevy_rapier2d::physics::{RapierConfiguration, RapierPhysicsPlugin};
-use bevy_rapier2d::render::RapierRenderPlugin;
+use bevy_rapier2d::render::{DebugColliderShape, RapierRenderPlugin};
 use rapier2d::dynamics::RigidBodyBuilder;
 use rapier2d::geometry::ColliderBuilder;
 use rapier2d::pipeline::PhysicsPipeline;
@@ -59,7 +59,7 @@ pub fn setup_physics(commands: &mut Commands) {
 
     let rigid_body = RigidBodyBuilder::new_static().translation(0.0, -ground_height);
     let collider = ColliderBuilder::cuboid(ground_size, ground_height);
-    commands.spawn((rigid_body, collider));
+    commands.spawn((rigid_body, collider, DebugColliderShape::default()));
 
     /*
      * Create the cubes
@@ -98,9 +98,9 @@ pub fn setup_physics(commands: &mut Commands) {
                     GlobalTransform::identity(),
                 ))
                 .with_children(|parent| {
-                    parent.spawn((collider1,));
-                    parent.spawn((collider2,));
-                    parent.spawn((collider3,));
+                    parent.spawn((collider1, DebugColliderShape::default()));
+                    parent.spawn((collider2, DebugColliderShape::default()));
+                    parent.spawn((collider3, DebugColliderShape::default()));
                 });
         }
 

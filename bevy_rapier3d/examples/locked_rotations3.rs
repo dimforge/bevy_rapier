@@ -3,7 +3,7 @@ extern crate rapier3d as rapier; // For the debug UI.
 use bevy::prelude::*;
 use bevy::render::pass::ClearColor;
 use bevy_rapier3d::physics::RapierPhysicsPlugin;
-use bevy_rapier3d::render::RapierRenderPlugin;
+use bevy_rapier3d::render::{DebugColliderShape, RapierRenderPlugin};
 use nalgebra::Vector3;
 use rapier3d::dynamics::RigidBodyBuilder;
 use rapier3d::geometry::ColliderBuilder;
@@ -62,7 +62,7 @@ pub fn setup_physics(commands: &mut Commands) {
 
     let rigid_body = RigidBodyBuilder::new_static().translation(0.0, -ground_height, 0.0);
     let collider = ColliderBuilder::cuboid(ground_size, ground_height, ground_size);
-    commands.spawn((rigid_body, collider));
+    commands.spawn((rigid_body, collider, DebugColliderShape::default()));
 
     /*
      * A rectangle that only rotates along the `x` axis.
@@ -72,7 +72,7 @@ pub fn setup_physics(commands: &mut Commands) {
         .lock_translations()
         .restrict_rotations(true, false, false);
     let collider = ColliderBuilder::cuboid(0.2, 0.6, 2.0);
-    commands.spawn((rigid_body, collider));
+    commands.spawn((rigid_body, collider, DebugColliderShape::default()));
 
     /*
      * A tilted cuboid that cannot rotate.
@@ -82,5 +82,5 @@ pub fn setup_physics(commands: &mut Commands) {
         .rotation(Vector3::x() * 1.0)
         .lock_rotations();
     let collider = ColliderBuilder::cuboid(0.6, 0.4, 0.4);
-    commands.spawn((rigid_body, collider));
+    commands.spawn((rigid_body, collider, DebugColliderShape::default()));
 }

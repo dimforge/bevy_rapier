@@ -3,7 +3,7 @@ extern crate rapier3d as rapier; // For the debug UI.
 use bevy::prelude::*;
 use bevy::render::pass::ClearColor;
 use bevy_rapier3d::physics::{EventQueue, RapierPhysicsPlugin};
-use bevy_rapier3d::render::RapierRenderPlugin;
+use bevy_rapier3d::render::{DebugColliderShape, RapierRenderPlugin};
 use rapier3d::dynamics::RigidBodyBuilder;
 use rapier3d::geometry::ColliderBuilder;
 use rapier3d::pipeline::PhysicsPipeline;
@@ -69,13 +69,13 @@ pub fn setup_physics(commands: &mut Commands) {
      */
     let rigid_body = RigidBodyBuilder::new_static();
     let collider = ColliderBuilder::cuboid(4.0, 1.2, 1.2);
-    commands.spawn((rigid_body, collider));
+    commands.spawn((rigid_body, collider, DebugColliderShape::default()));
 
     let rigid_body = RigidBodyBuilder::new_static().translation(0.0, 5.0, 0.0);
     let collider = ColliderBuilder::cuboid(4.0, 1.2, 1.0).sensor(true);
-    commands.spawn((rigid_body, collider));
+    commands.spawn((rigid_body, collider, DebugColliderShape::default()));
 
     let rigid_body = RigidBodyBuilder::new_dynamic().translation(0.0, 13.0, 0.0);
     let collider = ColliderBuilder::cuboid(0.5, 0.5, 0.5);
-    commands.spawn((rigid_body, collider));
+    commands.spawn((rigid_body, collider, DebugColliderShape::default()));
 }

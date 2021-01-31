@@ -5,7 +5,7 @@ use std::f32::consts::TAU;
 use bevy::prelude::*;
 use bevy::render::pass::ClearColor;
 use bevy_rapier3d::physics::RapierPhysicsPlugin;
-use bevy_rapier3d::render::RapierRenderPlugin;
+use bevy_rapier3d::render::{DebugColliderShape, RapierRenderPlugin};
 use rapier3d::dynamics::{IntegrationParameters, RigidBodyBuilder};
 use rapier3d::geometry::ColliderBuilder;
 use rapier3d::pipeline::PhysicsPipeline;
@@ -82,7 +82,7 @@ pub fn setup_physics(commands: &mut Commands) {
     }
     let rigid_body = RigidBodyBuilder::new_static().translation(0.0, 0.0, 0.0);
     let collider = ColliderBuilder::trimesh(vertices, indices);
-    commands.spawn((rigid_body, collider));
+    commands.spawn((rigid_body, collider, DebugColliderShape::default()));
 
     // Create a bowl with a cosine cross-section,
     // so that we can join the end of the ramp smoothly
@@ -122,7 +122,7 @@ pub fn setup_physics(commands: &mut Commands) {
         bowl_size.z / 2.0 - ramp_size.z / 2.0,
     );
     let collider = ColliderBuilder::trimesh(vertices, indices);
-    commands.spawn((rigid_body, collider));
+    commands.spawn((rigid_body, collider, DebugColliderShape::default()));
 }
 
 struct BallState {
@@ -169,7 +169,7 @@ fn ball_spawner(
         0.0,
     );
     let collider = ColliderBuilder::ball(rad).restitution(0.5);
-    commands.spawn((rigid_body, collider));
+    commands.spawn((rigid_body, collider, DebugColliderShape::default()));
 
     ball_state.balls_spawned += 1;
 }
