@@ -3,7 +3,7 @@ extern crate rapier2d as rapier; // For the debug UI.
 use bevy::prelude::*;
 use bevy::render::pass::ClearColor;
 use bevy_rapier2d::physics::{RapierConfiguration, RapierPhysicsPlugin};
-use bevy_rapier2d::render::RapierRenderPlugin;
+use bevy_rapier2d::render::{DebugColliderShape, RapierRenderPlugin};
 use rapier2d::dynamics::RigidBodyBuilder;
 use rapier2d::geometry::ColliderBuilder;
 use rapier2d::pipeline::PhysicsPipeline;
@@ -58,19 +58,19 @@ pub fn setup_physics(commands: &mut Commands) {
 
     let rigid_body = RigidBodyBuilder::new_static();
     let collider = ColliderBuilder::cuboid(ground_size, 1.2);
-    commands.spawn((rigid_body, collider));
+    commands.spawn((rigid_body, collider, DebugColliderShape::default()));
 
     let rigid_body = RigidBodyBuilder::new_static()
         .rotation(std::f32::consts::FRAC_PI_2)
         .translation(ground_size, ground_size * 2.0);
     let collider = ColliderBuilder::cuboid(ground_size * 2.0, 1.2);
-    commands.spawn((rigid_body, collider));
+    commands.spawn((rigid_body, collider, DebugColliderShape::default()));
 
     let body = RigidBodyBuilder::new_static()
         .rotation(std::f32::consts::FRAC_PI_2)
         .translation(-ground_size, ground_size * 2.0);
     let collider = ColliderBuilder::cuboid(ground_size * 2.0, 1.2);
-    commands.spawn((body, collider));
+    commands.spawn((body, collider, DebugColliderShape::default()));
 
     /*
      * Create the cubes
@@ -90,7 +90,7 @@ pub fn setup_physics(commands: &mut Commands) {
             // Build the rigid body.
             let body = RigidBodyBuilder::new_dynamic().translation(x, y);
             let collider = ColliderBuilder::cuboid(rad, rad).density(1.0);
-            commands.spawn((body, collider));
+            commands.spawn((body, collider, DebugColliderShape::default()));
         }
     }
 }

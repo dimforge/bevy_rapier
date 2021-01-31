@@ -4,7 +4,7 @@ extern crate rapier3d as rapier; // For the debug UI.
 use bevy::prelude::*;
 use bevy::render::pass::ClearColor;
 use bevy_rapier3d::physics::{JointBuilderComponent, RapierPhysicsPlugin};
-use bevy_rapier3d::render::RapierRenderPlugin;
+use bevy_rapier3d::render::{DebugColliderShape, RapierRenderPlugin};
 use na::{Isometry3, Point3, Unit, Vector3};
 use rapier::dynamics::{BallJoint, BodyStatus, FixedJoint, PrismaticJoint, RevoluteJoint};
 use rapier3d::dynamics::RigidBodyBuilder;
@@ -81,7 +81,7 @@ fn create_prismatic_joints(
         let rigid_body = RigidBodyBuilder::new_dynamic().translation(origin.x, origin.y, z);
         let collider = ColliderBuilder::cuboid(rad, rad, rad).density(density);
         let curr_child = commands
-            .spawn((rigid_body, collider))
+            .spawn((rigid_body, collider, DebugColliderShape::default()))
             .current_entity()
             .unwrap();
 
@@ -145,7 +145,7 @@ fn create_revolute_joints(
             let rigid_body = RigidBodyBuilder::new_dynamic().position(positions[k]);
             let collider = ColliderBuilder::cuboid(rad, rad, rad).density(density);
             handles[k] = commands
-                .spawn((rigid_body, collider))
+                .spawn((rigid_body, collider, DebugColliderShape::default()))
                 .current_entity()
                 .unwrap();
         }
@@ -221,7 +221,7 @@ fn create_fixed_joints(
             );
             let collider = ColliderBuilder::ball(rad).density(1.0);
             let child_entity = commands
-                .spawn((rigid_body, collider))
+                .spawn((rigid_body, collider, DebugColliderShape::default()))
                 .current_entity()
                 .unwrap();
 

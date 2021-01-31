@@ -3,7 +3,7 @@ extern crate rapier2d as rapier; // For the debug UI.
 use bevy::prelude::*;
 use bevy::render::pass::ClearColor;
 use bevy_rapier2d::physics::{JointBuilderComponent, RapierConfiguration, RapierPhysicsPlugin};
-use bevy_rapier2d::render::RapierRenderPlugin;
+use bevy_rapier2d::render::{DebugColliderShape, RapierRenderPlugin};
 use nalgebra::Point2;
 use rapier::dynamics::{BallJoint, BodyStatus};
 use rapier2d::dynamics::RigidBodyBuilder;
@@ -81,7 +81,7 @@ pub fn setup_physics(commands: &mut Commands) {
             let rigid_body = RigidBodyBuilder::new(status).translation(fk * shift, -fi * shift);
             let collider = ColliderBuilder::cuboid(rad, rad).density(1.0);
             let child_entity = commands
-                .spawn((rigid_body, collider))
+                .spawn((rigid_body, collider, DebugColliderShape::default()))
                 .current_entity()
                 .unwrap();
 
