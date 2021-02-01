@@ -14,12 +14,12 @@ mod ui;
 
 fn main() {
     App::build()
-        .add_resource(ClearColor(Color::rgb(
+        .insert_resource(ClearColor(Color::rgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .add_resource(Msaa::default())
+        .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
@@ -44,9 +44,9 @@ fn setup_graphics(commands: &mut Commands, mut configuration: ResMut<RapierConfi
             transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
             ..Default::default()
         })
-        .spawn(Camera2dBundle {
+        .spawn(OrthographicCameraBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 30.0, 0.0)),
-            ..Camera2dBundle::default()
+            ..OrthographicCameraBundle::new_2d()
         });
 }
 

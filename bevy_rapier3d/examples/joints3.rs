@@ -17,12 +17,12 @@ mod ui;
 
 fn main() {
     App::build()
-        .add_resource(ClearColor(Color::rgb(
+        .insert_resource(ClearColor(Color::rgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .add_resource(Msaa::default())
+        .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
@@ -45,13 +45,13 @@ fn setup_graphics(commands: &mut Commands) {
             transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
             ..Default::default()
         })
-        .spawn(Camera3dBundle {
+        .spawn(PerspectiveCameraBundle {
             transform: Transform::from_matrix(Mat4::face_toward(
                 Vec3::new(15.0, 5.0, 42.0),
                 Vec3::new(13.0, 1.0, 1.0),
                 Vec3::new(0.0, 1.0, 0.0),
             )),
-            ..Default::default()
+            ..PerspectiveCameraBundle::new_3d()
         });
 }
 

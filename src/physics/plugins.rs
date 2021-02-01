@@ -27,19 +27,19 @@ pub const TRANSFORM_SYNC_STAGE: &'static str = "rapier::transform_sync_stage";
 
 impl Plugin for RapierPhysicsPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_resource(PhysicsPipeline::new())
-            .add_resource(QueryPipeline::new())
-            .add_resource(RapierConfiguration::default())
-            .add_resource(IntegrationParameters::default())
-            .add_resource(BroadPhase::new())
-            .add_resource(NarrowPhase::new())
-            .add_resource(RigidBodySet::new())
-            .add_resource(ColliderSet::new())
-            .add_resource(JointSet::new())
-            .add_resource(InteractionPairFilters::new())
-            .add_resource(EventQueue::new(true))
-            .add_resource(SimulationToRenderTime::default())
-            .add_resource(EntityMaps::default())
+        app.insert_resource(PhysicsPipeline::new())
+            .insert_resource(QueryPipeline::new())
+            .insert_resource(RapierConfiguration::default())
+            .insert_resource(IntegrationParameters::default())
+            .insert_resource(BroadPhase::new())
+            .insert_resource(NarrowPhase::new())
+            .insert_resource(RigidBodySet::new())
+            .insert_resource(ColliderSet::new())
+            .insert_resource(JointSet::new())
+            .insert_resource(InteractionPairFilters::new())
+            .insert_resource(EventQueue::new(true))
+            .insert_resource(SimulationToRenderTime::default())
+            .insert_resource(EntityMaps::default())
             // TODO: can we avoid this map? We are only using this
             // to avoid some borrowing issue when joints creations
             // are needed.
