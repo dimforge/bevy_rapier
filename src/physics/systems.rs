@@ -92,6 +92,9 @@ fn test_create_body_and_collider_system() {
     let parented_collider_entity_2 =
         world.spawn((Parent(body_only_entity), ColliderBuilder::ball(0.25)));
 
+    let parented_collider_entity_3 =
+        world.spawn((Parent(parented_collider_entity_2), ColliderBuilder::ball(0.25)));
+
     let mut schedule = Schedule::default();
     schedule.add_stage("physics_test", SystemStage::parallel());
     schedule.add_system_to_stage("physics_test", create_body_and_collider_system.system());
@@ -156,6 +159,19 @@ fn test_create_body_and_collider_system() {
         .handle();
     assert_eq!(
         entity_maps.colliders[&parented_collider_entity_2],
+        collider_handle
+    );
+    let collider = collider_set.get(collider_handle).unwrap();
+    assert_eq!(standalone_body_handle, collider.parent());
+    assert_eq!(collider.shape().as_ball().unwrap().radius, 0.25);
+
+    // collider attached to child entity of a child of a standalone body
+    let collider_handle = world
+        .get::<ColliderHandleComponent>(parented_collider_entity_3)
+        .unwrap()
+        .handle();
+    assert_eq!(
+        entity_maps.colliders[&parented_collider_entity_3],
         collider_handle
     );
     let collider = collider_set.get(collider_handle).unwrap();
