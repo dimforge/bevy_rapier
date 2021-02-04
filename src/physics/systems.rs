@@ -6,7 +6,7 @@ use crate::physics::{
 
 use crate::rapier::pipeline::QueryPipeline;
 use bevy::prelude::*;
-use rapier::dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodySet};
+use rapier::dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet};
 use rapier::geometry::{BroadPhase, ColliderBuilder, ColliderSet, NarrowPhase};
 use rapier::math::Isometry;
 use rapier::pipeline::PhysicsPipeline;
@@ -21,6 +21,7 @@ pub fn create_body_and_collider_system(
     standalone_body_query: Query<(Entity, &RigidBodyBuilder), Without<ColliderBuilder>>,
     body_and_collider_query: Query<(Entity, &RigidBodyBuilder, &ColliderBuilder)>,
     parented_collider_query: Query<(Entity, &Parent, &ColliderBuilder), Without<RigidBodyBuilder>>,
+    parent_query: Query<&Parent>,
 ) {
     for (entity, body_builder) in standalone_body_query.iter() {
         let handle = bodies.insert(body_builder.build());
@@ -42,13 +43,29 @@ pub fn create_body_and_collider_system(
     }
 
     for (entity, parent, collider_builder) in parented_collider_query.iter() {
-        if let Some(body_handle) = entity_maps.bodies.get(&parent.0) {
+        if let Some(body_handle) = get_parent_rigid_body(&entity_maps, &parent_query, parent) {
             let handle = colliders.insert(collider_builder.build(), *body_handle, &mut bodies);
             commands.insert_one(entity, ColliderHandleComponent::from(handle));
             commands.remove_one::<ColliderBuilder>(entity);
             entity_maps.colliders.insert(entity, handle);
         } // warn here? panic here? do nothing?
     }
+}
+
+fn get_parent_rigid_body<'a>(
+    entity_maps: &'a ResMut<EntityMaps>,
+    parent_query: &Query<&Parent>,
+    parent: &Parent,
+) -> Option<&'a RigidBodyHandle> {
+    if let Some(body_handle) = entity_maps.bodies.get(&parent.0){
+        return Some(body_handle);
+    }
+
+    if let Ok(parent) = parent_query.get(**parent) {
+        return get_parent_rigid_body(entity_maps, parent_query, parent);
+    }
+
+    return None;
 }
 
 #[test]
