@@ -6,7 +6,9 @@ use crate::physics::{
 
 use crate::rapier::pipeline::QueryPipeline;
 use bevy::prelude::*;
-use rapier::dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet};
+use rapier::dynamics::{
+    IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet,
+};
 use rapier::geometry::{BroadPhase, ColliderBuilder, ColliderSet, NarrowPhase};
 use rapier::math::Isometry;
 use rapier::pipeline::PhysicsPipeline;
@@ -57,7 +59,7 @@ fn get_parent_rigid_body<'a>(
     parent_query: &Query<&Parent>,
     parent: &Parent,
 ) -> Option<&'a RigidBodyHandle> {
-    if let Some(body_handle) = entity_maps.bodies.get(&parent.0){
+    if let Some(body_handle) = entity_maps.bodies.get(&parent.0) {
         return Some(body_handle);
     }
 
@@ -92,8 +94,10 @@ fn test_create_body_and_collider_system() {
     let parented_collider_entity_2 =
         world.spawn((Parent(body_only_entity), ColliderBuilder::ball(0.25)));
 
-    let parented_collider_entity_3 =
-        world.spawn((Parent(parented_collider_entity_2), ColliderBuilder::ball(0.25)));
+    let parented_collider_entity_3 = world.spawn((
+        Parent(parented_collider_entity_2),
+        ColliderBuilder::ball(0.25),
+    ));
 
     let mut schedule = Schedule::default();
     schedule.add_stage("physics_test", SystemStage::parallel());
