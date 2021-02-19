@@ -7,7 +7,7 @@ pub struct RapierRenderPlugin;
 impl Plugin for RapierRenderPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_to_stage(
-            stage::PRE_UPDATE,
+            CoreStage::PreUpdate,
             systems::create_collider_renders_system.system(),
         );
     }

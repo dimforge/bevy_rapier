@@ -44,13 +44,13 @@ impl Plugin for RapierPhysicsPlugin {
             // to avoid some borrowing issue when joints creations
             // are needed.
             .add_system_to_stage(
-                stage::PRE_UPDATE,
+                CoreStage::PreUpdate,
                 physics::create_body_and_collider_system.system(),
             )
-            .add_system_to_stage(stage::PRE_UPDATE, physics::create_joints_system.system())
-            .add_system_to_stage(stage::UPDATE, physics::step_world_system.system())
+            .add_system_to_stage(CoreStage::PreUpdate, physics::create_joints_system.system())
+            .add_system_to_stage(CoreStage::Update, physics::step_world_system.system())
             .add_stage_before(
-                stage::POST_UPDATE,
+                CoreStage::PostUpdate,
                 TRANSFORM_SYNC_STAGE,
                 SystemStage::parallel(),
             )
