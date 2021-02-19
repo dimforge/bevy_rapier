@@ -13,11 +13,15 @@ pub fn setup_ui(commands: &mut Commands, asset_server: Res<AssetServer>) {
                 align_self: AlignSelf::FlexEnd,
                 ..Default::default()
             },
-            text: Text::with_section("Physics time0.1234567890".to_string(),TextStyle {
-                font_size: 30.0,
-                color: Color::BLACK,
-                font:font_handle,
-            },Default::default()),
+            text: Text::with_section(
+                "Physics time0.1234567890".to_string(),
+                TextStyle {
+                    font_size: 30.0,
+                    color: Color::BLACK,
+                    font: font_handle,
+                },
+                Default::default(),
+            ),
             ..Default::default()
         });
 }
