@@ -23,7 +23,8 @@ pub struct RapierPhysicsPlugin;
 /// The stage where the physics transform are output to the Bevy Transform.
 ///
 /// This stage is added right before the `POST_UPDATE` stage.
-pub const TRANSFORM_SYNC_STAGE: &'static str = "rapier::transform_sync_stage";
+#[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
+pub struct TransformSync;
 
 impl Plugin for RapierPhysicsPlugin {
     fn build(&self, app: &mut AppBuilder) {
@@ -51,15 +52,12 @@ impl Plugin for RapierPhysicsPlugin {
             .add_system_to_stage(CoreStage::Update, physics::step_world_system.system())
             .add_stage_before(
                 CoreStage::PostUpdate,
-                TRANSFORM_SYNC_STAGE,
+                TransformSync,
                 SystemStage::parallel(),
             )
+            .add_system_to_stage(TransformSync, physics::sync_transform_system.system())
             .add_system_to_stage(
-                TRANSFORM_SYNC_STAGE,
-                physics::sync_transform_system.system(),
-            )
-            .add_system_to_stage(
-                TRANSFORM_SYNC_STAGE,
+                TransformSync,
                 physics::destroy_body_and_collider_system.system(),
             );
     }

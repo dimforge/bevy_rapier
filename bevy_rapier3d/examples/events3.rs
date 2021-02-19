@@ -29,7 +29,7 @@ fn main() {
         .add_startup_system(setup_graphics.system())
         .add_startup_system(setup_physics.system())
         .add_startup_system(enable_physics_profiling.system())
-        .add_system_to_stage(stage::POST_UPDATE, display_events.system())
+        .add_system_to_stage(CoreStage::PostUpdate, display_events.system())
         .run();
 }
 

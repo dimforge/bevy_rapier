@@ -28,8 +28,6 @@ pub fn setup_ui(commands: &mut Commands, asset_server: Res<AssetServer>) {
 
 pub fn text_update_system(pipeline: Res<PhysicsPipeline>, mut query: Query<&mut Text>) {
     for mut text in query.iter_mut() {
-        for section in text.sections.iter_mut() {
-            section.value = format!("Physics time: {:.2}", pipeline.counters.step_time())
-        }
+        text.sections[0].value = format!("Physics time: {:.2}", pipeline.counters.step_time());
     }
 }

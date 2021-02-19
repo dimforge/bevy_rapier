@@ -78,7 +78,7 @@ fn test_create_body_and_collider_system() {
     let mut schedule = Schedule::default();
     schedule.add_stage("physics_test", SystemStage::parallel());
     schedule.add_system_to_stage("physics_test", create_body_and_collider_system.system());
-    schedule.initialize_and_run(&mut world, &mut resources);
+    schedule.run(&mut world, &mut resources);
 
     let body_set = resources.get::<RigidBodySet>().unwrap();
     let collider_set = resources.get::<ColliderSet>().unwrap();
