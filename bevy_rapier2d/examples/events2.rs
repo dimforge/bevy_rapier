@@ -37,7 +37,7 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(commands: &mut Commands, mut configuration: ResMut<RapierConfiguration>) {
+fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
     configuration.scale = 15.0;
 
     commands
@@ -58,7 +58,7 @@ fn display_events(events: Res<EventQueue>) {
     }
 }
 
-pub fn setup_physics(commands: &mut Commands) {
+pub fn setup_physics(mut commands: Commands) {
     /*
      * Ground
      */

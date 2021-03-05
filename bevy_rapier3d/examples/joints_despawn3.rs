@@ -46,7 +46,7 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(commands: &mut Commands) {
+fn setup_graphics(mut commands: Commands) {
     commands
         .spawn(LightBundle {
             transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
@@ -323,14 +323,14 @@ fn create_ball_joints(commands: &mut Commands, num: usize, despawn: &mut ResMut<
     }
 }
 
-pub fn setup_physics(commands: &mut Commands, mut despawn: ResMut<DespawnResource>) {
-    create_prismatic_joints(commands, Point3::new(20.0, 10.0, 0.0), 5, &mut despawn);
-    create_revolute_joints(commands, Point3::new(20.0, 0.0, 0.0), 3, &mut despawn);
-    create_fixed_joints(commands, Point3::new(0.0, 10.0, 0.0), 5, &mut despawn);
-    create_ball_joints(commands, 15, &mut despawn);
+pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource>) {
+    create_prismatic_joints(&mut commands, Point3::new(20.0, 10.0, 0.0), 5, &mut despawn);
+    create_revolute_joints(&mut commands, Point3::new(20.0, 0.0, 0.0), 3, &mut despawn);
+    create_fixed_joints(&mut commands, Point3::new(0.0, 10.0, 0.0), 5, &mut despawn);
+    create_ball_joints(&mut commands, 15, &mut despawn);
 }
 
-pub fn despawn(commands: &mut Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
+pub fn despawn(mut commands: Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
     if time.seconds_since_startup() > 10.0 {
         for entity in &despawn.entities {
             println!("Despawning joint entity");

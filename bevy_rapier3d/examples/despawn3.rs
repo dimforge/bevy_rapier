@@ -43,7 +43,7 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(commands: &mut Commands) {
+fn setup_graphics(mut commands: Commands) {
     commands
         .spawn(LightBundle {
             transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
@@ -59,7 +59,7 @@ fn setup_graphics(commands: &mut Commands) {
         });
 }
 
-pub fn setup_physics(commands: &mut Commands, mut despawn: ResMut<DespawnResource>) {
+pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource>) {
     /*
      * Ground
      */
@@ -104,7 +104,7 @@ pub fn setup_physics(commands: &mut Commands, mut despawn: ResMut<DespawnResourc
     }
 }
 
-pub fn despawn(commands: &mut Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
+pub fn despawn(mut commands: Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
     if time.seconds_since_startup() > 5.0 {
         if let Some(entity) = despawn.entity {
             println!("Despawning ground entity");

@@ -25,7 +25,7 @@ fn main() {
 struct Player(f32);
 
 fn spawn_player(
-    commands: &mut Commands,
+    mut commands: Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut rapier_config: ResMut<RapierConfiguration>,
 ) {

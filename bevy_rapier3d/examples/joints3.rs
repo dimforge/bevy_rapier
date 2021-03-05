@@ -39,7 +39,7 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(commands: &mut Commands) {
+fn setup_graphics(mut commands: Commands) {
     commands
         .spawn(LightBundle {
             transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
@@ -265,9 +265,9 @@ fn create_ball_joints(commands: &mut Commands, num: usize) {
     }
 }
 
-pub fn setup_physics(commands: &mut Commands) {
-    create_prismatic_joints(commands, Point3::new(20.0, 10.0, 0.0), 5);
-    create_revolute_joints(commands, Point3::new(20.0, 0.0, 0.0), 3);
-    create_fixed_joints(commands, Point3::new(0.0, 10.0, 0.0), 5);
-    create_ball_joints(commands, 15);
+pub fn setup_physics(mut commands: Commands) {
+    create_prismatic_joints(&mut commands, Point3::new(20.0, 10.0, 0.0), 5);
+    create_revolute_joints(&mut commands, Point3::new(20.0, 0.0, 0.0), 3);
+    create_fixed_joints(&mut commands, Point3::new(0.0, 10.0, 0.0), 5);
+    create_ball_joints(&mut commands, 15);
 }

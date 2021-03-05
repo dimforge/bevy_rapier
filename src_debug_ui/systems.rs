@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use rapier::pipeline::PhysicsPipeline;
 
-pub fn setup_ui(commands: &mut Commands, asset_server: Res<AssetServer>) {
+pub fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     let font_handle = asset_server
         .load(format!("{}/../assets/FiraSans-Bold.ttf", env!("CARGO_MANIFEST_DIR")).as_str());
     commands

@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 /// System responsible for attaching a PbrBundle to each entity having a collider.
 pub fn create_collider_renders_system(
-    commands: &mut Commands,
+    mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     configuration: Res<RapierConfiguration>,
@@ -200,7 +200,7 @@ pub fn create_collider_renders_system(
                     ..Default::default()
                 };
 
-                commands.insert(entity, ground_pbr);
+                commands.insert_bundle(entity, ground_pbr);
             }
         }
     }

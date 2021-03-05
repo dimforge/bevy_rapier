@@ -40,7 +40,7 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(commands: &mut Commands) {
+fn setup_graphics(mut commands: Commands) {
     commands
         .spawn(LightBundle {
             transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
@@ -60,7 +60,7 @@ fn ramp_size() -> Vec3 {
     Vec3::new(10.0, 1.0, 1.0)
 }
 
-pub fn setup_physics(commands: &mut Commands) {
+pub fn setup_physics(mut commands: Commands) {
     use bevy_rapier3d::na::Point3;
 
     // Create the ramp.
@@ -144,7 +144,7 @@ impl Default for BallState {
 }
 
 fn ball_spawner(
-    commands: &mut Commands,
+    mut commands: Commands,
     integration_parameters: Res<IntegrationParameters>,
     mut ball_state: ResMut<BallState>,
 ) {

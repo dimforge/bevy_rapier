@@ -45,7 +45,7 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(commands: &mut Commands, mut configuration: ResMut<RapierConfiguration>) {
+fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
     configuration.scale = 12.0;
 
     let mut camera = OrthographicCameraBundle::new_2d();
@@ -58,7 +58,7 @@ fn setup_graphics(commands: &mut Commands, mut configuration: ResMut<RapierConfi
         .spawn(camera);
 }
 
-pub fn setup_physics(commands: &mut Commands, mut despawn: ResMut<DespawnResource>) {
+pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource>) {
     /*
      * Create the balls
      */
@@ -131,7 +131,7 @@ pub fn setup_physics(commands: &mut Commands, mut despawn: ResMut<DespawnResourc
     }
 }
 
-pub fn despawn(commands: &mut Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
+pub fn despawn(mut commands: Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
     if time.seconds_since_startup() > 10.0 {
         for entity in &despawn.entities {
             println!("Despawning joint entity");

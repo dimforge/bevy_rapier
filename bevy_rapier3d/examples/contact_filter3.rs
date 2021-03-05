@@ -52,7 +52,7 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(commands: &mut Commands) {
+fn setup_graphics(mut commands: Commands) {
     commands
         .spawn(LightBundle {
             transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
@@ -68,7 +68,7 @@ fn setup_graphics(commands: &mut Commands) {
         });
 }
 
-pub fn setup_physics(commands: &mut Commands) {
+pub fn setup_physics(mut commands: Commands) {
     /*
      * Ground
      */

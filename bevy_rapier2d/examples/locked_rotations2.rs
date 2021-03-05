@@ -36,7 +36,7 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(commands: &mut Commands, mut configuration: ResMut<RapierConfiguration>) {
+fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
     configuration.scale = 40.0;
 
     let mut camera = OrthographicCameraBundle::new_2d();
@@ -49,7 +49,7 @@ fn setup_graphics(commands: &mut Commands, mut configuration: ResMut<RapierConfi
         .spawn(camera);
 }
 
-pub fn setup_physics(commands: &mut Commands) {
+pub fn setup_physics(mut commands: Commands) {
     /*
      * The ground
      */
