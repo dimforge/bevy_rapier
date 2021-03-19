@@ -51,6 +51,45 @@ pub fn create_body_and_collider_system(
     }
 }
 
+/// System responsible for replacing colliders on existing bodies when a new
+/// builder is added.
+///
+/// NOTE: This only adds new colliders, the old collider is actually removed
+/// by `destroy_body_and_collider_system`
+pub fn update_collider_system(
+    commands: &mut Commands,
+    mut bodies: ResMut<RigidBodySet>,
+    mut colliders: ResMut<ColliderSet>,
+    mut entity_maps: ResMut<EntityMaps>,
+    with_body_query: Query<
+        (Entity, &RigidBodyHandleComponent, &ColliderBuilder),
+        With<ColliderHandleComponent>,
+    >,
+    without_body_query: Query<
+        (Entity, &Parent, &ColliderBuilder),
+        (
+            Without<RigidBodyHandleComponent>,
+            With<ColliderHandleComponent>,
+        ),
+    >,
+) {
+    for (entity, body_handle, collider_builder) in with_body_query.iter() {
+        let handle = colliders.insert(collider_builder.build(), body_handle.handle(), &mut bodies);
+        commands.insert_one(entity, ColliderHandleComponent::from(handle));
+        commands.remove_one::<ColliderBuilder>(entity);
+        entity_maps.colliders.insert(entity, handle);
+    }
+
+    for (entity, parent, collider_builder) in without_body_query.iter() {
+        if let Some(body_handle) = entity_maps.bodies.get(&parent.0) {
+            let handle = colliders.insert(collider_builder.build(), *body_handle, &mut bodies);
+            commands.insert_one(entity, ColliderHandleComponent::from(handle));
+            commands.remove_one::<ColliderBuilder>(entity);
+            entity_maps.colliders.insert(entity, handle);
+        }
+    }
+}
+
 #[test]
 fn test_create_body_and_collider_system() {
     use bevy::ecs::Schedule;
