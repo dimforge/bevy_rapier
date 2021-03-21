@@ -17,6 +17,11 @@ pub struct DespawnResource {
     pub entities: Vec<Entity>,
 }
 
+#[derive(Default)]
+pub struct ResizeResource {
+    pub entities: Vec<Entity>,
+}
+
 fn main() {
     App::build()
         .add_resource(ClearColor(Color::rgb(
@@ -26,6 +31,7 @@ fn main() {
         )))
         .add_resource(Msaa::default())
         .add_resource(DespawnResource::default())
+        .add_resource(ResizeResource::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
@@ -36,6 +42,7 @@ fn main() {
         .add_startup_system(setup_physics.system())
         .add_startup_system(enable_physics_profiling.system())
         .add_system(despawn.system())
+        .add_system(resize.system())
         .run();
 }
 
@@ -57,7 +64,11 @@ fn setup_graphics(commands: &mut Commands, mut configuration: ResMut<RapierConfi
         });
 }
 
-pub fn setup_physics(commands: &mut Commands, mut despawn: ResMut<DespawnResource>) {
+pub fn setup_physics(
+    commands: &mut Commands,
+    mut despawn: ResMut<DespawnResource>,
+    mut resize: ResMut<ResizeResource>,
+) {
     /*
      * Ground
      */
@@ -107,6 +118,9 @@ pub fn setup_physics(commands: &mut Commands, mut despawn: ResMut<DespawnResourc
             let body = RigidBodyBuilder::new_dynamic().translation(x, y);
             let collider = ColliderBuilder::cuboid(rad, rad).density(1.0);
             commands.spawn((body, collider));
+            if (i + j * num) % 100 == 0 {
+                resize.entities.push(commands.current_entity().unwrap());
+            }
         }
     }
 }
@@ -118,5 +132,16 @@ pub fn despawn(commands: &mut Commands, time: Res<Time>, mut despawn: ResMut<Des
             commands.despawn(*entity);
         }
         despawn.entities.clear();
+    }
+}
+
+pub fn resize(commands: &mut Commands, time: Res<Time>, mut resize: ResMut<ResizeResource>) {
+    if time.seconds_since_startup() > 6.0 {
+        for entity in &resize.entities {
+            println!("Resizing a block");
+            let collider = ColliderBuilder::cuboid(4.0, 4.0).density(1.0);
+            commands.insert_one(*entity, collider);
+        }
+        resize.entities.clear();
     }
 }
