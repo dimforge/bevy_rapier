@@ -41,7 +41,12 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
     configuration.scale = 15.0;
 
     commands.spawn().insert_bundle(LightBundle {
-        transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
+        transform: Transform::from_translation(Vec3::new(1000.0, 10.0, 2000.0)),
+        light: Light {
+            intensity: 100_000_000_.0,
+            range: 6000.0,
+            ..Default::default()
+        },
         ..Default::default()
     });
     commands

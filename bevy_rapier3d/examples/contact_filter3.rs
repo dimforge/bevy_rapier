@@ -54,7 +54,12 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
 
 fn setup_graphics(mut commands: Commands) {
     commands.spawn().insert_bundle(LightBundle {
-        transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
+        transform: Transform::from_translation(Vec3::new(100.0, 10.0, 200.0)),
+        light: Light {
+            intensity: 100_000.0,
+            range: 3000.0,
+            ..Default::default()
+        },
         ..Default::default()
     });
     commands.spawn().insert_bundle(PerspectiveCameraBundle {
