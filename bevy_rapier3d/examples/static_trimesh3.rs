@@ -41,19 +41,18 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    commands
-        .spawn(LightBundle {
-            transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
-            ..Default::default()
-        })
-        .spawn(PerspectiveCameraBundle {
-            transform: Transform::from_matrix(Mat4::face_toward(
-                Vec3::new(-15.0, 8.0, 15.0),
-                Vec3::new(-5.0, 0.0, 5.0),
-                Vec3::new(0.0, 1.0, 0.0),
-            )),
-            ..Default::default()
-        });
+    commands.spawn().insert_bundle(LightBundle {
+        transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
+        ..Default::default()
+    });
+    commands.spawn().insert_bundle(PerspectiveCameraBundle {
+        transform: Transform::from_matrix(Mat4::face_toward(
+            Vec3::new(-15.0, 8.0, 15.0),
+            Vec3::new(-5.0, 0.0, 5.0),
+            Vec3::new(0.0, 1.0, 0.0),
+        )),
+        ..Default::default()
+    });
 }
 
 fn ramp_size() -> Vec3 {
@@ -82,7 +81,7 @@ pub fn setup_physics(mut commands: Commands) {
     }
     let rigid_body = RigidBodyBuilder::new_static().translation(0.0, 0.0, 0.0);
     let collider = ColliderBuilder::trimesh(vertices, indices);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 
     // Create a bowl with a cosine cross-section,
     // so that we can join the end of the ramp smoothly
@@ -122,7 +121,7 @@ pub fn setup_physics(mut commands: Commands) {
         bowl_size.z / 2.0 - ramp_size.z / 2.0,
     );
     let collider = ColliderBuilder::trimesh(vertices, indices);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 }
 
 struct BallState {
@@ -169,7 +168,7 @@ fn ball_spawner(
         0.0,
     );
     let collider = ColliderBuilder::ball(rad).restitution(0.5);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 
     ball_state.balls_spawned += 1;
 }

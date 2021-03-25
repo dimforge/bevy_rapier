@@ -57,12 +57,11 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
 
     let mut camera = OrthographicCameraBundle::new_2d();
     camera.transform = Transform::from_translation(Vec3::new(0.0, 200.0, 0.0));
-    commands
-        .spawn(LightBundle {
-            transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
-            ..Default::default()
-        })
-        .spawn(camera);
+    commands.spawn().insert_bundle(LightBundle {
+        transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
+        ..Default::default()
+    });
+    commands.spawn().insert_bundle(camera);
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -77,11 +76,11 @@ pub fn setup_physics(mut commands: Commands) {
         .translation(0.0, -10.0)
         .user_data(0);
     let collider = ColliderBuilder::cuboid(ground_size, 1.2);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 
     let rigid_body = RigidBodyBuilder::new_static().user_data(1);
     let collider = ColliderBuilder::cuboid(ground_size, 1.2);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 
     /*
      * Create the cubes
@@ -103,7 +102,7 @@ pub fn setup_physics(mut commands: Commands) {
                 .user_data(j as u128 % 2)
                 .translation(x, y);
             let collider = ColliderBuilder::cuboid(rad, rad).density(1.0);
-            commands.spawn((body, collider));
+            commands.spawn().insert_bundle((body, collider));
         }
     }
 }

@@ -38,19 +38,18 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    commands
-        .spawn(LightBundle {
-            transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
-            ..Default::default()
-        })
-        .spawn(PerspectiveCameraBundle {
-            transform: Transform::from_matrix(Mat4::face_toward(
-                Vec3::new(10.0, 3.0, 0.0),
-                Vec3::new(0.0, 3.0, 0.0),
-                Vec3::new(0.0, 1.0, 0.0),
-            )),
-            ..Default::default()
-        });
+    commands.spawn().insert_bundle(LightBundle {
+        transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
+        ..Default::default()
+    });
+    commands.spawn().insert_bundle(PerspectiveCameraBundle {
+        transform: Transform::from_matrix(Mat4::face_toward(
+            Vec3::new(10.0, 3.0, 0.0),
+            Vec3::new(0.0, 3.0, 0.0),
+            Vec3::new(0.0, 1.0, 0.0),
+        )),
+        ..Default::default()
+    });
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -62,7 +61,7 @@ pub fn setup_physics(mut commands: Commands) {
 
     let rigid_body = RigidBodyBuilder::new_static().translation(0.0, -ground_height, 0.0);
     let collider = ColliderBuilder::cuboid(ground_size, ground_height, ground_size);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 
     /*
      * A rectangle that only rotates along the `x` axis.
@@ -72,7 +71,7 @@ pub fn setup_physics(mut commands: Commands) {
         .lock_translations()
         .restrict_rotations(true, false, false);
     let collider = ColliderBuilder::cuboid(0.2, 0.6, 2.0);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 
     /*
      * A tilted cuboid that cannot rotate.
@@ -82,5 +81,5 @@ pub fn setup_physics(mut commands: Commands) {
         .rotation(Vector3::x() * 1.0)
         .lock_rotations();
     let collider = ColliderBuilder::cuboid(0.6, 0.4, 0.4);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 }

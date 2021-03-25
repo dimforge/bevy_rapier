@@ -40,12 +40,13 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
 fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
     configuration.scale = 15.0;
 
+    commands.spawn().insert_bundle(LightBundle {
+        transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
+        ..Default::default()
+    });
     commands
-        .spawn(LightBundle {
-            transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
-            ..Default::default()
-        })
-        .spawn(OrthographicCameraBundle::new_2d());
+        .spawn()
+        .insert_bundle(OrthographicCameraBundle::new_2d());
 }
 
 fn display_events(events: Res<EventQueue>) {
@@ -64,13 +65,13 @@ pub fn setup_physics(mut commands: Commands) {
      */
     let rigid_body = RigidBodyBuilder::new_static();
     let collider = ColliderBuilder::cuboid(4.0, 1.2);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 
     let rigid_body = RigidBodyBuilder::new_static().translation(0.0, 5.0);
     let collider = ColliderBuilder::cuboid(4.0, 1.2).sensor(true);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 
     let rigid_body = RigidBodyBuilder::new_dynamic().translation(0.0, 13.0);
     let collider = ColliderBuilder::cuboid(0.5, 0.5);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 }

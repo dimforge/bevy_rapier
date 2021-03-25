@@ -31,7 +31,9 @@ fn spawn_player(
 ) {
     // Set gravity to 0.0 and spawn camera.
     rapier_config.gravity = Vector2::zeros();
-    commands.spawn(OrthographicCameraBundle::new_2d());
+    commands
+        .spawn()
+        .insert_bundle(OrthographicCameraBundle::new_2d());
 
     let sprite_size_x = 40.0;
     let sprite_size_y = 40.0;
@@ -45,17 +47,18 @@ fn spawn_player(
 
     // Spawn entity with `Player` struct as a component for access in movement query.
     commands
-        .spawn(SpriteBundle {
+        .spawn()
+        .insert_bundle(SpriteBundle {
             material: materials.add(Color::rgb(0.0, 0.0, 0.0).into()),
             sprite: Sprite::new(Vec2::new(sprite_size_x, sprite_size_y)),
             ..Default::default()
         })
-        .with(RigidBodyBuilder::new_dynamic())
-        .with(ColliderBuilder::cuboid(
+        .insert(RigidBodyBuilder::new_dynamic())
+        .insert(ColliderBuilder::cuboid(
             collider_size_x / 2.0,
             collider_size_y / 2.0,
         ))
-        .with(Player(300.0));
+        .insert(Player(300.0));
 }
 
 fn player_movement(

@@ -43,12 +43,11 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
 
     let mut camera = OrthographicCameraBundle::new_2d();
     camera.transform = Transform::from_translation(Vec3::new(200.0, -200.0, 0.0));
-    commands
-        .spawn(LightBundle {
-            transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
-            ..Default::default()
-        })
-        .spawn(camera);
+    commands.spawn().insert_bundle(LightBundle {
+        transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
+        ..Default::default()
+    });
+    commands.spawn().insert_bundle(camera);
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -79,16 +78,13 @@ pub fn setup_physics(mut commands: Commands) {
 
             let rigid_body = RigidBodyBuilder::new(status).translation(fk * shift, -fi * shift);
             let collider = ColliderBuilder::cuboid(rad, rad).density(1.0);
-            let child_entity = commands
-                .spawn((rigid_body, collider))
-                .current_entity()
-                .unwrap();
+            let child_entity = commands.spawn().insert_bundle((rigid_body, collider)).id();
 
             // Vertical joint.
             if i > 0 {
                 let parent_entity = *body_entities.last().unwrap();
                 let joint = BallJoint::new(Point2::origin(), Point2::new(0.0, shift));
-                commands.spawn((JointBuilderComponent::new(
+                commands.spawn().insert_bundle((JointBuilderComponent::new(
                     joint,
                     parent_entity,
                     child_entity,
@@ -100,7 +96,7 @@ pub fn setup_physics(mut commands: Commands) {
                 let parent_index = body_entities.len() - numi;
                 let parent_entity = body_entities[parent_index];
                 let joint = BallJoint::new(Point2::origin(), Point2::new(-shift, 0.0));
-                commands.spawn((JointBuilderComponent::new(
+                commands.spawn().insert_bundle((JointBuilderComponent::new(
                     joint,
                     parent_entity,
                     child_entity,

@@ -48,12 +48,11 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
 
     let mut camera = OrthographicCameraBundle::new_2d();
     camera.transform = Transform::from_translation(Vec3::new(0.0, 200.0, 0.0));
-    commands
-        .spawn(LightBundle {
-            transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
-            ..Default::default()
-        })
-        .spawn(camera);
+    commands.spawn().insert_bundle(LightBundle {
+        transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
+        ..Default::default()
+    });
+    commands.spawn().insert_bundle(camera);
 }
 
 pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource>) {
@@ -64,27 +63,21 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
 
     let rigid_body = RigidBodyBuilder::new_static();
     let collider = ColliderBuilder::cuboid(ground_size, 1.2);
-    let entity = commands
-        .spawn((rigid_body, collider))
-        .current_entity()
-        .unwrap();
+    let entity = commands.spawn().insert_bundle((rigid_body, collider)).id();
     despawn.entities.push(entity);
 
     let rigid_body = RigidBodyBuilder::new_static()
         .rotation(std::f32::consts::FRAC_PI_2)
         .translation(ground_size, ground_size * 2.0);
     let collider = ColliderBuilder::cuboid(ground_size * 2.0, 1.2);
-    let entity = commands
-        .spawn((rigid_body, collider))
-        .current_entity()
-        .unwrap();
+    let entity = commands.spawn().insert_bundle((rigid_body, collider)).id();
     despawn.entities.push(entity);
 
     let body = RigidBodyBuilder::new_static()
         .rotation(std::f32::consts::FRAC_PI_2)
         .translation(-ground_size, ground_size * 2.0);
     let collider = ColliderBuilder::cuboid(ground_size * 2.0, 1.2);
-    let entity = commands.spawn((body, collider)).current_entity().unwrap();
+    let entity = commands.spawn().insert_bundle((body, collider)).id();
     despawn.entities.push(entity);
 
     /*
@@ -105,7 +98,7 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
             // Build the rigid body.
             let body = RigidBodyBuilder::new_dynamic().translation(x, y);
             let collider = ColliderBuilder::cuboid(rad, rad).density(1.0);
-            commands.spawn((body, collider));
+            commands.spawn().insert_bundle((body, collider));
         }
     }
 }
@@ -114,7 +107,7 @@ pub fn despawn(mut commands: Commands, time: Res<Time>, mut despawn: ResMut<Desp
     if time.seconds_since_startup() > 5.0 {
         for entity in &despawn.entities {
             println!("Despawning ground entity");
-            commands.despawn(*entity);
+            commands.entity(*entity).despawn();
         }
         despawn.entities.clear();
     }

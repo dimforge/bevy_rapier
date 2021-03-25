@@ -24,28 +24,36 @@ pub fn create_body_and_collider_system(
 ) {
     for (entity, body_builder) in standalone_body_query.iter() {
         let handle = bodies.insert(body_builder.build());
-        commands.insert(entity, RigidBodyHandleComponent::from(handle));
-        commands.remove::<RigidBodyBuilder>(entity);
+        commands
+            .entity(entity)
+            .insert(RigidBodyHandleComponent::from(handle))
+            .remove::<RigidBodyBuilder>();
         entity_maps.bodies.insert(entity, handle);
     }
 
     for (entity, body_builder, collider_builder) in body_and_collider_query.iter() {
         let handle = bodies.insert(body_builder.build());
-        commands.insert(entity, RigidBodyHandleComponent::from(handle));
-        commands.remove::<RigidBodyBuilder>(entity);
+        commands
+            .entity(entity)
+            .insert(RigidBodyHandleComponent::from(handle))
+            .remove::<RigidBodyBuilder>();
         entity_maps.bodies.insert(entity, handle);
 
         let handle = colliders.insert(collider_builder.build(), handle, &mut bodies);
-        commands.insert(entity, ColliderHandleComponent::from(handle));
-        commands.remove::<ColliderBuilder>(entity);
+        commands
+            .entity(entity)
+            .insert(ColliderHandleComponent::from(handle))
+            .remove::<ColliderBuilder>();
         entity_maps.colliders.insert(entity, handle);
     }
 
     for (entity, parent, collider_builder) in parented_collider_query.iter() {
         if let Some(body_handle) = entity_maps.bodies.get(&parent.0) {
             let handle = colliders.insert(collider_builder.build(), *body_handle, &mut bodies);
-            commands.insert(entity, ColliderHandleComponent::from(handle));
-            commands.remove::<ColliderBuilder>(entity);
+            commands
+                .entity(entity)
+                .insert(ColliderHandleComponent::from(handle))
+                .remove::<ColliderBuilder>();
             entity_maps.colliders.insert(entity, handle);
         } // warn here? panic here? do nothing?
     }
@@ -169,11 +177,14 @@ pub fn create_joints_system(
         let body2 = query_bodyhandle.get_component::<RigidBodyHandleComponent>(joint.entity2);
         if let (Ok(body1), Ok(body2)) = (body1, body2) {
             let handle = joints.insert(&mut bodies, body1.handle(), body2.handle(), joint.params);
-            commands.insert(
-                entity,
-                JointHandleComponent::new(handle, joint.entity1, joint.entity2),
-            );
-            commands.remove::<JointBuilderComponent>(entity);
+            commands
+                .entity(entity)
+                .insert(JointHandleComponent::new(
+                    handle,
+                    joint.entity1,
+                    joint.entity2,
+                ))
+                .remove::<JointBuilderComponent>();
             entity_maps.joints.insert(entity, handle);
         }
     }
@@ -334,10 +345,12 @@ pub fn destroy_body_and_collider_system(
 
             // Removing a body also removes its colliders and joints. If they were
             // not also removed then we must remove them here.
-            commands.remove::<ColliderHandleComponent>(entity);
             entity_maps.colliders.remove(&entity);
-            commands.remove::<JointHandleComponent>(entity);
             entity_maps.joints.remove(&entity);
+            commands
+                .entity(entity)
+                .remove::<ColliderHandleComponent>()
+                .remove::<JointHandleComponent>();
         }
     }
     for entity in colliders_removed.iter() {

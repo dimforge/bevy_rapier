@@ -41,12 +41,11 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
 
     let mut camera = OrthographicCameraBundle::new_2d();
     camera.transform = Transform::from_translation(Vec3::new(0.0, 30.0, 0.0));
-    commands
-        .spawn(LightBundle {
-            transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
-            ..Default::default()
-        })
-        .spawn(camera);
+    commands.spawn().insert_bundle(LightBundle {
+        transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
+        ..Default::default()
+    });
+    commands.spawn().insert_bundle(camera);
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -58,7 +57,7 @@ pub fn setup_physics(mut commands: Commands) {
 
     let rigid_body = RigidBodyBuilder::new_static().translation(0.0, -ground_height);
     let collider = ColliderBuilder::cuboid(ground_size, ground_height);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 
     /*
      * A rectangle that only rotate.
@@ -67,7 +66,7 @@ pub fn setup_physics(mut commands: Commands) {
         .translation(0.0, 3.0)
         .lock_translations();
     let collider = ColliderBuilder::cuboid(2.0, 0.6);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 
     /*
      * A tilted cuboid that cannot rotate.
@@ -77,5 +76,5 @@ pub fn setup_physics(mut commands: Commands) {
         .rotation(1.0)
         .lock_rotations();
     let collider = ColliderBuilder::cuboid(0.6, 0.4);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 }

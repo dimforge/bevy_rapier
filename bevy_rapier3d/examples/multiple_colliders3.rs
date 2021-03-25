@@ -37,19 +37,18 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    commands
-        .spawn(LightBundle {
-            transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
-            ..Default::default()
-        })
-        .spawn(PerspectiveCameraBundle {
-            transform: Transform::from_matrix(Mat4::face_toward(
-                Vec3::new(-30.0, 30.0, 100.0),
-                Vec3::new(0.0, 10.0, 0.0),
-                Vec3::new(0.0, 1.0, 0.0),
-            )),
-            ..Default::default()
-        });
+    commands.spawn().insert_bundle(LightBundle {
+        transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
+        ..Default::default()
+    });
+    commands.spawn().insert_bundle(PerspectiveCameraBundle {
+        transform: Transform::from_matrix(Mat4::face_toward(
+            Vec3::new(-30.0, 30.0, 100.0),
+            Vec3::new(0.0, 10.0, 0.0),
+            Vec3::new(0.0, 1.0, 0.0),
+        )),
+        ..Default::default()
+    });
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -61,7 +60,7 @@ pub fn setup_physics(mut commands: Commands) {
 
     let rigid_body = RigidBodyBuilder::new_static().translation(0.0, -ground_height, 0.0);
     let collider = ColliderBuilder::cuboid(ground_size, ground_height, ground_size);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 
     /*
      * Create the cubes
@@ -103,15 +102,16 @@ pub fn setup_physics(mut commands: Commands) {
                 // so that the transform of the entity with a rigid-body
                 // is properly propagated to its children with collider meshes.
                 commands
-                    .spawn((
+                    .spawn()
+                    .insert_bundle((
                         rigid_body,
                         Transform::identity(),
                         GlobalTransform::identity(),
                     ))
                     .with_children(|parent| {
-                        parent.spawn((collider1,));
-                        parent.spawn((collider2,));
-                        parent.spawn((collider3,));
+                        parent.spawn().insert_bundle((collider1,));
+                        parent.spawn().insert_bundle((collider2,));
+                        parent.spawn().insert_bundle((collider3,));
                     });
             }
         }
