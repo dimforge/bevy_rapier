@@ -4,10 +4,10 @@ use bevy::prelude::*;
 use bevy::render::pass::ClearColor;
 use bevy_rapier2d::physics::{InteractionPairFilters, RapierConfiguration, RapierPhysicsPlugin};
 use bevy_rapier2d::render::RapierRenderPlugin;
-use rapier::geometry::{ContactPairFilter, PairFilterContext, SolverFlags};
+use rapier::geometry::SolverFlags;
 use rapier2d::dynamics::RigidBodyBuilder;
 use rapier2d::geometry::ColliderBuilder;
-use rapier2d::pipeline::PhysicsPipeline;
+use rapier2d::pipeline::{PairFilterContext, PhysicsHooks, PhysicsHooksFlags, PhysicsPipeline};
 use ui::DebugUiPlugin;
 
 #[path = "../../src_debug_ui/mod.rs"]
@@ -18,7 +18,10 @@ mod ui;
 // Note that using collision groups would be a more efficient way of doing
 // this, but we use custom filters instead for demonstration purpose.
 struct SameUserDataFilter;
-impl ContactPairFilter for SameUserDataFilter {
+impl PhysicsHooks for SameUserDataFilter {
+    fn active_hooks(&self) -> PhysicsHooksFlags {
+        PhysicsHooksFlags::FILTER_CONTACT_PAIR
+    }
     fn filter_contact_pair(&self, context: &PairFilterContext) -> Option<SolverFlags> {
         if context.rigid_body1.user_data == context.rigid_body2.user_data {
             Some(SolverFlags::COMPUTE_IMPULSES)
@@ -70,7 +73,9 @@ pub fn setup_physics(commands: &mut Commands) {
     /*
      * Ground
      */
-    commands.insert_resource(InteractionPairFilters::new().contact_filter(SameUserDataFilter));
+    commands.insert_resource(InteractionPairFilters { hook:
+        Some(Box::new(SameUserDataFilter {})),
+    });
 
     let ground_size = 10.0;
 
