@@ -73,8 +73,8 @@ pub fn setup_physics(commands: &mut Commands) {
     /*
      * Ground
      */
-    commands.insert_resource(InteractionPairFilters { hook:
-        Some(Box::new(SameUserDataFilter {})),
+    commands.insert_resource(InteractionPairFilters {
+        hook: Some(Box::new(SameUserDataFilter {})),
     });
 
     let ground_size = 10.0;

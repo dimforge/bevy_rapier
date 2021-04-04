@@ -6,7 +6,9 @@ use crate::physics::{
 
 use crate::rapier::pipeline::{PhysicsHooks, QueryPipeline};
 use bevy::prelude::*;
-use rapier::dynamics::{CCDSolver, IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodySet};
+use rapier::dynamics::{
+    CCDSolver, IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodySet,
+};
 use rapier::geometry::{BroadPhase, ColliderBuilder, ColliderSet, NarrowPhase};
 use rapier::math::Isometry;
 use rapier::pipeline::PhysicsPipeline;

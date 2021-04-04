@@ -1,8 +1,6 @@
 use crate::rapier::{
     dynamics::{JointHandle, RigidBodyHandle},
-    geometry::{
-        ColliderHandle, ContactEvent, IntersectionEvent,
-    },
+    geometry::{ColliderHandle, ContactEvent, IntersectionEvent},
     pipeline::{EventHandler, PhysicsHooks},
 };
 use bevy::prelude::*;
@@ -96,9 +94,7 @@ pub struct InteractionPairFilters {
 impl InteractionPairFilters {
     /// A new interaction pair filter with no custom intersection and contact pair filters.
     pub fn new() -> Self {
-        Self {
-            hook: None,
-        }
+        Self { hook: None }
     }
 }
 
