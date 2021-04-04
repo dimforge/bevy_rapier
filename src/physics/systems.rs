@@ -4,9 +4,11 @@ use crate::physics::{
     RigidBodyHandleComponent, SimulationToRenderTime,
 };
 
-use crate::rapier::pipeline::QueryPipeline;
+use crate::rapier::pipeline::{PhysicsHooks, QueryPipeline};
 use bevy::prelude::*;
-use rapier::dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodySet};
+use rapier::dynamics::{
+    CCDSolver, IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodySet,
+};
 use rapier::geometry::{BroadPhase, ColliderBuilder, ColliderSet, NarrowPhase};
 use rapier::math::Isometry;
 use rapier::pipeline::PhysicsPipeline;
@@ -213,7 +215,8 @@ pub fn create_joints_system(
 pub fn step_world_system(
     (time, mut sim_to_render_time): (Res<Time>, ResMut<SimulationToRenderTime>),
     (configuration, integration_parameters): (Res<RapierConfiguration>, Res<IntegrationParameters>),
-    filter: Res<InteractionPairFilters>,
+    filters: Res<InteractionPairFilters>,
+    mut ccd_solver: ResMut<CCDSolver>,
     (mut pipeline, mut query_pipeline): (ResMut<PhysicsPipeline>, ResMut<QueryPipeline>),
     (mut broad_phase, mut narrow_phase): (ResMut<BroadPhase>, ResMut<NarrowPhase>),
     mut bodies: ResMut<RigidBodySet>,
@@ -228,6 +231,11 @@ pub fn step_world_system(
     if events.auto_clear {
         events.clear();
     }
+
+    let physics_hooks: &dyn PhysicsHooks = match &filters.hook {
+        Some(f) => f.as_ref(),
+        None => &(),
+    };
 
     if configuration.time_dependent_number_of_timesteps {
         sim_to_render_time.diff += time.delta_seconds();
@@ -255,8 +263,8 @@ pub fn step_world_system(
                     &mut bodies,
                     &mut colliders,
                     &mut joints,
-                    filter.contact_filter.as_deref(),
-                    filter.intersection_filter.as_deref(),
+                    &mut ccd_solver,
+                    physics_hooks,
                     &*events,
                 );
             }
@@ -271,8 +279,8 @@ pub fn step_world_system(
             &mut bodies,
             &mut colliders,
             &mut joints,
-            filter.contact_filter.as_deref(),
-            filter.intersection_filter.as_deref(),
+            &mut ccd_solver,
+            physics_hooks,
             &*events,
         );
     }
