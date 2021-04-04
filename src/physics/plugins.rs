@@ -4,7 +4,7 @@ use crate::physics::{
 };
 use crate::rapier::pipeline::QueryPipeline;
 use bevy::prelude::*;
-use rapier::dynamics::{IntegrationParameters, JointSet, RigidBodySet};
+use rapier::dynamics::{CCDSolver, IntegrationParameters, JointSet, RigidBodySet};
 use rapier::geometry::{BroadPhase, ColliderSet, NarrowPhase};
 use rapier::pipeline::PhysicsPipeline;
 
@@ -36,6 +36,7 @@ impl Plugin for RapierPhysicsPlugin {
             .add_resource(RigidBodySet::new())
             .add_resource(ColliderSet::new())
             .add_resource(JointSet::new())
+            .add_resource(CCDSolver::new())
             .add_resource(InteractionPairFilters::new())
             .add_resource(EventQueue::new(true))
             .add_resource(SimulationToRenderTime::default())

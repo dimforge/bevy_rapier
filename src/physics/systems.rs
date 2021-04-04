@@ -6,7 +6,7 @@ use crate::physics::{
 
 use crate::rapier::pipeline::{PhysicsHooks, QueryPipeline};
 use bevy::prelude::*;
-use rapier::dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodySet};
+use rapier::dynamics::{CCDSolver, IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodySet};
 use rapier::geometry::{BroadPhase, ColliderBuilder, ColliderSet, NarrowPhase};
 use rapier::math::Isometry;
 use rapier::pipeline::PhysicsPipeline;
@@ -214,6 +214,7 @@ pub fn step_world_system(
     (time, mut sim_to_render_time): (Res<Time>, ResMut<SimulationToRenderTime>),
     (configuration, integration_parameters): (Res<RapierConfiguration>, Res<IntegrationParameters>),
     filters: Res<InteractionPairFilters>,
+    mut ccd_solver: ResMut<CCDSolver>,
     (mut pipeline, mut query_pipeline): (ResMut<PhysicsPipeline>, ResMut<QueryPipeline>),
     (mut broad_phase, mut narrow_phase): (ResMut<BroadPhase>, ResMut<NarrowPhase>),
     mut bodies: ResMut<RigidBodySet>,
@@ -260,6 +261,7 @@ pub fn step_world_system(
                     &mut bodies,
                     &mut colliders,
                     &mut joints,
+                    &mut ccd_solver,
                     physics_hooks,
                     &*events,
                 );
@@ -275,6 +277,7 @@ pub fn step_world_system(
             &mut bodies,
             &mut colliders,
             &mut joints,
+            &mut ccd_solver,
             physics_hooks,
             &*events,
         );
