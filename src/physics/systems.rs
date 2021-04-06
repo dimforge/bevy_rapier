@@ -85,7 +85,9 @@ pub fn update_collider_system(
 ) {
     for (entity, body_handle, collider_builder) in with_body_query.iter() {
         let handle = colliders.insert(collider_builder.build(), body_handle.handle(), &mut bodies);
-        commands.entity(entity).insert(ColliderHandleComponent::from(handle));
+        commands
+            .entity(entity)
+            .insert(ColliderHandleComponent::from(handle));
         commands.entity(entity).remove::<ColliderBuilder>();
         entity_maps.colliders.insert(entity, handle);
     }
@@ -93,7 +95,9 @@ pub fn update_collider_system(
     for (entity, parent, collider_builder) in without_body_query.iter() {
         if let Some(body_handle) = entity_maps.bodies.get(&parent.0) {
             let handle = colliders.insert(collider_builder.build(), *body_handle, &mut bodies);
-            commands.entity(entity).insert(ColliderHandleComponent::from(handle));
+            commands
+                .entity(entity)
+                .insert(ColliderHandleComponent::from(handle));
             commands.entity(entity).remove::<ColliderBuilder>();
             entity_maps.colliders.insert(entity, handle);
         }
