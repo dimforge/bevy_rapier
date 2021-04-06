@@ -4,9 +4,11 @@ use crate::physics::{
     RigidBodyHandleComponent, SimulationToRenderTime,
 };
 
-use crate::rapier::pipeline::QueryPipeline;
+use crate::rapier::pipeline::{PhysicsHooks, QueryPipeline};
 use bevy::prelude::*;
-use rapier::dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodySet};
+use rapier::dynamics::{
+    CCDSolver, IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodySet,
+};
 use rapier::geometry::{BroadPhase, ColliderBuilder, ColliderSet, NarrowPhase};
 use rapier::math::Isometry;
 use rapier::pipeline::PhysicsPipeline;
@@ -56,6 +58,45 @@ pub fn create_body_and_collider_system(
                 .remove::<ColliderBuilder>();
             entity_maps.colliders.insert(entity, handle);
         } // warn here? panic here? do nothing?
+    }
+}
+
+/// System responsible for replacing colliders on existing bodies when a new
+/// builder is added.
+///
+/// NOTE: This only adds new colliders, the old collider is actually removed
+/// by `destroy_body_and_collider_system`
+pub fn update_collider_system(
+    commands: &mut Commands,
+    mut bodies: ResMut<RigidBodySet>,
+    mut colliders: ResMut<ColliderSet>,
+    mut entity_maps: ResMut<EntityMaps>,
+    with_body_query: Query<
+        (Entity, &RigidBodyHandleComponent, &ColliderBuilder),
+        With<ColliderHandleComponent>,
+    >,
+    without_body_query: Query<
+        (Entity, &Parent, &ColliderBuilder),
+        (
+            Without<RigidBodyHandleComponent>,
+            With<ColliderHandleComponent>,
+        ),
+    >,
+) {
+    for (entity, body_handle, collider_builder) in with_body_query.iter() {
+        let handle = colliders.insert(collider_builder.build(), body_handle.handle(), &mut bodies);
+        commands.insert_one(entity, ColliderHandleComponent::from(handle));
+        commands.remove_one::<ColliderBuilder>(entity);
+        entity_maps.colliders.insert(entity, handle);
+    }
+
+    for (entity, parent, collider_builder) in without_body_query.iter() {
+        if let Some(body_handle) = entity_maps.bodies.get(&parent.0) {
+            let handle = colliders.insert(collider_builder.build(), *body_handle, &mut bodies);
+            commands.insert_one(entity, ColliderHandleComponent::from(handle));
+            commands.remove_one::<ColliderBuilder>(entity);
+            entity_maps.colliders.insert(entity, handle);
+        }
     }
 }
 
@@ -194,7 +235,8 @@ pub fn create_joints_system(
 pub fn step_world_system(
     (time, mut sim_to_render_time): (Res<Time>, ResMut<SimulationToRenderTime>),
     (configuration, integration_parameters): (Res<RapierConfiguration>, Res<IntegrationParameters>),
-    filter: Res<InteractionPairFilters>,
+    filters: Res<InteractionPairFilters>,
+    mut ccd_solver: ResMut<CCDSolver>,
     (mut pipeline, mut query_pipeline): (ResMut<PhysicsPipeline>, ResMut<QueryPipeline>),
     (mut broad_phase, mut narrow_phase): (ResMut<BroadPhase>, ResMut<NarrowPhase>),
     mut bodies: ResMut<RigidBodySet>,
@@ -209,6 +251,11 @@ pub fn step_world_system(
     if events.auto_clear {
         events.clear();
     }
+
+    let physics_hooks: &dyn PhysicsHooks = match &filters.hook {
+        Some(f) => f.as_ref(),
+        None => &(),
+    };
 
     if configuration.time_dependent_number_of_timesteps {
         sim_to_render_time.diff += time.delta_seconds();
@@ -236,8 +283,8 @@ pub fn step_world_system(
                     &mut bodies,
                     &mut colliders,
                     &mut joints,
-                    filter.contact_filter.as_deref(),
-                    filter.intersection_filter.as_deref(),
+                    &mut ccd_solver,
+                    physics_hooks,
                     &*events,
                 );
             }
@@ -252,8 +299,8 @@ pub fn step_world_system(
             &mut bodies,
             &mut colliders,
             &mut joints,
-            filter.contact_filter.as_deref(),
-            filter.intersection_filter.as_deref(),
+            &mut ccd_solver,
+            physics_hooks,
             &*events,
         );
     }

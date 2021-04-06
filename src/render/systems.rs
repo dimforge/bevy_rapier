@@ -16,7 +16,7 @@ pub fn create_collider_renders_system(
     colliders: ResMut<ColliderSet>,
     query: Query<
         (Entity, &ColliderHandleComponent, Option<&RapierRenderColor>),
-        Without<Handle<Mesh>>,
+        Or<(Without<Handle<Mesh>>, Changed<ColliderHandleComponent>)>,
     >,
 ) {
     let ground_color = Color::rgb(

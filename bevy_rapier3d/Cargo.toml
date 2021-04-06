@@ -29,9 +29,9 @@ serde-serialize = [ "rapier3d/serde-serialize" ]
 enhanced-determinism = [ "rapier3d/enhanced-determinism" ]
 
 [dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy.git", version = "0.4", default-features = false, branch = "main" }
-nalgebra = "0.24"
-rapier3d = "0.5"
+bevy = { version = "0.5", default-features = false }
+nalgebra = "0.25"
+rapier3d = "0.7"
 concurrent-queue = "1"
 
 [dev-dependencies]

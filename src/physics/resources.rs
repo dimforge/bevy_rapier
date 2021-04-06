@@ -1,9 +1,7 @@
 use crate::rapier::{
     dynamics::{JointHandle, RigidBodyHandle},
-    geometry::{
-        ColliderHandle, ContactEvent, ContactPairFilter, IntersectionEvent, IntersectionPairFilter,
-    },
-    pipeline::EventHandler,
+    geometry::{ColliderHandle, ContactEvent, IntersectionEvent},
+    pipeline::{EventHandler, PhysicsHooks},
 };
 use bevy::prelude::*;
 use concurrent_queue::ConcurrentQueue;
@@ -89,31 +87,14 @@ pub struct SimulationToRenderTime {
 
 /// Custom filters for intersection and contact pairs.
 pub struct InteractionPairFilters {
-    /// Custom intersection pair filter.
-    pub intersection_filter: Option<Box<dyn IntersectionPairFilter>>,
-    /// Custom contact pair filter.
-    pub contact_filter: Option<Box<dyn ContactPairFilter>>,
+    /// Custom physics hooks
+    pub hook: Option<Box<dyn PhysicsHooks>>,
 }
 
 impl InteractionPairFilters {
     /// A new interaction pair filter with no custom intersection and contact pair filters.
     pub fn new() -> Self {
-        Self {
-            intersection_filter: None,
-            contact_filter: None,
-        }
-    }
-
-    /// Sets the custom contact pair filter.
-    pub fn contact_filter(mut self, filter: impl ContactPairFilter + 'static) -> Self {
-        self.contact_filter = Some(Box::new(filter) as Box<dyn ContactPairFilter>);
-        self
-    }
-
-    /// Sets the custom intersection pair filter.
-    pub fn intersection_filter(mut self, filter: impl IntersectionPairFilter + 'static) -> Self {
-        self.intersection_filter = Some(Box::new(filter) as Box<dyn IntersectionPairFilter>);
-        self
+        Self { hook: None }
     }
 }
 
