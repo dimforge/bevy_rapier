@@ -29,9 +29,9 @@ fn main() {
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .add_resource(Msaa::default())
-        .add_resource(DespawnResource::default())
-        .add_resource(ResizeResource::default())
+        .insert_resource(Msaa::default())
+        .insert_resource(DespawnResource::default())
+        .insert_resource(ResizeResource::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
@@ -114,9 +114,9 @@ pub fn setup_physics(
             // Build the rigid body.
             let body = RigidBodyBuilder::new_dynamic().translation(x, y);
             let collider = ColliderBuilder::cuboid(rad, rad).density(1.0);
-            commands.spawn().insert_bundle((body, collider));
+            let entity = commands.spawn().insert_bundle((body, collider)).id();
             if (i + j * num) % 100 == 0 {
-                resize.entities.push(commands.current_entity().unwrap());
+                resize.entities.push(entity);
             }
         }
     }
@@ -132,12 +132,12 @@ pub fn despawn(mut commands: Commands, time: Res<Time>, mut despawn: ResMut<Desp
     }
 }
 
-pub fn resize(commands: &mut Commands, time: Res<Time>, mut resize: ResMut<ResizeResource>) {
+pub fn resize(mut commands: Commands, time: Res<Time>, mut resize: ResMut<ResizeResource>) {
     if time.seconds_since_startup() > 6.0 {
         for entity in &resize.entities {
             println!("Resizing a block");
             let collider = ColliderBuilder::cuboid(4.0, 4.0).density(1.0);
-            commands.insert_one(*entity, collider);
+            commands.entity(*entity).insert(collider);
         }
         resize.entities.clear();
     }
