@@ -33,12 +33,12 @@ impl PhysicsHooks for SameUserDataFilter {
 
 fn main() {
     App::build()
-        .add_resource(ClearColor(Color::rgb(
+        .insert_resource(ClearColor(Color::rgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .add_resource(Msaa::default())
+        .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
@@ -55,23 +55,27 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(commands: &mut Commands) {
-    commands
-        .spawn(LightBundle {
-            transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
+fn setup_graphics(mut commands: Commands) {
+    commands.spawn().insert_bundle(LightBundle {
+        transform: Transform::from_translation(Vec3::new(100.0, 10.0, 200.0)),
+        light: Light {
+            intensity: 100_000.0,
+            range: 3000.0,
             ..Default::default()
-        })
-        .spawn(Camera3dBundle {
-            transform: Transform::from_matrix(Mat4::face_toward(
-                Vec3::new(-30.0, 30.0, 100.0),
-                Vec3::new(0.0, 10.0, 0.0),
-                Vec3::new(0.0, 1.0, 0.0),
-            )),
-            ..Default::default()
-        });
+        },
+        ..Default::default()
+    });
+    commands.spawn().insert_bundle(PerspectiveCameraBundle {
+        transform: Transform::from_matrix(Mat4::face_toward(
+            Vec3::new(-30.0, 30.0, 100.0),
+            Vec3::new(0.0, 10.0, 0.0),
+            Vec3::new(0.0, 1.0, 0.0),
+        )),
+        ..Default::default()
+    });
 }
 
-pub fn setup_physics(commands: &mut Commands) {
+pub fn setup_physics(mut commands: Commands) {
     /*
      * Ground
      */
@@ -85,11 +89,11 @@ pub fn setup_physics(commands: &mut Commands) {
         .translation(0.0, -10.0, 0.0)
         .user_data(0);
     let collider = ColliderBuilder::cuboid(ground_size, 1.2, ground_size);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 
     let rigid_body = RigidBodyBuilder::new_static().user_data(1);
     let collider = ColliderBuilder::cuboid(ground_size, 1.2, ground_size);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 
     /*
      * Create the cubes
@@ -111,7 +115,7 @@ pub fn setup_physics(commands: &mut Commands) {
                 .user_data(j as u128 % 2)
                 .translation(x, y, 0.0);
             let collider = ColliderBuilder::cuboid(rad, rad, rad).density(1.0);
-            commands.spawn((body, collider));
+            commands.spawn().insert_bundle((body, collider));
         }
     }
 }

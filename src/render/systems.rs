@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 /// System responsible for attaching a PbrBundle to each entity having a collider.
 pub fn create_collider_renders_system(
-    commands: &mut Commands,
+    mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     configuration: Res<RapierConfiguration>,
@@ -120,7 +120,7 @@ pub fn create_collider_renders_system(
                         // of every triangle they appear in.
                         // NOTE: This is a bit shonky, but good enough for visualisation.
                         let verts = trimesh.vertices();
-                        let mut normals: Vec<Vec3> = vec![Vec3::zero(); trimesh.vertices().len()];
+                        let mut normals: Vec<Vec3> = vec![Vec3::ZERO; trimesh.vertices().len()];
                         for triangle in trimesh.indices().iter() {
                             let ab = verts[triangle[1] as usize] - verts[triangle[0] as usize];
                             let ac = verts[triangle[2] as usize] - verts[triangle[0] as usize];
@@ -182,7 +182,7 @@ pub fn create_collider_renders_system(
                         let b = shape.as_ball().unwrap();
                         Vec3::new(b.radius, b.radius, b.radius)
                     }
-                    ShapeType::TriMesh => Vec3::one(),
+                    ShapeType::TriMesh => Vec3::ONE,
                     _ => unimplemented!(),
                 } * configuration.scale;
 
@@ -200,7 +200,7 @@ pub fn create_collider_renders_system(
                     ..Default::default()
                 };
 
-                commands.insert(entity, ground_pbr);
+                commands.entity(entity).insert_bundle(ground_pbr);
             }
         }
     }

@@ -16,12 +16,12 @@ mod ui;
 
 fn main() {
     App::build()
-        .add_resource(ClearColor(Color::rgb(
+        .insert_resource(ClearColor(Color::rgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .add_resource(Msaa::default())
+        .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
@@ -31,7 +31,7 @@ fn main() {
         .add_startup_system(setup_graphics.system())
         .add_startup_system(setup_physics.system())
         .add_startup_system(enable_physics_profiling.system())
-        .add_resource(BallState::default())
+        .insert_resource(BallState::default())
         .add_system(ball_spawner.system())
         .run();
 }
@@ -40,27 +40,31 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(commands: &mut Commands) {
-    commands
-        .spawn(LightBundle {
-            transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
+fn setup_graphics(mut commands: Commands) {
+    commands.spawn().insert_bundle(LightBundle {
+        transform: Transform::from_translation(Vec3::new(100.0, 10.0, 200.0)),
+        light: Light {
+            intensity: 100_000.0,
+            range: 3000.0,
             ..Default::default()
-        })
-        .spawn(Camera3dBundle {
-            transform: Transform::from_matrix(Mat4::face_toward(
-                Vec3::new(-15.0, 8.0, 15.0),
-                Vec3::new(-5.0, 0.0, 5.0),
-                Vec3::new(0.0, 1.0, 0.0),
-            )),
-            ..Default::default()
-        });
+        },
+        ..Default::default()
+    });
+    commands.spawn().insert_bundle(PerspectiveCameraBundle {
+        transform: Transform::from_matrix(Mat4::face_toward(
+            Vec3::new(-15.0, 8.0, 15.0),
+            Vec3::new(-5.0, 0.0, 5.0),
+            Vec3::new(0.0, 1.0, 0.0),
+        )),
+        ..Default::default()
+    });
 }
 
 fn ramp_size() -> Vec3 {
     Vec3::new(10.0, 1.0, 1.0)
 }
 
-pub fn setup_physics(commands: &mut Commands) {
+pub fn setup_physics(mut commands: Commands) {
     use bevy_rapier3d::na::Point3;
 
     // Create the ramp.
@@ -82,7 +86,7 @@ pub fn setup_physics(commands: &mut Commands) {
     }
     let rigid_body = RigidBodyBuilder::new_static().translation(0.0, 0.0, 0.0);
     let collider = ColliderBuilder::trimesh(vertices, indices);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 
     // Create a bowl with a cosine cross-section,
     // so that we can join the end of the ramp smoothly
@@ -122,7 +126,7 @@ pub fn setup_physics(commands: &mut Commands) {
         bowl_size.z / 2.0 - ramp_size.z / 2.0,
     );
     let collider = ColliderBuilder::trimesh(vertices, indices);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 }
 
 struct BallState {
@@ -144,7 +148,7 @@ impl Default for BallState {
 }
 
 fn ball_spawner(
-    commands: &mut Commands,
+    mut commands: Commands,
     integration_parameters: Res<IntegrationParameters>,
     mut ball_state: ResMut<BallState>,
 ) {
@@ -169,7 +173,7 @@ fn ball_spawner(
         0.0,
     );
     let collider = ColliderBuilder::ball(rad).restitution(0.5);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 
     ball_state.balls_spawned += 1;
 }

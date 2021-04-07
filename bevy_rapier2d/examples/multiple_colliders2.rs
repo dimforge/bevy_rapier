@@ -14,12 +14,12 @@ mod ui;
 
 fn main() {
     App::build()
-        .add_resource(ClearColor(Color::rgb(
+        .insert_resource(ClearColor(Color::rgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .add_resource(Msaa::default())
+        .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
@@ -36,21 +36,24 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(commands: &mut Commands, mut configuration: ResMut<RapierConfiguration>) {
+fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
     configuration.scale = 10.0;
 
-    commands
-        .spawn(LightBundle {
-            transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
+    let mut camera = OrthographicCameraBundle::new_2d();
+    camera.transform = Transform::from_translation(Vec3::new(0.0, 200.0, 0.0));
+    commands.spawn().insert_bundle(LightBundle {
+        transform: Transform::from_translation(Vec3::new(1000.0, 10.0, 2000.0)),
+        light: Light {
+            intensity: 100_000_000_.0,
+            range: 6000.0,
             ..Default::default()
-        })
-        .spawn(Camera2dBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, 200.0, 0.0)),
-            ..Camera2dBundle::default()
-        });
+        },
+        ..Default::default()
+    });
+    commands.spawn().insert_bundle(camera);
 }
 
-pub fn setup_physics(commands: &mut Commands) {
+pub fn setup_physics(mut commands: Commands) {
     /*
      * Ground
      */
@@ -59,7 +62,7 @@ pub fn setup_physics(commands: &mut Commands) {
 
     let rigid_body = RigidBodyBuilder::new_static().translation(0.0, -ground_height);
     let collider = ColliderBuilder::cuboid(ground_size, ground_height);
-    commands.spawn((rigid_body, collider));
+    commands.spawn().insert_bundle((rigid_body, collider));
 
     /*
      * Create the cubes
@@ -92,15 +95,16 @@ pub fn setup_physics(commands: &mut Commands) {
             // so that the transform of the entity with a rigid-body
             // is properly propagated to its children with collider meshes.
             commands
-                .spawn((
+                .spawn()
+                .insert_bundle((
                     rigid_body,
                     Transform::identity(),
                     GlobalTransform::identity(),
                 ))
                 .with_children(|parent| {
-                    parent.spawn((collider1,));
-                    parent.spawn((collider2,));
-                    parent.spawn((collider3,));
+                    parent.spawn().insert_bundle((collider1,));
+                    parent.spawn().insert_bundle((collider2,));
+                    parent.spawn().insert_bundle((collider3,));
                 });
         }
 

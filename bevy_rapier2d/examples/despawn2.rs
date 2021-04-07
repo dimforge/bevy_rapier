@@ -24,14 +24,14 @@ pub struct ResizeResource {
 
 fn main() {
     App::build()
-        .add_resource(ClearColor(Color::rgb(
+        .insert_resource(ClearColor(Color::rgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .add_resource(Msaa::default())
-        .add_resource(DespawnResource::default())
-        .add_resource(ResizeResource::default())
+        .insert_resource(Msaa::default())
+        .insert_resource(DespawnResource::default())
+        .insert_resource(ResizeResource::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
@@ -50,22 +50,25 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(commands: &mut Commands, mut configuration: ResMut<RapierConfiguration>) {
+fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
     configuration.scale = 10.0;
 
-    commands
-        .spawn(LightBundle {
-            transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
+    let mut camera = OrthographicCameraBundle::new_2d();
+    camera.transform = Transform::from_translation(Vec3::new(0.0, 200.0, 0.0));
+    commands.spawn().insert_bundle(LightBundle {
+        transform: Transform::from_translation(Vec3::new(1000.0, 10.0, 2000.0)),
+        light: Light {
+            intensity: 100_000_000_.0,
+            range: 6000.0,
             ..Default::default()
-        })
-        .spawn(Camera2dBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, 200.0, 0.0)),
-            ..Camera2dBundle::default()
-        });
+        },
+        ..Default::default()
+    });
+    commands.spawn().insert_bundle(camera);
 }
 
 pub fn setup_physics(
-    commands: &mut Commands,
+    mut commands: Commands,
     mut despawn: ResMut<DespawnResource>,
     mut resize: ResMut<ResizeResource>,
 ) {
@@ -76,27 +79,21 @@ pub fn setup_physics(
 
     let rigid_body = RigidBodyBuilder::new_static();
     let collider = ColliderBuilder::cuboid(ground_size, 1.2);
-    let entity = commands
-        .spawn((rigid_body, collider))
-        .current_entity()
-        .unwrap();
+    let entity = commands.spawn().insert_bundle((rigid_body, collider)).id();
     despawn.entities.push(entity);
 
     let rigid_body = RigidBodyBuilder::new_static()
         .rotation(std::f32::consts::FRAC_PI_2)
         .translation(ground_size, ground_size * 2.0);
     let collider = ColliderBuilder::cuboid(ground_size * 2.0, 1.2);
-    let entity = commands
-        .spawn((rigid_body, collider))
-        .current_entity()
-        .unwrap();
+    let entity = commands.spawn().insert_bundle((rigid_body, collider)).id();
     despawn.entities.push(entity);
 
     let body = RigidBodyBuilder::new_static()
         .rotation(std::f32::consts::FRAC_PI_2)
         .translation(-ground_size, ground_size * 2.0);
     let collider = ColliderBuilder::cuboid(ground_size * 2.0, 1.2);
-    let entity = commands.spawn((body, collider)).current_entity().unwrap();
+    let entity = commands.spawn().insert_bundle((body, collider)).id();
     despawn.entities.push(entity);
 
     /*
@@ -117,30 +114,30 @@ pub fn setup_physics(
             // Build the rigid body.
             let body = RigidBodyBuilder::new_dynamic().translation(x, y);
             let collider = ColliderBuilder::cuboid(rad, rad).density(1.0);
-            commands.spawn((body, collider));
+            let entity = commands.spawn().insert_bundle((body, collider)).id();
             if (i + j * num) % 100 == 0 {
-                resize.entities.push(commands.current_entity().unwrap());
+                resize.entities.push(entity);
             }
         }
     }
 }
 
-pub fn despawn(commands: &mut Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
+pub fn despawn(mut commands: Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
     if time.seconds_since_startup() > 5.0 {
         for entity in &despawn.entities {
             println!("Despawning ground entity");
-            commands.despawn(*entity);
+            commands.entity(*entity).despawn();
         }
         despawn.entities.clear();
     }
 }
 
-pub fn resize(commands: &mut Commands, time: Res<Time>, mut resize: ResMut<ResizeResource>) {
+pub fn resize(mut commands: Commands, time: Res<Time>, mut resize: ResMut<ResizeResource>) {
     if time.seconds_since_startup() > 6.0 {
         for entity in &resize.entities {
             println!("Resizing a block");
             let collider = ColliderBuilder::cuboid(4.0, 4.0).density(1.0);
-            commands.insert_one(*entity, collider);
+            commands.entity(*entity).insert(collider);
         }
         resize.entities.clear();
     }

@@ -21,13 +21,13 @@ pub struct DespawnResource {
 
 fn main() {
     App::build()
-        .add_resource(ClearColor(Color::rgb(
+        .insert_resource(ClearColor(Color::rgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .add_resource(Msaa::default())
-        .add_resource(DespawnResource::default())
+        .insert_resource(Msaa::default())
+        .insert_resource(DespawnResource::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
@@ -45,21 +45,24 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(commands: &mut Commands, mut configuration: ResMut<RapierConfiguration>) {
+fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
     configuration.scale = 12.0;
 
-    commands
-        .spawn(LightBundle {
-            transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
+    let mut camera = OrthographicCameraBundle::new_2d();
+    camera.transform = Transform::from_translation(Vec3::new(200.0, -200.0, 0.0));
+    commands.spawn().insert_bundle(LightBundle {
+        transform: Transform::from_translation(Vec3::new(1000.0, 10.0, 2000.0)),
+        light: Light {
+            intensity: 100_000_000_.0,
+            range: 6000.0,
             ..Default::default()
-        })
-        .spawn(Camera2dBundle {
-            transform: Transform::from_translation(Vec3::new(200.0, -200.0, 0.0)),
-            ..Camera2dBundle::default()
-        });
+        },
+        ..Default::default()
+    });
+    commands.spawn().insert_bundle(camera);
 }
 
-pub fn setup_physics(commands: &mut Commands, mut despawn: ResMut<DespawnResource>) {
+pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource>) {
     /*
      * Create the balls
      */
@@ -87,23 +90,20 @@ pub fn setup_physics(commands: &mut Commands, mut despawn: ResMut<DespawnResourc
 
             let rigid_body = RigidBodyBuilder::new(status).translation(fk * shift, -fi * shift);
             let collider = ColliderBuilder::cuboid(rad, rad).density(1.0);
-            let child_entity = commands
-                .spawn((rigid_body, collider))
-                .current_entity()
-                .unwrap();
+            let child_entity = commands.spawn().insert_bundle((rigid_body, collider)).id();
 
             // Vertical joint.
             if i > 0 {
                 let parent_entity = *body_entities.last().unwrap();
                 let joint = BallJoint::new(Point2::origin(), Point2::new(0.0, shift));
                 let entity = commands
-                    .spawn((JointBuilderComponent::new(
+                    .spawn()
+                    .insert_bundle((JointBuilderComponent::new(
                         joint,
                         parent_entity,
                         child_entity,
                     ),))
-                    .current_entity()
-                    .expect("Failed to spawn joint");
+                    .id();
                 if i == (numi / 2) || (k % 4 == 0 || k == numk - 1) {
                     despawn.entities.push(entity);
                 }
@@ -115,13 +115,13 @@ pub fn setup_physics(commands: &mut Commands, mut despawn: ResMut<DespawnResourc
                 let parent_entity = body_entities[parent_index];
                 let joint = BallJoint::new(Point2::origin(), Point2::new(-shift, 0.0));
                 let entity = commands
-                    .spawn((JointBuilderComponent::new(
+                    .spawn()
+                    .insert_bundle((JointBuilderComponent::new(
                         joint,
                         parent_entity,
                         child_entity,
                     ),))
-                    .current_entity()
-                    .expect("Failed to spawn joint");
+                    .id();
                 if i == (numi / 2) || (k % 4 == 0 || k == numk - 1) {
                     despawn.entities.push(entity);
                 }
@@ -132,11 +132,11 @@ pub fn setup_physics(commands: &mut Commands, mut despawn: ResMut<DespawnResourc
     }
 }
 
-pub fn despawn(commands: &mut Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
+pub fn despawn(mut commands: Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
     if time.seconds_since_startup() > 10.0 {
         for entity in &despawn.entities {
             println!("Despawning joint entity");
-            commands.despawn(*entity);
+            commands.entity(*entity).despawn();
         }
         despawn.entities.clear();
     }

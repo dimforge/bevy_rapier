@@ -22,13 +22,13 @@ pub struct DespawnResource {
 
 fn main() {
     App::build()
-        .add_resource(ClearColor(Color::rgb(
+        .insert_resource(ClearColor(Color::rgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .add_resource(Msaa::default())
-        .add_resource(DespawnResource::default())
+        .insert_resource(Msaa::default())
+        .insert_resource(DespawnResource::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
@@ -46,20 +46,24 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
     pipeline.counters.enable()
 }
 
-fn setup_graphics(commands: &mut Commands) {
-    commands
-        .spawn(LightBundle {
-            transform: Transform::from_translation(Vec3::new(1000.0, 100.0, 2000.0)),
+fn setup_graphics(mut commands: Commands) {
+    commands.spawn().insert_bundle(LightBundle {
+        transform: Transform::from_translation(Vec3::new(100.0, 10.0, 200.0)),
+        light: Light {
+            intensity: 100_000.0,
+            range: 3000.0,
             ..Default::default()
-        })
-        .spawn(Camera3dBundle {
-            transform: Transform::from_matrix(Mat4::face_toward(
-                Vec3::new(15.0, 5.0, 42.0),
-                Vec3::new(13.0, 1.0, 1.0),
-                Vec3::new(0.0, 1.0, 0.0),
-            )),
-            ..Default::default()
-        });
+        },
+        ..Default::default()
+    });
+    commands.spawn().insert_bundle(PerspectiveCameraBundle {
+        transform: Transform::from_matrix(Mat4::face_toward(
+            Vec3::new(15.0, 5.0, 42.0),
+            Vec3::new(13.0, 1.0, 1.0),
+            Vec3::new(0.0, 1.0, 0.0),
+        )),
+        ..Default::default()
+    });
 }
 
 fn create_prismatic_joints(
@@ -73,17 +77,14 @@ fn create_prismatic_joints(
 
     let ground = RigidBodyBuilder::new_static().translation(origin.x, origin.y, origin.z);
     let collider = ColliderBuilder::cuboid(rad, rad, rad);
-    let mut curr_parent = commands.spawn((ground, collider)).current_entity().unwrap();
+    let mut curr_parent = commands.spawn().insert_bundle((ground, collider)).id();
 
     for i in 0..num {
         let z = origin.z + (i + 1) as f32 * shift;
         let density = 1.0;
         let rigid_body = RigidBodyBuilder::new_dynamic().translation(origin.x, origin.y, z);
         let collider = ColliderBuilder::cuboid(rad, rad, rad).density(density);
-        let curr_child = commands
-            .spawn((rigid_body, collider))
-            .current_entity()
-            .unwrap();
+        let curr_child = commands.spawn().insert_bundle((rigid_body, collider)).id();
 
         let axis = if i % 2 == 0 {
             Unit::new_normalize(Vector3::new(1.0, 1.0, 0.0))
@@ -105,9 +106,9 @@ fn create_prismatic_joints(
         prism.limits[1] = 2.0;
 
         let entity = commands
-            .spawn((JointBuilderComponent::new(prism, curr_parent, curr_child),))
-            .current_entity()
-            .unwrap();
+            .spawn()
+            .insert_bundle((JointBuilderComponent::new(prism, curr_parent, curr_child),))
+            .id();
         if i == 2 {
             despawn.entities.push(entity);
         }
@@ -127,7 +128,7 @@ fn create_revolute_joints(
 
     let ground = RigidBodyBuilder::new_static().translation(origin.x, origin.y, 0.0);
     let collider = ColliderBuilder::cuboid(rad, rad, rad);
-    let mut curr_parent = commands.spawn((ground, collider)).current_entity().unwrap();
+    let mut curr_parent = commands.spawn().insert_bundle((ground, collider)).id();
 
     for i in 0..num {
         // Create four bodies.
@@ -144,10 +145,7 @@ fn create_revolute_joints(
             let density = 1.0;
             let rigid_body = RigidBodyBuilder::new_dynamic().position(positions[k]);
             let collider = ColliderBuilder::cuboid(rad, rad, rad).density(density);
-            handles[k] = commands
-                .spawn((rigid_body, collider))
-                .current_entity()
-                .unwrap();
+            handles[k] = commands.spawn().insert_bundle((rigid_body, collider)).id();
         }
 
         // Setup four joints.
@@ -163,21 +161,21 @@ fn create_revolute_joints(
         ];
 
         let entity1 = commands
-            .spawn((JointBuilderComponent::new(revs[0], curr_parent, handles[0]),))
-            .current_entity()
-            .unwrap();
+            .spawn()
+            .insert_bundle((JointBuilderComponent::new(revs[0], curr_parent, handles[0]),))
+            .id();
         let entity2 = commands
-            .spawn((JointBuilderComponent::new(revs[1], handles[0], handles[1]),))
-            .current_entity()
-            .unwrap();
+            .spawn()
+            .insert_bundle((JointBuilderComponent::new(revs[1], handles[0], handles[1]),))
+            .id();
         let entity3 = commands
-            .spawn((JointBuilderComponent::new(revs[2], handles[1], handles[2]),))
-            .current_entity()
-            .unwrap();
+            .spawn()
+            .insert_bundle((JointBuilderComponent::new(revs[2], handles[1], handles[2]),))
+            .id();
         let entity4 = commands
-            .spawn((JointBuilderComponent::new(revs[3], handles[2], handles[3]),))
-            .current_entity()
-            .unwrap();
+            .spawn()
+            .insert_bundle((JointBuilderComponent::new(revs[3], handles[2], handles[3]),))
+            .id();
         if i == 1 {
             despawn.entities.push(entity1);
             despawn.entities.push(entity2);
@@ -220,10 +218,7 @@ fn create_fixed_joints(
                 origin.z + fi * shift,
             );
             let collider = ColliderBuilder::ball(rad).density(1.0);
-            let child_entity = commands
-                .spawn((rigid_body, collider))
-                .current_entity()
-                .unwrap();
+            let child_entity = commands.spawn().insert_bundle((rigid_body, collider)).id();
 
             // Vertical joint.
             if i > 0 {
@@ -232,7 +227,7 @@ fn create_fixed_joints(
                     Isometry3::identity(),
                     Isometry3::translation(0.0, 0.0, -shift),
                 );
-                commands.spawn((JointBuilderComponent::new(
+                commands.spawn().insert_bundle((JointBuilderComponent::new(
                     joint,
                     parent_entity,
                     child_entity,
@@ -248,13 +243,13 @@ fn create_fixed_joints(
                     Isometry3::translation(-shift, 0.0, 0.0),
                 );
                 let entity = commands
-                    .spawn((JointBuilderComponent::new(
+                    .spawn()
+                    .insert_bundle((JointBuilderComponent::new(
                         joint,
                         parent_entity,
                         child_entity,
                     ),))
-                    .current_entity()
-                    .unwrap();
+                    .id();
                 if k == 2 {
                     despawn.entities.push(entity);
                 }
@@ -284,23 +279,20 @@ fn create_ball_joints(commands: &mut Commands, num: usize, despawn: &mut ResMut<
 
             let rigid_body = RigidBodyBuilder::new(status).translation(fk * shift, 0.0, fi * shift);
             let collider = ColliderBuilder::ball(rad).density(1.0);
-            let child_entity = commands
-                .spawn((collider, rigid_body))
-                .current_entity()
-                .unwrap();
+            let child_entity = commands.spawn().insert_bundle((collider, rigid_body)).id();
 
             // Vertical joint.
             if i > 0 {
                 let parent_entity = *body_entities.last().unwrap();
                 let joint = BallJoint::new(Point3::origin(), Point3::new(0.0, 0.0, -shift));
                 let entity = commands
-                    .spawn((JointBuilderComponent::new(
+                    .spawn()
+                    .insert_bundle((JointBuilderComponent::new(
                         joint,
                         parent_entity,
                         child_entity,
                     ),))
-                    .current_entity()
-                    .unwrap();
+                    .id();
                 if i == 2 {
                     despawn.entities.push(entity);
                 }
@@ -311,7 +303,7 @@ fn create_ball_joints(commands: &mut Commands, num: usize, despawn: &mut ResMut<
                 let parent_index = body_entities.len() - num;
                 let parent_entity = body_entities[parent_index];
                 let joint = BallJoint::new(Point3::origin(), Point3::new(-shift, 0.0, 0.0));
-                commands.spawn((JointBuilderComponent::new(
+                commands.spawn().insert_bundle((JointBuilderComponent::new(
                     joint,
                     parent_entity,
                     child_entity,
@@ -323,18 +315,18 @@ fn create_ball_joints(commands: &mut Commands, num: usize, despawn: &mut ResMut<
     }
 }
 
-pub fn setup_physics(commands: &mut Commands, mut despawn: ResMut<DespawnResource>) {
-    create_prismatic_joints(commands, Point3::new(20.0, 10.0, 0.0), 5, &mut despawn);
-    create_revolute_joints(commands, Point3::new(20.0, 0.0, 0.0), 3, &mut despawn);
-    create_fixed_joints(commands, Point3::new(0.0, 10.0, 0.0), 5, &mut despawn);
-    create_ball_joints(commands, 15, &mut despawn);
+pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource>) {
+    create_prismatic_joints(&mut commands, Point3::new(20.0, 10.0, 0.0), 5, &mut despawn);
+    create_revolute_joints(&mut commands, Point3::new(20.0, 0.0, 0.0), 3, &mut despawn);
+    create_fixed_joints(&mut commands, Point3::new(0.0, 10.0, 0.0), 5, &mut despawn);
+    create_ball_joints(&mut commands, 15, &mut despawn);
 }
 
-pub fn despawn(commands: &mut Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
+pub fn despawn(mut commands: Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
     if time.seconds_since_startup() > 10.0 {
         for entity in &despawn.entities {
             println!("Despawning joint entity");
-            commands.despawn(*entity);
+            commands.entity(*entity).despawn();
         }
         despawn.entities.clear();
     }
