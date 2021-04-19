@@ -264,13 +264,12 @@ pub fn create_joints_system(
     mut joints: ResMut<JointSet>,
     mut entity_maps: ResMut<EntityMaps>,
     query: Query<(Entity, &JointBuilderComponent)>,
-    query_bodyhandle: Query<&RigidBodyHandleComponent>,
 ) {
     for (entity, joint) in &mut query.iter() {
-        let body1 = query_bodyhandle.get_component::<RigidBodyHandleComponent>(joint.entity1);
-        let body2 = query_bodyhandle.get_component::<RigidBodyHandleComponent>(joint.entity2);
-        if let (Ok(body1), Ok(body2)) = (body1, body2) {
-            let handle = joints.insert(&mut bodies, body1.handle(), body2.handle(), joint.params);
+        let body1 = entity_maps.bodies.get(&joint.entity1);
+        let body2 = entity_maps.bodies.get(&joint.entity2);
+        if let (Some(body1), Some(body2)) = (body1, body2) {
+            let handle = joints.insert(&mut bodies, *body1, *body2, joint.params);
             commands
                 .entity(entity)
                 .insert(JointHandleComponent::new(
