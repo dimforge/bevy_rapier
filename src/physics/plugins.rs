@@ -25,6 +25,10 @@ pub struct RapierPhysicsPlugin;
 /// This stage is added right before the `POST_UPDATE` stage.
 pub const TRANSFORM_SYNC_STAGE: &'static str = "rapier::transform_sync_stage";
 
+#[derive(SystemLabel, Clone, Debug, Eq, Hash, PartialEq)]
+/// Label for create_joints_system
+pub struct CreateJointsSystem;
+
 impl Plugin for RapierPhysicsPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.insert_resource(PhysicsPipeline::new())
@@ -46,13 +50,20 @@ impl Plugin for RapierPhysicsPlugin {
             // are needed.
             .add_system_to_stage(
                 CoreStage::PreUpdate,
-                physics::create_body_and_collider_system.system(),
+                physics::create_body_and_collider_system
+                    .system()
+                    .before(CreateJointsSystem),
             )
             .add_system_to_stage(
                 CoreStage::PreUpdate,
                 physics::update_collider_system.system(),
             )
-            .add_system_to_stage(CoreStage::PreUpdate, physics::create_joints_system.system())
+            .add_system_to_stage(
+                CoreStage::PreUpdate,
+                physics::create_joints_system
+                    .system()
+                    .label(CreateJointsSystem),
+            )
             .add_system_to_stage(CoreStage::Update, physics::step_world_system.system())
             .add_stage_before(
                 CoreStage::PostUpdate,
