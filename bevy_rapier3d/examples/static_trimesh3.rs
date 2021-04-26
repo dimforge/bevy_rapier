@@ -3,11 +3,12 @@ extern crate rapier3d as rapier; // For the debug UI.
 use std::f32::consts::TAU;
 
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
+
 use bevy::render::pass::ClearColor;
-use bevy_rapier3d::physics::RapierPhysicsPlugin;
-use bevy_rapier3d::render::RapierRenderPlugin;
-use rapier3d::dynamics::{IntegrationParameters, RigidBodyBuilder};
-use rapier3d::geometry::ColliderBuilder;
+use nalgebra::Isometry3;
+use rapier::geometry::{ColliderMaterial, ColliderShape};
+use rapier3d::dynamics::IntegrationParameters;
 use rapier3d::pipeline::PhysicsPipeline;
 use ui::DebugUiPlugin;
 
@@ -25,7 +26,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
-        .add_plugin(RapierPhysicsPlugin)
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)
         .add_startup_system(setup_graphics.system())
@@ -41,7 +42,7 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    commands.spawn().insert_bundle(LightBundle {
+    commands.spawn_bundle(LightBundle {
         transform: Transform::from_translation(Vec3::new(100.0, 10.0, 200.0)),
         light: Light {
             intensity: 100_000.0,
@@ -50,7 +51,7 @@ fn setup_graphics(mut commands: Commands) {
         },
         ..Default::default()
     });
-    commands.spawn().insert_bundle(PerspectiveCameraBundle {
+    commands.spawn_bundle(PerspectiveCameraBundle {
         transform: Transform::from_matrix(Mat4::face_toward(
             Vec3::new(-15.0, 8.0, 15.0),
             Vec3::new(-5.0, 0.0, 5.0),
@@ -84,9 +85,14 @@ pub fn setup_physics(mut commands: Commands) {
         indices.push([2 * i + 0, 2 * i + 1, 2 * i + 2]);
         indices.push([2 * i + 2, 2 * i + 1, 2 * i + 3]);
     }
-    let rigid_body = RigidBodyBuilder::new_static().translation(0.0, 0.0, 0.0);
-    let collider = ColliderBuilder::trimesh(vertices, indices);
-    commands.spawn().insert_bundle((rigid_body, collider));
+    let collider = ColliderBundle {
+        shape: ColliderShape::trimesh(vertices, indices),
+        ..Default::default()
+    };
+    commands
+        .spawn_bundle(collider)
+        .insert(ColliderDebugRender::default())
+        .insert(ColliderPositionSync::Discrete);
 
     // Create a bowl with a cosine cross-section,
     // so that we can join the end of the ramp smoothly
@@ -120,13 +126,20 @@ pub fn setup_physics(mut commands: Commands) {
     }
     // Position so ramp connects smoothly
     // to one edge of the lip of the bowl.
-    let rigid_body = RigidBodyBuilder::new_static().translation(
-        -bowl_size.x / 2.0,
-        -bowl_size.y / 2.0,
-        bowl_size.z / 2.0 - ramp_size.z / 2.0,
-    );
-    let collider = ColliderBuilder::trimesh(vertices, indices);
-    commands.spawn().insert_bundle((rigid_body, collider));
+    let collider = ColliderBundle {
+        shape: ColliderShape::trimesh(vertices, indices),
+        position: [
+            -bowl_size.x / 2.0,
+            -bowl_size.y / 2.0,
+            bowl_size.z / 2.0 - ramp_size.z / 2.0,
+        ]
+        .into(),
+        ..Default::default()
+    };
+    commands
+        .spawn_bundle(collider)
+        .insert(ColliderDebugRender::default())
+        .insert(ColliderPositionSync::Discrete);
 }
 
 struct BallState {
@@ -167,13 +180,21 @@ fn ball_spawner(
     // Spawn a ball near the top of the ramp.
     let ramp_size = ramp_size();
     let rad = 0.3;
-    let rigid_body = RigidBodyBuilder::new_dynamic().translation(
-        ramp_size.x * 0.9,
-        ramp_size.y / 2.0 + rad * 3.0,
-        0.0,
-    );
-    let collider = ColliderBuilder::ball(rad).restitution(0.5);
-    commands.spawn().insert_bundle((rigid_body, collider));
+    let rigid_body = RigidBodyBundle {
+        position: [ramp_size.x * 0.9, ramp_size.y / 2.0 + rad * 3.0, 0.0].into(),
+        ..Default::default()
+    };
+    let collider = ColliderBundle {
+        shape: ColliderShape::ball(rad),
+        material: ColliderMaterial::new(1.0, 0.5),
+        ..Default::default()
+    };
+
+    commands
+        .spawn_bundle(collider)
+        .insert_bundle(rigid_body)
+        .insert(ColliderDebugRender::with_id(0))
+        .insert(ColliderPositionSync::Discrete);
 
     ball_state.balls_spawned += 1;
 }

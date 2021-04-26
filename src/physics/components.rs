@@ -135,3 +135,28 @@ impl PhysicsInterpolationComponent {
         )))
     }
 }
+
+#[derive(Copy, Clone, Debug)]
+pub enum RigidBodyPositionSync {
+    Discrete,
+    Interpolated { prev_pos: Option<Isometry<f32>> },
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum ColliderPositionSync {
+    // Right now, there is only discrete for colliders.
+    // We may add more modes in the future.
+    Discrete,
+}
+
+impl Default for RigidBodyPositionSync {
+    fn default() -> Self {
+        Self::Discrete
+    }
+}
+
+impl Default for ColliderPositionSync {
+    fn default() -> Self {
+        Self::Discrete
+    }
+}

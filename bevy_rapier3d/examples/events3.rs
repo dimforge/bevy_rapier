@@ -1,11 +1,9 @@
 extern crate rapier3d as rapier; // For the debug UI.
 
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
+
 use bevy::render::pass::ClearColor;
-use bevy_rapier3d::physics::{EventQueue, RapierPhysicsPlugin};
-use bevy_rapier3d::render::RapierRenderPlugin;
-use rapier3d::dynamics::RigidBodyBuilder;
-use rapier3d::geometry::ColliderBuilder;
 use rapier3d::pipeline::PhysicsPipeline;
 use ui::DebugUiPlugin;
 
@@ -23,7 +21,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
-        .add_plugin(RapierPhysicsPlugin)
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)
         .add_startup_system(setup_graphics.system())
@@ -38,7 +36,7 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    commands.spawn().insert_bundle(LightBundle {
+    commands.spawn_bundle(LightBundle {
         transform: Transform::from_translation(Vec3::new(100.0, 10.0, 200.0)),
         light: Light {
             intensity: 100_000.0,
@@ -47,7 +45,7 @@ fn setup_graphics(mut commands: Commands) {
         },
         ..Default::default()
     });
-    commands.spawn().insert_bundle(PerspectiveCameraBundle {
+    commands.spawn_bundle(PerspectiveCameraBundle {
         transform: Transform::from_matrix(Mat4::face_toward(
             Vec3::new(0.0, 0.0, 25.0),
             Vec3::new(0.0, 0.0, 0.0),
@@ -71,15 +69,41 @@ pub fn setup_physics(mut commands: Commands) {
     /*
      * Ground
      */
-    let rigid_body = RigidBodyBuilder::new_static();
-    let collider = ColliderBuilder::cuboid(4.0, 1.2, 1.2);
-    commands.spawn().insert_bundle((rigid_body, collider));
+    let collider = ColliderBundle {
+        shape: ColliderShape::cuboid(4.0, 1.2, 1.2),
+        ..ColliderBundle::default()
+    };
 
-    let rigid_body = RigidBodyBuilder::new_static().translation(0.0, 5.0, 0.0);
-    let collider = ColliderBuilder::cuboid(4.0, 1.2, 1.0).sensor(true);
-    commands.spawn().insert_bundle((rigid_body, collider));
+    commands
+        .spawn_bundle(collider)
+        .insert(ColliderDebugRender::default())
+        .insert(ColliderPositionSync::Discrete);
 
-    let rigid_body = RigidBodyBuilder::new_dynamic().translation(0.0, 13.0, 0.0);
-    let collider = ColliderBuilder::cuboid(0.5, 0.5, 0.5);
-    commands.spawn().insert_bundle((rigid_body, collider));
+    let collider = ColliderBundle {
+        shape: ColliderShape::cuboid(4.0, 1.2, 1.0),
+        collider_type: ColliderType::Sensor,
+        position: [0.0, 5.0, 0.0].into(),
+        ..ColliderBundle::default()
+    };
+
+    commands
+        .spawn_bundle(collider)
+        .insert(ColliderDebugRender::with_id(0))
+        .insert(ColliderPositionSync::Discrete);
+
+    let rigid_body = RigidBodyBundle {
+        position: [0.0, 13.0, 0.0].into(),
+        ..RigidBodyBundle::default()
+    };
+
+    let collider = ColliderBundle {
+        shape: ColliderShape::cuboid(0.5, 0.5, 0.5),
+        ..ColliderBundle::default()
+    };
+
+    commands
+        .spawn_bundle(rigid_body)
+        .insert_bundle(collider)
+        .insert(ColliderDebugRender::with_id(1))
+        .insert(ColliderPositionSync::Discrete);
 }

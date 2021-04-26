@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.0
+### Added
+- The `ColliderDebugRender` component must be added to an entity
+  containing a collider shape in order to render it.
+  
 ## 0.8.0
 ### Changed
 - Use the version 0.5.0 of Rapier.
