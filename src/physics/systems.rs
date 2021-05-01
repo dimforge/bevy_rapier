@@ -131,55 +131,6 @@ pub fn attach_bodies_and_colliders_system(
     // }
 }
 
-#[test]
-fn test_joint_creation_ordering() {
-    use super::RapierPhysicsPlugin;
-    #[cfg(feature = "dim2")]
-    use na::Point2;
-    #[cfg(feature = "dim3")]
-    use na::Point3;
-    use rapier::dynamics::BallJoint;
-
-    let mut app = App::build();
-    app.init_resource::<Time>().add_plugin(RapierPhysicsPlugin);
-
-    let rigid_body_1 = RigidBodyBuilder::new_dynamic();
-    let rigid_body_2 = RigidBodyBuilder::new_dynamic();
-
-    let body_1_entity = app.world_mut().spawn().insert(rigid_body_1).id();
-
-    let body_2_entity = app.world_mut().spawn().insert(rigid_body_2).id();
-
-    #[cfg(feature = "dim2")]
-    let joint = BallJoint::new(Point2::origin(), Point2::origin());
-    #[cfg(feature = "dim3")]
-    let joint = BallJoint::new(Point3::origin(), Point3::origin());
-
-    let joint_entity = app
-        .world_mut()
-        .spawn()
-        .insert_bundle((JointBuilderComponent::new(
-            joint,
-            body_1_entity,
-            body_2_entity,
-        ),))
-        .id();
-
-    app.app.update();
-
-    let joint_handle = app
-        .world_mut()
-        .get::<JointHandleComponent>(joint_entity)
-        .unwrap()
-        .handle();
-
-    let entity_maps = app.world_mut().get_resource::<EntityMaps>().unwrap();
-    assert_eq!(entity_maps.joints[&joint_entity], joint_handle);
-
-    let joint_set = app.world_mut().get_resource::<JointSet>().unwrap();
-    assert!(joint_set.get(joint_handle).is_some());
-}
-
 /// System responsible for creating Rapier joints from their builder resources.
 pub fn create_joints_system(
     mut commands: Commands,
