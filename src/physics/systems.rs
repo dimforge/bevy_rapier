@@ -7,6 +7,7 @@ use crate::physics::{
     RigidBodyHandleComponent, RigidBodyPositionSync, SimulationToRenderTime,
 };
 
+use crate::prelude::{ContactEvent, IntersectionEvent};
 use crate::rapier::dynamics::{
     RigidBodyCcd, RigidBodyChanges, RigidBodyColliders, RigidBodyIds, RigidBodyMassProps,
     RigidBodyPosition,
@@ -22,6 +23,7 @@ use rapier::dynamics::{CCDSolver, IntegrationParameters, IslandManager, JointSet
 use rapier::geometry::{BroadPhase, NarrowPhase};
 use rapier::math::Isometry;
 use rapier::pipeline::PhysicsPipeline;
+use std::sync::RwLock;
 
 /// System responsible for creating a Rapier rigid-body and collider from their
 /// builder resources.
@@ -207,8 +209,11 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
         ResMut<JointSet>,
         ResMut<JointsEntityMap>,
     ),
-    events: ResMut<EventQueue>,
     hooks: Res<PhysicsHooksWithQueryObject<UserData>>,
+    (intersection_events, contact_events): (
+        EventWriter<IntersectionEvent>,
+        EventWriter<ContactEvent>,
+    ),
     user_data: Query<UserData>,
     mut query: Query<(
         &RigidBodyHandleComponent,
@@ -224,10 +229,10 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
 ) {
     use std::mem::replace;
 
-    if events.auto_clear {
-        events.clear();
-    }
-
+    let events = EventQueue {
+        intersection_events: RwLock::new(intersection_events),
+        contact_events: RwLock::new(contact_events),
+    };
     let mut rigid_body_components_set = RigidBodyComponentsSet(bodies_query);
     let mut collider_components_set = ColliderComponentsSet(colliders_query);
 
@@ -284,7 +289,7 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
                     &mut joints,
                     &mut ccd_solver,
                     &physics_hooks,
-                    &*events,
+                    &events,
                 );
 
                 modifs_tracker.clear_modified_and_removed();
@@ -306,7 +311,7 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
             &mut joints,
             &mut ccd_solver,
             &physics_hooks,
-            &*events,
+            &events,
         );
 
         modifs_tracker.clear_modified_and_removed();

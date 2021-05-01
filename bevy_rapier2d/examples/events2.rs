@@ -52,12 +52,15 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
         .insert_bundle(OrthographicCameraBundle::new_2d());
 }
 
-fn display_events(events: Res<EventQueue>) {
-    while let Ok(intersection_event) = events.intersection_events.pop() {
+fn display_events(
+    mut intersection_events: EventReader<IntersectionEvent>,
+    mut contact_events: EventReader<ContactEvent>,
+) {
+    for intersection_event in intersection_events.iter() {
         println!("Received intersection event: {:?}", intersection_event);
     }
 
-    while let Ok(contact_event) = events.contact_events.pop() {
+    for contact_event in contact_events.iter() {
         println!("Received contact event: {:?}", contact_event);
     }
 }

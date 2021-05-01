@@ -24,11 +24,11 @@ pub mod render;
 
 pub mod prelude {
     pub use super::physics::{
-        ColliderBundle, ColliderComponentsSet, ColliderPositionSync, EventQueue, IntoEntity,
-        IntoHandle, JointBuilderComponent, NoUserData, PhysicsHooksWithQuery,
-        PhysicsHooksWithQueryObject, QueryPipelineColliderComponentsQuery,
-        QueryPipelineColliderComponentsSet, RapierConfiguration, RapierPhysicsPlugin,
-        RigidBodyBundle, RigidBodyComponentsSet, RigidBodyPositionSync,
+        ColliderBundle, ColliderComponentsSet, ColliderPositionSync, IntoEntity, IntoHandle,
+        JointBuilderComponent, NoUserData, PhysicsHooksWithQuery, PhysicsHooksWithQueryObject,
+        QueryPipelineColliderComponentsQuery, QueryPipelineColliderComponentsSet,
+        RapierConfiguration, RapierPhysicsPlugin, RigidBodyBundle, RigidBodyComponentsSet,
+        RigidBodyPositionSync,
     };
     pub use rapier::dynamics::{
         RigidBodyActivation, RigidBodyCcd, RigidBodyChanges, RigidBodyColliders, RigidBodyForces,
@@ -37,7 +37,7 @@ pub mod prelude {
     };
     pub use rapier::geometry::{
         ColliderBroadPhaseData, ColliderChanges, ColliderGroups, ColliderMaterial, ColliderParent,
-        ColliderPosition, ColliderShape, ColliderType,
+        ColliderPosition, ColliderShape, ColliderType, ContactEvent, IntersectionEvent,
     };
 
     #[cfg(feature = "render")]

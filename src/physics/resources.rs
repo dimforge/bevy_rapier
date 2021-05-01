@@ -19,6 +19,7 @@ use bevy::prelude::*;
 use concurrent_queue::ConcurrentQueue;
 use rapier::math::Vector;
 use std::collections::HashMap;
+use std::sync::RwLock;
 
 /// A resource for specifying configuration information for the physics simulation
 pub struct RapierConfiguration {
@@ -54,39 +55,24 @@ impl Default for RapierConfiguration {
 // investigated how to reproduce this exactly to open an
 // issue).
 /// A set of queues collecting events emitted by the physics engine.
-pub struct EventQueue {
+pub(crate) struct EventQueue<'a> {
     /// The unbounded contact event queue.
-    pub contact_events: ConcurrentQueue<ContactEvent>,
+    pub contact_events: RwLock<EventWriter<'a, ContactEvent>>,
     /// The unbounded intersection event queue.
-    pub intersection_events: ConcurrentQueue<IntersectionEvent>,
-    /// Are these queues automatically cleared before each simulation timestep?
-    pub auto_clear: bool,
+    pub intersection_events: RwLock<EventWriter<'a, IntersectionEvent>>,
 }
 
-impl EventQueue {
-    /// Creates a new empty event queue.
-    pub fn new(auto_clear: bool) -> Self {
-        Self {
-            contact_events: ConcurrentQueue::unbounded(),
-            intersection_events: ConcurrentQueue::unbounded(),
-            auto_clear,
+impl<'a> EventHandler for EventQueue<'a> {
+    fn handle_intersection_event(&self, event: IntersectionEvent) {
+        if let Ok(mut events) = self.intersection_events.write() {
+            events.send(event)
         }
     }
 
-    /// Removes all events contained by this queue.
-    pub fn clear(&self) {
-        while let Ok(_) = self.contact_events.pop() {}
-        while let Ok(_) = self.intersection_events.pop() {}
-    }
-}
-
-impl EventHandler for EventQueue {
-    fn handle_intersection_event(&self, event: IntersectionEvent) {
-        let _ = self.intersection_events.push(event);
-    }
-
     fn handle_contact_event(&self, event: ContactEvent) {
-        let _ = self.contact_events.push(event);
+        if let Ok(mut events) = self.contact_events.write() {
+            events.send(event)
+        }
     }
 }
 

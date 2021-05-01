@@ -3,7 +3,10 @@ use crate::physics::{
     EventQueue, JointsEntityMap, ModificationTracker, PhysicsHooksWithQueryObject,
     RapierConfiguration, SimulationToRenderTime,
 };
+use crate::prelude::IntersectionEvent;
+use crate::rapier::geometry::ContactEvent;
 use crate::rapier::pipeline::QueryPipeline;
+use bevy::app::Events;
 use bevy::ecs::query::WorldQuery;
 use bevy::prelude::*;
 use rapier::dynamics::{CCDSolver, IntegrationParameters, IslandManager, JointSet};
@@ -65,7 +68,8 @@ impl<UserData: 'static + WorldQuery + Send + Sync> Plugin for RapierPhysicsPlugi
         .insert_resource(JointSet::new())
         .insert_resource(CCDSolver::new())
         .insert_resource(PhysicsHooksWithQueryObject::<UserData>(Box::new(())))
-        .insert_resource(EventQueue::new(true))
+        .insert_resource(Events::<IntersectionEvent>::default())
+        .insert_resource(Events::<ContactEvent>::default())
         .insert_resource(SimulationToRenderTime::default())
         .insert_resource(JointsEntityMap::default())
         .insert_resource(ModificationTracker::default())
