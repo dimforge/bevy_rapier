@@ -11,21 +11,26 @@ pub fn create_collider_renders_system(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     configuration: Res<RapierConfiguration>,
-    colliders: Query<
-        (Entity, &ColliderShape, &ColliderDebugRender),
-        Without<Handle<Mesh>>, // Or<(Without<Handle<Mesh>>, Changed<ColliderHandleComponent>)>,
-    >,
+    collider_shapes: Query<&ColliderShape>,
+    render_tags: Query<(Entity, Option<&Parent>, &ColliderDebugRender), Without<Handle<Mesh>>>,
 ) {
-    for (entity, co_shape, co_debug) in &mut colliders.iter() {
-        if let Some((mesh, scale)) = generate_collider_mesh(co_shape) {
-            let ground_pbr = PbrBundle {
-                mesh: meshes.add(mesh),
-                material: materials.add(co_debug.color.into()),
-                transform: Transform::from_scale(scale * configuration.scale),
-                ..Default::default()
-            };
+    for (entity, parent, co_render) in &mut render_tags.iter() {
+        let co_shape = collider_shapes
+            .get(entity)
+            .ok()
+            .or_else(|| collider_shapes.get(**parent?).ok());
 
-            commands.entity(entity).insert_bundle(ground_pbr);
+        if let Some(co_shape) = co_shape {
+            if let Some((mesh, scale)) = generate_collider_mesh(co_shape) {
+                let ground_pbr = PbrBundle {
+                    mesh: meshes.add(mesh),
+                    material: materials.add(co_render.color.into()),
+                    transform: Transform::from_scale(scale * configuration.scale),
+                    ..Default::default()
+                };
+
+                commands.entity(entity).insert_bundle(ground_pbr);
+            }
         }
     }
 }
@@ -43,6 +48,7 @@ pub fn update_collider_render_mesh(
         ),
     >,
 ) {
+    // TODO: what if the renderer is on the collider's child?
     for (entity, co_shape) in colliders.iter() {
         if let Some((mesh, scale)) = generate_collider_mesh(co_shape) {
             // TODO: remove the old mesh asset?

@@ -339,18 +339,26 @@ pub(crate) fn sync_transform(pos: &Isometry<f32>, scale: f32, transform: &mut Tr
 
 /// System responsible for writing the rigid-bodies positions into the Bevy translation and rotation components.
 pub fn sync_transforms(
+    mut commands: Commands,
     sim_to_render_time: Res<SimulationToRenderTime>,
     configuration: Res<RapierConfiguration>,
     integration_parameters: Res<IntegrationParameters>,
     rigid_body_sync_mode: Query<&RigidBodyPositionSync>,
     // TODO: add some Changed filters to only sync when something moved?
     mut sync_query: QuerySet<(
-        Query<(&RigidBodyPosition, &RigidBodyPositionSync, &mut Transform)>,
         Query<(
+            Entity,
+            &RigidBodyPosition,
+            &RigidBodyPositionSync,
+            Option<&mut Transform>,
+            Option<&mut GlobalTransform>,
+        )>,
+        Query<(
+            Entity,
             &ColliderPosition,
             &ColliderPositionSync,
             Option<&ColliderParent>,
-            &mut Transform,
+            Option<&mut Transform>,
             Option<&mut GlobalTransform>,
         )>,
     )>,
@@ -360,10 +368,17 @@ pub fn sync_transforms(
     let alpha = dt / sim_dt;
 
     // Sync bodies.
-    for (rb_pos, sync_mode, mut transform) in sync_query.q0_mut().iter_mut() {
+    for (entity, rb_pos, sync_mode, mut transform, global_transform) in
+        sync_query.q0_mut().iter_mut()
+    {
+        let mut new_transform = transform
+            .as_deref_mut()
+            .map(|t| t.clone())
+            .unwrap_or(Transform::identity());
+
         match sync_mode {
             RigidBodyPositionSync::Discrete => {
-                sync_transform(&rb_pos.position, configuration.scale, &mut transform)
+                sync_transform(&rb_pos.position, configuration.scale, &mut new_transform)
             }
             RigidBodyPositionSync::Interpolated { prev_pos } => {
                 // Predict position and orientation at render time
@@ -373,35 +388,70 @@ pub fn sync_transforms(
                     pos = prev_pos.unwrap().lerp_slerp(&rb_pos.position, alpha);
                 }
 
-                sync_transform(&pos, configuration.scale, &mut transform);
+                sync_transform(&pos, configuration.scale, &mut new_transform);
             }
+        }
+
+        if let Some(transform) = transform.as_deref_mut() {
+            *transform = new_transform;
+        } else {
+            commands.entity(entity).insert(new_transform);
+        }
+
+        if global_transform.is_none() {
+            commands.entity(entity).insert(GlobalTransform::identity());
         }
     }
 
     // Sync colliders.
-    for (co_pos, _, co_parent, mut transform, mut global_transform) in
+    for (entity, co_pos, _, co_parent, mut transform, mut global_transform) in
         sync_query.q1_mut().iter_mut()
     {
+        let mut new_transform = transform
+            .as_deref_mut()
+            .map(|t| t.clone())
+            .unwrap_or(Transform::identity());
+
         if let Some(co_parent) = co_parent {
             if rigid_body_sync_mode.get(co_parent.handle.entity()).is_ok() {
                 // Sync the relative position instead of the actual collider position.
                 sync_transform(
                     &co_parent.pos_wrt_parent,
                     configuration.scale,
-                    &mut transform,
+                    &mut new_transform,
                 );
+
+                if let Some(transform) = transform.as_deref_mut() {
+                    *transform = new_transform;
+                } else {
+                    commands.entity(entity).insert(new_transform);
+                }
 
                 continue;
             }
         }
 
         // Otherwise, sync the global position of the collider.
-        sync_transform(&co_pos, configuration.scale, &mut transform);
+        sync_transform(&co_pos, configuration.scale, &mut new_transform);
 
+        if let Some(transform) = transform.as_deref_mut() {
+            *transform = new_transform;
+        } else {
+            commands.entity(entity).insert(new_transform);
+        }
+
+        // Just in case the parent doesn't have a Transform component
+        // resulting in the global transform not being updated.
         if let Some(global_transform) = global_transform.as_mut() {
-            global_transform.translation = transform.translation;
-            global_transform.rotation = transform.rotation;
-            global_transform.scale = transform.scale;
+            global_transform.translation = new_transform.translation;
+            global_transform.rotation = new_transform.rotation;
+            global_transform.scale = new_transform.scale;
+        } else {
+            commands.entity(entity).insert(GlobalTransform {
+                translation: new_transform.translation,
+                rotation: new_transform.rotation,
+                scale: new_transform.scale,
+            });
         }
     }
 }
