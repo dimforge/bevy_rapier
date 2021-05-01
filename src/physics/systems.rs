@@ -355,7 +355,7 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
     }
 
     if configuration.query_pipeline_active {
-        query_pipeline.update(
+        query_pipeline.update_generic(
             &islands,
             &mut rigid_body_components_set,
             &collider_components_set,

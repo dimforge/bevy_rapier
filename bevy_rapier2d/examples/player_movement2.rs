@@ -85,8 +85,5 @@ fn player_movement(
         // Update the velocity on the rigid_body_component,
         // the bevy_rapier plugin will update the Sprite transform.
         rb_vels.linvel = move_delta * player.0;
-        // Make sure the rigid-body is awake so it can move
-        // even if it was standing still for a while.
-        rb_activation.wake_up(true);
     }
 }

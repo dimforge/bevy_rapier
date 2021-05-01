@@ -170,8 +170,8 @@ impl ModificationTracker {
             mut rb_changes,
             mut rb_activation,
             rb_pos,
-            rb_vels,
-            rb_forces,
+            _rb_vels,
+            _rb_forces,
             rb_type,
             rb_colliders,
         ) in bodies_query.q2_mut().iter_mut()
@@ -188,14 +188,13 @@ impl ModificationTracker {
             if rb_type {
                 *rb_changes |= RigidBodyChanges::TYPE;
             }
-            if rb_vels | rb_forces {
-                // Wake-up the rigid-body.
-                *rb_changes |= RigidBodyChanges::SLEEP;
-                rb_activation.wake_up(true);
-            }
             if rb_colliders {
                 *rb_changes |= RigidBodyChanges::COLLIDERS;
             }
+
+            // Wake-up the rigid-body.
+            *rb_changes |= RigidBodyChanges::SLEEP;
+            rb_activation.wake_up(true);
         }
 
         for mut rb_changes in bodies_query.q3_mut().iter_mut() {
