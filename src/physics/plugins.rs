@@ -1,7 +1,7 @@
 use crate::physics;
 use crate::physics::{
-    EventQueue, JointsEntityMap, ModificationTracker, PhysicsHooksWithQueryObject,
-    RapierConfiguration, SimulationToRenderTime,
+    JointsEntityMap, ModificationTracker, PhysicsHooksWithQueryObject, RapierConfiguration,
+    SimulationToRenderTime,
 };
 use crate::prelude::IntersectionEvent;
 use crate::rapier::geometry::ContactEvent;

@@ -16,7 +16,6 @@ use crate::rapier::{
 };
 use bevy::ecs::query::WorldQuery;
 use bevy::prelude::*;
-use concurrent_queue::ConcurrentQueue;
 use rapier::math::Vector;
 use std::collections::HashMap;
 use std::sync::RwLock;
