@@ -1,4 +1,4 @@
-use super::{BundleBuilder, IntoEntity, IntoHandle};
+use super::{IntoEntity, IntoHandle};
 use bevy::prelude::*;
 use rapier::data::{ComponentSet, ComponentSetMut, ComponentSetOption, Index};
 use rapier::geometry::{
@@ -18,6 +18,32 @@ impl IntoEntity for ColliderHandle {
         self.0.entity()
     }
 }
+
+pub type QueryPipelineColliderComponentsQuery<'a, 'b> = Query<
+    'a,
+    (
+        Entity,
+        &'b ColliderPosition,
+        &'b ColliderShape,
+        &'b ColliderGroups,
+    ),
+>;
+
+pub struct QueryPipelineColliderComponentsSet<'a, 'b, 'c>(
+    pub &'c QueryPipelineColliderComponentsQuery<'a, 'b>,
+);
+
+impl_component_set_wo_query_set!(
+    QueryPipelineColliderComponentsSet,
+    ColliderPosition,
+    |data| data.1
+);
+impl_component_set_wo_query_set!(QueryPipelineColliderComponentsSet, ColliderShape, |data| {
+    data.2
+});
+impl_component_set_wo_query_set!(QueryPipelineColliderComponentsSet, ColliderGroups, |data| {
+    data.3
+});
 
 pub struct ColliderComponentsSet<'a, 'b, 'c>(pub ColliderComponentsQuery<'a, 'b, 'c>);
 

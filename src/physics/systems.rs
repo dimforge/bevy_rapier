@@ -1,22 +1,21 @@
 use crate::physics::{
-    ColliderComponentsQuery, ColliderComponentsSet, ColliderHandleComponent, ColliderPositionSync,
-    ComponentSetQueryMut, EventQueue, InteractionPairFilters, IntoEntity, IntoHandle,
-    JointBuilderComponent, JointHandleComponent, JointsEntityMap, ModificationTracker,
-    PhysicsHooksWithQueryInstance, PhysicsHooksWithQueryObject, PhysicsInterpolationComponent,
-    QueryComponentSetMut, RapierConfiguration, RigidBodyComponentsQuery, RigidBodyComponentsSet,
+    ColliderComponentsQuery, ColliderComponentsSet, ColliderPositionSync, ComponentSetQueryMut,
+    EventQueue, IntoEntity, IntoHandle, JointBuilderComponent, JointHandleComponent,
+    JointsEntityMap, ModificationTracker, PhysicsHooksWithQueryInstance,
+    PhysicsHooksWithQueryObject, PhysicsInterpolationComponent, QueryComponentSetMut,
+    RapierConfiguration, RigidBodyComponentsQuery, RigidBodyComponentsSet,
     RigidBodyHandleComponent, RigidBodyPositionSync, SimulationToRenderTime,
 };
 
 use crate::rapier::dynamics::{
-    RigidBodyCcd, RigidBodyChanges, RigidBodyColliders, RigidBodyHandle, RigidBodyIds,
-    RigidBodyMassProps, RigidBodyPosition,
+    RigidBodyCcd, RigidBodyChanges, RigidBodyColliders, RigidBodyIds, RigidBodyMassProps,
+    RigidBodyPosition,
 };
 use crate::rapier::geometry::{
     ColliderBroadPhaseData, ColliderChanges, ColliderMassProperties, ColliderParent,
     ColliderPosition, ColliderShape,
 };
-use crate::rapier::pipeline::{PhysicsHooks, QueryPipeline};
-use bevy::ecs::component::Component;
+use crate::rapier::pipeline::QueryPipeline;
 use bevy::ecs::query::WorldQuery;
 use bevy::prelude::*;
 use rapier::dynamics::{CCDSolver, IntegrationParameters, IslandManager, JointSet};
@@ -137,7 +136,7 @@ pub fn create_joints_system(
     mut joints: ResMut<JointSet>,
     mut joints_entity_map: ResMut<JointsEntityMap>,
     query: Query<(Entity, &JointBuilderComponent)>,
-    mut bodies: ComponentSetQueryMut<RigidBodyIds>,
+    bodies: ComponentSetQueryMut<RigidBodyIds>,
 ) {
     let mut bodies = QueryComponentSetMut(bodies);
 
@@ -255,7 +254,7 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
                 if sim_to_render_time.diff - sim_dt < sim_dt {
                     // This is the last simulation step to be executed in the loop
                     // Update the previous state transforms
-                    for (body_handle, mut previous_state) in query.iter_mut() {
+                    for (_body_handle, _previous_state) in query.iter_mut() {
                         // TODO ECS: how to do this?
                         // if let Some(body) = bodies.get(body_handle.handle()) {
                         //     previous_state.0 = Some(*body.position());

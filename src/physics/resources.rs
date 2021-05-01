@@ -2,7 +2,7 @@ use crate::physics::{
     ColliderBundle, ColliderComponentsQuery, ColliderComponentsSet, IntoEntity, IntoHandle,
     JointHandleComponent, RigidBodyComponentsQuery, RigidBodyComponentsSet,
 };
-use crate::rapier::data::{ComponentSet, ComponentSetMut, ComponentSetOption};
+use crate::rapier::data::{ComponentSet, ComponentSetMut};
 use crate::rapier::dynamics::{
     IslandManager, JointSet, RigidBodyActivation, RigidBodyChanges, RigidBodyColliders,
     RigidBodyIds, RigidBodyType,
@@ -14,7 +14,6 @@ use crate::rapier::{
     geometry::{ColliderHandle, ContactEvent, IntersectionEvent},
     pipeline::{EventHandler, PhysicsHooks},
 };
-use bevy::ecs::component::Component;
 use bevy::ecs::query::WorldQuery;
 use bevy::prelude::*;
 use concurrent_queue::ConcurrentQueue;
@@ -96,26 +95,6 @@ impl EventHandler for EventQueue {
 pub struct SimulationToRenderTime {
     /// Difference between simulation and rendering time
     pub diff: f32,
-}
-
-/// Custom filters for intersection and contact pairs.
-pub struct InteractionPairFilters {
-    /// Custom physics hooks
-    pub hook: Option<
-        Box<
-            for<'a, 'b, 'c, 'd, 'e, 'f> PhysicsHooks<
-                RigidBodyComponentsSet<'a, 'b, 'c>,
-                ColliderComponentsSet<'d, 'e, 'f>,
-            >,
-        >,
-    >,
-}
-
-impl InteractionPairFilters {
-    /// A new interaction pair filter with no custom intersection and contact pair filters.
-    pub fn new() -> Self {
-        Self { hook: None }
-    }
 }
 
 /// HashMaps of Bevy Entity to Rapier handles

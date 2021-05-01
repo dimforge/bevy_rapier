@@ -7,7 +7,6 @@ pub use self::systems::*;
 
 use crate::rapier::data::{ComponentSet, ComponentSetMut, ComponentSetOption};
 use crate::rapier::dynamics::JointHandle;
-use bevy::ecs::query::WorldQuery;
 use bevy::prelude::{Entity, Query, QuerySet};
 use rapier::data::Index;
 
@@ -87,6 +86,29 @@ macro_rules! impl_component_set_mut(
                     .get_component_mut(handle.entity())
                     .map(|mut data| f(&mut data))
                     .ok()
+            }
+        }
+    }
+);
+
+macro_rules! impl_component_set_wo_query_set(
+    ($ComponentsSet: ident, $T: ty, |$data: ident| $data_expr: expr) => {
+        impl<'a, 'b, 'c> ComponentSetOption<$T> for $ComponentsSet<'a, 'b, 'c> {
+            #[inline(always)]
+            fn get(&self, handle: Index) -> Option<&$T> {
+                self.0.get_component(handle.entity()).ok()
+            }
+        }
+
+        impl<'a, 'b, 'c> ComponentSet<$T> for $ComponentsSet<'a, 'b, 'c> {
+            #[inline(always)]
+            fn size_hint(&self) -> usize {
+                0
+            }
+
+            #[inline(always)]
+            fn for_each(&self, mut f: impl FnMut(Index, &$T)) {
+                self.0.for_each(|$data| f($data.0.handle(), $data_expr))
             }
         }
     }

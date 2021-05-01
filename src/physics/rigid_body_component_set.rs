@@ -4,7 +4,6 @@ use crate::rapier::dynamics::{
     RigidBodyDominance, RigidBodyForces, RigidBodyHandle, RigidBodyIds, RigidBodyMassProps,
     RigidBodyPosition, RigidBodyType, RigidBodyVelocity,
 };
-use crate::rapier::geometry::ColliderHandle;
 use bevy::prelude::*;
 use rapier::data::{ComponentSet, ComponentSetMut, ComponentSetOption, Index};
 

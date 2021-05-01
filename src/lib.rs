@@ -26,8 +26,9 @@ pub mod prelude {
     pub use super::physics::{
         ColliderBundle, ColliderComponentsSet, ColliderPositionSync, EventQueue, IntoEntity,
         IntoHandle, JointBuilderComponent, NoUserData, PhysicsHooksWithQuery,
-        PhysicsHooksWithQueryObject, RapierConfiguration, RapierPhysicsPlugin, RigidBodyBundle,
-        RigidBodyComponentsSet, RigidBodyPositionSync,
+        PhysicsHooksWithQueryObject, QueryPipelineColliderComponentsQuery,
+        QueryPipelineColliderComponentsSet, RapierConfiguration, RapierPhysicsPlugin,
+        RigidBodyBundle, RigidBodyComponentsSet, RigidBodyPositionSync,
     };
     pub use rapier::dynamics::{
         RigidBodyActivation, RigidBodyCcd, RigidBodyChanges, RigidBodyColliders, RigidBodyForces,

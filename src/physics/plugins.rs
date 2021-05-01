@@ -1,12 +1,9 @@
 use crate::physics;
 use crate::physics::{
-    EventQueue, InteractionPairFilters, JointsEntityMap, ModificationTracker,
-    PhysicsHooksWithQueryInstance, PhysicsHooksWithQueryObject, RapierConfiguration,
-    SimulationToRenderTime,
+    EventQueue, JointsEntityMap, ModificationTracker, PhysicsHooksWithQueryObject,
+    RapierConfiguration, SimulationToRenderTime,
 };
 use crate::rapier::pipeline::QueryPipeline;
-use crate::render::RapierRenderPlugin;
-use bevy::ecs::component::Component;
 use bevy::ecs::query::WorldQuery;
 use bevy::prelude::*;
 use rapier::dynamics::{CCDSolver, IntegrationParameters, IslandManager, JointSet};

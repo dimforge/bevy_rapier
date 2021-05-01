@@ -1,11 +1,9 @@
-use crate::physics::{ColliderHandleComponent, IntoEntity, RapierConfiguration};
-use crate::rapier::dynamics::RigidBodyType;
-use crate::rapier::geometry::{ColliderParent, ColliderPosition, ColliderShape};
+use crate::physics::RapierConfiguration;
+use crate::rapier::geometry::ColliderShape;
 use crate::render::ColliderDebugRender;
 use bevy::prelude::*;
 use bevy::render::mesh::{Indices, VertexAttributeValues};
 use rapier::geometry::ShapeType;
-use std::collections::HashMap;
 
 /// System responsible for attaching a PbrBundle to each entity having a collider.
 pub fn create_collider_renders_system(
