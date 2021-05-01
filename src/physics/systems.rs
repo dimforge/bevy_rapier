@@ -27,6 +27,43 @@ use rapier::pipeline::PhysicsPipeline;
 /// builder resources.
 pub fn attach_bodies_and_colliders_system(
     mut commands: Commands,
+    mut body_query: Query<(
+        // Rigid-bodies.
+        &RigidBodyPosition,
+    )>,
+    mut colliders_query: Query<
+        (
+            Entity,
+            Option<&Parent>,
+            // Collider.
+            &ColliderPosition,
+        ),
+        Without<ColliderParent>,
+    >,
+) {
+    for (collider_entity, parent_entity, co_pos) in colliders_query.iter_mut() {
+        let body_entity;
+
+        if body_query.get_mut(collider_entity).is_ok() {
+            // The body and collider are attached to the same entity.
+            body_entity = collider_entity;
+        } else if let Some(parent_entity) = parent_entity {
+            body_entity = parent_entity.0;
+        } else {
+            continue;
+        }
+
+        let co_parent = ColliderParent {
+            pos_wrt_parent: co_pos.0,
+            handle: body_entity.handle(),
+        };
+        commands.entity(collider_entity).insert(co_parent);
+    }
+}
+
+/// System responsible for creating a Rapier rigid-body and collider from their
+/// builder resources.
+pub fn finalize_collider_attach_to_bodies(
     mut modif_tracker: ResMut<ModificationTracker>,
     mut body_query: Query<(
         // Rigid-bodies.
@@ -39,65 +76,50 @@ pub fn attach_bodies_and_colliders_system(
     mut colliders_query: Query<
         (
             Entity,
-            Option<&Parent>,
             // Collider.
             &mut ColliderChanges,
             &mut ColliderBroadPhaseData,
             &mut ColliderPosition,
             &ColliderShape,
             &ColliderMassProperties,
+            &ColliderParent,
         ),
-        Without<ColliderParent>,
+        Added<ColliderParent>,
     >,
 ) {
     for (
         collider_entity,
-        parent_entity,
         mut co_changes,
         mut co_bf_data,
         mut co_pos,
         co_shape,
         co_mprops,
+        co_parent,
     ) in colliders_query.iter_mut()
     {
-        let body_entity;
-
-        if body_query.get_mut(collider_entity).is_ok() {
-            // The body and collider are attached to the same entity.
-            body_entity = collider_entity;
-        } else if let Some(parent_entity) = parent_entity {
-            body_entity = parent_entity.0;
-        } else {
-            continue;
-        }
-
         if let Ok((mut rb_changes, mut rb_ccd, mut rb_colliders, mut rb_mprops, rb_pos)) =
-            body_query.get_mut(body_entity)
+            body_query.get_mut(co_parent.handle.entity())
         {
             // Contract:
             // - Reset collider's references.
             // - Set collider's parent handle.
             // - Attach the collider to the body.
-            let co_parent = ColliderParent {
-                pos_wrt_parent: co_pos.0,
-                handle: body_entity.handle(),
-            };
 
             // Update the modification tracker.
             // NOTE: this must be done before the `.attach_collider` because
             //       `.attach_collider` will set the `MODIFIED` flag.
             if !rb_changes.contains(RigidBodyChanges::MODIFIED) {
-                modif_tracker.modified_bodies.push(body_entity.handle());
+                modif_tracker.modified_bodies.push(co_parent.handle);
             }
 
             modif_tracker
                 .body_colliders
-                .entry(body_entity.handle())
+                .entry(co_parent.handle)
                 .or_insert(vec![])
                 .push(collider_entity.handle());
             modif_tracker
                 .colliders_parent
-                .insert(collider_entity.handle(), body_entity.handle());
+                .insert(collider_entity.handle(), co_parent.handle);
 
             *co_changes = ColliderChanges::default();
             *co_bf_data = ColliderBroadPhaseData::default();
@@ -112,22 +134,8 @@ pub fn attach_bodies_and_colliders_system(
                 &co_shape,
                 &co_mprops,
             );
-
-            commands.entity(collider_entity).insert(co_parent);
         }
     }
-
-    // TODO ECS
-    // for (entity, parent, collider) in parented_collider_query.iter() {
-    //     if let Some(body_handle) = joints_entity_map.bodies.get(&parent.0) {
-    //         let handle = colliders.insert(collider.build(), *body_handle, &mut bodies);
-    //         commands
-    //             .entity(entity)
-    //             .insert(ColliderHandleComponent::from(handle))
-    //             .remove::<ColliderBuilder>();
-    //         joints_entity_map.colliders.insert(entity, handle);
-    //     } // warn here? panic here? do nothing?
-    // }
 }
 
 /// System responsible for creating Rapier joints from their builder resources.
@@ -376,7 +384,6 @@ pub fn sync_transforms(
     {
         if let Some(co_parent) = co_parent {
             if rigid_body_sync_mode.get(co_parent.handle.entity()).is_ok() {
-                println!("Syncing with parent");
                 // Sync the relative position instead of the actual collider position.
                 sync_transform(
                     &co_parent.pos_wrt_parent,

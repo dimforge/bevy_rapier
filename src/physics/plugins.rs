@@ -36,48 +36,59 @@ impl<UserData> Default for RapierPhysicsPlugin<UserData> {
 /// This stage is added right before the `POST_UPDATE` stage.
 pub const TRANSFORM_SYNC_STAGE: &'static str = "rapier::transform_sync_stage";
 
-#[derive(SystemLabel, Clone, Debug, Eq, Hash, PartialEq)]
-/// Label for create_joints_system
-pub struct CreateJointsSystem;
+/// The names of the default App stages
+#[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
+pub enum PhysicsStages {
+    FinalizeCreations,
+    SyncTransforms,
+}
 
 impl<UserData: 'static + WorldQuery + Send + Sync> Plugin for RapierPhysicsPlugin<UserData> {
     fn build(&self, app: &mut AppBuilder) {
-        app.insert_resource(PhysicsPipeline::new())
-            .insert_resource(QueryPipeline::new())
-            .insert_resource(RapierConfiguration::default())
-            .insert_resource(IntegrationParameters::default())
-            .insert_resource(BroadPhase::new())
-            .insert_resource(NarrowPhase::new())
-            .insert_resource(IslandManager::new())
-            .insert_resource(JointSet::new())
-            .insert_resource(CCDSolver::new())
-            .insert_resource(PhysicsHooksWithQueryObject::<UserData>(Box::new(())))
-            .insert_resource(EventQueue::new(true))
-            .insert_resource(SimulationToRenderTime::default())
-            .insert_resource(JointsEntityMap::default())
-            .insert_resource(ModificationTracker::default())
-            .add_system_to_stage(
-                CoreStage::PreUpdate,
-                physics::attach_bodies_and_colliders_system
-                    .system()
-                    .before(CreateJointsSystem),
-            )
-            .add_system_to_stage(
-                CoreStage::PreUpdate,
-                physics::create_joints_system
-                    .system()
-                    .label(CreateJointsSystem),
-            )
-            .add_system_to_stage(
-                CoreStage::Update,
-                physics::step_world_system::<UserData>.system(),
-            )
-            .add_stage_before(
-                CoreStage::PostUpdate,
-                TRANSFORM_SYNC_STAGE,
-                SystemStage::parallel(),
-            )
-            .add_system_to_stage(TRANSFORM_SYNC_STAGE, physics::sync_transforms.system())
-            .add_system_to_stage(TRANSFORM_SYNC_STAGE, physics::collect_removals.system());
+        app.add_stage_before(
+            CoreStage::PreUpdate,
+            PhysicsStages::FinalizeCreations,
+            SystemStage::parallel(),
+        )
+        .add_stage_before(
+            CoreStage::PostUpdate,
+            PhysicsStages::SyncTransforms,
+            SystemStage::parallel(),
+        )
+        .insert_resource(PhysicsPipeline::new())
+        .insert_resource(QueryPipeline::new())
+        .insert_resource(RapierConfiguration::default())
+        .insert_resource(IntegrationParameters::default())
+        .insert_resource(BroadPhase::new())
+        .insert_resource(NarrowPhase::new())
+        .insert_resource(IslandManager::new())
+        .insert_resource(JointSet::new())
+        .insert_resource(CCDSolver::new())
+        .insert_resource(PhysicsHooksWithQueryObject::<UserData>(Box::new(())))
+        .insert_resource(EventQueue::new(true))
+        .insert_resource(SimulationToRenderTime::default())
+        .insert_resource(JointsEntityMap::default())
+        .insert_resource(ModificationTracker::default())
+        .add_system_to_stage(
+            PhysicsStages::FinalizeCreations,
+            physics::attach_bodies_and_colliders_system.system(),
+        )
+        .add_system_to_stage(
+            PhysicsStages::FinalizeCreations,
+            physics::create_joints_system.system(),
+        )
+        .add_system_to_stage(
+            CoreStage::PreUpdate,
+            physics::finalize_collider_attach_to_bodies.system(),
+        )
+        .add_system_to_stage(
+            CoreStage::Update,
+            physics::step_world_system::<UserData>.system(),
+        )
+        .add_system_to_stage(
+            PhysicsStages::SyncTransforms,
+            physics::sync_transforms.system(),
+        )
+        .add_system_to_stage(CoreStage::Last, physics::collect_removals.system());
     }
 }
