@@ -19,7 +19,9 @@ pub fn create_body_and_collider_system(
     mut commands: Commands,
     mut bodies: ResMut<RigidBodySet>,
     mut colliders: ResMut<ColliderSet>,
+    configuration: Res<RapierConfiguration>,
     mut entity_maps: ResMut<EntityMaps>,
+    mut query_pipeline: ResMut<QueryPipeline>,
     standalone_body_query: Query<(Entity, &RigidBodyBuilder), Without<ColliderBuilder>>,
     body_and_collider_query: Query<(Entity, &RigidBodyBuilder, &ColliderBuilder)>,
     parented_collider_query: Query<(Entity, &Parent, &ColliderBuilder), Without<RigidBodyBuilder>>,
@@ -58,6 +60,10 @@ pub fn create_body_and_collider_system(
                 .remove::<ColliderBuilder>();
             entity_maps.colliders.insert(entity, handle);
         } // warn here? panic here? do nothing?
+    }
+
+    if configuration.query_pipeline_active {
+        query_pipeline.update(&mut bodies, &colliders);
     }
 }
 
