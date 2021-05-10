@@ -3,17 +3,14 @@ extern crate rapier3d as rapier; // For the debug UI.
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
+use bevy::render::camera::Camera;
 use bevy::render::pass::ClearColor;
-use rapier3d::pipeline::PhysicsPipeline;
+use rapier::geometry::{ColliderShape, InteractionGroups, Ray};
+use rapier::pipeline::{PhysicsPipeline, QueryPipeline};
 use ui::DebugUiPlugin;
 
 #[path = "../../src_debug_ui/mod.rs"]
 mod ui;
-
-#[derive(Default)]
-pub struct DespawnResource {
-    pub entity: Option<Entity>,
-}
 
 fn main() {
     App::build()
@@ -23,7 +20,6 @@ fn main() {
             0xFF as f32 / 255.0,
         )))
         .insert_resource(Msaa::default())
-        .insert_resource(DespawnResource::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
@@ -33,7 +29,7 @@ fn main() {
         .add_startup_system(setup_graphics.system())
         .add_startup_system(setup_physics.system())
         .add_startup_system(enable_physics_profiling.system())
-        .add_system(despawn.system())
+        .add_system(cast_ray.system())
         .run();
 }
 
@@ -61,7 +57,7 @@ fn setup_graphics(mut commands: Commands) {
     });
 }
 
-pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource>) {
+pub fn setup_physics(mut commands: Commands) {
     /*
      * Ground
      */
@@ -73,13 +69,12 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
         position: [0.0, -ground_height, 0.0].into(),
         ..ColliderBundle::default()
     };
-    let ground_entity = commands
-        .spawn()
-        .insert_bundle(collider)
-        .insert(ColliderPositionSync::Discrete)
+
+    commands
+        .spawn_bundle(collider)
         .insert(ColliderDebugRender::default())
-        .id();
-    despawn.entity = Some(ground_entity);
+        .insert(ColliderPositionSync::Discrete);
+
     /*
      * Create the cubes
      */
@@ -107,16 +102,18 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
                     position: [x, y, z].into(),
                     ..RigidBodyBundle::default()
                 };
+
                 let collider = ColliderBundle {
                     shape: ColliderShape::cuboid(rad, rad, rad),
                     ..ColliderBundle::default()
                 };
+
                 commands
                     .spawn()
                     .insert_bundle(rigid_body)
                     .insert_bundle(collider)
-                    .insert(ColliderPositionSync::Discrete)
-                    .insert(ColliderDebugRender::with_id(color));
+                    .insert(ColliderDebugRender::with_id(color))
+                    .insert(ColliderPositionSync::Discrete);
             }
         }
 
@@ -124,12 +121,63 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
     }
 }
 
-pub fn despawn(mut commands: Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
-    if time.seconds_since_startup() > 5.0 {
-        if let Some(entity) = despawn.entity {
-            println!("Despawning ground entity");
-            commands.entity(entity).despawn();
-            despawn.entity = None;
+fn cast_ray(
+    mut commands: Commands,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    windows: Res<Windows>,
+    query_pipeline: Res<QueryPipeline>,
+    colliders: QueryPipelineColliderComponentsQuery,
+    bodies: Query<&RigidBodyType>,
+    cameras: Query<(&Camera, &GlobalTransform)>,
+) {
+    // We will color in read the colliders hovered by the mouse.
+    for (camera, camera_transform) in cameras.iter() {
+        // First, compute a ray from the mouse position.
+        let ray = ray_from_mouse_position(windows.get_primary().unwrap(), camera, camera_transform);
+
+        // Then cast the ray. This QueryPipelineColliderComponentsSet is just
+        // an adapter so the query pipeline understands how to use the query from Bevy.
+        let colliders = QueryPipelineColliderComponentsSet(&colliders);
+        let hit = query_pipeline.cast_ray(
+            &colliders,
+            &ray,
+            100.0,
+            true,
+            InteractionGroups::default(),
+            None,
+        );
+
+        if let Some(hit) = hit {
+            // Color in red the entity we just hit.
+            // But don't color it if the rigid-body is not dynamic.
+            if bodies.get(hit.0.entity()).ok() == Some(&RigidBodyType::Dynamic) {
+                // TODO: don't create a new material every time.
+                let material = materials.add(Color::rgb(1.0, 0.0, 0.0).into());
+                commands.entity(hit.0.entity()).insert(material);
+            }
         }
     }
+}
+
+// Credit to @doomy on discord.
+fn ray_from_mouse_position(
+    window: &Window,
+    camera: &Camera,
+    camera_transform: &GlobalTransform,
+) -> Ray {
+    let mouse_position = window.cursor_position().unwrap_or(Vec2::new(0.0, 0.0));
+
+    let x = 2.0 * (mouse_position.x / window.width() as f32) - 1.0;
+    let y = 2.0 * (mouse_position.y / window.height() as f32) - 1.0;
+
+    let camera_inverse_matrix =
+        camera_transform.compute_matrix() * camera.projection_matrix.inverse();
+    let near = camera_inverse_matrix * Vec3::new(x, y, 0.0).extend(1.0);
+    let far = camera_inverse_matrix * Vec3::new(x, y, 1.0).extend(1.0);
+
+    let near = near.truncate() / near.w;
+    let far = far.truncate() / far.w;
+    let dir: Vec3 = far - near;
+
+    Ray::new(near.into(), dir.into())
 }

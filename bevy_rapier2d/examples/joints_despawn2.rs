@@ -1,13 +1,11 @@
 extern crate rapier2d as rapier; // For the debug UI.
 
 use bevy::prelude::*;
+use bevy_rapier2d::prelude::*;
+
 use bevy::render::pass::ClearColor;
-use bevy_rapier2d::physics::{JointBuilderComponent, RapierConfiguration, RapierPhysicsPlugin};
-use bevy_rapier2d::render::RapierRenderPlugin;
 use nalgebra::Point2;
-use rapier::dynamics::{BallJoint, BodyStatus};
-use rapier2d::dynamics::RigidBodyBuilder;
-use rapier2d::geometry::ColliderBuilder;
+use rapier2d::dynamics::{BallJoint, RigidBodyType};
 use rapier2d::pipeline::PhysicsPipeline;
 use ui::DebugUiPlugin;
 
@@ -31,7 +29,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
-        .add_plugin(RapierPhysicsPlugin)
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)
         .add_startup_system(setup_graphics.system())
@@ -50,7 +48,7 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
 
     let mut camera = OrthographicCameraBundle::new_2d();
     camera.transform = Transform::from_translation(Vec3::new(200.0, -200.0, 0.0));
-    commands.spawn().insert_bundle(LightBundle {
+    commands.spawn_bundle(LightBundle {
         transform: Transform::from_translation(Vec3::new(1000.0, 10.0, 2000.0)),
         light: Light {
             intensity: 100_000_000_.0,
@@ -59,7 +57,7 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
         },
         ..Default::default()
     });
-    commands.spawn().insert_bundle(camera);
+    commands.spawn_bundle(camera);
 }
 
 pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource>) {
@@ -76,22 +74,36 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
     let shift = 1.0;
 
     let mut body_entities = Vec::new();
+    let mut color = 0;
 
     for k in 0..numk {
         for i in 0..numi {
             let fk = k as f32;
             let fi = i as f32;
+            color += 1;
 
-            let status = if i == 0 && (k % 4 == 0 || k == numk - 1) {
-                BodyStatus::Static
+            let body_type = if i == 0 && (k % 4 == 0 || k == numk - 1) {
+                RigidBodyType::Static
             } else {
-                BodyStatus::Dynamic
+                RigidBodyType::Dynamic
             };
 
-            let rigid_body = RigidBodyBuilder::new(status).translation(fk * shift, -fi * shift);
-            let collider = ColliderBuilder::cuboid(rad, rad).density(1.0);
-            let child_entity = commands.spawn().insert_bundle((rigid_body, collider)).id();
+            let rigid_body = RigidBodyBundle {
+                body_type,
+                position: [fk * shift, -fi * shift].into(),
+                ..RigidBodyBundle::default()
+            };
 
+            let collider = ColliderBundle {
+                shape: ColliderShape::cuboid(rad, rad),
+                ..ColliderBundle::default()
+            };
+            let child_entity = commands
+                .spawn_bundle(rigid_body)
+                .insert_bundle(collider)
+                .insert(ColliderPositionSync::Discrete)
+                .insert(ColliderDebugRender::with_id(color))
+                .id();
             // Vertical joint.
             if i > 0 {
                 let parent_entity = *body_entities.last().unwrap();

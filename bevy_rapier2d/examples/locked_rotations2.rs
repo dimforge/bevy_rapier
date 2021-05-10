@@ -1,11 +1,10 @@
 extern crate rapier2d as rapier; // For the debug UI.
 
 use bevy::prelude::*;
+use bevy_rapier2d::prelude::*;
+
 use bevy::render::pass::ClearColor;
-use bevy_rapier2d::physics::{RapierConfiguration, RapierPhysicsPlugin};
-use bevy_rapier2d::render::RapierRenderPlugin;
-use rapier2d::dynamics::RigidBodyBuilder;
-use rapier2d::geometry::ColliderBuilder;
+use nalgebra::Isometry2;
 use rapier2d::pipeline::PhysicsPipeline;
 use ui::DebugUiPlugin;
 
@@ -23,7 +22,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
-        .add_plugin(RapierPhysicsPlugin)
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)
         .add_startup_system(setup_graphics.system())
@@ -41,7 +40,7 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
 
     let mut camera = OrthographicCameraBundle::new_2d();
     camera.transform = Transform::from_translation(Vec3::new(0.0, 30.0, 0.0));
-    commands.spawn().insert_bundle(LightBundle {
+    commands.spawn_bundle(LightBundle {
         transform: Transform::from_translation(Vec3::new(1000.0, 10.0, 2000.0)),
         light: Light {
             intensity: 100_000_000_.0,
@@ -50,7 +49,7 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
         },
         ..Default::default()
     });
-    commands.spawn().insert_bundle(camera);
+    commands.spawn_bundle(camera);
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -60,26 +59,49 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_size = 5.0;
     let ground_height = 0.1;
 
-    let rigid_body = RigidBodyBuilder::new_static().translation(0.0, -ground_height);
-    let collider = ColliderBuilder::cuboid(ground_size, ground_height);
-    commands.spawn().insert_bundle((rigid_body, collider));
+    let collider = ColliderBundle {
+        shape: ColliderShape::cuboid(ground_size, ground_height),
+        position: [0.0, -ground_height].into(),
+        ..Default::default()
+    };
+    commands
+        .spawn_bundle(collider)
+        .insert(ColliderPositionSync::Discrete)
+        .insert(ColliderDebugRender::default());
 
     /*
      * A rectangle that only rotate.
      */
-    let rigid_body = RigidBodyBuilder::new_dynamic()
-        .translation(0.0, 3.0)
-        .lock_translations();
-    let collider = ColliderBuilder::cuboid(2.0, 0.6);
-    commands.spawn().insert_bundle((rigid_body, collider));
+    let rigid_body = RigidBodyBundle {
+        position: [0.0, 3.0].into(),
+        mass_properties: RigidBodyMassPropsFlags::TRANSLATION_LOCKED.into(),
+        ..Default::default()
+    };
+    let collider = ColliderBundle {
+        shape: ColliderShape::cuboid(2.0, 0.6),
+        ..Default::default()
+    };
+    commands
+        .spawn_bundle(rigid_body)
+        .insert_bundle(collider)
+        .insert(ColliderPositionSync::Discrete)
+        .insert(ColliderDebugRender::with_id(0));
 
     /*
      * A tilted cuboid that cannot rotate.
      */
-    let rigid_body = RigidBodyBuilder::new_dynamic()
-        .translation(0.3, 5.0)
-        .rotation(1.0)
-        .lock_rotations();
-    let collider = ColliderBuilder::cuboid(0.6, 0.4);
-    commands.spawn().insert_bundle((rigid_body, collider));
+    let rigid_body = RigidBodyBundle {
+        position: Isometry2::new([0.3, 5.0].into(), 1.0).into(),
+        mass_properties: RigidBodyMassPropsFlags::ROTATION_LOCKED.into(),
+        ..Default::default()
+    };
+    let collider = ColliderBundle {
+        shape: ColliderShape::cuboid(0.6, 0.4),
+        ..Default::default()
+    };
+    commands
+        .spawn_bundle(rigid_body)
+        .insert_bundle(collider)
+        .insert(ColliderPositionSync::Discrete)
+        .insert(ColliderDebugRender::with_id(1));
 }

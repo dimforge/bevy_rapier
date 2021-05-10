@@ -10,5 +10,9 @@ impl Plugin for RapierRenderPlugin {
             CoreStage::PreUpdate,
             systems::create_collider_renders_system.system(),
         );
+        app.add_system_to_stage(
+            CoreStage::PreUpdate,
+            systems::update_collider_render_mesh.system(),
+        );
     }
 }

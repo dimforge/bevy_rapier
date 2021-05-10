@@ -2,13 +2,11 @@ extern crate nalgebra as na;
 extern crate rapier3d as rapier; // For the debug UI.
 
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
+
 use bevy::render::pass::ClearColor;
-use bevy_rapier3d::physics::{JointBuilderComponent, RapierPhysicsPlugin};
-use bevy_rapier3d::render::RapierRenderPlugin;
 use na::{Isometry3, Point3, Unit, Vector3};
-use rapier::dynamics::{BallJoint, BodyStatus, FixedJoint, PrismaticJoint, RevoluteJoint};
-use rapier3d::dynamics::RigidBodyBuilder;
-use rapier3d::geometry::ColliderBuilder;
+use rapier::dynamics::{BallJoint, FixedJoint, PrismaticJoint, RevoluteJoint, RigidBodyType};
 use rapier3d::pipeline::PhysicsPipeline;
 use ui::DebugUiPlugin;
 
@@ -32,7 +30,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
-        .add_plugin(RapierPhysicsPlugin)
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)
         .add_startup_system(setup_graphics.system())
@@ -47,7 +45,7 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    commands.spawn().insert_bundle(LightBundle {
+    commands.spawn_bundle(LightBundle {
         transform: Transform::from_translation(Vec3::new(100.0, 10.0, 200.0)),
         light: Light {
             intensity: 100_000.0,
@@ -56,7 +54,7 @@ fn setup_graphics(mut commands: Commands) {
         },
         ..Default::default()
     });
-    commands.spawn().insert_bundle(PerspectiveCameraBundle {
+    commands.spawn_bundle(PerspectiveCameraBundle {
         transform: Transform::from_matrix(Mat4::face_toward(
             Vec3::new(15.0, 5.0, 42.0),
             Vec3::new(13.0, 1.0, 1.0),
@@ -75,16 +73,42 @@ fn create_prismatic_joints(
     let rad = 0.4;
     let shift = 1.0;
 
-    let ground = RigidBodyBuilder::new_static().translation(origin.x, origin.y, origin.z);
-    let collider = ColliderBuilder::cuboid(rad, rad, rad);
-    let mut curr_parent = commands.spawn().insert_bundle((ground, collider)).id();
+    let body = RigidBodyBundle {
+        body_type: RigidBodyType::Static,
+        position: origin.into(),
+        ..Default::default()
+    };
+    let collider = ColliderBundle {
+        shape: ColliderShape::cuboid(rad, rad, rad),
+        ..Default::default()
+    };
+
+    let mut curr_parent = commands
+        .spawn_bundle(body)
+        .insert_bundle(collider)
+        .insert(ColliderDebugRender::default())
+        .insert(ColliderPositionSync::Discrete)
+        .id();
 
     for i in 0..num {
         let z = origin.z + (i + 1) as f32 * shift;
-        let density = 1.0;
-        let rigid_body = RigidBodyBuilder::new_dynamic().translation(origin.x, origin.y, z);
-        let collider = ColliderBuilder::cuboid(rad, rad, rad).density(density);
-        let curr_child = commands.spawn().insert_bundle((rigid_body, collider)).id();
+
+        let rigid_body = RigidBodyBundle {
+            position: [origin.x, origin.y, z].into(),
+            ..RigidBodyBundle::default()
+        };
+
+        let collider = ColliderBundle {
+            shape: ColliderShape::cuboid(rad, rad, rad),
+            ..ColliderBundle::default()
+        };
+
+        let curr_child = commands
+            .spawn_bundle(rigid_body)
+            .insert_bundle(collider)
+            .insert(ColliderDebugRender::with_id(i))
+            .insert(ColliderPositionSync::Discrete)
+            .id();
 
         let axis = if i % 2 == 0 {
             Unit::new_normalize(Vector3::new(1.0, 1.0, 0.0))
@@ -106,9 +130,9 @@ fn create_prismatic_joints(
         prism.limits[1] = 2.0;
 
         let entity = commands
-            .spawn()
-            .insert_bundle((JointBuilderComponent::new(prism, curr_parent, curr_child),))
+            .spawn_bundle((JointBuilderComponent::new(prism, curr_parent, curr_child),))
             .id();
+
         if i == 2 {
             despawn.entities.push(entity);
         }
@@ -126,9 +150,23 @@ fn create_revolute_joints(
     let rad = 0.4;
     let shift = 2.0;
 
-    let ground = RigidBodyBuilder::new_static().translation(origin.x, origin.y, 0.0);
-    let collider = ColliderBuilder::cuboid(rad, rad, rad);
-    let mut curr_parent = commands.spawn().insert_bundle((ground, collider)).id();
+    let ground = RigidBodyBundle {
+        body_type: RigidBodyType::Static,
+        position: [origin.x, origin.y, 0.0].into(),
+        ..RigidBodyBundle::default()
+    };
+
+    let collider = ColliderBundle {
+        shape: ColliderShape::cuboid(rad, rad, rad),
+        ..ColliderBundle::default()
+    };
+
+    let mut curr_parent = commands
+        .spawn_bundle(ground)
+        .insert_bundle(collider)
+        .insert(ColliderDebugRender::default())
+        .insert(ColliderPositionSync::Discrete)
+        .id();
 
     for i in 0..num {
         // Create four bodies.
@@ -142,10 +180,22 @@ fn create_revolute_joints(
 
         let mut handles = [curr_parent; 4];
         for k in 0..4 {
-            let density = 1.0;
-            let rigid_body = RigidBodyBuilder::new_dynamic().position(positions[k]);
-            let collider = ColliderBuilder::cuboid(rad, rad, rad).density(density);
-            handles[k] = commands.spawn().insert_bundle((rigid_body, collider)).id();
+            let rigid_body = RigidBodyBundle {
+                position: positions[k].into(),
+                ..RigidBodyBundle::default()
+            };
+
+            let collider = ColliderBundle {
+                shape: ColliderShape::cuboid(rad, rad, rad),
+                ..ColliderBundle::default()
+            };
+
+            handles[k] = commands
+                .spawn_bundle(rigid_body)
+                .insert_bundle(collider)
+                .insert(ColliderDebugRender::with_id(i))
+                .insert(ColliderPositionSync::Discrete)
+                .id();
         }
 
         // Setup four joints.
@@ -161,21 +211,18 @@ fn create_revolute_joints(
         ];
 
         let entity1 = commands
-            .spawn()
-            .insert_bundle((JointBuilderComponent::new(revs[0], curr_parent, handles[0]),))
+            .spawn_bundle((JointBuilderComponent::new(revs[0], curr_parent, handles[0]),))
             .id();
         let entity2 = commands
-            .spawn()
-            .insert_bundle((JointBuilderComponent::new(revs[1], handles[0], handles[1]),))
+            .spawn_bundle((JointBuilderComponent::new(revs[1], handles[0], handles[1]),))
             .id();
         let entity3 = commands
-            .spawn()
-            .insert_bundle((JointBuilderComponent::new(revs[2], handles[1], handles[2]),))
+            .spawn_bundle((JointBuilderComponent::new(revs[2], handles[1], handles[2]),))
             .id();
         let entity4 = commands
-            .spawn()
-            .insert_bundle((JointBuilderComponent::new(revs[3], handles[2], handles[3]),))
+            .spawn_bundle((JointBuilderComponent::new(revs[3], handles[2], handles[3]),))
             .id();
+
         if i == 1 {
             despawn.entities.push(entity1);
             despawn.entities.push(entity2);
@@ -197,28 +244,40 @@ fn create_fixed_joints(
     let shift = 1.0;
 
     let mut body_entities = Vec::new();
+    let mut color = 0;
 
     for k in 0..num {
         for i in 0..num {
             let fk = k as f32;
             let fi = i as f32;
+            color += 1;
 
             // NOTE: the num - 2 test is to avoid two consecutive
             // fixed bodies. Because physx will crash if we add
             // a joint between these.
-            let status = if i == 0 && (k % 4 == 0 && k != num - 2 || k == num - 1) {
-                BodyStatus::Static
+            let body_type = if i == 0 && (k % 4 == 0 && k != num - 2 || k == num - 1) {
+                RigidBodyType::Static
             } else {
-                BodyStatus::Dynamic
+                RigidBodyType::Dynamic
             };
 
-            let rigid_body = RigidBodyBuilder::new(status).translation(
-                origin.x + fk * shift,
-                origin.y,
-                origin.z + fi * shift,
-            );
-            let collider = ColliderBuilder::ball(rad).density(1.0);
-            let child_entity = commands.spawn().insert_bundle((rigid_body, collider)).id();
+            let rigid_body = RigidBodyBundle {
+                body_type,
+                position: [origin.x + fk * shift, origin.y, origin.z + fi * shift].into(),
+                ..RigidBodyBundle::default()
+            };
+
+            let collider = ColliderBundle {
+                shape: ColliderShape::ball(rad),
+                ..ColliderBundle::default()
+            };
+
+            let child_entity = commands
+                .spawn_bundle(rigid_body)
+                .insert_bundle(collider)
+                .insert(ColliderDebugRender::with_id(color))
+                .insert(ColliderPositionSync::Discrete)
+                .id();
 
             // Vertical joint.
             if i > 0 {
@@ -227,7 +286,7 @@ fn create_fixed_joints(
                     Isometry3::identity(),
                     Isometry3::translation(0.0, 0.0, -shift),
                 );
-                commands.spawn().insert_bundle((JointBuilderComponent::new(
+                commands.spawn_bundle((JointBuilderComponent::new(
                     joint,
                     parent_entity,
                     child_entity,
@@ -265,21 +324,37 @@ fn create_ball_joints(commands: &mut Commands, num: usize, despawn: &mut ResMut<
     let shift = 1.0;
 
     let mut body_entities = Vec::new();
+    let mut color = 0;
 
     for k in 0..num {
         for i in 0..num {
             let fk = k as f32;
             let fi = i as f32;
+            color += 1;
 
-            let status = if i == 0 && (k % 4 == 0 || k == num - 1) {
-                BodyStatus::Static
+            let body_type = if i == 0 && (k % 4 == 0 || k == num - 1) {
+                RigidBodyType::Static
             } else {
-                BodyStatus::Dynamic
+                RigidBodyType::Dynamic
             };
 
-            let rigid_body = RigidBodyBuilder::new(status).translation(fk * shift, 0.0, fi * shift);
-            let collider = ColliderBuilder::ball(rad).density(1.0);
-            let child_entity = commands.spawn().insert_bundle((collider, rigid_body)).id();
+            let rigid_body = RigidBodyBundle {
+                body_type,
+                position: [fk * shift, 0.0, fi * shift].into(),
+                ..Default::default()
+            };
+
+            let collider = ColliderBundle {
+                shape: ColliderShape::ball(rad),
+                ..Default::default()
+            };
+
+            let child_entity = commands
+                .spawn_bundle(collider)
+                .insert_bundle(rigid_body)
+                .insert(ColliderDebugRender::with_id(color))
+                .insert(ColliderPositionSync::Discrete)
+                .id();
 
             // Vertical joint.
             if i > 0 {
@@ -293,6 +368,7 @@ fn create_ball_joints(commands: &mut Commands, num: usize, despawn: &mut ResMut<
                         child_entity,
                     ),))
                     .id();
+
                 if i == 2 {
                     despawn.entities.push(entity);
                 }
@@ -303,7 +379,7 @@ fn create_ball_joints(commands: &mut Commands, num: usize, despawn: &mut ResMut<
                 let parent_index = body_entities.len() - num;
                 let parent_entity = body_entities[parent_index];
                 let joint = BallJoint::new(Point3::origin(), Point3::new(-shift, 0.0, 0.0));
-                commands.spawn().insert_bundle((JointBuilderComponent::new(
+                commands.spawn_bundle((JointBuilderComponent::new(
                     joint,
                     parent_entity,
                     child_entity,

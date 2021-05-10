@@ -8,7 +8,7 @@
 //! defines physics plugins for the Bevy game engine.
 //!
 
-#![deny(missing_docs)]
+// #![deny(missing_docs)] // FIXME: deny this
 
 pub extern crate nalgebra as na;
 #[cfg(feature = "dim2")]
@@ -21,3 +21,25 @@ pub mod physics;
 /// Plugins, resources, and components for debug rendering.
 #[cfg(feature = "render")]
 pub mod render;
+
+pub mod prelude {
+    pub use super::physics::{
+        ColliderBundle, ColliderComponentsSet, ColliderPositionSync, IntoEntity, IntoHandle,
+        JointBuilderComponent, NoUserData, PhysicsHooksWithQuery, PhysicsHooksWithQueryObject,
+        QueryPipelineColliderComponentsQuery, QueryPipelineColliderComponentsSet,
+        RapierConfiguration, RapierPhysicsPlugin, RigidBodyBundle, RigidBodyComponentsSet,
+        RigidBodyPositionSync,
+    };
+    pub use rapier::dynamics::{
+        RigidBodyActivation, RigidBodyCcd, RigidBodyChanges, RigidBodyColliders, RigidBodyForces,
+        RigidBodyIds, RigidBodyMassProps, RigidBodyMassPropsFlags, RigidBodyPosition,
+        RigidBodyType, RigidBodyVelocity,
+    };
+    pub use rapier::geometry::{
+        ColliderBroadPhaseData, ColliderChanges, ColliderGroups, ColliderMaterial, ColliderParent,
+        ColliderPosition, ColliderShape, ColliderType, ContactEvent, IntersectionEvent,
+    };
+
+    #[cfg(feature = "render")]
+    pub use super::render::{ColliderDebugRender, RapierRenderPlugin};
+}

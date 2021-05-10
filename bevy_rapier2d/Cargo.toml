@@ -30,9 +30,9 @@ enhanced-determinism = [ "rapier2d/enhanced-determinism" ]
 
 [dependencies]
 bevy = { version = "0.5", default-features = false }
-nalgebra = "0.25"
-rapier2d = "0.7"
-concurrent-queue = "1"
+nalgebra = { version = "0.26", features = [ "convert-glam-unchecked" ] }
+# Don't enable the default features because we don't need the ColliderSet/RigidBodySet
+rapier2d = { version = "0.8", default-features = false, features = [ "dim2", "f32" ] }
 
 [dev-dependencies]
 bevy_wgpu = "0.5"
