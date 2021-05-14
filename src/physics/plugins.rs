@@ -48,6 +48,7 @@ impl Plugin for RapierPhysicsPlugin {
                 physics::create_body_and_collider_system.system(),
             )
             .add_system_to_stage(stage::PRE_UPDATE, physics::create_joints_system.system())
+            .add_system_to_stage(stage::PRE_UPDATE, physics::update_kinematic_bodies.system())
             .add_system_to_stage(stage::UPDATE, physics::step_world_system.system())
             .add_stage_before(
                 stage::POST_UPDATE,

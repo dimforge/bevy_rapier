@@ -8,8 +8,10 @@ use crate::rapier::pipeline::QueryPipeline;
 use bevy::prelude::*;
 use rapier::dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodySet};
 use rapier::geometry::{BroadPhase, ColliderBuilder, ColliderSet, NarrowPhase};
-use rapier::math::Isometry;
+use rapier::math::{Isometry, Translation, Vector};
 use rapier::pipeline::PhysicsPipeline;
+#[cfg(feature = "dim3")]
+use rapier::na::{Quaternion, UnitQuaternion};
 
 /// System responsible for creating a Rapier rigid-body and collider from their
 /// builder resources.
@@ -288,7 +290,10 @@ pub fn sync_transform_system(
     let sim_dt = integration_parameters.dt;
     let alpha = dt / sim_dt;
     for (rigid_body, previous_pos, mut transform) in interpolation_query.iter_mut() {
-        if let Some(rb) = bodies.get(rigid_body.handle()) {
+        if let Some(rb) = bodies
+            .get(rigid_body.handle())
+            .filter(|rb| !rb.is_kinematic())
+        {
             // Predict position and orientation at render time
             let mut pos = *rb.position();
 
@@ -300,7 +305,10 @@ pub fn sync_transform_system(
         }
     }
     for (rigid_body, mut transform) in direct_query.iter_mut() {
-        if let Some(rb) = bodies.get(rigid_body.handle()) {
+        if let Some(rb) = bodies
+            .get(rigid_body.handle())
+            .filter(|rb| !rb.is_kinematic())
+        {
             sync_transform(rb.position(), configuration.scale, &mut transform);
         }
     }
@@ -346,6 +354,32 @@ pub fn destroy_body_and_collider_system(
         if let Some(joint_handle) = entity_maps.joints.get(entity) {
             joints.remove(*joint_handle, &mut bodies, true);
             entity_maps.joints.remove(entity);
+        }
+    }
+}
+
+/// System responsible for updating kinematic transforms
+pub fn update_kinematic_bodies(
+    mut bodies: ResMut<RigidBodySet>,
+    body_query: Query<(&Transform, &RigidBodyHandleComponent), Without<Parent>>,
+) {
+    for (transform, rigid_body) in body_query.iter() {
+        if let Some(rb) = bodies
+            .get_mut(rigid_body.handle())
+            .filter(|rb| rb.is_kinematic())
+        {
+            // FIXME extract below to function
+            let translation = &transform.translation;
+            let rotation = &transform.rotation;
+
+            let pos = Isometry::from_parts(
+                Translation::from(Vector::new(translation.x, translation.y, translation.z)),
+                UnitQuaternion::from_quaternion(Quaternion::new(
+                    rotation.x, rotation.y, rotation.z, rotation.w,
+                )),
+            );
+
+            rb.set_next_kinematic_position(pos);
         }
     }
 }
