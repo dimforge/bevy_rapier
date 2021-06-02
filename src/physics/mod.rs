@@ -5,10 +5,9 @@ pub use self::resources::*;
 pub use self::rigid_body_component_set::*;
 pub use self::systems::*;
 
-use crate::rapier::data::{ComponentSet, ComponentSetMut, ComponentSetOption};
-use crate::rapier::dynamics::JointHandle;
+use crate::rapier::data::{ComponentSet, ComponentSetMut, ComponentSetOption, Index};
+use crate::rapier::prelude::*;
 use bevy::prelude::{Entity, Query, QuerySet};
-use rapier::data::Index;
 
 pub trait IntoHandle<H> {
     fn handle(self) -> H;
@@ -19,12 +18,14 @@ pub trait IntoEntity {
 }
 
 impl IntoHandle<Index> for Entity {
+    #[inline]
     fn handle(self) -> Index {
         Index::from_raw_parts(self.id(), self.generation())
     }
 }
 
 impl IntoEntity for Index {
+    #[inline]
     fn entity(self) -> Entity {
         let (id, gen) = self.into_raw_parts();
         let bits = u64::from(gen) << 32 | u64::from(id);
@@ -33,6 +34,7 @@ impl IntoEntity for Index {
 }
 
 impl IntoHandle<JointHandle> for Entity {
+    #[inline]
     fn handle(self) -> JointHandle {
         JointHandle::from_raw_parts(self.id(), self.generation())
     }
@@ -73,7 +75,7 @@ macro_rules! impl_component_set_mut(
         impl<'a, 'b, 'c> ComponentSetMut<$T> for $ComponentsSet<'a, 'b, 'c> {
             #[inline(always)]
             fn set_internal(&mut self, handle: Index, val: $T) {
-                let _ = self.0.q1_mut().get_mut(handle.entity()).map(|mut $data| *$data_expr = val);
+                let _ = self.0.q1_mut().get_component_mut(handle.entity()).map(|mut data| *data = val);
             }
 
             #[inline(always)]

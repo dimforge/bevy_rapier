@@ -30,16 +30,7 @@ pub mod prelude {
         RapierConfiguration, RapierPhysicsPlugin, RigidBodyBundle, RigidBodyComponentsSet,
         RigidBodyPositionSync,
     };
-    pub use rapier::dynamics::{
-        RigidBodyActivation, RigidBodyCcd, RigidBodyChanges, RigidBodyColliders, RigidBodyForces,
-        RigidBodyIds, RigidBodyMassProps, RigidBodyMassPropsFlags, RigidBodyPosition,
-        RigidBodyType, RigidBodyVelocity,
-    };
-    pub use rapier::geometry::{
-        ColliderBroadPhaseData, ColliderChanges, ColliderGroups, ColliderMaterial, ColliderParent,
-        ColliderPosition, ColliderShape, ColliderType, ContactEvent, IntersectionEvent,
-    };
-
     #[cfg(feature = "render")]
     pub use super::render::{ColliderDebugRender, RapierRenderPlugin};
+    pub use rapier::prelude::*;
 }

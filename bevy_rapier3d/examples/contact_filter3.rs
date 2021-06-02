@@ -33,10 +33,6 @@ impl CustomFilterTag {
 // this, but we use custom filters instead for demonstration purpose.
 struct SameUserDataFilter;
 impl<'a> PhysicsHooksWithQuery<&'a CustomFilterTag> for SameUserDataFilter {
-    fn active_hooks(&self, _: &Query<&'a CustomFilterTag>) -> PhysicsHooksFlags {
-        PhysicsHooksFlags::FILTER_CONTACT_PAIR
-    }
-
     fn filter_contact_pair(
         &self,
         context: &PairFilterContext<RigidBodyComponentsSet, ColliderComponentsSet>,
@@ -150,6 +146,10 @@ pub fn setup_physics(mut commands: Commands) {
 
             let collider = ColliderBundle {
                 shape: ColliderShape::cuboid(rad, rad, rad),
+                material: ColliderMaterial {
+                    active_hooks: PhysicsHooksFlags::FILTER_CONTACT_PAIR,
+                    ..Default::default()
+                },
                 ..Default::default()
             };
             commands

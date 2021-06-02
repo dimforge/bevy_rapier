@@ -2,19 +2,20 @@ use crate::physics::{
     ColliderComponentsQuery, ColliderComponentsSet, ColliderPositionSync, ComponentSetQueryMut,
     EventQueue, IntoEntity, IntoHandle, JointBuilderComponent, JointHandleComponent,
     JointsEntityMap, ModificationTracker, PhysicsHooksWithQueryInstance,
-    PhysicsHooksWithQueryObject, PhysicsInterpolationComponent, QueryComponentSetMut,
-    RapierConfiguration, RigidBodyComponentsQuery, RigidBodyComponentsSet,
-    RigidBodyHandleComponent, RigidBodyPositionSync, SimulationToRenderTime,
+    PhysicsHooksWithQueryObject, QueryComponentSetMut, RapierConfiguration,
+    RigidBodyComponentsQuery, RigidBodyComponentsSet, RigidBodyHandleComponent,
+    RigidBodyPositionSync, SimulationToRenderTime, TimestepMode,
 };
 
 use crate::prelude::{ContactEvent, IntersectionEvent};
+use crate::rapier::data::ComponentSetOption;
 use crate::rapier::dynamics::{
     RigidBodyCcd, RigidBodyChanges, RigidBodyColliders, RigidBodyIds, RigidBodyMassProps,
     RigidBodyPosition,
 };
 use crate::rapier::geometry::{
-    ColliderBroadPhaseData, ColliderChanges, ColliderMassProperties, ColliderParent,
-    ColliderPosition, ColliderShape,
+    ColliderBroadPhaseData, ColliderChanges, ColliderMassProps, ColliderParent, ColliderPosition,
+    ColliderShape,
 };
 use crate::rapier::pipeline::QueryPipeline;
 use bevy::ecs::query::WorldQuery;
@@ -37,7 +38,7 @@ pub fn attach_bodies_and_colliders_system(
         (
             Entity,
             Option<&Parent>,
-            // Collider.
+            // Colliders.
             &ColliderPosition,
         ),
         Without<ColliderParent>,
@@ -83,7 +84,7 @@ pub fn finalize_collider_attach_to_bodies(
             &mut ColliderBroadPhaseData,
             &mut ColliderPosition,
             &ColliderShape,
-            &ColliderMassProperties,
+            &ColliderMassProps,
             &ColliderParent,
         ),
         Added<ColliderParent>,
@@ -215,10 +216,7 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
         EventWriter<ContactEvent>,
     ),
     user_data: Query<UserData>,
-    mut query: Query<(
-        &RigidBodyHandleComponent,
-        &mut PhysicsInterpolationComponent,
-    )>,
+    mut position_sync_query: Query<(Entity, &mut RigidBodyPositionSync)>,
     bodies_query: RigidBodyComponentsQuery,
     colliders_query: ColliderComponentsQuery,
     (removed_bodies, removed_colliders, removed_joints): (
@@ -255,29 +253,66 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
         hooks: &*hooks.0,
     };
 
-    if configuration.time_dependent_number_of_timesteps {
-        sim_to_render_time.diff += time.delta_seconds();
+    match configuration.timestep_mode {
+        TimestepMode::InterpolatedTimestep => {
+            sim_to_render_time.diff += time.delta_seconds();
 
-        let sim_dt = integration_parameters.dt;
-        while sim_to_render_time.diff >= sim_dt {
-            if configuration.physics_pipeline_active {
-                // NOTE: in this comparison we do the same computations we
-                // will do for the next `while` iteration test, to make sure we
-                // don't get bit by potential float inaccuracy.
-                if sim_to_render_time.diff - sim_dt < sim_dt {
-                    // This is the last simulation step to be executed in the loop
-                    // Update the previous state transforms
-                    for (_body_handle, _previous_state) in query.iter_mut() {
-                        // TODO ECS: how to do this?
-                        // if let Some(body) = bodies.get(body_handle.handle()) {
-                        //     previous_state.0 = Some(*body.position());
-                        // }
+            let sim_dt = integration_parameters.dt;
+            while sim_to_render_time.diff >= sim_dt {
+                if configuration.physics_pipeline_active {
+                    // NOTE: in this comparison we do the same computations we
+                    // will do for the next `while` iteration test, to make sure we
+                    // don't get bit by potential float inaccuracy.
+                    if sim_to_render_time.diff - sim_dt < sim_dt {
+                        // This is the last simulation step to be executed in the loop
+                        // Update the previous state transforms
+                        for (entity, mut position_sync) in position_sync_query.iter_mut() {
+                            if let RigidBodyPositionSync::Interpolated { prev_pos } =
+                                &mut *position_sync
+                            {
+                                let rb_pos: Option<&RigidBodyPosition> =
+                                    rigid_body_components_set.get(entity.handle());
+                                if let Some(rb_pos) = rb_pos {
+                                    *prev_pos = Some(rb_pos.position);
+                                }
+                            }
+                        }
                     }
+
+                    pipeline.step_generic(
+                        &configuration.gravity,
+                        &integration_parameters,
+                        &mut islands,
+                        &mut broad_phase,
+                        &mut narrow_phase,
+                        &mut rigid_body_components_set,
+                        &mut collider_components_set,
+                        &mut replace(&mut modifs_tracker.modified_bodies, vec![]),
+                        &mut replace(&mut modifs_tracker.modified_colliders, vec![]),
+                        &mut replace(&mut modifs_tracker.removed_colliders, vec![]),
+                        &mut joints,
+                        &mut ccd_solver,
+                        &physics_hooks,
+                        &events,
+                    );
+
+                    modifs_tracker.clear_modified_and_removed();
+                }
+                sim_to_render_time.diff -= sim_dt;
+            }
+        }
+        TimestepMode::VariableTimestep | TimestepMode::FixedTimestep => {
+            if configuration.physics_pipeline_active {
+                let mut new_integration_parameters = *integration_parameters;
+
+                if configuration.timestep_mode == TimestepMode::VariableTimestep {
+                    new_integration_parameters.dt =
+                        time.delta_seconds().min(integration_parameters.dt);
                 }
 
                 pipeline.step_generic(
                     &configuration.gravity,
-                    &integration_parameters,
+                    &new_integration_parameters,
                     &mut islands,
                     &mut broad_phase,
                     &mut narrow_phase,
@@ -294,27 +329,7 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
 
                 modifs_tracker.clear_modified_and_removed();
             }
-            sim_to_render_time.diff -= sim_dt;
         }
-    } else if configuration.physics_pipeline_active {
-        pipeline.step_generic(
-            &configuration.gravity,
-            &integration_parameters,
-            &mut islands,
-            &mut broad_phase,
-            &mut narrow_phase,
-            &mut rigid_body_components_set,
-            &mut collider_components_set,
-            &mut replace(&mut modifs_tracker.modified_bodies, vec![]),
-            &mut replace(&mut modifs_tracker.modified_colliders, vec![]),
-            &mut replace(&mut modifs_tracker.removed_colliders, vec![]),
-            &mut joints,
-            &mut ccd_solver,
-            &physics_hooks,
-            &events,
-        );
-
-        modifs_tracker.clear_modified_and_removed();
     }
 
     if configuration.query_pipeline_active {
@@ -389,7 +404,9 @@ pub fn sync_transforms(
                 // Predict position and orientation at render time
                 let mut pos = rb_pos.position;
 
-                if configuration.time_dependent_number_of_timesteps && prev_pos.is_some() {
+                if configuration.timestep_mode == TimestepMode::InterpolatedTimestep
+                    && prev_pos.is_some()
+                {
                     pos = prev_pos.unwrap().lerp_slerp(&rb_pos.position, alpha);
                 }
 

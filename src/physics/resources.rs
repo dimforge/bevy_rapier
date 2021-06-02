@@ -2,23 +2,29 @@ use crate::physics::{
     ColliderBundle, ColliderComponentsQuery, ColliderComponentsSet, IntoEntity, IntoHandle,
     JointHandleComponent, RigidBodyComponentsQuery, RigidBodyComponentsSet,
 };
-use crate::rapier::data::{ComponentSet, ComponentSetMut};
-use crate::rapier::dynamics::{
-    IslandManager, JointSet, RigidBodyActivation, RigidBodyChanges, RigidBodyColliders,
-    RigidBodyIds, RigidBodyType,
-};
-use crate::rapier::geometry::{ColliderChanges, SolverFlags};
-use crate::rapier::pipeline::{ContactModificationContext, PairFilterContext, PhysicsHooksFlags};
-use crate::rapier::{
-    dynamics::{JointHandle, RigidBodyHandle},
-    geometry::{ColliderHandle, ContactEvent, IntersectionEvent},
-    pipeline::{EventHandler, PhysicsHooks},
-};
+use crate::rapier::prelude::*;
 use bevy::ecs::query::WorldQuery;
 use bevy::prelude::*;
-use rapier::math::Vector;
+use rapier::data::{ComponentSet, ComponentSetMut, ComponentSetOption, Index};
 use std::collections::HashMap;
 use std::sync::RwLock;
+
+/// The different ways of adjusting the timestep length.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum TimestepMode {
+    /// Use a fixed timestep: the physics simulation will be advanced by the fixed value
+    /// `IntegrationParameters::dt` seconds at each Bevy tick.
+    FixedTimestep,
+    /// Use a fixed timestep: the physics simulation will be advanced by the variable value
+    /// `min(IntegrationParameters::dt, Time::delta_seconds()), ` seconds at each Bevy tick.
+    VariableTimestep,
+    /// Use a fixed timestep equal to `IntergrationParameters::dt`, but don't step if the
+    /// physics simulation advanced by a time greater than the real-world elapsed time.
+    /// When no step is performed, rigid-bodies with a `RigidBodyPositionSync::Interpolated`
+    /// component will use interpolation to estimate the rigid-bodies position in-between
+    /// steps.
+    InterpolatedTimestep,
+}
 
 /// A resource for specifying configuration information for the physics simulation
 pub struct RapierConfiguration {
@@ -32,9 +38,8 @@ pub struct RapierConfiguration {
     pub physics_pipeline_active: bool,
     /// Specifies if the query pipeline is active and update the query pipeline.
     pub query_pipeline_active: bool,
-    /// Specifies if the number of physics steps run at each frame should depend
-    /// of the real-world time elapsed since the last step.
-    pub time_dependent_number_of_timesteps: bool,
+    /// Specifies the way the timestep length should be adjusted at each frame.
+    pub timestep_mode: TimestepMode,
 }
 
 impl Default for RapierConfiguration {
@@ -44,7 +49,7 @@ impl Default for RapierConfiguration {
             scale: 1.0,
             physics_pipeline_active: true,
             query_pipeline_active: true,
-            time_dependent_number_of_timesteps: false,
+            timestep_mode: TimestepMode::VariableTimestep,
         }
     }
 }
@@ -68,7 +73,7 @@ impl<'a> EventHandler for EventQueue<'a> {
         }
     }
 
-    fn handle_contact_event(&self, event: ContactEvent) {
+    fn handle_contact_event(&self, event: ContactEvent, _: &ContactPair) {
         if let Ok(mut events) = self.contact_events.write() {
             events.send(event)
         }
@@ -277,8 +282,6 @@ impl ModificationTracker {
 }
 
 pub trait PhysicsHooksWithQuery<UserData: WorldQuery>: Send + Sync {
-    fn active_hooks(&self, user_data: &Query<UserData>) -> PhysicsHooksFlags;
-
     fn filter_contact_pair(
         &self,
         _context: &PairFilterContext<RigidBodyComponentsSet, ColliderComponentsSet>,
@@ -311,10 +314,6 @@ where
     >,
     UserData: WorldQuery,
 {
-    fn active_hooks(&self, _: &Query<UserData>) -> PhysicsHooksFlags {
-        PhysicsHooks::active_hooks(self)
-    }
-
     fn filter_intersection_pair(
         &self,
         context: &PairFilterContext<RigidBodyComponentsSet, ColliderComponentsSet>,
@@ -345,10 +344,6 @@ impl<'aa, 'bb, 'a, 'b, 'c, 'd, 'e, 'f, UserData: WorldQuery>
     PhysicsHooks<RigidBodyComponentsSet<'a, 'b, 'c>, ColliderComponentsSet<'d, 'e, 'f>>
     for PhysicsHooksWithQueryInstance<'aa, 'bb, UserData>
 {
-    fn active_hooks(&self) -> PhysicsHooksFlags {
-        self.hooks.active_hooks(&self.user_data)
-    }
-
     fn filter_contact_pair(
         &self,
         context: &PairFilterContext<RigidBodyComponentsSet, ColliderComponentsSet>,
