@@ -8,12 +8,14 @@ use bevy::prelude::*;
 use rapier::data::{ComponentSet, ComponentSetMut, ComponentSetOption, Index};
 
 impl IntoHandle<RigidBodyHandle> for Entity {
+    #[inline]
     fn handle(self) -> RigidBodyHandle {
         RigidBodyHandle::from_raw_parts(self.id(), self.generation())
     }
 }
 
 impl IntoEntity for RigidBodyHandle {
+    #[inline]
     fn entity(self) -> Entity {
         self.0.entity()
     }

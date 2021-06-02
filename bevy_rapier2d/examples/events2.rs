@@ -95,6 +95,7 @@ pub fn setup_physics(mut commands: Commands) {
     };
     let collider = ColliderBundle {
         shape: ColliderShape::cuboid(0.5, 0.5),
+        flags: (ActiveEvents::INTERSECTION_EVENTS | ActiveEvents::CONTACT_EVENTS).into(),
         ..Default::default()
     };
     commands
