@@ -64,9 +64,9 @@ fn spawn_player(
 fn player_movement(
     keyboard_input: Res<Input<KeyCode>>,
     rapier_parameters: Res<RapierConfiguration>,
-    mut player_info: Query<(&Player, &mut RigidBodyVelocity, &mut RigidBodyActivation)>,
+    mut player_info: Query<(&Player, &mut RigidBodyVelocity)>,
 ) {
-    for (player, mut rb_vels, mut rb_activation) in player_info.iter_mut() {
+    for (player, mut rb_vels) in player_info.iter_mut() {
         let up = keyboard_input.pressed(KeyCode::W) || keyboard_input.pressed(KeyCode::Up);
         let down = keyboard_input.pressed(KeyCode::S) || keyboard_input.pressed(KeyCode::Down);
         let left = keyboard_input.pressed(KeyCode::A) || keyboard_input.pressed(KeyCode::Left);

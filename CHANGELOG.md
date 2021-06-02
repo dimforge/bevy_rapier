@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.10.0
+A new, exhaustive, user-guide for bevy_rapier has been uploaded to rapier.rs.
+
+This version is a complete rewrite of the plugin. Rigid-bodies and
+colliders are now split into components that can be queried like any other
+components. They are created by inserting a `RigidBodyBundle` and/or a `ColliderBundle`.
+
+In addition, the `Entity` type and `ColliderHandle/RigidBodyHandle` type can now be
+converted directly using `entity.handle()` or `handle.entity()`.
+
+Finally, there is now a prelude: `use bevy_rapier2d::prelude::*`.
+
+
 ## 0.9.0
 ### Added
 - The `ColliderDebugRender` component must be added to an entity

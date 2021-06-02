@@ -1,11 +1,7 @@
 use bevy::prelude::*;
 use rapier::dynamics::{JointHandle, JointParams, RigidBodyHandle};
 use rapier::geometry::ColliderHandle;
-use rapier::math::{Isometry, Translation, Vector};
-#[cfg(feature = "dim2")]
-use rapier::na::UnitComplex;
-#[cfg(feature = "dim3")]
-use rapier::na::{Quaternion, UnitQuaternion};
+use rapier::math::Isometry;
 
 /// A component representing a rigid-body that is being handled by
 /// a Rapier physics World.
