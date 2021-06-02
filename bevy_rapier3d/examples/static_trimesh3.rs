@@ -6,7 +6,6 @@ use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
 use bevy::render::pass::ClearColor;
-use nalgebra::Isometry3;
 use rapier::geometry::{ColliderMaterial, ColliderShape};
 use rapier3d::dynamics::IntegrationParameters;
 use rapier3d::pipeline::PhysicsPipeline;

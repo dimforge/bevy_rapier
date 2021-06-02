@@ -11,5 +11,5 @@ codegen-units = 1
 #rapier2d = { path = "../rapier/build/rapier2d" }
 #rapier3d = { path = "../rapier/build/rapier3d" }
 
-rapier2d = { git = "https://github.com/dimforge/rapier" }
-rapier3d = { git = "https://github.com/dimforge/rapier" }
+#rapier2d = { git = "https://github.com/dimforge/rapier" }
+#rapier3d = { git = "https://github.com/dimforge/rapier" }

@@ -5,7 +5,7 @@ use bevy_rapier3d::prelude::*;
 
 use bevy::render::pass::ClearColor;
 use rapier::geometry::SolverFlags;
-use rapier3d::pipeline::{PairFilterContext, PhysicsHooksFlags, PhysicsPipeline};
+use rapier3d::pipeline::{PairFilterContext, PhysicsPipeline};
 use ui::DebugUiPlugin;
 
 #[path = "../../src_debug_ui/mod.rs"]
@@ -146,10 +146,7 @@ pub fn setup_physics(mut commands: Commands) {
 
             let collider = ColliderBundle {
                 shape: ColliderShape::cuboid(rad, rad, rad),
-                material: ColliderMaterial {
-                    active_hooks: PhysicsHooksFlags::FILTER_CONTACT_PAIR,
-                    ..Default::default()
-                },
+                flags: ActiveHooks::FILTER_CONTACT_PAIRS.into(),
                 ..Default::default()
             };
             commands

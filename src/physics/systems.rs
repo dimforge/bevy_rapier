@@ -3,8 +3,8 @@ use crate::physics::{
     EventQueue, IntoEntity, IntoHandle, JointBuilderComponent, JointHandleComponent,
     JointsEntityMap, ModificationTracker, PhysicsHooksWithQueryInstance,
     PhysicsHooksWithQueryObject, QueryComponentSetMut, RapierConfiguration,
-    RigidBodyComponentsQuery, RigidBodyComponentsSet, RigidBodyHandleComponent,
-    RigidBodyPositionSync, SimulationToRenderTime, TimestepMode,
+    RigidBodyComponentsQuery, RigidBodyComponentsSet, RigidBodyPositionSync,
+    SimulationToRenderTime, TimestepMode,
 };
 
 use crate::prelude::{ContactEvent, IntersectionEvent};

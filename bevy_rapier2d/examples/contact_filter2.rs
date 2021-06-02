@@ -5,7 +5,7 @@ use bevy_rapier2d::prelude::*;
 
 use bevy::render::pass::ClearColor;
 use rapier::geometry::SolverFlags;
-use rapier2d::pipeline::{PairFilterContext, PhysicsHooksFlags, PhysicsPipeline};
+use rapier2d::pipeline::{PairFilterContext, PhysicsPipeline};
 use ui::DebugUiPlugin;
 
 #[path = "../../src_debug_ui/mod.rs"]
@@ -33,10 +33,6 @@ impl CustomFilterTag {
 // this, but we use custom filters instead for demonstration purpose.
 struct SameUserDataFilter;
 impl<'a> PhysicsHooksWithQuery<&'a CustomFilterTag> for SameUserDataFilter {
-    fn active_hooks(&self, _: &Query<&'a CustomFilterTag>) -> PhysicsHooksFlags {
-        PhysicsHooksFlags::FILTER_CONTACT_PAIR
-    }
-
     fn filter_contact_pair(
         &self,
         context: &PairFilterContext<RigidBodyComponentsSet, ColliderComponentsSet>,
@@ -146,6 +142,7 @@ pub fn setup_physics(mut commands: Commands) {
 
             let collider = ColliderBundle {
                 shape: ColliderShape::cuboid(rad, rad),
+                flags: ActiveHooks::FILTER_CONTACT_PAIRS.into(),
                 ..Default::default()
             };
             commands
