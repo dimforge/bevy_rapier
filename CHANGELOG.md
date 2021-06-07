@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.10.1
+### Fixed
+- Fix joint removal when despawning its entity.
+
 ## 0.10.0
 A new, exhaustive, user-guide for bevy_rapier has been uploaded to rapier.rs.
 
