@@ -29,3 +29,14 @@ jobs:
       run: cargo test --verbose -p bevy_rapier2d;
     - name: Check bevy_rapier3d examples
       run: cargo test --verbose -p bevy_rapier3d;
+  build-wasm:
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v2
+      - run: rustup target add wasm32-unknown-unknown
+      - name: build bevy_rapier2d
+        run: cd bevy_rapier2d && cargo build --verbose --features wasm-bindgen --target wasm32-unknown-unknown;
+      - name: build bevy_rapier3d
+        run: cd bevy_rapier3d && cargo build --verbose --features wasm-bindgen --target wasm32-unknown-unknown;
