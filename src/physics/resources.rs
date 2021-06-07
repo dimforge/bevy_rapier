@@ -309,9 +309,10 @@ pub trait PhysicsHooksWithQuery<UserData: WorldQuery>: Send + Sync {
 impl<T, UserData> PhysicsHooksWithQuery<UserData> for T
 where
     T: for<'a, 'b, 'c, 'd, 'e, 'f> PhysicsHooks<
-        RigidBodyComponentsSet<'a, 'b, 'c>,
-        ColliderComponentsSet<'d, 'e, 'f>,
-    >,
+            RigidBodyComponentsSet<'a, 'b, 'c>,
+            ColliderComponentsSet<'d, 'e, 'f>,
+        > + Send
+        + Sync,
     UserData: WorldQuery,
 {
     fn filter_intersection_pair(
