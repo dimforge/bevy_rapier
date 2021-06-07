@@ -93,6 +93,6 @@ impl<UserData: 'static + WorldQuery + Send + Sync> Plugin for RapierPhysicsPlugi
             PhysicsStages::SyncTransforms,
             physics::sync_transforms.system(),
         )
-        .add_system_to_stage(CoreStage::Last, physics::collect_removals.system());
+        .add_system_to_stage(CoreStage::PostUpdate, physics::collect_removals.system());
     }
 }
