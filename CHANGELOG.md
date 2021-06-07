@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.10.2
+### Fixed
+- Fix build when targetting WASM.
+
 ## 0.10.1
 ### Fixed
 - Fix joint removal when despawning its entity.
