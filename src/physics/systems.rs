@@ -30,30 +30,29 @@ use std::sync::RwLock;
 /// builder resources.
 pub fn attach_bodies_and_colliders_system(
     mut commands: Commands,
-    mut body_query: Query<(
-        // Rigid-bodies.
-        &RigidBodyPosition,
-    )>,
+    body_query: Query<&RigidBodyPosition>,
+    parent_query: Query<&Parent>,
     mut colliders_query: Query<
         (
             Entity,
-            Option<&Parent>,
             // Colliders.
             &ColliderPosition,
         ),
         Without<ColliderParent>,
     >,
 ) {
-    for (collider_entity, parent_entity, co_pos) in colliders_query.iter_mut() {
-        let body_entity;
-
-        if body_query.get_mut(collider_entity).is_ok() {
-            // The body and collider are attached to the same entity.
-            body_entity = collider_entity;
-        } else if let Some(parent_entity) = parent_entity {
-            body_entity = parent_entity.0;
-        } else {
-            continue;
+    'outer: for (collider_entity, co_pos) in colliders_query.iter_mut() {
+        // Find the closest ancestor (possibly the same entity) with a body
+        let mut body_entity = collider_entity;
+        loop {
+            if body_query.get(body_entity).is_ok() {
+                // Found it!
+                break;
+            } else if let Ok(&Parent(parent_entity)) = parent_query.get(body_entity) {
+                body_entity = parent_entity;
+            } else {
+                continue 'outer;
+            }
         }
 
         let co_parent = ColliderParent {
