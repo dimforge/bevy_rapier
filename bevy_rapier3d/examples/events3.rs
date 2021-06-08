@@ -69,6 +69,10 @@ fn display_events(
 }
 
 pub fn setup_physics(mut commands: Commands) {
+    let parent = commands
+        .spawn_bundle((Transform::identity(), GlobalTransform::identity()))
+        .id();
+
     /*
      * Ground
      */
@@ -79,6 +83,7 @@ pub fn setup_physics(mut commands: Commands) {
 
     commands
         .spawn_bundle(collider)
+        .insert(Parent(parent))
         .insert(ColliderDebugRender::default())
         .insert(ColliderPositionSync::Discrete);
 
