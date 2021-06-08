@@ -15,7 +15,7 @@ fn main() {
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
         .add_startup_system(setup_game.system())
-        .add_system(tetromino_sleep_detection.system())
+        .add_system(cube_sleep_detection.system())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .run();
 }
@@ -24,19 +24,18 @@ const BLOCK_PX_SIZE: f32 = 30.0;
 
 // In terms of block size:
 const FLOOR_BLOCK_HEIGHT: f32 = 2.0;
-const HEALTH_BAR_HEIGHT: f32 = 0.5;
 
 #[derive(Default)]
 struct Stats {
     generated_blocks: i32,
     cleared_blocks: i32,
     lost_blocks: i32,
-    lost_tetromino: bool,
+    lost_cube: bool,
 }
 
 impl Stats {
     fn health(&self) -> f32 {
-        if self.lost_tetromino {
+        if self.lost_cube {
             0.0
         } else if self.cleared_blocks == 0 {
             if self.lost_blocks > 0 {
@@ -56,8 +55,8 @@ struct Game {
     n_lanes: usize,
     n_rows: usize,
     stats: Stats,
-    tetromino_colors: Vec<Handle<ColorMaterial>>,
-    current_tetromino_joints: Vec<Entity>,
+    cube_colors: Vec<Handle<ColorMaterial>>,
+    current_cube_joints: Vec<Entity>,
 }
 
 impl Game {
@@ -76,8 +75,8 @@ impl Default for Game {
             n_lanes: 10,
             n_rows: 20,
             stats: Stats::default(),
-            tetromino_colors: vec![],
-            current_tetromino_joints: vec![],
+            cube_colors: vec![],
+            current_cube_joints: vec![],
         }
     }
 }
@@ -97,7 +96,7 @@ fn setup_game(
     // and divide our sprite_size by the scale.
     rapier_config.scale = BLOCK_PX_SIZE;
 
-    game.tetromino_colors = vec![
+    game.cube_colors = vec![
         materials.add(byte_rgb(0, 244, 243).into()),
         materials.add(byte_rgb(238, 243, 0).into()),
         materials.add(byte_rgb(177, 0, 254).into()),
@@ -114,29 +113,29 @@ fn setup_game(
 
     setup_board(&mut commands, &*game, materials);
 
-    // initial tetromino
-    spawn_tetromino(&mut commands, &mut game);
+    // initial cube
+    spawn_cube(&mut commands, &mut game);
 }
 
 #[derive(Clone, Copy, Debug)]
-enum TetrominoKind {
+enum CubeKind {
     I,
 }
 
-impl TetrominoKind {
+impl CubeKind {
     fn random() -> Self {
         Self::I
     }
 
-    fn layout(&self) -> TetrominoLayout {
-        TetrominoLayout {
+    fn layout(&self) -> CubeLayout {
+        CubeLayout {
             coords: [(1, 1), (1, 0), (1, -1), (1, -2)],
             joints: vec![(0, 1), (1, 2), (2, 3)],
         }
     }
 }
 
-struct TetrominoLayout {
+struct CubeLayout {
     coords: [(i32, i32); 4],
     joints: Vec<(usize, usize)>,
 }
@@ -167,30 +166,11 @@ fn setup_board(commands: &mut Commands, game: &Game, mut materials: ResMut<Asset
             ..ColliderBundle::default()
         })
         .insert(RigidBodyPositionSync::Discrete);
-
-    // Add health bar
-    commands.spawn().insert_bundle(SpriteBundle {
-        material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
-        sprite: Sprite::new(Vec2::new(
-            (game.n_lanes as f32 - 2.0) * BLOCK_PX_SIZE,
-            BLOCK_PX_SIZE * HEALTH_BAR_HEIGHT,
-        )),
-        transform: Transform {
-            translation: Vec3::new(
-                (game.left_wall_x() + 1.0) * BLOCK_PX_SIZE,
-                (floor_y - (FLOOR_BLOCK_HEIGHT / 2.0)) * BLOCK_PX_SIZE,
-                2.0,
-            ),
-            rotation: Quat::IDENTITY,
-            scale: Vec3::new(0.0, 1.0, 1.0),
-        },
-        ..Default::default()
-    });
 }
 
-fn spawn_tetromino(commands: &mut Commands, game: &mut Game) {
-    let kind = TetrominoKind::random();
-    let TetrominoLayout { coords, joints } = kind.layout();
+fn spawn_cube(commands: &mut Commands, game: &mut Game) {
+    let kind = CubeKind::random();
+    let CubeLayout { coords, joints } = kind.layout();
 
     let block_entities: Vec<Entity> = coords
         .iter()
@@ -222,13 +202,13 @@ fn spawn_tetromino(commands: &mut Commands, game: &mut Game) {
         .collect();
 
     game.stats.generated_blocks += block_entities.len() as i32;
-    game.current_tetromino_joints = joint_entities;
+    game.current_cube_joints = joint_entities;
 }
 
 fn spawn_block(
     commands: &mut Commands,
     game: &Game,
-    kind: TetrominoKind,
+    kind: CubeKind,
     lane: i32,
     row: i32,
 ) -> Entity {
@@ -242,7 +222,7 @@ fn spawn_block(
     commands
         .spawn()
         .insert_bundle(SpriteBundle {
-            material: game.tetromino_colors[kind as usize].clone(),
+            material: game.cube_colors[kind as usize].clone(),
             sprite: Sprite::new(Vec2::new(BLOCK_PX_SIZE, BLOCK_PX_SIZE)),
             ..Default::default()
         })
@@ -263,7 +243,7 @@ fn spawn_block(
         .id()
 }
 
-fn tetromino_sleep_detection(
+fn cube_sleep_detection(
     mut commands: Commands,
     mut game: ResMut<Game>,
     block_query: Query<(Entity, &RigidBodyPosition)>,
@@ -271,14 +251,14 @@ fn tetromino_sleep_detection(
     let all_blocks_sleeping = true;
 
     if all_blocks_sleeping {
-        for joint in &game.current_tetromino_joints {
+        for joint in &game.current_cube_joints {
             commands.entity(*joint).despawn();
         }
 
         clear_filled_rows(&mut commands, &mut game, block_query);
 
         if game.stats.health() > 0.0 {
-            spawn_tetromino(&mut commands, &mut game);
+            spawn_cube(&mut commands, &mut game);
         }
     }
 }
