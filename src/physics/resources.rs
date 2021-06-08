@@ -239,10 +239,15 @@ impl ModificationTracker {
                 for collider in colliders {
                     commands
                         .entity(collider.entity())
-                        .remove_bundle::<ColliderBundle>();
+                        .remove_bundle::<ColliderBundle>()
+                        .remove::<ColliderParent>();
                     self.removed_colliders.push(collider);
                 }
             }
+
+            let mut removed_joints =
+                joints.remove_joints_attached_to_rigid_body(*removed_body, islands, bodies);
+            self.removed_joints.append(&mut removed_joints);
         }
 
         for removed_collider in self.removed_colliders.iter() {
@@ -250,7 +255,7 @@ impl ModificationTracker {
                 let rb_changes: Option<RigidBodyChanges> = bodies.get(parent.0).copied();
 
                 if let Some(mut rb_changes) = rb_changes {
-                    // Keep track of the fact the collider will be modified.
+                    // Keep track of the fact the rigid-body will be modified.
                     if !rb_changes.contains(RigidBodyChanges::MODIFIED) {
                         self.modified_bodies.push(parent);
                     }
