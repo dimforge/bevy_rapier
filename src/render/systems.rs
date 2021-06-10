@@ -5,6 +5,9 @@ use bevy::prelude::*;
 use bevy::render::mesh::{Indices, VertexAttributeValues};
 use rapier::geometry::ShapeType;
 
+pub const CREATE_COLLIDER_RENDERS_SYSTEM: &str = "create_collider_renders_system";
+pub const UPDATE_COLLIDER_RENDER_MESH_SYSTEM: &str = "update_collider_render_mesh";
+
 /// System responsible for attaching a PbrBundle to each entity having a collider.
 pub fn create_collider_renders_system(
     mut commands: Commands,

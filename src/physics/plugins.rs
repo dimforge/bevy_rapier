@@ -75,24 +75,39 @@ impl<UserData: 'static + WorldQuery + Send + Sync> Plugin for RapierPhysicsPlugi
         .insert_resource(ModificationTracker::default())
         .add_system_to_stage(
             PhysicsStages::FinalizeCreations,
-            physics::attach_bodies_and_colliders_system.system(),
+            physics::attach_bodies_and_colliders_system
+                .system()
+                .label(physics::ATTACH_BODIES_AND_COLLIDERS_SYSTEM),
         )
         .add_system_to_stage(
             PhysicsStages::FinalizeCreations,
-            physics::create_joints_system.system(),
+            physics::create_joints_system
+                .system()
+                .label(physics::CREATE_JOINTS_SYSTEM),
         )
         .add_system_to_stage(
             CoreStage::PreUpdate,
-            physics::finalize_collider_attach_to_bodies.system(),
+            physics::finalize_collider_attach_to_bodies
+                .system()
+                .label(physics::FINALIZE_COLLIDER_ATTACH_TO_BODIES_SYSTEM),
         )
         .add_system_to_stage(
             CoreStage::Update,
-            physics::step_world_system::<UserData>.system(),
+            physics::step_world_system::<UserData>
+                .system()
+                .label(physics::STEP_WORLD_SYSTEM),
         )
         .add_system_to_stage(
             PhysicsStages::SyncTransforms,
-            physics::sync_transforms.system(),
+            physics::sync_transforms
+                .system()
+                .label(physics::SYNC_TRANSFORMS_SYSTEM),
         )
-        .add_system_to_stage(CoreStage::PostUpdate, physics::collect_removals.system());
+        .add_system_to_stage(
+            CoreStage::PostUpdate,
+            physics::collect_removals
+                .system()
+                .label(physics::COLLECT_REMOVALS_SYSTEM),
+        );
     }
 }
