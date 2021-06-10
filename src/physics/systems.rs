@@ -26,12 +26,15 @@ use rapier::math::Isometry;
 use rapier::pipeline::PhysicsPipeline;
 use std::sync::RwLock;
 
-pub const ATTACH_BODIES_AND_COLLIDERS_SYSTEM: &str = "attach_bodies_and_colliders_system";
-pub const FINALIZE_COLLIDER_ATTACH_TO_BODIES_SYSTEM: &str = "finalize_collider_attach_to_bodies";
-pub const CREATE_JOINTS_SYSTEM: &str = "create_joints_system";
-pub const STEP_WORLD_SYSTEM: &str = "step_world_system";
-pub const SYNC_TRANSFORMS_SYSTEM: &str = "sync_transforms";
-pub const COLLECT_REMOVALS_SYSTEM: &str = "collect_removals";
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
+pub enum PhysicsSystems {
+    AttachBodiesAndColliders,
+    FinalizeColliderAttachToBodies,
+    CreateJoints,
+    StepWorld,
+    SyncTransforms,
+    CollectRemovals,
+}
 
 /// System responsible for creating a Rapier rigid-body and collider from their
 /// builder resources.
