@@ -67,7 +67,6 @@ impl<UserData: 'static + WorldQuery + Send + Sync> Plugin for RapierPhysicsPlugi
         .insert_resource(IslandManager::new())
         .insert_resource(JointSet::new())
         .insert_resource(CCDSolver::new())
-        .insert_resource(PhysicsHooksWithQueryObject::<UserData>(Box::new(())))
         .insert_resource(Events::<IntersectionEvent>::default())
         .insert_resource(Events::<ContactEvent>::default())
         .insert_resource(SimulationToRenderTime::default())
@@ -109,5 +108,12 @@ impl<UserData: 'static + WorldQuery + Send + Sync> Plugin for RapierPhysicsPlugi
                 .system()
                 .label(physics::PhysicsSystems::CollectRemovals),
         );
+        if app
+            .world()
+            .get_resource::<PhysicsHooksWithQueryObject<UserData>>()
+            .is_none()
+        {
+            app.insert_resource(PhysicsHooksWithQueryObject::<UserData>(Box::new(())));
+        }
     }
 }
