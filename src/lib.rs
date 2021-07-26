@@ -7,6 +7,8 @@
 //! The `bevy_rapier` projects implements two other crates `bevy_rapier2d` and `bevy_rapier3d` which
 //! defines physics plugins for the Bevy game engine.
 //!
+//! User documentation for `bevy_rapier` is on [the official Rapier site](https://rapier.rs/docs/).
+//!
 
 // #![deny(missing_docs)] // FIXME: deny this
 
