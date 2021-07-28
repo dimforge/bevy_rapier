@@ -5,7 +5,7 @@ use bevy::prelude::*;
 pub struct RapierRenderPlugin;
 
 impl Plugin for RapierRenderPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_system_to_stage(
             CoreStage::PreUpdate,
             systems::create_collider_renders_system

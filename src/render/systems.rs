@@ -172,7 +172,7 @@ fn generate_collider_mesh(co_shape: &ColliderShape) -> Option<(Mesh, Vec3)> {
         #[cfg(feature = "dim3")]
         ShapeType::Cuboid => {
             let c = co_shape.as_cuboid().unwrap();
-            Vec3::from_slice_unaligned(c.half_extents.as_slice())
+            Vec3::from_slice(c.half_extents.as_slice())
         }
         ShapeType::Ball => {
             let b = co_shape.as_ball().unwrap();

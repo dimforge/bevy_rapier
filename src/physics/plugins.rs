@@ -47,7 +47,7 @@ pub enum PhysicsStages {
 }
 
 impl<UserData: 'static + WorldQuery + Send + Sync> Plugin for RapierPhysicsPlugin<UserData> {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_stage_before(
             CoreStage::PreUpdate,
             PhysicsStages::FinalizeCreations,
@@ -109,7 +109,7 @@ impl<UserData: 'static + WorldQuery + Send + Sync> Plugin for RapierPhysicsPlugi
                 .label(physics::PhysicsSystems::CollectRemovals),
         );
         if app
-            .world()
+            .world
             .get_resource::<PhysicsHooksWithQueryObject<UserData>>()
             .is_none()
         {
