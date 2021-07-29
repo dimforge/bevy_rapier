@@ -93,7 +93,6 @@ impl TryFrom<SharedShapeMesh> for (Vec<Point<Real, DIM>>, Vec<[u32; DIM]>) {
         }?;
 
         #[cfg(feature = "dim2")]
-
         let vert_pos_end = match vert_pos_attr.format {
             bevy::render::pipeline::VertexFormat::Float2 => Ok(vert_pos_start + DIM * 4),
             _ => Err(ErrorSum::VertexFormatError)
