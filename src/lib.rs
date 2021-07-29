@@ -30,7 +30,8 @@ pub mod prelude {
         JointBuilderComponent, NoUserData, PhysicsHooksWithQuery, PhysicsHooksWithQueryObject,
         QueryPipelineColliderComponentsQuery, QueryPipelineColliderComponentsSet,
         RapierConfiguration, RapierPhysicsPlugin, RigidBodyBundle, RigidBodyComponentsSet,
-        RigidBodyPositionSync,
+        RigidBodyPositionSync, SharedShapeMesh, ErrorSum, OffsetTooBig, VertexBufferLayoutMissing,
+        VertexFormatError
     };
     #[cfg(feature = "render")]
     pub use super::render::{ColliderDebugRender, RapierRenderPlugin};

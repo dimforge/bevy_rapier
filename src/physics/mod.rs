@@ -4,6 +4,7 @@ pub use self::plugins::*;
 pub use self::resources::*;
 pub use self::rigid_body_component_set::*;
 pub use self::systems::*;
+pub use self::mesh_collider::*;
 
 use crate::rapier::data::{ComponentSet, ComponentSetMut, ComponentSetOption, Index};
 use crate::rapier::prelude::*;
@@ -210,3 +211,4 @@ mod plugins;
 mod resources;
 mod rigid_body_component_set;
 mod systems;
+mod mesh_collider;
