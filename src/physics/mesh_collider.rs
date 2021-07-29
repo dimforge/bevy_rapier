@@ -50,7 +50,7 @@ pub struct BufferChunkTooBig();
 
 impl fmt::Display for BufferChunkTooBig {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "vertex position attribute offset is too big")
+        write!(f, "Buffer chunk is too big")
     }
 }
 
