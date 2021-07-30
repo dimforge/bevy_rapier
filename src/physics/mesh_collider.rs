@@ -6,6 +6,7 @@ use std::{
 
 use crate::{na::Point, prelude::Real};
 use bevy::prelude::Mesh;
+use bevy::render::pipeline::VertexFormat::Float3;
 use rapier::math::DIM;
 
 #[derive(Debug, Clone)]
@@ -85,8 +86,14 @@ impl TryFrom<SharedShapeMesh> for (Vec<Point<Real, DIM>>, Vec<[u32; DIM]>) {
             .try_into()
             .or_else(|_| Err(ErrorSum::BufferChunkTooBig))?;
 
-        let vert_pos_end = match vert_pos_attr.format {
-            bevy::render::pipeline::VertexFormat::Float3 => Ok(vert_pos_start + DIM * 4),
+        let vert_pos_end: usize = match vert_pos_attr.format {
+            Float3 => {
+                let pos_size: usize = Float3
+                    .get_size()
+                    .try_into()
+                    .or_else(|_| Err(ErrorSum::BufferChunkTooBig))?;
+                Ok(vert_pos_start + pos_size)
+            }
             _ => Err(ErrorSum::VertexFormatError),
         }?;
 
