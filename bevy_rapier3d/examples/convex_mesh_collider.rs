@@ -121,7 +121,7 @@ fn setup_physics(
         sharedshapetuple.0.as_slice(),
         sharedshapetuple.1.as_slice(),
     );
-    // let tri_coll = ColliderShape::trimesh(collider_verts, collider_indices);
+
     let rb = RigidBodyBundle {
         position: Vec3::new(0.0, 5.0, 0.0).into(),
         ..Default::default()
