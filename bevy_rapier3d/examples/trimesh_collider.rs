@@ -1,9 +1,12 @@
 extern crate rapier3d as rapier; // For the debug UI.
 
-use std::convert::TryInto;
+use bevy::{
+    gltf::{Gltf, GltfMesh},
+    prelude::*,
+};
 use bevy_rapier3d::{na::Point3, prelude::*};
-use bevy::{prelude::*, gltf::{Gltf, GltfMesh}};
 use rapier3d::pipeline::PhysicsPipeline;
+use std::convert::TryInto;
 use ui::DebugUiPlugin;
 
 #[path = "../../src_debug_ui/mod.rs"]
@@ -20,7 +23,8 @@ struct AssetsLoading(Vec<HandleUntyped>);
 fn setup_assets(server: Res<AssetServer>, mut loading: ResMut<AssetsLoading>) {
     println!("loading assets");
     // we can have different asset types
-    let handle: Handle<Gltf> = server.load(format!("{}/../assets/Suzanne.gltf", env!("CARGO_MANIFEST_DIR")).as_str());
+    let handle: Handle<Gltf> =
+        server.load(format!("{}/../assets/Suzanne.gltf", env!("CARGO_MANIFEST_DIR")).as_str());
     // add them all to our collection for tracking
     loading.0.push(handle.clone_untyped());
 }
@@ -68,15 +72,16 @@ fn setup_physics(
 ) {
     let color = 0;
 
-     /* Create the ground. */
-     let collider = ColliderBundle {
+    /* Create the ground. */
+    let collider = ColliderBundle {
         shape: ColliderShape::cuboid(5.0, 0.1, 5.0),
         ..Default::default()
     };
 
-    commands.spawn_bundle(collider)    
-    .insert(ColliderDebugRender::with_id(color))
-    .insert(ColliderPositionSync::Discrete);
+    commands
+        .spawn_bundle(collider)
+        .insert(ColliderDebugRender::with_id(color))
+        .insert(ColliderPositionSync::Discrete);
 
     /* Create the bouncing ball. */
     let rigid_body = RigidBodyBundle {
@@ -92,15 +97,16 @@ fn setup_physics(
         ..Default::default()
     };
 
-    commands.spawn_bundle(rigid_body)
+    commands
+        .spawn_bundle(rigid_body)
         .insert_bundle(collider)
         // .insert(mesh)
         .insert(ColliderDebugRender::with_id(color))
         .insert(ColliderPositionSync::Discrete);
-    
 
     // Then any asset in the folder can be accessed like this:
-    let suzanne_gltf_handle: Handle<Gltf> = asset_server.load(format!("{}/../assets/Suzanne.gltf", env!("CARGO_MANIFEST_DIR")).as_str());
+    let suzanne_gltf_handle: Handle<Gltf> = asset_server
+        .load(format!("{}/../assets/Suzanne.gltf", env!("CARGO_MANIFEST_DIR")).as_str());
     let suzanne_gltf = gltfs.get(suzanne_gltf_handle).unwrap();
     let suzanne_gltf_mesh = suzanne_gltf.named_meshes.get("Suzanne").unwrap();
 
@@ -108,8 +114,9 @@ fn setup_physics(
     let suzanne_handle = &suzanne_primitive_mesh.primitives[0].mesh;
     let suzanne_mesh = meshes.get(suzanne_handle.clone()).unwrap();
 
-    let sharedshapetuple: (Vec<Point3<f32>>, Vec<[u32; 3]>) = SharedShapeMesh(suzanne_mesh.clone()).try_into().unwrap();
-    
+    let sharedshapetuple: (Vec<Point3<f32>>, Vec<[u32; 3]>) =
+        SharedShapeMesh(suzanne_mesh.clone()).try_into().unwrap();
+
     let tri_coll = ColliderShape::trimesh(sharedshapetuple.0, sharedshapetuple.1);
     let rb = RigidBodyBundle {
         position: Vec3::new(0.0, 5.0, 0.0).into(),
@@ -123,20 +130,20 @@ fn setup_physics(
         },
         ..Default::default()
     };
-    commands.spawn_bundle(coll)
-    .insert_bundle(rb)
-    .insert_bundle(PbrBundle {
-        mesh: suzanne_handle.clone(),
-        material: materials.add(Color::rgb(0.5, 0.4, 0.3).into()),
-        ..Default::default()
-    })
-    .insert(ColliderPositionSync::Discrete);
-
+    commands
+        .spawn_bundle(coll)
+        .insert_bundle(rb)
+        .insert_bundle(PbrBundle {
+            mesh: suzanne_handle.clone(),
+            material: materials.add(Color::rgb(0.5, 0.4, 0.3).into()),
+            ..Default::default()
+        })
+        .insert(ColliderPositionSync::Discrete);
 }
 
 fn main() {
     App::build()
-    .insert_resource(ClearColor(Color::rgb(
+        .insert_resource(ClearColor(Color::rgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
@@ -148,24 +155,18 @@ fn main() {
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)
-
         .add_startup_system(setup_graphics.system())
         .add_startup_system(enable_physics_profiling.system())
-
         .add_state(AppState::GltfAssetsLoading)
         .init_resource::<AssetsLoading>()
         .add_system_set(
-            SystemSet::on_enter(AppState::GltfAssetsLoading)
-            .with_system(setup_assets.system())
+            SystemSet::on_enter(AppState::GltfAssetsLoading).with_system(setup_assets.system()),
         )
         .add_system_set(
             SystemSet::on_update(AppState::GltfAssetsLoading)
-            .with_system(check_assets_ready.system())
+                .with_system(check_assets_ready.system()),
         )
-        .add_system_set(
-            SystemSet::on_enter(AppState::InGame)
-            .with_system(setup_physics.system())
-        )
+        .add_system_set(SystemSet::on_enter(AppState::InGame).with_system(setup_physics.system()))
         .run();
 }
 

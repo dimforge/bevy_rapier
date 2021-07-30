@@ -30,12 +30,13 @@ pub mod prelude {
         JointBuilderComponent, NoUserData, PhysicsHooksWithQuery, PhysicsHooksWithQueryObject,
         QueryPipelineColliderComponentsQuery, QueryPipelineColliderComponentsSet,
         RapierConfiguration, RapierPhysicsPlugin, RigidBodyBundle, RigidBodyComponentsSet,
-        RigidBodyPositionSync
+        RigidBodyPositionSync,
     };
 
     #[cfg(feature = "dim3")]
-    pub use super::physics::{SharedShapeMesh, ErrorSum, OffsetTooBig, VertexBufferLayoutMissing,
-        VertexFormatError};
+    pub use super::physics::{
+        ErrorSum, OffsetTooBig, SharedShapeMesh, VertexBufferLayoutMissing, VertexFormatError,
+    };
 
     #[cfg(feature = "render")]
     pub use super::render::{ColliderDebugRender, RapierRenderPlugin};
