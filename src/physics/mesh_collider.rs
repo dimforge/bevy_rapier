@@ -119,7 +119,7 @@ impl TryFrom<SharedShapeMesh> for (Vec<Point<Real, DIM>>, Vec<[u32; DIM]>) {
             .chunks(4)
             .map(|x| u32::from_ne_bytes(x.try_into().expect("slice with incorrect length")))
             .collect::<Vec<u32>>()
-            .chunks(DIM)
+            .chunks(3)
             .map(|x| x.try_into().expect("slice with incorrect length"))
             .collect();
         Ok((coll_verts, coll_indices))
