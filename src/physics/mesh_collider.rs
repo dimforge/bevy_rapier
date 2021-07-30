@@ -7,17 +7,9 @@ use crate::{na::Point, prelude::Real};
 #[derive(Debug, Clone)]
 pub struct VertexFormatError();
 
-#[cfg(feature = "dim3")]
 impl fmt::Display for VertexFormatError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "invalid vertex buffer format! Only Float3 is allowed")
-    }
-}
-
-#[cfg(feature = "dim2")]
-impl fmt::Display for VertexFormatError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "invalid vertex buffer format! Only Float2 is allowed")
     }
 }
 
@@ -86,15 +78,8 @@ impl TryFrom<SharedShapeMesh> for (Vec<Point<Real, DIM>>, Vec<[u32; DIM]>) {
         .try_into()
         .or_else(|_| Err(ErrorSum::BufferChunkTooBig))?;
 
-        #[cfg(feature = "dim3")]
         let vert_pos_end = match vert_pos_attr.format {
             bevy::render::pipeline::VertexFormat::Float3 => Ok(vert_pos_start + DIM * 4),
-            _ => Err(ErrorSum::VertexFormatError)
-        }?;
-
-        #[cfg(feature = "dim2")]
-        let vert_pos_end = match vert_pos_attr.format {
-            bevy::render::pipeline::VertexFormat::Float2 => Ok(vert_pos_start + DIM * 4),
             _ => Err(ErrorSum::VertexFormatError)
         }?;
 
