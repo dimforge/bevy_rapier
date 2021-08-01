@@ -60,6 +60,13 @@ pub enum ErrorSum {
     OffsetTooBig,
     BufferChunkTooBig,
 }
+impl Error for ErrorSum {}
+
+impl fmt::Display for ErrorSum {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        (*self).fmt(f)
+    }
+}
 
 pub struct SharedShapeMesh(pub Mesh);
 
