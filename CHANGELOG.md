@@ -1,8 +1,19 @@
 # Changelog
 
+## 0.11.0
+### Modified
+- Switch to `Rapier` 0.11 and `nalgebra` 0.29.
+- Add labels to each system from `bevy-rapier`.
+
+### Fixed
+- Fix panics when despawning joints or colliders.
+- Fix a panic where adding a collider.
+- Don’t let the plugin overwrite the user’s `PhysicsHooksWithQueryObject` if it was already 
+  present before inserting the plugin.
+
 ## 0.10.2
 ### Fixed
-- Fix build when targetting WASM.
+- Fix build when targeting WASM.
 
 ## 0.10.1
 ### Fixed
