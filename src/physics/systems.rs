@@ -158,7 +158,7 @@ pub fn create_joints_system(
     query: Query<(Entity, &JointBuilderComponent)>,
     bodies: ComponentSetQueryMut<RigidBodyIds>,
 ) {
-    let mut bodies = QueryComponentSetMut(bodies);
+    let bodies = QueryComponentSetMut(bodies);
 
     for (entity, joint) in &mut query.iter() {
         // Make sure the rigid-bodies the joint it attached to exist.
@@ -176,12 +176,7 @@ pub fn create_joints_system(
             continue;
         }
 
-        let handle = joints.insert(
-            &mut bodies,
-            joint.entity1.handle(),
-            joint.entity2.handle(),
-            joint.params,
-        );
+        let handle = joints.insert(joint.entity1.handle(), joint.entity2.handle(), joint.params);
         commands
             .entity(entity)
             .insert(JointHandleComponent::new(
