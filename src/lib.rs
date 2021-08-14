@@ -35,7 +35,8 @@ pub mod prelude {
 
     #[cfg(feature = "dim3")]
     pub use super::physics::{
-        ErrorSum, OffsetTooBig, SharedShapeMesh, VertexBufferLayoutMissing, VertexFormatError,
+        ErrorSum, SharedShapeMesh, VertexFormatError, VertexIndicesMissing,
+        VertexPositionAttributeMissing,
     };
 
     #[cfg(feature = "render")]

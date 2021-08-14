@@ -1,170 +1,111 @@
-use std::{
-    convert::{TryFrom, TryInto},
-    error::Error,
-    fmt, usize,
+#[cfg(feature = "dim3")]
+use crate::{na::Point3, prelude::Real};
+#[cfg(feature = "dim3")]
+use bevy::{
+    prelude::Mesh,
+    render::mesh::{Indices, VertexAttributeValues},
 };
-
-use crate::{na::Point, prelude::Real};
-use bevy::prelude::Mesh;
-use bevy::render::pipeline::VertexFormat::Float3;
+#[cfg(feature = "dim3")]
 use rapier::math::DIM;
+#[cfg(feature = "dim3")]
+use std::{convert::TryFrom, error::Error, fmt};
 
+#[cfg(feature = "dim3")]
 #[derive(Debug, Clone, Default)]
 pub struct VertexFormatError();
 
+#[cfg(feature = "dim3")]
 impl fmt::Display for VertexFormatError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "invalid vertex buffer format! Only Float3 is allowed")
+        write!(f, "Invalid vertex buffer format! Only Float3 is allowed.")
     }
 }
 
+#[cfg(feature = "dim3")]
 impl Error for VertexFormatError {}
 
+#[cfg(feature = "dim3")]
 #[derive(Debug, Clone, Default)]
-pub struct VertexBufferLayoutMissing();
+pub struct VertexPositionAttributeMissing();
+#[cfg(feature = "dim3")]
 
-impl fmt::Display for VertexBufferLayoutMissing {
+impl fmt::Display for VertexPositionAttributeMissing {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "vertex buffer layout is missing")
+        write!(f, "Vertex position attribute missing.")
     }
 }
+#[cfg(feature = "dim3")]
 
-impl Error for VertexBufferLayoutMissing {}
-
+impl Error for VertexPositionAttributeMissing {}
+#[cfg(feature = "dim3")]
 #[derive(Debug, Clone, Default)]
-pub struct OffsetTooBig();
+pub struct VertexIndicesMissing();
+#[cfg(feature = "dim3")]
 
-impl fmt::Display for OffsetTooBig {
+impl fmt::Display for VertexIndicesMissing {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "vertex position attribute offset is too big")
+        write!(f, "Vertex indices missing.")
     }
 }
+#[cfg(feature = "dim3")]
 
-impl Error for OffsetTooBig {}
-
-#[derive(Debug, Clone, Default)]
-pub struct BufferChunkTooBig();
-
-impl fmt::Display for BufferChunkTooBig {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Buffer chunk is too big")
-    }
-}
-
-impl Error for BufferChunkTooBig {}
-
-#[derive(Debug, Clone, Default)]
-pub struct BufferDataFormatError();
-
-impl fmt::Display for BufferDataFormatError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Buffer data format does not match layout")
-    }
-}
-
-impl Error for BufferDataFormatError {}
-
+impl Error for VertexIndicesMissing {}
+#[cfg(feature = "dim3")]
 #[derive(Debug, Clone)]
 pub enum ErrorSum {
-    VertexBufferLayoutMissing(VertexBufferLayoutMissing),
     VertexFormatError(VertexFormatError),
-    OffsetTooBig(OffsetTooBig),
-    BufferChunkTooBig(BufferChunkTooBig),
-    BufferDataFormatError(BufferDataFormatError)
+    VertexPositionAttributeMissing(VertexPositionAttributeMissing),
+    VertexIndicesMissing(VertexIndicesMissing),
 }
+#[cfg(feature = "dim3")]
+
 impl Error for ErrorSum {}
+#[cfg(feature = "dim3")]
 
 impl fmt::Display for ErrorSum {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self {
-            ErrorSum::VertexBufferLayoutMissing(e) => e.fmt(f),
             ErrorSum::VertexFormatError(e) => e.fmt(f),
-            ErrorSum::OffsetTooBig(e) => e.fmt(f),
-            ErrorSum::BufferChunkTooBig(e) => e.fmt(f),
-            ErrorSum::BufferDataFormatError(e) => e.fmt(f),
+            ErrorSum::VertexPositionAttributeMissing(e) => e.fmt(f),
+            ErrorSum::VertexIndicesMissing(e) => e.fmt(f),
         }
     }
 }
+#[cfg(feature = "dim3")]
 
 pub struct SharedShapeMesh(pub Mesh);
 
+#[cfg(feature = "dim3")]
 // Easy conversion from Bevy Mesh to types used for building SharedShape
-impl TryFrom<SharedShapeMesh> for (Vec<Point<Real, DIM>>, Vec<[u32; DIM]>) {
+impl TryFrom<SharedShapeMesh> for (Vec<Point3<Real>>, Vec<[u32; DIM]>) {
     fn try_from(
         mesh: SharedShapeMesh,
-    ) -> Result<(Vec<Point<Real, DIM>>, Vec<[u32; DIM]>), ErrorSum> {
-        let vert_buffer_layout = mesh.0.get_vertex_buffer_layout();
-        let vert_pos_attr = vert_buffer_layout
-            .attributes
-            .iter()
-            .find(|&x| x.name == "Vertex_Position")
-            .ok_or(ErrorSum::VertexBufferLayoutMissing(Default::default()))?;
+    ) -> Result<(Vec<Point3<Real>>, Vec<[u32; DIM]>), Self::Error> {
+        let vertices = mesh.0.attribute(Mesh::ATTRIBUTE_POSITION);
+        let indices = mesh.0.indices();
 
-        let vert_pos_start: usize = (vert_pos_attr.offset)
-            .try_into()
-            .or_else(|_| Err(ErrorSum::OffsetTooBig(Default::default())))?;
-        let vertex_chunk_bytes: usize = vert_buffer_layout
-            .attributes
-            .iter()
-            .map(|x| x.format.get_size())
-            .sum::<u64>()
-            .try_into()
-            .or_else(|_| Err(ErrorSum::BufferChunkTooBig(Default::default())))?;
+        let vtx: Vec<_> =
+            match vertices.ok_or(ErrorSum::VertexPositionAttributeMissing(Default::default()))? {
+                VertexAttributeValues::Float(vtx) => Ok(vtx
+                    .chunks(3)
+                    .map(|v| Point3::from([v[0] as Real, v[1] as Real, v[2] as Real]))
+                    .collect()),
+                VertexAttributeValues::Float3(vtx) => Ok(vtx
+                    .iter()
+                    .map(|v| Point3::from([v[0] as Real, v[1] as Real, v[2] as Real]))
+                    .collect()),
+                _ => Err(ErrorSum::VertexFormatError(Default::default())),
+            }?;
 
-        let vert_pos_end: usize = match vert_pos_attr.format {
-            Float3 => {
-                let pos_size: usize = Float3
-                    .get_size()
-                    .try_into()
-                    .or_else(|_| Err(ErrorSum::BufferChunkTooBig(Default::default())))?;
-                Ok(vert_pos_start + pos_size)
-            }
-            _ => Err(ErrorSum::VertexFormatError(Default::default())),
-        }?;
+        let idx = match indices.ok_or(ErrorSum::VertexIndicesMissing(Default::default()))? {
+            Indices::U16(idx) => idx
+                .chunks_exact(3)
+                .map(|i| [i[0] as u32, i[1] as u32, i[2] as u32])
+                .collect(),
+            Indices::U32(idx) => idx.chunks_exact(3).map(|i| [i[0], i[1], i[2]]).collect(),
+        };
 
-        let coll_verts: Vec<Point<f32, DIM>> = mesh
-            .0
-            .get_vertex_buffer_data()
-            .chunks(vertex_chunk_bytes)
-            .map(|x| {
-                let pos_vec= x[vert_pos_start..vert_pos_end]
-                    .chunks(4)
-                    .map(|x| Ok(f32::from_ne_bytes(x.try_into()?)))
-                    .collect::<Result<Vec<f32>, Box<dyn Error>>>();
-                match pos_vec {
-                    Ok(pos_vec) => match pos_vec.len() {
-                       DIM => Ok(Point::from_slice(pos_vec.as_slice())),
-                       _ => Err(ErrorSum::BufferDataFormatError(Default::default())),
-                    },
-                    Err(_) => Err(ErrorSum::BufferDataFormatError(Default::default())),
-                }
-            })
-            .collect::<Result<Vec<Point<f32, DIM>>, ErrorSum>>()?;
-
-        let coll_indices: Vec<u32> = mesh
-            .0
-            .get_index_buffer_bytes()
-            .unwrap()
-            .chunks(4)
-            .map(|x| {
-                match x.try_into() {
-                    Ok(x) => Ok(u32::from_ne_bytes(x)) ,
-                    Err(_) => Err(ErrorSum::BufferDataFormatError(Default::default())),
-                }
-            })
-            .collect::<Result<Vec<u32>, ErrorSum>>()?;
-
-        let coll_indices_chunked: Vec<[u32; DIM]> = coll_indices
-            .chunks(3)
-            .map(|x| {
-                match x.try_into() {
-                    Ok(x) => Ok(x),
-                    Err(_) => Err(ErrorSum::BufferDataFormatError(Default::default())),
-                }
-            })
-            .collect::<Result<Vec<[u32; DIM]>, ErrorSum>>()?;
-
-        Ok((coll_verts, coll_indices_chunked))
+        Ok((vtx, idx))
     }
 
     type Error = ErrorSum;
