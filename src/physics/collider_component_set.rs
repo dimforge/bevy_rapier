@@ -17,93 +17,92 @@ impl IntoEntity for ColliderHandle {
     }
 }
 
-pub type QueryPipelineColliderComponentsQuery<'a, 'b> = Query<
-    'a,
+pub type QueryPipelineColliderComponentsQuery<'world, 'state, 'a> = Query<
+    'world,
+    'state,
     (
         Entity,
-        &'b ColliderPosition,
-        &'b ColliderShape,
-        &'b ColliderFlags,
+        &'a ColliderPosition,
+        &'a ColliderShape,
+        &'a ColliderFlags,
     ),
 >;
 
-pub struct QueryPipelineColliderComponentsSet<'a, 'b, 'c>(
-    pub &'c QueryPipelineColliderComponentsQuery<'a, 'b>,
+pub struct QueryPipelineColliderComponentsSet<'world, 'state, 'a, 'c>(
+    pub &'c QueryPipelineColliderComponentsQuery<'world, 'state, 'a>,
 );
 
-impl_component_set_wo_query_set!(
+impl_component_set!(
     QueryPipelineColliderComponentsSet,
     ColliderPosition,
     |data| data.1
 );
-impl_component_set_wo_query_set!(QueryPipelineColliderComponentsSet, ColliderShape, |data| {
+impl_component_set!(QueryPipelineColliderComponentsSet, ColliderShape, |data| {
     data.2
 });
-impl_component_set_wo_query_set!(QueryPipelineColliderComponentsSet, ColliderFlags, |data| {
+impl_component_set!(QueryPipelineColliderComponentsSet, ColliderFlags, |data| {
     data.3
 });
 
-pub struct ColliderComponentsSet<'a, 'b, 'c>(pub ColliderComponentsQuery<'a, 'b, 'c>);
+pub struct ColliderComponentsSet<'world, 'state, 'a>(
+    pub Query<'world, 'state, ColliderComponentsQueryPayload<'a>>,
+);
 
-pub type ColliderComponentsQuery<'a, 'b, 'c> = QuerySet<(
-    Query<
-        'a,
-        (
-            Entity,
-            &'b ColliderChanges,
-            &'b ColliderPosition,
-            &'b ColliderBroadPhaseData,
-            &'b ColliderShape,
-            &'b ColliderType,
-            &'b ColliderMaterial,
-            &'b ColliderFlags,
-            Option<&'b ColliderParent>,
-        ),
-    >,
-    Query<
-        'a,
-        (
-            Entity,
-            &'c mut ColliderChanges,
-            &'c mut ColliderPosition,
-            &'c mut ColliderBroadPhaseData,
-        ),
-    >,
-    Query<
-        'a,
-        (
-            Entity,
-            &'c mut ColliderChanges,
-            Or<(Changed<ColliderPosition>, Added<ColliderPosition>)>,
-            Or<(Changed<ColliderFlags>, Added<ColliderFlags>)>,
-            Or<(Changed<ColliderShape>, Added<ColliderShape>)>,
-            Or<(Changed<ColliderType>, Added<ColliderType>)>,
-            Option<Or<(Changed<ColliderParent>, Added<ColliderParent>)>>,
-        ),
-        Or<(
-            Changed<ColliderPosition>,
-            Added<ColliderPosition>,
-            Changed<ColliderFlags>,
-            Added<ColliderFlags>,
-            Changed<ColliderShape>,
-            Added<ColliderShape>,
-            Changed<ColliderType>,
-            Added<ColliderType>,
-            Changed<ColliderParent>,
-            Added<ColliderParent>,
-        )>,
-    >,
-)>;
+pub type ColliderComponentsQueryPayload<'a> = (
+    Entity,
+    &'a mut ColliderChanges,
+    &'a mut ColliderPosition,
+    &'a mut ColliderBroadPhaseData,
+    &'a mut ColliderShape,
+    &'a mut ColliderType,
+    &'a mut ColliderMaterial,
+    &'a mut ColliderFlags,
+    Option<&'a ColliderParent>,
+);
 
-impl_component_set_mut!(ColliderComponentsSet, ColliderChanges, |data| data.1);
-impl_component_set_mut!(ColliderComponentsSet, ColliderPosition, |data| data.2);
-impl_component_set_mut!(ColliderComponentsSet, ColliderBroadPhaseData, |d| d.3);
+pub type ColliderChangesQueryPayload<'a> = (
+    Entity,
+    &'a mut ColliderChanges,
+    Or<(Changed<ColliderPosition>, Added<ColliderPosition>)>,
+    Or<(Changed<ColliderFlags>, Added<ColliderFlags>)>,
+    Or<(Changed<ColliderShape>, Added<ColliderShape>)>,
+    Or<(Changed<ColliderType>, Added<ColliderType>)>,
+    Option<Or<(Changed<ColliderParent>, Added<ColliderParent>)>>,
+);
 
-impl_component_set!(ColliderComponentsSet, ColliderShape, |data| data.4);
-impl_component_set!(ColliderComponentsSet, ColliderType, |data| data.5);
-impl_component_set!(ColliderComponentsSet, ColliderMaterial, |data| data.6);
-impl_component_set!(ColliderComponentsSet, ColliderFlags, |data| data.7);
+pub type ColliderChangesQueryFilter = (
+    Or<(
+        Changed<ColliderPosition>,
+        Added<ColliderPosition>,
+        Changed<ColliderFlags>,
+        Added<ColliderFlags>,
+        Changed<ColliderShape>,
+        Added<ColliderShape>,
+        Changed<ColliderType>,
+        Added<ColliderType>,
+        Changed<ColliderParent>,
+        Added<ColliderParent>,
+    )>,
+);
 
+pub type ColliderComponentsQuerySet<'world, 'state, 'a> = QuerySet<
+    'world,
+    'state,
+    (
+        // Components query
+        QueryState<ColliderComponentsQueryPayload<'a>>,
+        // Changes query
+        QueryState<ColliderChangesQueryPayload<'a>, ColliderChangesQueryFilter>,
+    ),
+>;
+
+impl_component_set_mut!(ColliderComponentsSet, ColliderChanges, |data| &*data.1);
+impl_component_set_mut!(ColliderComponentsSet, ColliderPosition, |data| &*data.2);
+impl_component_set_mut!(ColliderComponentsSet, ColliderBroadPhaseData, |d| &*d.3);
+impl_component_set_mut!(ColliderComponentsSet, ColliderShape, |data| &*data.4);
+impl_component_set_mut!(ColliderComponentsSet, ColliderType, |data| &*data.5);
+impl_component_set_mut!(ColliderComponentsSet, ColliderMaterial, |data| &*data.6);
+impl_component_set_mut!(ColliderComponentsSet, ColliderFlags, |data| &*data.7);
 impl_component_set_option!(ColliderComponentsSet, ColliderParent);
 
 #[derive(Bundle)]

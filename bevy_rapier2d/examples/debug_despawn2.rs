@@ -5,9 +5,10 @@
 use bevy::prelude::*;
 use bevy::render::pass::ClearColor;
 use bevy_rapier2d::prelude::*;
+use nalgebra::Point2;
 
 fn main() {
-    App::build()
+    App::new()
         .init_resource::<Game>()
         .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
         .insert_resource(Msaa::default())
@@ -187,8 +188,8 @@ fn spawn_cube(commands: &mut Commands, game: &mut Game) {
             let x_dir = coords[*j].0 as f32 - coords[*i].0 as f32;
             let y_dir = coords[*j].1 as f32 - coords[*i].1 as f32;
 
-            let anchor_1 = Vec2::new(x_dir * 0.5, y_dir * 0.5).into();
-            let anchor_2 = Vec2::new(x_dir * -0.5, y_dir * -0.5).into();
+            let anchor_1 = Point2::new(x_dir * 0.5, y_dir * 0.5);
+            let anchor_2 = Point2::new(x_dir * -0.5, y_dir * -0.5);
 
             commands
                 .spawn()
