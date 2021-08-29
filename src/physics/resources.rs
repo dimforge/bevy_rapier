@@ -1,6 +1,7 @@
 use crate::physics::{
-    ColliderBundle, ColliderComponentsQuery, ColliderComponentsSet, IntoEntity, IntoHandle,
-    JointHandleComponent, RigidBodyComponentsQuery, RigidBodyComponentsSet,
+    ColliderBundle, ColliderChangesQueryFilter, ColliderChangesQueryPayload, ColliderComponentsSet,
+    IntoEntity, IntoHandle, JointHandleComponent, RigidBodyChangesQueryFilter,
+    RigidBodyChangesQueryPayload, RigidBodyComponentsSet,
 };
 use crate::rapier::prelude::*;
 use bevy::ecs::query::WorldQuery;
@@ -61,9 +62,9 @@ impl Default for RapierConfiguration {
 /// A set of queues collecting events emitted by the physics engine.
 pub(crate) struct EventQueue<'a> {
     /// The unbounded contact event queue.
-    pub contact_events: RwLock<EventWriter<'a, ContactEvent>>,
+    pub contact_events: RwLock<EventWriter<'a, 'a, ContactEvent>>,
     /// The unbounded intersection event queue.
-    pub intersection_events: RwLock<EventWriter<'a, IntersectionEvent>>,
+    pub intersection_events: RwLock<EventWriter<'a, 'a, IntersectionEvent>>,
 }
 
 impl<'a> EventHandler for EventQueue<'a> {
@@ -130,20 +131,12 @@ impl ModificationTracker {
 
     pub fn detect_modifications(
         &mut self,
-        bodies_query: &mut RigidBodyComponentsQuery,
-        colliders_query: &mut ColliderComponentsQuery,
+        mut bodies_query: Query<RigidBodyChangesQueryPayload, RigidBodyChangesQueryFilter>,
+        mut colliders_query: Query<ColliderChangesQueryPayload, ColliderChangesQueryFilter>,
     ) {
         // Detect modifications.
-        for (
-            entity,
-            mut rb_changes,
-            mut rb_activation,
-            rb_pos,
-            _rb_vels,
-            _rb_forces,
-            rb_type,
-            rb_colliders,
-        ) in bodies_query.q2_mut().iter_mut()
+        for (entity, mut rb_activation, mut rb_changes, rb_pos, rb_type, rb_colliders) in
+            bodies_query.iter_mut()
         {
             if !rb_changes.contains(RigidBodyChanges::MODIFIED) {
                 self.modified_bodies.push(entity.handle());
@@ -166,12 +159,8 @@ impl ModificationTracker {
             rb_activation.wake_up(true);
         }
 
-        for mut rb_changes in bodies_query.q3_mut().iter_mut() {
-            *rb_changes |= RigidBodyChanges::SLEEP;
-        }
-
         for (entity, mut co_changes, co_pos, co_groups, co_shape, co_type, co_parent) in
-            colliders_query.q2_mut().iter_mut()
+            colliders_query.iter_mut()
         {
             if !co_changes.contains(ColliderChanges::MODIFIED) {
                 self.modified_colliders.push(entity.handle());
@@ -313,9 +302,9 @@ pub trait PhysicsHooksWithQuery<UserData: WorldQuery>: Send + Sync {
 
 impl<T, UserData> PhysicsHooksWithQuery<UserData> for T
 where
-    T: for<'a, 'b, 'c, 'd, 'e, 'f> PhysicsHooks<
-            RigidBodyComponentsSet<'a, 'b, 'c>,
-            ColliderComponentsSet<'d, 'e, 'f>,
+    T: for<'world_a, 'state_a, 'a, 'world_b, 'state_b, 'b> PhysicsHooks<
+            RigidBodyComponentsSet<'world_a, 'state_a, 'a>,
+            ColliderComponentsSet<'world_b, 'state_b, 'b>,
         > + Send
         + Sync,
     UserData: WorldQuery,
@@ -341,14 +330,14 @@ pub struct PhysicsHooksWithQueryObject<UserData: WorldQuery>(
     pub Box<dyn PhysicsHooksWithQuery<UserData>>,
 );
 
-pub(crate) struct PhysicsHooksWithQueryInstance<'a, 'b, UserData: WorldQuery> {
-    pub user_data: Query<'a, UserData>,
+pub(crate) struct PhysicsHooksWithQueryInstance<'world, 'state, 'b, UserData: WorldQuery> {
+    pub user_data: Query<'world, 'state, UserData>,
     pub hooks: &'b dyn PhysicsHooksWithQuery<UserData>,
 }
 
-impl<'aa, 'bb, 'a, 'b, 'c, 'd, 'e, 'f, UserData: WorldQuery>
-    PhysicsHooks<RigidBodyComponentsSet<'a, 'b, 'c>, ColliderComponentsSet<'d, 'e, 'f>>
-    for PhysicsHooksWithQueryInstance<'aa, 'bb, UserData>
+impl<UserData: WorldQuery>
+    PhysicsHooks<RigidBodyComponentsSet<'_, '_, '_>, ColliderComponentsSet<'_, '_, '_>>
+    for PhysicsHooksWithQueryInstance<'_, '_, '_, UserData>
 {
     fn filter_contact_pair(
         &self,

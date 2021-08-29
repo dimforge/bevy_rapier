@@ -47,7 +47,7 @@ pub enum PhysicsStages {
 }
 
 impl<UserData: 'static + WorldQuery + Send + Sync> Plugin for RapierPhysicsPlugin<UserData> {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_stage_before(
             CoreStage::PreUpdate,
             PhysicsStages::FinalizeCreations,
@@ -75,41 +75,35 @@ impl<UserData: 'static + WorldQuery + Send + Sync> Plugin for RapierPhysicsPlugi
         .add_system_to_stage(
             PhysicsStages::FinalizeCreations,
             physics::attach_bodies_and_colliders_system
-                .system()
                 .label(physics::PhysicsSystems::AttachBodiesAndColliders),
         )
         .add_system_to_stage(
             PhysicsStages::FinalizeCreations,
             physics::create_joints_system
-                .system()
                 .label(physics::PhysicsSystems::CreateJoints),
         )
         .add_system_to_stage(
             CoreStage::PreUpdate,
             physics::finalize_collider_attach_to_bodies
-                .system()
                 .label(physics::PhysicsSystems::FinalizeColliderAttachToBodies),
         )
         .add_system_to_stage(
             CoreStage::Update,
             physics::step_world_system::<UserData>
-                .system()
                 .label(physics::PhysicsSystems::StepWorld),
         )
         .add_system_to_stage(
             PhysicsStages::SyncTransforms,
             physics::sync_transforms
-                .system()
                 .label(physics::PhysicsSystems::SyncTransforms),
         )
         .add_system_to_stage(
             CoreStage::PostUpdate,
             physics::collect_removals
-                .system()
                 .label(physics::PhysicsSystems::CollectRemovals),
         );
         if app
-            .world()
+            .world
             .get_resource::<PhysicsHooksWithQueryObject<UserData>>()
             .is_none()
         {

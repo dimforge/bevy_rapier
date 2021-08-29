@@ -1,9 +1,9 @@
 use crate::physics::{
-    ColliderComponentsQuery, ColliderComponentsSet, ColliderPositionSync, ComponentSetQueryMut,
+    ColliderComponentsQuerySet, ColliderComponentsSet, ColliderPositionSync, ComponentSetQueryMut,
     EventQueue, IntoEntity, IntoHandle, JointBuilderComponent, JointHandleComponent,
     JointsEntityMap, ModificationTracker, PhysicsHooksWithQueryInstance,
     PhysicsHooksWithQueryObject, QueryComponentSetMut, RapierConfiguration,
-    RigidBodyComponentsQuery, RigidBodyComponentsSet, RigidBodyPositionSync,
+    RigidBodyComponentsQuerySet, RigidBodyComponentsSet, RigidBodyPositionSync,
     SimulationToRenderTime, TimestepMode,
 };
 
@@ -18,7 +18,7 @@ use crate::rapier::geometry::{
     ColliderShape,
 };
 use crate::rapier::pipeline::QueryPipeline;
-use bevy::ecs::query::WorldQuery;
+use bevy::ecs::query::{QueryState, WorldQuery};
 use bevy::prelude::*;
 use rapier::dynamics::{CCDSolver, IntegrationParameters, IslandManager, JointSet};
 use rapier::geometry::{BroadPhase, NarrowPhase};
@@ -164,12 +164,10 @@ pub fn create_joints_system(
         // Make sure the rigid-bodies the joint it attached to exist.
         if bodies
             .0
-            .q0()
             .get_component::<RigidBodyIds>(joint.entity1)
             .is_err()
             || bodies
                 .0
-                .q0()
                 .get_component::<RigidBodyIds>(joint.entity2)
                 .is_err()
         {
@@ -221,8 +219,8 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
     ),
     user_data: Query<UserData>,
     mut position_sync_query: Query<(Entity, &mut RigidBodyPositionSync)>,
-    bodies_query: RigidBodyComponentsQuery,
-    colliders_query: ColliderComponentsQuery,
+    mut bodies_query: RigidBodyComponentsQuerySet,
+    mut colliders_query: ColliderComponentsQuerySet,
     (removed_bodies, removed_colliders, removed_joints): (
         RemovedComponents<RigidBodyChanges>,
         RemovedComponents<ColliderChanges>,
@@ -235,14 +233,15 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
         intersection_events: RwLock::new(intersection_events),
         contact_events: RwLock::new(contact_events),
     };
-    let mut rigid_body_components_set = RigidBodyComponentsSet(bodies_query);
-    let mut collider_components_set = ColliderComponentsSet(colliders_query);
-
     modifs_tracker.detect_removals(removed_bodies, removed_colliders, removed_joints);
     modifs_tracker.detect_modifications(
-        &mut rigid_body_components_set.0,
-        &mut collider_components_set.0,
+        bodies_query.q1(),
+        colliders_query.q1(),
     );
+
+    let mut rigid_body_components_set = RigidBodyComponentsSet(bodies_query.q0());
+    let mut collider_components_set = ColliderComponentsSet(colliders_query.q0());
+
     modifs_tracker.propagate_removals(
         &mut commands,
         &mut islands,
@@ -351,14 +350,16 @@ pub(crate) fn sync_transform(pos: &Isometry<f32>, scale: f32, transform: &mut Tr
     // Do not touch the 'z' part of the translation, used in Bevy for 2d layering
     transform.translation.x = tra.x * scale;
     transform.translation.y = tra.y * scale;
-    transform.rotation = rot;
+    transform.rotation = Quat::from_xyzw(rot.x, rot.y, rot.z, rot.w);
 }
 
 #[cfg(feature = "dim3")]
 pub(crate) fn sync_transform(pos: &Isometry<f32>, scale: f32, transform: &mut Transform) {
     let (tra, rot) = (*pos).into();
-    transform.translation = tra * scale;
-    transform.rotation = rot;
+    transform.translation.x = tra.x * scale;
+    transform.translation.y = tra.y * scale;
+    transform.translation.z = tra.z * scale;
+    transform.rotation = Quat::from_xyzw(rot.x, rot.y, rot.z, rot.w);
 }
 
 /// System responsible for writing the rigid-bodies positions into the Bevy translation and rotation components.
@@ -370,14 +371,14 @@ pub fn sync_transforms(
     rigid_body_sync_mode: Query<&RigidBodyPositionSync>,
     // TODO: add some Changed filters to only sync when something moved?
     mut sync_query: QuerySet<(
-        Query<(
+        QueryState<(
             Entity,
             &RigidBodyPosition,
             &RigidBodyPositionSync,
             Option<&mut Transform>,
             Option<&mut GlobalTransform>,
         )>,
-        Query<(
+        QueryState<(
             Entity,
             &ColliderPosition,
             &ColliderPositionSync,
@@ -392,9 +393,7 @@ pub fn sync_transforms(
     let alpha = dt / sim_dt;
 
     // Sync bodies.
-    for (entity, rb_pos, sync_mode, mut transform, global_transform) in
-        sync_query.q0_mut().iter_mut()
-    {
+    for (entity, rb_pos, sync_mode, mut transform, global_transform) in sync_query.q0().iter_mut() {
         let mut new_transform = transform
             .as_deref_mut()
             .map(|t| t.clone())
@@ -431,7 +430,7 @@ pub fn sync_transforms(
 
     // Sync colliders.
     for (entity, co_pos, _, co_parent, mut transform, mut global_transform) in
-        sync_query.q1_mut().iter_mut()
+        QuerySet::<(_, _)>::q1(&mut sync_query).iter_mut()
     {
         let mut new_transform = transform
             .as_deref_mut()

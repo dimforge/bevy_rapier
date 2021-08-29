@@ -3,7 +3,7 @@ use bevy_rapier2d::prelude::*;
 use bevy_rapier2d::rapier::na::Vector2;
 
 fn main() {
-    App::build()
+    App::new()
         .insert_resource(WindowDescriptor {
             title: "Player Movement Example".to_string(),
             width: 1000.0,
