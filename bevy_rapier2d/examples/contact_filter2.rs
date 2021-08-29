@@ -49,7 +49,7 @@ impl<'a> PhysicsHooksWithQuery<&'a CustomFilterTag> for SameUserDataFilter {
 }
 
 fn main() {
-    App::build()
+    App::new()
         .insert_resource(ClearColor(Color::rgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
@@ -77,9 +77,9 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
 
     let mut camera = OrthographicCameraBundle::new_2d();
     camera.transform = Transform::from_translation(Vec3::new(0.0, 200.0, 0.0));
-    commands.spawn_bundle(LightBundle {
+    commands.spawn_bundle(PointLightBundle {
         transform: Transform::from_translation(Vec3::new(1000.0, 10.0, 2000.0)),
-        light: Light {
+        point_light: PointLight {
             intensity: 100_000_000_.0,
             range: 6000.0,
             ..Default::default()

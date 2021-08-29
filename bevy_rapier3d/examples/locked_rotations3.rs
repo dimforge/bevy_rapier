@@ -13,7 +13,7 @@ use ui::DebugUiPlugin;
 mod ui;
 
 fn main() {
-    App::build()
+    App::new()
         .insert_resource(ClearColor(Color::rgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
@@ -37,9 +37,9 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    commands.spawn_bundle(LightBundle {
+    commands.spawn_bundle(PointLightBundle {
         transform: Transform::from_translation(Vec3::new(100.0, 10.0, 200.0)),
-        light: Light {
+        point_light: PointLight {
             intensity: 100_000.0,
             range: 3000.0,
             ..Default::default()
