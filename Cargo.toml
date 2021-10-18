@@ -6,10 +6,10 @@ codegen-units = 1
 
 [patch.crates-io]
 #nalgebra = { path = "../nalgebra" }
-#parry2d = { path = "../parry/build/parry2d" }
-#parry3d = { path = "../parry/build/parry3d" }
-#rapier2d = { path = "../rapier/build/rapier2d" }
-#rapier3d = { path = "../rapier/build/rapier3d" }
+parry2d = { path = "../parry/build/parry2d" }
+parry3d = { path = "../parry/build/parry3d" }
+rapier2d = { path = "../rapier/build/rapier2d" }
+rapier3d = { path = "../rapier/build/rapier3d" }
 
 #rapier2d = { git = "https://github.com/dimforge/rapier" }
 #rapier3d = { git = "https://github.com/dimforge/rapier" }
