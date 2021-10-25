@@ -14,8 +14,10 @@ use rapier::geometry::{BroadPhase, NarrowPhase};
 use rapier::pipeline::PhysicsPipeline;
 use std::marker::PhantomData;
 
-pub type NoUserData<'a> = &'a ();
-
+#[derive(Component)]
+pub struct S;
+pub type NoUserData<'a> = &'a S;
+//pub type NoUserData = S;
 /// A plugin responsible for setting up a full Rapier physics simulation pipeline and resources.
 ///
 /// This will automatically setup all the resources needed to run a Rapier physics simulation including:

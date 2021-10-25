@@ -74,7 +74,10 @@ macro_rules! impl_component_set_mut(
 
             #[inline(always)]
             fn for_each(&self, mut f: impl FnMut(Index, &$T)) {
-                self.0.iter().for_each(|$data| f($data.0.handle(), $data_expr))
+                unsafe{
+                  self.0.iter_unsafe().for_each(|$data| f($data.0.handle(), $data_expr))
+                }
+                
             }
         }
 
@@ -170,7 +173,9 @@ impl<'world, 'state, 'a, T: 'static + Send + Sync + bevy::prelude::Component> Co
 
     #[inline(always)]
     fn for_each(&self, mut f: impl FnMut(Index, &T)) {
-        self.0.iter_mut().for_each(|data| f(data.0.handle(), &data.1))
+        unsafe{
+          self.0.iter_unsafe().for_each(|data| f(data.0.handle(), &data.1))
+        }
     }
 }
 

@@ -18,7 +18,7 @@ impl RigidBodyHandleComponent {
     ///
     /// This can be passed to a `RigidBodySet` to retrieve a reference to a Rapier rigid-body.
     pub fn handle(&self) -> RigidBodyHandle {
-        self.0
+      RigidBodyHandle(*self.0)
     }
 }
 
@@ -38,7 +38,7 @@ impl ColliderHandleComponent {
     ///
     /// This can be passed to a `ColliderSet` to retrieve a reference to a Rapier rigid-body.
     pub fn handle(&self) -> ColliderHandle {
-        self.0
+      ColliderHandle(*self.0)
     }
 }
 
