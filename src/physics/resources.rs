@@ -3,13 +3,17 @@ use crate::physics::{
     IntoEntity, IntoHandle, JointHandleComponent, RigidBodyChangesQueryFilter,
     RigidBodyChangesQueryPayload, RigidBodyComponentsSet,
 };
-use crate::rapier::prelude::*;
+//use crate::rapier::prelude::*;
+use crate::physics::wrapper::{RigidBodyHandle,RigidBodyChanges,ColliderHandle,RigidBodyActivation,RigidBodyIds,RigidBodyType,
+  ColliderParent,RigidBodyColliders,ColliderChanges};
 use bevy::ecs::query::WorldQuery;
 use bevy::prelude::*;
 use rapier::data::{ComponentSet, ComponentSetMut};
 use std::collections::HashMap;
 use std::sync::RwLock;
-
+use rapier2d::prelude::{Vector,ContactEvent,IntersectionEvent,EventHandler,JointHandle,ContactPair,
+  IslandManager,JointSet,PairFilterContext,SolverFlags,ContactModificationContext,PhysicsHooks};
+use rapier2d::{dynamics,geometry};
 /// The different ways of adjusting the timestep length.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TimestepMode {
@@ -93,17 +97,17 @@ pub struct SimulationToRenderTime {
 pub struct JointsEntityMap(pub(crate) HashMap<Entity, JointHandle>);
 
 pub struct ModificationTracker {
-    pub(crate) modified_bodies: Vec<RigidBodyHandle>,
-    pub(crate) modified_colliders: Vec<ColliderHandle>,
-    pub(crate) removed_bodies: Vec<RigidBodyHandle>,
-    pub(crate) removed_colliders: Vec<ColliderHandle>,
+    pub(crate) modified_bodies: Vec<dynamics::RigidBodyHandle>,
+    pub(crate) modified_colliders: Vec<geometry::ColliderHandle>,
+    pub(crate) removed_bodies: Vec<dynamics::RigidBodyHandle>,
+    pub(crate) removed_colliders: Vec<geometry::ColliderHandle>,
     // NOTE: right now, this actually contains an Entity instead of the JointHandle.
     //       but we will switch to JointHandle soon.
     pub(crate) removed_joints: Vec<JointHandle>,
     // We need to maintain these two because we have to access them
     // when an entity containing a collider/rigid-body has been despawn.
-    pub(crate) body_colliders: HashMap<RigidBodyHandle, Vec<ColliderHandle>>,
-    pub(crate) colliders_parent: HashMap<ColliderHandle, RigidBodyHandle>,
+    pub(crate) body_colliders: HashMap<dynamics::RigidBodyHandle, Vec<geometry::ColliderHandle>>,
+    pub(crate) colliders_parent: HashMap<geometry::ColliderHandle, dynamics::RigidBodyHandle>,
 }
 
 impl Default for ModificationTracker {
@@ -138,50 +142,50 @@ impl ModificationTracker {
         for (entity, mut rb_activation, mut rb_changes, rb_pos, rb_type, rb_colliders) in
             bodies_query.iter_mut()
         {
-            if !rb_changes.contains(RigidBodyChanges::MODIFIED) {
+            if !(*rb_changes).contains(dynamics::RigidBodyChanges::MODIFIED) {
                 self.modified_bodies.push(entity.handle());
             }
 
-            *rb_changes |= RigidBodyChanges::MODIFIED;
+            **rb_changes |= dynamics::RigidBodyChanges::MODIFIED;
 
             if rb_pos {
-                *rb_changes |= RigidBodyChanges::POSITION;
+                **rb_changes |= dynamics::RigidBodyChanges::POSITION;
             }
             if rb_type {
-                *rb_changes |= RigidBodyChanges::TYPE;
+                **rb_changes |= dynamics::RigidBodyChanges::TYPE;
             }
             if rb_colliders {
-                *rb_changes |= RigidBodyChanges::COLLIDERS;
+                **rb_changes |= dynamics::RigidBodyChanges::COLLIDERS;
             }
 
             // Wake-up the rigid-body.
-            *rb_changes |= RigidBodyChanges::SLEEP;
+            **rb_changes |= dynamics::RigidBodyChanges::SLEEP;
             rb_activation.wake_up(true);
         }
 
         for (entity, mut co_changes, co_pos, co_groups, co_shape, co_type, co_parent) in
             colliders_query.iter_mut()
         {
-            if !co_changes.contains(ColliderChanges::MODIFIED) {
+            if !co_changes.contains(geometry::ColliderChanges::MODIFIED) {
                 self.modified_colliders.push(entity.handle());
             }
 
-            *co_changes |= ColliderChanges::MODIFIED;
+            **co_changes |= geometry::ColliderChanges::MODIFIED;
 
             if co_pos {
-                *co_changes |= ColliderChanges::POSITION;
+                **co_changes |= geometry::ColliderChanges::POSITION;
             }
             if co_groups {
-                *co_changes |= ColliderChanges::GROUPS;
+                **co_changes |= geometry::ColliderChanges::GROUPS;
             }
             if co_shape {
-                *co_changes |= ColliderChanges::SHAPE;
+                **co_changes |= geometry::ColliderChanges::SHAPE;
             }
             if co_type {
-                *co_changes |= ColliderChanges::TYPE;
+                **co_changes |= geometry::ColliderChanges::TYPE;
             }
             if co_parent == Some(true) {
-                *co_changes |= ColliderChanges::PARENT;
+                **co_changes |= geometry::ColliderChanges::PARENT;
             }
         }
     }
@@ -195,12 +199,12 @@ impl ModificationTracker {
         self.removed_bodies.extend(
             removed_bodies
                 .iter()
-                .map(|e| IntoHandle::<RigidBodyHandle>::handle(e)),
+                .map(|e| IntoHandle::<dynamics::RigidBodyHandle>::handle(e)),
         );
         self.removed_colliders.extend(
             removed_colliders
                 .iter()
-                .map(|e| IntoHandle::<ColliderHandle>::handle(e)),
+                .map(|e| IntoHandle::<geometry::ColliderHandle>::handle(e)),
         );
         self.removed_joints.extend(
             removed_joints
@@ -217,11 +221,11 @@ impl ModificationTracker {
         joints: &mut JointSet,
         joints_map: &mut JointsEntityMap,
     ) where
-        Bodies: ComponentSetMut<RigidBodyChanges>
-            + ComponentSetMut<RigidBodyColliders>
-            + ComponentSetMut<RigidBodyActivation> // Needed for joint removal.
-            + ComponentSetMut<RigidBodyIds> // Needed for joint removal.
-            + ComponentSet<RigidBodyType>, // Needed for joint removal.
+        Bodies: ComponentSetMut<dynamics::RigidBodyChanges>
+            + ComponentSetMut<dynamics::RigidBodyColliders>
+            + ComponentSetMut<dynamics::RigidBodyActivation> // Needed for joint removal.
+            + ComponentSetMut<dynamics::RigidBodyIds> // Needed for joint removal.
+            + ComponentSet<dynamics::RigidBodyType>, // Needed for joint removal.
     {
         for removed_body in self.removed_bodies.iter() {
             if let Some(colliders) = self.body_colliders.remove(removed_body) {
@@ -241,16 +245,16 @@ impl ModificationTracker {
 
         for removed_collider in self.removed_colliders.iter() {
             if let Some(parent) = self.colliders_parent.remove(removed_collider) {
-                let rb_changes: Option<RigidBodyChanges> = bodies.get(parent.0).copied();
+                let rb_changes: Option<dynamics::RigidBodyChanges> = bodies.get(parent.0).copied();
 
                 if let Some(mut rb_changes) = rb_changes {
                     // Keep track of the fact the rigid-body will be modified.
-                    if !rb_changes.contains(RigidBodyChanges::MODIFIED) {
+                    if !rb_changes.contains(dynamics::RigidBodyChanges::MODIFIED) {
                         self.modified_bodies.push(parent);
                     }
 
                     // Detach the collider from the rigid-body.
-                    bodies.map_mut_internal(parent.0, |rb_colliders: &mut RigidBodyColliders| {
+                    bodies.map_mut_internal(parent.0, |rb_colliders: &mut dynamics::RigidBodyColliders| {
                         rb_colliders.detach_collider(&mut rb_changes, *removed_collider);
                     });
 

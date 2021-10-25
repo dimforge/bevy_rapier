@@ -1,10 +1,10 @@
 use bevy::prelude::*;
-use rapier::dynamics::{JointHandle, JointParams, RigidBodyHandle};
-use rapier::geometry::ColliderHandle;
+use rapier::dynamics::{JointHandle, JointParams};
 use rapier::math::Isometry;
-
+use crate::physics::wrapper::{RigidBodyHandle,ColliderHandle};
 /// A component representing a rigid-body that is being handled by
 /// a Rapier physics World.
+#[derive(Component)]
 pub struct RigidBodyHandleComponent(RigidBodyHandle);
 
 impl From<RigidBodyHandle> for RigidBodyHandleComponent {
@@ -24,6 +24,7 @@ impl RigidBodyHandleComponent {
 
 /// A component representing a collider that is being handled by
 /// a Rapier physics World.
+#[derive(Component)]
 pub struct ColliderHandleComponent(ColliderHandle);
 
 impl From<ColliderHandle> for ColliderHandleComponent {
@@ -45,6 +46,7 @@ impl ColliderHandleComponent {
 ///
 /// This component should not be created manually. It is automatically created and
 /// added to an entity by the `JointBuilderComponent`.
+#[derive(Component)]
 pub struct JointHandleComponent {
     handle: JointHandle,
     entity1: Entity,
@@ -80,6 +82,7 @@ impl JointHandleComponent {
 ///
 /// This is a transient component that will be automatically replaced by a `JointHandleComponent`
 /// once the Rapier joint it describes has been created and added to the `JointSet` resource.
+#[derive(Component)]
 pub struct JointBuilderComponent {
     pub(crate) params: JointParams,
     pub(crate) entity1: Entity,
@@ -100,13 +103,13 @@ impl JointBuilderComponent {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Component,Copy, Clone, Debug)]
 pub enum RigidBodyPositionSync {
     Discrete,
     Interpolated { prev_pos: Option<Isometry<f32>> },
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Component,Copy, Clone, Debug)]
 pub enum ColliderPositionSync {
     // Right now, there is only discrete for colliders.
     // We may add more modes in the future.
