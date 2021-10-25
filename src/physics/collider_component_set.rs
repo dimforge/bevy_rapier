@@ -14,7 +14,7 @@ impl IntoHandle<geometry::ColliderHandle> for Entity {
 impl IntoEntity for geometry::ColliderHandle {
     #[inline]
     fn entity(self) -> Entity {
-        self.entity()
+        self.0.entity()
     }
 }
 
