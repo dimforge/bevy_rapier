@@ -9,14 +9,12 @@ use crate::physics::{
 
 use crate::prelude::{ContactEvent, IntersectionEvent};
 use crate::rapier::data::ComponentSetOption;
-use crate::rapier::dynamics::{
-    RigidBodyCcd, RigidBodyChanges, RigidBodyColliders, RigidBodyIds, RigidBodyMassProps,
-    RigidBodyPosition,
+use crate::physics::wrapper::{
+    RigidBodyCcd, RigidBodyChanges, RigidBodyIds, RigidBodyMassProps,
+    RigidBodyPosition,ColliderBroadPhaseData, ColliderChanges, ColliderMassProps, ColliderParent, ColliderPosition,
+    ColliderShape,RigidBodyColliders,ColliderHandle,RigidBodyHandle
 };
-use crate::rapier::geometry::{
-    ColliderBroadPhaseData, ColliderChanges, ColliderMassProps, ColliderParent, ColliderPosition,
-    ColliderShape,
-};
+
 use crate::rapier::pipeline::QueryPipeline;
 use bevy::ecs::query::{QueryState, WorldQuery};
 use bevy::prelude::*;
@@ -25,7 +23,7 @@ use rapier::geometry::{BroadPhase, NarrowPhase};
 use rapier::math::Isometry;
 use rapier::pipeline::PhysicsPipeline;
 use std::sync::RwLock;
-
+use rapier::{dynamics,geometry};
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum PhysicsSystems {
     AttachBodiesAndColliders,
@@ -65,10 +63,10 @@ pub fn attach_bodies_and_colliders_system(
             }
         }
 
-        let co_parent = ColliderParent {
-            pos_wrt_parent: co_pos.0,
+        let co_parent = ColliderParent(geometry::ColliderParent{
+            pos_wrt_parent: *co_pos.0,
             handle: body_entity.handle(),
-        };
+        });
         commands.entity(collider_entity).insert(co_parent);
     }
 }
@@ -120,7 +118,7 @@ pub fn finalize_collider_attach_to_bodies(
             // Update the modification tracker.
             // NOTE: this must be done before the `.attach_collider` because
             //       `.attach_collider` will set the `MODIFIED` flag.
-            if !rb_changes.contains(RigidBodyChanges::MODIFIED) {
+            if !rb_changes.contains(dynamics::RigidBodyChanges::MODIFIED) {
                 modif_tracker.modified_bodies.push(co_parent.handle);
             }
 
@@ -273,7 +271,7 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
                             if let RigidBodyPositionSync::Interpolated { prev_pos } =
                                 &mut *position_sync
                             {
-                                let rb_pos: Option<&RigidBodyPosition> =
+                                let rb_pos: Option<&dynamics::RigidBodyPosition> =
                                     rigid_body_components_set.get(entity.handle());
                                 if let Some(rb_pos) = rb_pos {
                                     *prev_pos = Some(rb_pos.position);
@@ -281,7 +279,9 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
                             }
                         }
                     }
-
+                    // let mut modified_bodies = modifs_tracker.modified_bodies.iter().map(|a| a.0).collect();
+                    // let mut modified_colliders = modifs_tracker.modified_colliders.iter().map(|a|a.0).collect();
+                    // let mut removed_colliders = modifs_tracker.removed_colliders.iter().map(|a|a.0).collect();
                     pipeline.step_generic(
                         &configuration.gravity,
                         &integration_parameters,
@@ -298,7 +298,9 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
                         &physics_hooks,
                         &events,
                     );
-
+                    // modifs_tracker.modified_bodies = modified_bodies.iter().map(|a|RigidBodyHandle(*a)).collect();
+                    // modifs_tracker.modified_colliders = modified_colliders.iter().map(|a|ColliderHandle(*a)).collect();
+                    // modifs_tracker.removed_colliders = removed_colliders.iter().map(|a|ColliderHandle(*a)).collect();
                     modifs_tracker.clear_modified_and_removed();
                 }
                 sim_to_render_time.diff -= sim_dt;
@@ -312,7 +314,9 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
                     new_integration_parameters.dt =
                         time.delta_seconds().min(integration_parameters.dt);
                 }
-
+                // let mut modified_bodies = modifs_tracker.modified_bodies.iter().map(|a| a.0).collect();
+                // let mut modified_colliders = modifs_tracker.modified_colliders.iter().map(|a|a.0).collect();
+                // let mut removed_colliders = modifs_tracker.removed_colliders.iter().map(|a|a.0).collect();
                 pipeline.step_generic(
                     &configuration.gravity,
                     &new_integration_parameters,
@@ -329,7 +333,9 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
                     &physics_hooks,
                     &events,
                 );
-
+                // modifs_tracker.modified_bodies = modified_bodies.iter().map(|a|RigidBodyHandle(*a)).collect();
+                // modifs_tracker.modified_colliders = modified_colliders.iter().map(|a|ColliderHandle(*a)).collect();
+                // modifs_tracker.removed_colliders = removed_colliders.iter().map(|a|ColliderHandle(*a)).collect();
                 modifs_tracker.clear_modified_and_removed();
             }
         }

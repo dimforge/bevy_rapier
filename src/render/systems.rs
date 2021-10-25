@@ -1,5 +1,5 @@
 use crate::physics::RapierConfiguration;
-use crate::rapier::geometry::ColliderShape;
+use crate::physics::wrapper::ColliderShape;
 use crate::render::ColliderDebugRender;
 use bevy::prelude::*;
 use bevy::render::mesh::{Indices, VertexAttributeValues};

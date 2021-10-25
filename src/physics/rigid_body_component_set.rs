@@ -1,20 +1,20 @@
 use super::{IntoEntity, IntoHandle};
-use crate::rapier::dynamics::{
-    RigidBodyActivation, RigidBodyCcd, RigidBodyChanges, RigidBodyColliders, RigidBodyDamping,
+use crate::physics::wrapper::{
+    RigidBodyActivation, RigidBodyCcd, RigidBodyChanges, RigidBodyDamping,
     RigidBodyDominance, RigidBodyForces, RigidBodyHandle, RigidBodyIds, RigidBodyMassProps,
-    RigidBodyPosition, RigidBodyType, RigidBodyVelocity,
+    RigidBodyPosition, RigidBodyType, RigidBodyVelocity,RigidBodyColliders
 };
 use bevy::prelude::*;
 use rapier::data::{ComponentSet, ComponentSetMut, ComponentSetOption, Index};
-
-impl IntoHandle<RigidBodyHandle> for Entity {
+use rapier::{dynamics};
+impl IntoHandle<dynamics::RigidBodyHandle> for Entity {
     #[inline]
-    fn handle(self) -> RigidBodyHandle {
-        RigidBodyHandle::from_raw_parts(self.id(), self.generation())
+    fn handle(self) -> dynamics::RigidBodyHandle {
+      dynamics::RigidBodyHandle::from_raw_parts(self.id(), self.generation())
     }
 }
 
-impl IntoEntity for RigidBodyHandle {
+impl IntoEntity for dynamics::RigidBodyHandle {
     #[inline]
     fn entity(self) -> Entity {
         self.0.entity()
@@ -78,18 +78,18 @@ pub struct RigidBodyComponentsSet<'world, 'state, 'a>(
     pub Query<'world, 'state, RigidBodyComponentsQueryPayload<'a>>,
 );
 
-impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyPosition, |data| &*data.1);
-impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyVelocity, |data| &*data.2);
-impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyMassProps, |data| &*data.3);
-impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyIds, |data| &*data.4);
-impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyForces, |data| &*data.5);
-impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyCcd, |data| &*data.6);
-impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyColliders, |data| &*data.7);
-impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyDamping, |data| &*data.8);
-impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyDominance, |data| &*data.9);
-impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyType, |data| &*data.10);
-impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyChanges, |data| &*data.11);
-impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyActivation, |data| &*data
+impl_component_set_mut!(RigidBodyComponentsSet, dynamics::RigidBodyPosition,RigidBodyPosition, |data| &*data.1);
+impl_component_set_mut!(RigidBodyComponentsSet, dynamics::RigidBodyVelocity,RigidBodyVelocity, |data| &*data.2);
+impl_component_set_mut!(RigidBodyComponentsSet, dynamics::RigidBodyMassProps,RigidBodyMassProps, |data| &*data.3);
+impl_component_set_mut!(RigidBodyComponentsSet, dynamics::RigidBodyIds,RigidBodyIds, |data| &*data.4);
+impl_component_set_mut!(RigidBodyComponentsSet, dynamics::RigidBodyForces,RigidBodyForces, |data| &*data.5);
+impl_component_set_mut!(RigidBodyComponentsSet, dynamics::RigidBodyCcd,RigidBodyCcd, |data| &*data.6);
+impl_component_set_mut!(RigidBodyComponentsSet, dynamics::RigidBodyColliders,RigidBodyColliders, |data| &*data.7);
+impl_component_set_mut!(RigidBodyComponentsSet, dynamics::RigidBodyDamping,RigidBodyDamping, |data| &*data.8);
+impl_component_set_mut!(RigidBodyComponentsSet, dynamics::RigidBodyDominance,RigidBodyDominance, |data| &*data.9);
+impl_component_set_mut!(RigidBodyComponentsSet, dynamics::RigidBodyType,RigidBodyType, |data| &*data.10);
+impl_component_set_mut!(RigidBodyComponentsSet, dynamics::RigidBodyChanges,RigidBodyChanges, |data| &*data.11);
+impl_component_set_mut!(RigidBodyComponentsSet, dynamics::RigidBodyActivation,RigidBodyActivation, |data| &*data
     .12);
 
 #[derive(Bundle)]
@@ -111,7 +111,7 @@ pub struct RigidBodyBundle {
 impl Default for RigidBodyBundle {
     fn default() -> Self {
         Self {
-            body_type: RigidBodyType::Dynamic,
+            body_type: RigidBodyType(rapier2d::prelude::RigidBodyType::Dynamic),
             position: RigidBodyPosition::default(),
             velocity: RigidBodyVelocity::default(),
             mass_properties: RigidBodyMassProps::default(),
