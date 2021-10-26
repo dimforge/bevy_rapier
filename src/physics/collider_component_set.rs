@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use rapier::data::{ComponentSet, ComponentSetMut, ComponentSetOption, Index};
 use crate::physics::wrapper::{ColliderMaterial,ColliderFlags,ColliderParent,ColliderPosition,ColliderBroadPhaseData,
   ColliderMassProps,ColliderChanges,ColliderShape,ColliderType};
-use rapier::{geometry,dynamics};
+use rapier::{geometry};
 impl IntoHandle<geometry::ColliderHandle> for Entity {
     #[inline]
     fn handle(self) -> geometry::ColliderHandle {

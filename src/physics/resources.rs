@@ -4,8 +4,7 @@ use crate::physics::{
     RigidBodyChangesQueryPayload, RigidBodyComponentsSet,
 };
 //use crate::rapier::prelude::*;
-use crate::physics::wrapper::{RigidBodyHandle,RigidBodyChanges,ColliderHandle,RigidBodyActivation,RigidBodyIds,RigidBodyType,
-  ColliderParent,RigidBodyColliders,ColliderChanges};
+use crate::physics::wrapper::{RigidBodyChanges,ColliderParent,ColliderChanges};
 use bevy::ecs::query::WorldQuery;
 use bevy::prelude::*;
 use rapier::data::{ComponentSet, ComponentSetMut};
