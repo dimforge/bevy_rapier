@@ -1,7 +1,7 @@
 use super::{IntoEntity, IntoHandle};
 use crate::physics::wrapper::{
     RigidBodyActivation, RigidBodyCcd, RigidBodyChanges, RigidBodyDamping,
-    RigidBodyDominance, RigidBodyForces, RigidBodyHandle, RigidBodyIds, RigidBodyMassProps,
+    RigidBodyDominance, RigidBodyForces, RigidBodyIds, RigidBodyMassProps,
     RigidBodyPosition, RigidBodyType, RigidBodyVelocity,RigidBodyColliders
 };
 use bevy::prelude::*;

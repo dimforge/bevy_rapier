@@ -12,7 +12,7 @@ use crate::rapier::data::ComponentSetOption;
 use crate::physics::wrapper::{
     RigidBodyCcd, RigidBodyChanges, RigidBodyIds, RigidBodyMassProps,
     RigidBodyPosition,ColliderBroadPhaseData, ColliderChanges, ColliderMassProps, ColliderParent, ColliderPosition,
-    ColliderShape,RigidBodyColliders,ColliderHandle,RigidBodyHandle
+    ColliderShape,RigidBodyColliders
 };
 
 use crate::rapier::pipeline::QueryPipeline;
