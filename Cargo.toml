@@ -13,3 +13,4 @@ codegen-units = 1
 
 #rapier2d = { git = "https://github.com/dimforge/rapier" }
 #rapier3d = { git = "https://github.com/dimforge/rapier" }
+bevy = {path="../bevy" }
