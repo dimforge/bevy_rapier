@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use bevy_rapier2d::rapier::na::Vector2;
-
+use bevy_rapier2d::physics::wrapper;
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
@@ -20,6 +20,7 @@ fn main() {
 }
 
 // The float value is the player movement speed in 'pixels/second'.
+#[derive(Component)]
 struct Player(f32);
 
 fn spawn_player(
@@ -53,7 +54,7 @@ fn spawn_player(
         })
         .insert_bundle(RigidBodyBundle::default())
         .insert_bundle(ColliderBundle {
-            position: [collider_size_x / 2.0, collider_size_y / 2.0].into(),
+            position: wrapper::ColliderPosition([collider_size_x / 2.0, collider_size_y / 2.0].into()),
             ..Default::default()
         })
         .insert(ColliderPositionSync::Discrete)
@@ -64,7 +65,7 @@ fn spawn_player(
 fn player_movement(
     keyboard_input: Res<Input<KeyCode>>,
     rapier_parameters: Res<RapierConfiguration>,
-    mut player_info: Query<(&Player, &mut RigidBodyVelocity)>,
+    mut player_info: Query<(&Player, &mut wrapper::RigidBodyVelocity)>,
 ) {
     for (player, mut rb_vels) in player_info.iter_mut() {
         let up = keyboard_input.pressed(KeyCode::W) || keyboard_input.pressed(KeyCode::Up);
