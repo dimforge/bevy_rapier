@@ -60,7 +60,7 @@ fn main() {
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
         .add_plugin(RapierPhysicsPlugin::<&CustomFilterTag>::default())
-        .add_plugin(RapierRenderPlugin)
+        .add_plugin(RapierDebugPlugin)
         .add_plugin(DebugUiPlugin)
         .add_startup_system(setup_graphics.system())
         .add_startup_system(setup_physics.system())
@@ -87,6 +87,10 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
         ..Default::default()
     });
     commands.spawn_bundle(camera);
+    commands.spawn_bundle(RapierDebugOrthographicCameraBundle {
+        transform: Transform::from_xyz(0.0, 200.0, 0.0),
+        ..Default::default()
+    });
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -104,7 +108,7 @@ pub fn setup_physics(mut commands: Commands) {
     };
     commands
         .spawn_bundle(collider)
-        .insert(ColliderDebugRender::default())
+        .insert(RapierDebugCollider::default())
         .insert(ColliderPositionSync::Discrete)
         .insert(CustomFilterTag::GroupA);
 
@@ -114,7 +118,7 @@ pub fn setup_physics(mut commands: Commands) {
     };
     commands
         .spawn_bundle(collider)
-        .insert(ColliderDebugRender::default())
+        .insert(RapierDebugCollider::default())
         .insert(ColliderPositionSync::Discrete)
         .insert(CustomFilterTag::GroupB);
     /*
@@ -148,7 +152,7 @@ pub fn setup_physics(mut commands: Commands) {
             commands
                 .spawn_bundle(body)
                 .insert_bundle(collider)
-                .insert(ColliderDebugRender::with_id(color % 2))
+                .insert(RapierDebugCollider { color: Color::TEAL })
                 .insert(ColliderPositionSync::Discrete)
                 .insert(CustomFilterTag::with_id(color));
         }

@@ -25,7 +25,7 @@ fn main() {
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierRenderPlugin)
+        .add_plugin(RapierDebugPlugin)
         .add_plugin(DebugUiPlugin)
         .add_startup_system(setup_graphics.system())
         .add_startup_system(setup_physics.system())
@@ -55,6 +55,14 @@ fn setup_graphics(mut commands: Commands) {
         )),
         ..Default::default()
     });
+    commands.spawn_bundle(RapierDebugPerspectiveCameraBundle {
+        transform: Transform::from_matrix(Mat4::face_toward(
+            Vec3::new(15.0, 5.0, 42.0),
+            Vec3::new(13.0, 1.0, 1.0),
+            Vec3::new(0.0, 1.0, 0.0),
+        )),
+        ..Default::default()
+    });
 }
 
 fn create_prismatic_joints(commands: &mut Commands, origin: Point3<f32>, num: usize) {
@@ -74,7 +82,7 @@ fn create_prismatic_joints(commands: &mut Commands, origin: Point3<f32>, num: us
     let mut curr_parent = commands
         .spawn_bundle(body)
         .insert_bundle(collider)
-        .insert(ColliderDebugRender::default())
+        .insert(RapierDebugCollider::default())
         .insert(ColliderPositionSync::Discrete)
         .id();
 
@@ -94,7 +102,7 @@ fn create_prismatic_joints(commands: &mut Commands, origin: Point3<f32>, num: us
         let curr_child = commands
             .spawn_bundle(rigid_body)
             .insert_bundle(collider)
-            .insert(ColliderDebugRender::with_id(i))
+            .insert(RapierDebugCollider { color: Color::TEAL })
             .insert(ColliderPositionSync::Discrete)
             .id();
 
@@ -141,7 +149,7 @@ fn create_revolute_joints(commands: &mut Commands, origin: Point3<f32>, num: usi
     let mut curr_parent = commands
         .spawn_bundle(ground)
         .insert_bundle(collider)
-        .insert(ColliderDebugRender::default())
+        .insert(RapierDebugCollider::default())
         .insert(ColliderPositionSync::Discrete)
         .id();
 
@@ -170,7 +178,7 @@ fn create_revolute_joints(commands: &mut Commands, origin: Point3<f32>, num: usi
             handles[k] = commands
                 .spawn_bundle(rigid_body)
                 .insert_bundle(collider)
-                .insert(ColliderDebugRender::with_id(i))
+                .insert(RapierDebugCollider { color: Color::ORANGE })
                 .insert(ColliderPositionSync::Discrete)
                 .id();
         }
@@ -201,13 +209,11 @@ fn create_fixed_joints(commands: &mut Commands, origin: Point3<f32>, num: usize)
     let shift = 1.0;
 
     let mut body_entities = Vec::new();
-    let mut color = 0;
 
     for k in 0..num {
         for i in 0..num {
             let fk = k as f32;
             let fi = i as f32;
-            color += 1;
 
             // NOTE: the num - 2 test is to avoid two consecutive
             // fixed bodies. Because physx will crash if we add
@@ -232,7 +238,7 @@ fn create_fixed_joints(commands: &mut Commands, origin: Point3<f32>, num: usize)
             let child_entity = commands
                 .spawn_bundle(rigid_body)
                 .insert_bundle(collider)
-                .insert(ColliderDebugRender::with_id(color))
+                .insert(RapierDebugCollider { color: Color::VIOLET })
                 .insert(ColliderPositionSync::Discrete)
                 .id();
 
@@ -275,13 +281,11 @@ fn create_ball_joints(commands: &mut Commands, num: usize) {
     let shift = 1.0;
 
     let mut body_entities = Vec::new();
-    let mut color = 0;
 
     for k in 0..num {
         for i in 0..num {
             let fk = k as f32;
             let fi = i as f32;
-            color += 1;
 
             let body_type = if i == 0 && (k % 4 == 0 || k == num - 1) {
                 RigidBodyType::Static
@@ -303,7 +307,7 @@ fn create_ball_joints(commands: &mut Commands, num: usize) {
             let child_entity = commands
                 .spawn_bundle(collider)
                 .insert_bundle(rigid_body)
-                .insert(ColliderDebugRender::with_id(color))
+                .insert(RapierDebugCollider { color: Color::BLUE })
                 .insert(ColliderPositionSync::Discrete)
                 .id();
 

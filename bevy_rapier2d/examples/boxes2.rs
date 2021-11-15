@@ -23,7 +23,7 @@ fn main() {
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierRenderPlugin)
+        .add_plugin(RapierDebugPlugin)
         .add_plugin(DebugUiPlugin)
         .add_startup_system(setup_graphics.system())
         .add_startup_system(setup_physics.system())
@@ -50,6 +50,10 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
         ..Default::default()
     });
     commands.spawn_bundle(camera);
+    commands.spawn_bundle(RapierDebugOrthographicCameraBundle {
+        transform: Transform::from_xyz(0.0, 200.0, 0.0),
+        ..Default::default()
+    });
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -64,7 +68,7 @@ pub fn setup_physics(mut commands: Commands) {
     };
     commands
         .spawn_bundle(collider)
-        .insert(ColliderDebugRender::default())
+        .insert(RapierDebugCollider::default())
         .insert(ColliderPositionSync::Discrete);
 
     let collider = ColliderBundle {
@@ -78,7 +82,7 @@ pub fn setup_physics(mut commands: Commands) {
     };
     commands
         .spawn_bundle(collider)
-        .insert(ColliderDebugRender::default())
+        .insert(RapierDebugCollider::default())
         .insert(ColliderPositionSync::Discrete);
 
     let collider = ColliderBundle {
@@ -92,7 +96,7 @@ pub fn setup_physics(mut commands: Commands) {
     };
     commands
         .spawn_bundle(collider)
-        .insert(ColliderDebugRender::default())
+        .insert(RapierDebugCollider::default())
         .insert(ColliderPositionSync::Discrete);
 
     /*
@@ -104,13 +108,11 @@ pub fn setup_physics(mut commands: Commands) {
     let shift = rad * 2.0;
     let centerx = shift * (num as f32) / 2.0;
     let centery = shift / 2.0;
-    let mut color = 0;
 
     for i in 0..num {
         for j in 0usize..num * 5 {
             let x = i as f32 * shift - centerx;
             let y = j as f32 * shift + centery + 2.0;
-            color += 1;
 
             // Build the rigid body.
             let body = RigidBodyBundle {
@@ -124,7 +126,7 @@ pub fn setup_physics(mut commands: Commands) {
             commands
                 .spawn_bundle(body)
                 .insert_bundle(collider)
-                .insert(ColliderDebugRender::with_id(color))
+                .insert(RapierDebugCollider { color: Color::VIOLET })
                 .insert(ColliderPositionSync::Discrete);
         }
     }

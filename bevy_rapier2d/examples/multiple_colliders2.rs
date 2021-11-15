@@ -21,7 +21,7 @@ fn main() {
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierRenderPlugin)
+        .add_plugin(RapierDebugPlugin)
         .add_plugin(DebugUiPlugin)
         .add_startup_system(setup_graphics.system())
         .add_startup_system(setup_physics.system())
@@ -43,6 +43,10 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
         ..Default::default()
     });
     commands.spawn_bundle(camera);
+    commands.spawn_bundle(RapierDebugOrthographicCameraBundle {
+        transform: Transform::from_xyz(0.0, 200.0, 0.0),
+        ..Default::default()
+    });
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -59,7 +63,7 @@ pub fn setup_physics(mut commands: Commands) {
     };
     commands
         .spawn_bundle(collider)
-        .insert(ColliderDebugRender::default())
+        .insert(RapierDebugCollider::default())
         .insert(ColliderPositionSync::Discrete);
 
     /*
@@ -73,13 +77,11 @@ pub fn setup_physics(mut commands: Commands) {
     let centery = shift / 2.0;
 
     let mut offset = -(num as f32) * (rad * 2.0 + rad) * 0.5;
-    let mut color = 0;
 
     for j in 0usize..20 {
         for i in 0..num {
             let x = i as f32 * shift * 5.0 - centerx + offset;
             let y = j as f32 * (shift * 5.0) + centery + 3.0;
-            color += 1;
 
             // Build the rigid body.
             let rigid_body = RigidBodyBundle {
@@ -106,15 +108,15 @@ pub fn setup_physics(mut commands: Commands) {
             commands.spawn_bundle(rigid_body).with_children(|parent| {
                 parent
                     .spawn_bundle(collider1)
-                    .insert(ColliderDebugRender::with_id(color))
+                    .insert(RapierDebugCollider { color: Color::TEAL })
                     .insert(ColliderPositionSync::Discrete);
                 parent
                     .spawn_bundle(collider2)
-                    .insert(ColliderDebugRender::with_id(color))
+                    .insert(RapierDebugCollider { color: Color::TEAL })
                     .insert(ColliderPositionSync::Discrete);
                 parent
                     .spawn_bundle(collider3)
-                    .insert(ColliderDebugRender::with_id(color))
+                    .insert(RapierDebugCollider { color: Color::TEAL })
                     .insert(ColliderPositionSync::Discrete);
             });
         }

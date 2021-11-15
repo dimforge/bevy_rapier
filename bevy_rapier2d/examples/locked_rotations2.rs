@@ -23,7 +23,7 @@ fn main() {
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierRenderPlugin)
+        .add_plugin(RapierDebugPlugin)
         .add_plugin(DebugUiPlugin)
         .add_startup_system(setup_graphics.system())
         .add_startup_system(setup_physics.system())
@@ -50,6 +50,10 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
         ..Default::default()
     });
     commands.spawn_bundle(camera);
+    commands.spawn_bundle(RapierDebugOrthographicCameraBundle {
+        transform: Transform::from_xyz(0.0, 30.0, 0.0),
+        ..Default::default()
+    });
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -67,7 +71,7 @@ pub fn setup_physics(mut commands: Commands) {
     commands
         .spawn_bundle(collider)
         .insert(ColliderPositionSync::Discrete)
-        .insert(ColliderDebugRender::default());
+        .insert(RapierDebugCollider::default());
 
     /*
      * A rectangle that only rotate.
@@ -85,7 +89,7 @@ pub fn setup_physics(mut commands: Commands) {
         .spawn_bundle(rigid_body)
         .insert_bundle(collider)
         .insert(ColliderPositionSync::Discrete)
-        .insert(ColliderDebugRender::with_id(0));
+        .insert(RapierDebugCollider { color: Color::TEAL });
 
     /*
      * A tilted cuboid that cannot rotate.
@@ -103,5 +107,5 @@ pub fn setup_physics(mut commands: Commands) {
         .spawn_bundle(rigid_body)
         .insert_bundle(collider)
         .insert(ColliderPositionSync::Discrete)
-        .insert(ColliderDebugRender::with_id(1));
+        .insert(RapierDebugCollider { color: Color::ORANGE });
 }

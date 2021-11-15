@@ -24,7 +24,7 @@ fn main() {
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierRenderPlugin)
+        .add_plugin(RapierDebugPlugin)
         .add_plugin(DebugUiPlugin)
         .add_startup_system(setup_graphics.system())
         .add_startup_system(setup_physics.system())
@@ -51,6 +51,10 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
         ..Default::default()
     });
     commands.spawn_bundle(camera);
+    commands.spawn_bundle(RapierDebugOrthographicCameraBundle {
+        transform: Transform::from_xyz(200.0, -200.0, 0.0),
+        ..Default::default()
+    });
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -67,13 +71,11 @@ pub fn setup_physics(mut commands: Commands) {
     let shift = 1.0;
 
     let mut body_entities = Vec::new();
-    let mut color = 0;
 
     for k in 0..numk {
         for i in 0..numi {
             let fk = k as f32;
             let fi = i as f32;
-            color += 1;
 
             let body_type = if i == 0 && (k % 4 == 0 || k == numk - 1) {
                 RigidBodyType::Static
@@ -95,7 +97,7 @@ pub fn setup_physics(mut commands: Commands) {
                 .spawn_bundle(rigid_body)
                 .insert_bundle(collider)
                 .insert(ColliderPositionSync::Discrete)
-                .insert(ColliderDebugRender::with_id(color))
+                .insert(RapierDebugCollider { color: Color::TEAL })
                 .id();
 
             // Vertical joint.

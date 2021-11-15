@@ -22,7 +22,7 @@ fn main() {
         .add_plugin(bevy_winit::WinitPlugin::default())
         .add_plugin(bevy_wgpu::WgpuPlugin::default())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierRenderPlugin)
+        .add_plugin(RapierDebugPlugin)
         .add_plugin(DebugUiPlugin)
         .add_startup_system(setup_graphics.system())
         .add_startup_system(setup_physics.system())
@@ -46,6 +46,14 @@ fn setup_graphics(mut commands: Commands) {
         ..Default::default()
     });
     commands.spawn_bundle(PerspectiveCameraBundle {
+        transform: Transform::from_matrix(Mat4::face_toward(
+            Vec3::new(0.0, 0.0, 25.0),
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::new(0.0, 1.0, 0.0),
+        )),
+        ..Default::default()
+    });
+    commands.spawn_bundle(RapierDebugPerspectiveCameraBundle {
         transform: Transform::from_matrix(Mat4::face_toward(
             Vec3::new(0.0, 0.0, 25.0),
             Vec3::new(0.0, 0.0, 0.0),
@@ -84,7 +92,7 @@ pub fn setup_physics(mut commands: Commands) {
     commands
         .spawn_bundle(collider)
         .insert(Parent(parent))
-        .insert(ColliderDebugRender::default())
+        .insert(RapierDebugCollider { color: Color::GREEN })
         .insert(ColliderPositionSync::Discrete);
 
     let collider = ColliderBundle {
@@ -96,7 +104,7 @@ pub fn setup_physics(mut commands: Commands) {
 
     commands
         .spawn_bundle(collider)
-        .insert(ColliderDebugRender::with_id(0))
+        .insert(RapierDebugCollider { color: Color::RED })
         .insert(ColliderPositionSync::Discrete);
 
     let rigid_body = RigidBodyBundle {
@@ -113,6 +121,6 @@ pub fn setup_physics(mut commands: Commands) {
     commands
         .spawn_bundle(rigid_body)
         .insert_bundle(collider)
-        .insert(ColliderDebugRender::with_id(1))
+        .insert(RapierDebugCollider { color: Color::RED })
         .insert(ColliderPositionSync::Discrete);
 }

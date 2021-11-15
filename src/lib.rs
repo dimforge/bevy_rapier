@@ -33,6 +33,6 @@ pub mod prelude {
         RigidBodyPositionSync,
     };
     #[cfg(feature = "render")]
-    pub use super::render::{ColliderDebugRender, RapierRenderPlugin};
+    pub use crate::render::prelude::*;
     pub use rapier::prelude::*;
 }
