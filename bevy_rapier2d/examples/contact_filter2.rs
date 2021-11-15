@@ -108,7 +108,7 @@ pub fn setup_physics(mut commands: Commands) {
     };
     commands
         .spawn_bundle(collider)
-        .insert(RapierDebugCollider::default())
+        .insert(RapierDebugCollider { color: Color::BLUE })
         .insert(ColliderPositionSync::Discrete)
         .insert(CustomFilterTag::GroupA);
 
@@ -118,7 +118,7 @@ pub fn setup_physics(mut commands: Commands) {
     };
     commands
         .spawn_bundle(collider)
-        .insert(RapierDebugCollider::default())
+        .insert(RapierDebugCollider { color: Color::RED })
         .insert(ColliderPositionSync::Discrete)
         .insert(CustomFilterTag::GroupB);
     /*
@@ -130,13 +130,11 @@ pub fn setup_physics(mut commands: Commands) {
     let shift = rad * 2.0;
     let centerx = shift * (num as f32) / 2.0;
     let centery = shift / 2.0;
-    let mut color = 0;
 
     for i in 0..num {
         for j in 0usize..num * 5 {
             let x = (i as f32 + j as f32 * 0.2) * shift - centerx;
             let y = j as f32 * shift + centery + 2.0;
-            color += 1;
 
             // Build the rigid body.
             let body = RigidBodyBundle {
@@ -149,12 +147,16 @@ pub fn setup_physics(mut commands: Commands) {
                 flags: ActiveHooks::FILTER_CONTACT_PAIRS.into(),
                 ..Default::default()
             };
-            commands
-                .spawn_bundle(body)
-                .insert_bundle(collider)
-                .insert(RapierDebugCollider { color: Color::TEAL })
+            let mut entity = commands.spawn_bundle(body);
+
+            entity.insert_bundle(collider)
                 .insert(ColliderPositionSync::Discrete)
-                .insert(CustomFilterTag::with_id(color));
+                .insert(CustomFilterTag::with_id(i + j));
+            if (i + j) % 2 == 0 {
+                entity.insert(RapierDebugCollider { color: Color::BLUE });
+            } else {
+                entity.insert(RapierDebugCollider { color: Color::RED });
+            }
         }
     }
 }

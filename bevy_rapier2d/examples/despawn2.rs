@@ -145,15 +145,18 @@ pub fn setup_physics(
                 shape: ColliderShape::cuboid(rad, rad),
                 ..Default::default()
             };
-            let entity = commands
-                .spawn_bundle(body)
-                .insert_bundle(collider)
-                .insert(RapierDebugCollider { color: Color::TEAL })
-                .insert(ColliderPositionSync::Discrete)
-                .id();
+            let mut entity = commands.spawn_bundle(body);
+            entity.insert_bundle(collider)
+                .insert(ColliderPositionSync::Discrete);
+
+            if (i + j) % 2 == 0 {
+                entity.insert(RapierDebugCollider { color: Color::BLUE });
+            } else {
+                entity.insert(RapierDebugCollider { color: Color::RED });
+            }
 
             if (i + j * num) % 100 == 0 {
-                resize.entities.push(entity);
+                resize.entities.push(entity.id());
             }
         }
     }
@@ -163,7 +166,7 @@ pub fn despawn(mut commands: Commands, time: Res<Time>, mut despawn: ResMut<Desp
     if time.seconds_since_startup() > 5.0 {
         for entity in &despawn.entities {
             println!("Despawning ground entity");
-            commands.entity(*entity).despawn();
+            commands.entity(*entity).despawn_recursive();
         }
         despawn.entities.clear();
     }

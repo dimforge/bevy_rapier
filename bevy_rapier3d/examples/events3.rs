@@ -104,7 +104,7 @@ pub fn setup_physics(mut commands: Commands) {
 
     commands
         .spawn_bundle(collider)
-        .insert(RapierDebugCollider { color: Color::RED })
+        .insert(RapierDebugCollider { color: Color::TEAL })
         .insert(ColliderPositionSync::Discrete);
 
     let rigid_body = RigidBodyBundle {
