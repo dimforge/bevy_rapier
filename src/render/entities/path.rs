@@ -3,6 +3,8 @@ use bevy::render::pipeline::RenderPipeline;
 
 use crate::render::render::WireframeMaterial;
 
+/// Path Bundle using the correct material to display the path
+/// **NOTE**: This is intended for internal/advanced use only.
 #[derive(Bundle)]
 pub struct RapierDebugPathWireframeBundle {
     pub mesh: Handle<Mesh>,

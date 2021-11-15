@@ -3,7 +3,14 @@ use bevy::render::pipeline::PrimitiveTopology;
 use bevy::render::mesh::{Indices, VertexAttributeValues};
 use crate::prelude::*;
 
-// TODO: Fix this.
+// TODO: Fix this
+// The first and last point should be connected to complete the polygon. This leaves one side
+// of a quad (for example) without a side.
+//  _____
+//  x  /|
+//  x / |
+//  ‾‾‾‾
+
 #[cfg(feature = "dim3")]
 pub fn wire_trimesh(trimesh: &TriMesh) -> Mesh {
     let mut mesh = Mesh::new(PrimitiveTopology::LineList);
@@ -21,7 +28,6 @@ pub fn wire_trimesh(trimesh: &TriMesh) -> Mesh {
         .indices()
         .iter()
         .flat_map(|triangle| [triangle[0], triangle[1], triangle[2], triangle[0]])
-//        .map(|x| *x)
         .collect();
 
     mesh.set_indices(Some(Indices::U32(indicies)));
@@ -45,7 +51,6 @@ pub fn wire_trimesh(trimesh: &TriMesh) -> Mesh {
         .indices()
         .iter()
         .flat_map(|triangle| [triangle[0], triangle[1], triangle[0]])
-//        .cloned()
         .collect();
 
     mesh.set_indices(Some(Indices::U32(indicies)));

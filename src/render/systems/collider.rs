@@ -3,6 +3,7 @@ use crate::prelude::*;
 use crate::render::prelude::*;
 use crate::render::render::WireframeMaterial;
 
+/// Spawn newly added debug colliders.
 pub fn spawn_debug_colliders(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -68,8 +69,6 @@ fn collider_transform(co_pos: &ColliderPosition) -> Transform {
         co_pos.translation.y,
         1.0
     );
-//    transform.rotation = Quat::from_rotation_z(co_pos.rotation.complex().re);
-//    transform.rotation = co_pos.rotation.into();
     transform
 }
 
@@ -84,7 +83,6 @@ fn rigid_body_transform(rb_pos: &RigidBodyPosition, co_pos: &ColliderPosition) -
 fn rigid_body_transform(rb_pos: &RigidBodyPosition, co_pos: &ColliderPosition) -> Transform {
     let pos = Vec2::from(co_pos.translation) - Vec2::from(rb_pos.position.translation);
     let co_transform = Transform::from_xyz(pos.x, pos.y, 1.0);
-//    co_transform.rotation = Quat::from_rotation_y(co_pos.rotation.complex().re);
     co_transform
 }
 

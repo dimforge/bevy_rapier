@@ -5,6 +5,7 @@ use bevy::{
     render::shader::ShaderDefs
 };
 
+/// Material Used to render a mesh as a wireframe.
 #[derive(RenderResources, Default, TypeUuid, ShaderDefs)]
 #[uuid = "2f603f53-03f3-47c3-9e9e-e43cfcd6183e"]
 pub struct WireframeMaterial {

@@ -3,6 +3,8 @@ use bevy::render::pipeline::RenderPipeline;
 
 use crate::render::render::WireframeMaterial;
 
+/// Collider Bundle using the correct material to display a collider.
+/// **NOTE**: This is intended for internal/advanced use only.
 #[derive(Bundle)]
 pub struct RapierDebugColliderWireframeBundle {
     pub mesh: Handle<Mesh>,

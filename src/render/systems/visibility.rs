@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use crate::render::prelude::*;
 
+/// Handle the RapierDebugToggleVisibility event.
 pub fn toggle_visibility(
     mut events: EventReader<RapierDebugToggleVisibility>,
     mut collider_query: Query<&mut Visible, (

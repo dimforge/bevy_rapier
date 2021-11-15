@@ -98,7 +98,7 @@ pub fn setup_physics(mut commands: Commands) {
     };
     commands
         .spawn_bundle(collider)
-        .insert(RaperDebugCollder::default())
+        .insert(RapierDebugCollider::default())
         .insert(ColliderPositionSync::Discrete);
 
     // Create a bowl with a cosine cross-section,
@@ -145,7 +145,7 @@ pub fn setup_physics(mut commands: Commands) {
     };
     commands
         .spawn_bundle(collider)
-        .insert(ColliderDebugRender::default())
+        .insert(RapierDebugCollider::default())
         .insert(ColliderPositionSync::Discrete);
 }
 
@@ -200,7 +200,7 @@ fn ball_spawner(
     commands
         .spawn_bundle(collider)
         .insert_bundle(rigid_body)
-        .insert(ColliderDebugRender::with_id(0))
+        .insert(RapierDebugCollider { color: Color::BLUE })
         .insert(ColliderPositionSync::Discrete);
 
     ball_state.balls_spawned += 1;

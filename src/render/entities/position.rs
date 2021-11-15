@@ -3,6 +3,8 @@ use bevy::render::pipeline::RenderPipeline;
 
 use crate::render::render::PositionWireframeMaterial;
 
+/// Represents the size of the position gizmo.
+/// **NOTE**: This is intended for internal/advanced use only.
 pub struct RapierDebugPositionSize(pub f32);
 
 impl Default for RapierDebugPositionSize {
@@ -14,6 +16,8 @@ impl Default for RapierDebugPositionSize {
     }
 }
 
+/// Position Bundle using the correct material to display a position.
+/// **NOTE**: This is intended for internal/advanced use only.
 #[derive(Bundle)]
 pub struct RapierDebugPositionBundle {
     pub mesh: Handle<Mesh>,

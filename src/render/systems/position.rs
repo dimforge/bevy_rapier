@@ -3,6 +3,7 @@ use crate::prelude::*;
 use crate::render::prelude::*;
 use crate::render::render::PositionWireframeMaterial;
 
+/// Spawn newly added debug positions.
 pub fn spawn_debug_positions(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,

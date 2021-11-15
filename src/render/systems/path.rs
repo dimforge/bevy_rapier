@@ -4,6 +4,7 @@ use crate::prelude::*;
 use crate::render::entities::*;
 use crate::render::render::WireframeMaterial;
 
+/// Spawn newly added debug paths.
 pub fn spawn_debug_paths(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -27,6 +28,7 @@ pub fn spawn_debug_paths(
     }
 }
 
+// Create mesh from an initial position.
 fn generate_path_mesh(co: Option<&ColliderPosition>, rb: Option<&RigidBodyPosition>) -> Mesh {
     let mut mesh = Mesh::new(PrimitiveTopology::LineStrip);
     let mut positions = vec![];
@@ -46,6 +48,8 @@ fn generate_path_mesh(co: Option<&ColliderPosition>, rb: Option<&RigidBodyPositi
     mesh
 }
 
+/// Update the mesh's used by DebugPaths to with a new value.
+// TODO: Only update the path if it is greater than some radius.
 pub fn update_path_mesh(
     mut meshes: ResMut<Assets<Mesh>>,
     query: Query<

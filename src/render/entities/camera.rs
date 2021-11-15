@@ -1,6 +1,11 @@
 use bevy::prelude::*;
 use bevy::render::camera::{Camera, VisibleEntities};
 
+/// Perspective Camera for use in the rapier_debug render pass.
+/// Simple copy of PerspectiveCameraBundle but with the appropriate name for use in the
+/// rapier_debug render pass.
+/// **Note:** This is only needed when using the rapier_debug render pass
+/// If you wish to only render with the main pass, this camera is not needed.
 #[derive(Bundle, Debug)]
 pub struct RapierDebugPerspectiveCameraBundle {
     pub camera: Camera,
@@ -29,6 +34,11 @@ impl Default for RapierDebugPerspectiveCameraBundle {
     }
 }
 
+/// Orthographic Camera for use in the rapier_debug render pass.
+/// Simple copy of OrthographicCameraBundle but with the appropriate name for use in the
+/// rapier_debug render pass.
+/// **Note:** This is only needed when using the rapier_debug render pass
+/// If you wish to only render with the main pass, this camera is not needed.
 #[derive(Bundle, Debug)]
 pub struct RapierDebugOrthographicCameraBundle {
     pub camera: Camera,

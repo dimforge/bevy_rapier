@@ -3,6 +3,7 @@ use bevy::render::render_graph::base::MainPass;
 use crate::render::prelude::*;
 use crate::render::render::RapierDebugPass;
 
+/// Handles the RapierDebugToggleRenderPass event.
 pub fn toggle_render_pass(
     mut commands: Commands,
     mut events: EventReader<RapierDebugToggleRenderPass>,

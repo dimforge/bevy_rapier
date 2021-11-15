@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy::render::shader::asset_shader_defs_system;
 
+/// Debug render plugin for rapier.
 pub struct RapierDebugPlugin;
 
 impl Plugin for RapierDebugPlugin {

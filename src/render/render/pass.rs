@@ -14,6 +14,7 @@ use bevy::{
     ui,
 };
 
+/// Adds the custom render pass to the render graph.
 pub fn setup_debug_pass(
     mut graph: ResMut<RenderGraph>,
     mut active_cameras: ResMut<ActiveCameras>,

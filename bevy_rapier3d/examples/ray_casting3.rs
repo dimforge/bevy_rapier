@@ -5,6 +5,7 @@ use bevy_rapier3d::prelude::*;
 
 use bevy::render::camera::Camera;
 use bevy::render::pass::ClearColor;
+use bevy_rapier3d::render::render::WireframeMaterial;
 use rapier::geometry::{ColliderShape, InteractionGroups, Ray};
 use rapier::pipeline::{PhysicsPipeline, QueryPipeline};
 use ui::DebugUiPlugin;
@@ -95,7 +96,6 @@ pub fn setup_physics(mut commands: Commands) {
     let centerz = shift * (num / 2) as f32;
 
     let mut offset = -(num as f32) * (rad * 2.0 + rad) * 0.5;
-    let mut color = 0;
 
     for j in 0usize..20 {
         for i in 0..num {
@@ -103,7 +103,6 @@ pub fn setup_physics(mut commands: Commands) {
                 let x = i as f32 * shift - centerx + offset;
                 let y = j as f32 * shift + centery + 3.0;
                 let z = k as f32 * shift - centerz + offset;
-                color += 1;
 
                 // Build the rigid body.
                 let rigid_body = RigidBodyBundle {
@@ -120,7 +119,7 @@ pub fn setup_physics(mut commands: Commands) {
                     .spawn()
                     .insert_bundle(rigid_body)
                     .insert_bundle(collider)
-                    .insert(ColliderDebugRender::with_id(color))
+                    .insert(RapierDebugCollider { color: Color::VIOLET })
                     .insert(ColliderPositionSync::Discrete);
             }
         }
@@ -131,7 +130,7 @@ pub fn setup_physics(mut commands: Commands) {
 
 fn cast_ray(
     mut commands: Commands,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut materials: ResMut<Assets<WireframeMaterial>>,
     windows: Res<Windows>,
     query_pipeline: Res<QueryPipeline>,
     colliders: QueryPipelineColliderComponentsQuery,
@@ -155,13 +154,17 @@ fn cast_ray(
             None,
         );
 
+        // TODO: Fix this it doesn't actually change the color. Just Minorly Changed to make it
+        // compile.
         if let Some(hit) = hit {
             // Color in red the entity we just hit.
             // But don't color it if the rigid-body is not dynamic.
             if bodies.get(hit.0.entity()).ok() == Some(&RigidBodyType::Dynamic) {
-                // TODO: don't create a new material every time.
-                let material = materials.add(Color::rgb(1.0, 0.0, 0.0).into());
-                commands.entity(hit.0.entity()).insert(material);
+                commands.entity(hit.0.entity())
+                    .insert(materials.add(WireframeMaterial {
+                        color: Color::MAROON,
+                        ..Default::default()
+                    }));
             }
         }
     }

@@ -406,7 +406,7 @@ pub fn despawn(mut commands: Commands, time: Res<Time>, mut despawn: ResMut<Desp
     if time.seconds_since_startup() > 10.0 {
         for entity in &despawn.entities {
             println!("Despawning joint entity");
-            commands.entity(*entity).despawn();
+            commands.entity(*entity).despawn_recursive();
         }
         despawn.entities.clear();
     }

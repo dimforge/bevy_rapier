@@ -6,6 +6,7 @@ use bevy::render::{
 };
 use super::{PositionWireframeMaterial, WireframeMaterial};
 
+/// Setup the Debug Materials.
 pub fn setup_material(
     mut commands: Commands,
     mut pipelines: ResMut<Assets<PipelineDescriptor>>,
@@ -24,8 +25,6 @@ pub fn setup_material(
     }));
     commands.insert_resource(super::PositionPipelineDescriptor(descriptor));
 
-    // Add an AssetRenderResourcesNode to our Render Graph. This will bind MyMaterial resources to
-    // our shader
     render_graph.add_system_node(
         "collider_wireframe_material",
         AssetRenderResourcesNode::<WireframeMaterial>::new(true),
@@ -36,8 +35,6 @@ pub fn setup_material(
         AssetRenderResourcesNode::<PositionWireframeMaterial>::new(true),
     );
 
-    // Add a Render Graph edge connecting our new "collider_wireframe_material" node to the main pass node. This
-    // ensures "collider_wireframe_material" runs before the main pass
     render_graph
         .add_node_edge("collider_wireframe_material", base::node::MAIN_PASS)
         .unwrap();

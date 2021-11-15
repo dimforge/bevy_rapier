@@ -4,6 +4,7 @@ use bevy::{
     render::renderer::RenderResources
 };
 
+/// Material for creating the Position gizmos.
 #[derive(RenderResources, Default, TypeUuid)]
 #[uuid = "c6bbdb72-f335-48c7-9e4a-b6c5a7494f34"]
 pub struct PositionWireframeMaterial {
