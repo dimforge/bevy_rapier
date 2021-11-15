@@ -115,9 +115,7 @@ pub fn setup_physics(mut commands: Commands) {
                     ..ColliderBundle::default()
                 };
 
-                commands
-                    .spawn()
-                    .insert_bundle(rigid_body)
+                commands.spawn_bundle(rigid_body)
                     .insert_bundle(collider)
                     .insert(RapierDebugCollider { color: Color::VIOLET })
                     .insert(ColliderPositionSync::Discrete);
@@ -134,8 +132,9 @@ fn cast_ray(
     windows: Res<Windows>,
     query_pipeline: Res<QueryPipeline>,
     colliders: QueryPipelineColliderComponentsQuery,
-    bodies: Query<&RigidBodyType>,
+    bodies: Query<(&RigidBodyType, &Children)>,
     cameras: Query<(&Camera, &GlobalTransform)>,
+    collider_debug_entities: Query<Entity, With<Handle<WireframeMaterial>>>
 ) {
     // We will color in read the colliders hovered by the mouse.
     for (camera, camera_transform) in cameras.iter() {
@@ -154,17 +153,21 @@ fn cast_ray(
             None,
         );
 
-        // TODO: Fix this it doesn't actually change the color. Just Minorly Changed to make it
-        // compile.
         if let Some(hit) = hit {
             // Color in red the entity we just hit.
             // But don't color it if the rigid-body is not dynamic.
-            if bodies.get(hit.0.entity()).ok() == Some(&RigidBodyType::Dynamic) {
-                commands.entity(hit.0.entity())
-                    .insert(materials.add(WireframeMaterial {
-                        color: Color::MAROON,
-                        ..Default::default()
-                    }));
+            if bodies.get(hit.0.entity()).ok().map(|(x, _)| x) == Some(&RigidBodyType::Dynamic) {
+                let (_, children) = bodies.get(hit.0.entity()).unwrap();
+                for child in children.iter() {
+                    if let Ok(collider_entity) = collider_debug_entities.get(*child) {
+                        commands.entity(collider_entity)
+                        .insert(materials.add(WireframeMaterial {
+                            color: Color::MAROON,
+                            ..Default::default()
+                        }));
+                    }
+
+                }
             }
         }
     }
