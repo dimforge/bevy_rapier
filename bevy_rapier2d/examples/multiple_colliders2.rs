@@ -105,20 +105,21 @@ pub fn setup_physics(mut commands: Commands) {
                 ..Default::default()
             };
 
-            commands.spawn_bundle(rigid_body).with_children(|parent| {
-                parent
-                    .spawn_bundle(collider1)
-                    .insert(RapierDebugCollider { color: Color::TEAL })
-                    .insert(ColliderPositionSync::Discrete);
-                parent
-                    .spawn_bundle(collider2)
-                    .insert(RapierDebugCollider { color: Color::TEAL })
-                    .insert(ColliderPositionSync::Discrete);
-                parent
-                    .spawn_bundle(collider3)
-                    .insert(RapierDebugCollider { color: Color::TEAL })
-                    .insert(ColliderPositionSync::Discrete);
-            });
+            commands.spawn_bundle(rigid_body)
+                .with_children(|parent| {
+                    parent
+                        .spawn_bundle(collider1)
+                        .insert(RapierDebugCollider { color: Color::TEAL })
+                        .insert(ColliderPositionSync::Discrete);
+                    parent
+                        .spawn_bundle(collider2)
+                        .insert(RapierDebugCollider { color: Color::TEAL })
+                        .insert(ColliderPositionSync::Discrete);
+                    parent
+                        .spawn_bundle(collider3)
+                        .insert(RapierDebugCollider { color: Color::TEAL })
+                        .insert(ColliderPositionSync::Discrete);
+                });
         }
 
         offset -= 0.05 * rad * (num as f32 - 1.0);

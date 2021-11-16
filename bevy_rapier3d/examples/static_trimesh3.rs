@@ -201,6 +201,8 @@ fn ball_spawner(
         .spawn_bundle(collider)
         .insert_bundle(rigid_body)
         .insert(RapierDebugCollider { color: Color::BLUE })
+        .insert(RapierDebugPath { color: Color::TEAL, length: 400, ..Default::default() })
+        .insert(RapierDebugPosition::default())
         .insert(ColliderPositionSync::Discrete);
 
     ball_state.balls_spawned += 1;

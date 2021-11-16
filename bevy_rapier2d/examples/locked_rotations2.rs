@@ -107,5 +107,8 @@ pub fn setup_physics(mut commands: Commands) {
         .spawn_bundle(rigid_body)
         .insert_bundle(collider)
         .insert(ColliderPositionSync::Discrete)
-        .insert(RapierDebugCollider { color: Color::ORANGE });
+        .insert(RapierDebugCollider { color: Color::ORANGE })
+        .insert(RapierDebugPosition::default())
+        // TODO: This isn't working in 2d.
+        .insert(RapierDebugPath::default());
 }

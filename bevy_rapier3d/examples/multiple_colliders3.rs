@@ -47,7 +47,7 @@ fn setup_graphics(mut commands: Commands) {
     });
     commands.spawn_bundle(PerspectiveCameraBundle {
         transform: Transform::from_matrix(Mat4::face_toward(
-            Vec3::new(-30.0, 30.0, 100.0),
+            Vec3::new(-15.0, 15.0, 50.0),
             Vec3::new(0.0, 10.0, 0.0),
             Vec3::new(0.0, 1.0, 0.0),
         )),
@@ -55,7 +55,7 @@ fn setup_graphics(mut commands: Commands) {
     });
     commands.spawn_bundle(RapierDebugPerspectiveCameraBundle {
         transform: Transform::from_matrix(Mat4::face_toward(
-            Vec3::new(-30.0, 30.0, 100.0),
+            Vec3::new(-15.0, 15.0, 50.0),
             Vec3::new(0.0, 10.0, 0.0),
             Vec3::new(0.0, 1.0, 0.0),
         )),
@@ -125,9 +125,8 @@ pub fn setup_physics(mut commands: Commands) {
 
                 let sync = ColliderPositionSync::Discrete;
 
-                commands
-                    .spawn()
-                    .insert_bundle(rigid_body)
+                commands.spawn_bundle(rigid_body)
+                    .insert(RapierDebugPosition::default())
                     .with_children(|parent| {
                         parent
                             .spawn()

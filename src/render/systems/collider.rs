@@ -64,12 +64,11 @@ fn collider_transform(co_pos: &ColliderPosition) -> Transform {
 
 #[cfg(feature = "dim2")]
 fn collider_transform(co_pos: &ColliderPosition) -> Transform {
-    let transform = Transform::from_xyz(
+    Transform::from_xyz(
         co_pos.translation.x,
         co_pos.translation.y,
         1.0
-    );
-    transform
+    )
 }
 
 #[cfg(feature = "dim3")]
@@ -82,8 +81,7 @@ fn rigid_body_transform(rb_pos: &RigidBodyPosition, co_pos: &ColliderPosition) -
 #[cfg(feature = "dim2")]
 fn rigid_body_transform(rb_pos: &RigidBodyPosition, co_pos: &ColliderPosition) -> Transform {
     let pos = Vec2::from(co_pos.translation) - Vec2::from(rb_pos.position.translation);
-    let co_transform = Transform::from_xyz(pos.x, pos.y, 1.0);
-    co_transform
+    Transform::from_xyz(pos.x, pos.y, 1.0)
 }
 
 fn collider_to_mesh(shape: &ColliderShape, config: &RapierConfiguration) -> Option<Mesh> {

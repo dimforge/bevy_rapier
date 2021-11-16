@@ -96,7 +96,7 @@ impl Default for RapierDebugPosition {
             #[cfg(feature = "dim3")]
             size: 0.2,
             #[cfg(feature = "dim2")]
-            size: 10.0,
+            size: 0.5,
             x: Color::RED,
             y: Color::BLUE,
             z: Color::GREEN

@@ -58,6 +58,8 @@ fn spawn_player(
         })
         .insert(ColliderPositionSync::Discrete)
         .insert(RapierDebugCollider { color: Color::VIOLET })
+        .insert(RapierDebugPath::default())
+        .insert(RapierDebugPosition::default())
         .insert(Player(300.0));
 }
 

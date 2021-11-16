@@ -160,6 +160,7 @@ fn cast_ray(
                 let (_, children) = bodies.get(hit.0.entity()).unwrap();
                 for child in children.iter() {
                     if let Ok(collider_entity) = collider_debug_entities.get(*child) {
+                        // TODO: don't create a new material every time.
                         commands.entity(collider_entity)
                         .insert(materials.add(WireframeMaterial {
                             color: Color::MAROON,
