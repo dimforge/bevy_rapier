@@ -13,7 +13,7 @@ use crate::prelude::*;
 
 #[cfg(feature = "dim3")]
 pub fn wire_trimesh(trimesh: &TriMesh) -> Mesh {
-    let mut mesh = Mesh::new(PrimitiveTopology::LineList);
+    let mut mesh = Mesh::new(PrimitiveTopology::LineStrip);
     mesh.set_attribute(
         Mesh::ATTRIBUTE_POSITION,
         VertexAttributeValues::from(
@@ -36,7 +36,7 @@ pub fn wire_trimesh(trimesh: &TriMesh) -> Mesh {
 
 #[cfg(feature = "dim2")]
 pub fn wire_trimesh(trimesh: &TriMesh) -> Mesh {
-    let mut mesh = Mesh::new(PrimitiveTopology::LineList);
+    let mut mesh = Mesh::new(PrimitiveTopology::LineStrip);
     mesh.set_attribute(
         Mesh::ATTRIBUTE_POSITION,
         VertexAttributeValues::from(
