@@ -1,7 +1,8 @@
 use bevy::prelude::*;
-use rapier::dynamics::{JointHandle, JointParams};
+use rapier::dynamics::{JointData, JointHandle, RigidBodyHandle};
+use rapier::geometry::ColliderHandle;
 use rapier::math::Isometry;
-use crate::physics::wrapper::{RigidBodyHandle,ColliderHandle};
+
 /// A component representing a rigid-body that is being handled by
 /// a Rapier physics World.
 #[derive(Component)]
@@ -18,7 +19,7 @@ impl RigidBodyHandleComponent {
     ///
     /// This can be passed to a `RigidBodySet` to retrieve a reference to a Rapier rigid-body.
     pub fn handle(&self) -> RigidBodyHandle {
-      RigidBodyHandle(*self.0)
+        self.0
     }
 }
 
@@ -38,7 +39,7 @@ impl ColliderHandleComponent {
     ///
     /// This can be passed to a `ColliderSet` to retrieve a reference to a Rapier rigid-body.
     pub fn handle(&self) -> ColliderHandle {
-      ColliderHandle(*self.0)
+        self.0
     }
 }
 
@@ -84,7 +85,7 @@ impl JointHandleComponent {
 /// once the Rapier joint it describes has been created and added to the `JointSet` resource.
 #[derive(Component)]
 pub struct JointBuilderComponent {
-    pub(crate) params: JointParams,
+    pub(crate) params: JointData,
     pub(crate) entity1: Entity,
     pub(crate) entity2: Entity,
 }
@@ -93,7 +94,7 @@ impl JointBuilderComponent {
     /// Initializes a joint builder from the given joint params and the entities attached to this joint.
     pub fn new<J>(joint: J, entity1: Entity, entity2: Entity) -> Self
     where
-        J: Into<JointParams>,
+        J: Into<JointData>,
     {
         JointBuilderComponent {
             params: joint.into(),
@@ -103,13 +104,13 @@ impl JointBuilderComponent {
     }
 }
 
-#[derive(Component,Copy, Clone, Debug)]
+#[derive(Component, Copy, Clone, Debug)]
 pub enum RigidBodyPositionSync {
     Discrete,
     Interpolated { prev_pos: Option<Isometry<f32>> },
 }
 
-#[derive(Component,Copy, Clone, Debug)]
+#[derive(Component, Copy, Clone, Debug)]
 pub enum ColliderPositionSync {
     // Right now, there is only discrete for colliders.
     // We may add more modes in the future.

@@ -4,15 +4,20 @@ use crate::physics::{
     RigidBodyChangesQueryPayload, RigidBodyComponentsSet,
 };
 //use crate::rapier::prelude::*;
-use crate::physics::wrapper::{RigidBodyChanges,ColliderParent,ColliderChanges};
+use crate::physics::wrapper::{
+    ColliderChangesComponent, ColliderParentComponent, RigidBodyChangesComponent,
+};
 use bevy::ecs::query::WorldQuery;
 use bevy::prelude::*;
 use rapier::data::{ComponentSet, ComponentSetMut};
+use rapier::prelude::{
+    ContactEvent, ContactModificationContext, ContactPair, EventHandler, ImpulseJointSet,
+    IntersectionEvent, IslandManager, JointHandle, MultibodyJointSet, PairFilterContext,
+    PhysicsHooks, SolverFlags, Vector,
+};
+use rapier::{dynamics, geometry};
 use std::collections::HashMap;
 use std::sync::RwLock;
-use rapier2d::prelude::{Vector,ContactEvent,IntersectionEvent,EventHandler,JointHandle,ContactPair,
-  IslandManager,JointSet,PairFilterContext,SolverFlags,ContactModificationContext,PhysicsHooks};
-use rapier2d::{dynamics,geometry};
 /// The different ways of adjusting the timestep length.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TimestepMode {
@@ -191,8 +196,8 @@ impl ModificationTracker {
 
     pub fn detect_removals(
         &mut self,
-        removed_bodies: RemovedComponents<RigidBodyChanges>,
-        removed_colliders: RemovedComponents<ColliderChanges>,
+        removed_bodies: RemovedComponents<RigidBodyChangesComponent>,
+        removed_colliders: RemovedComponents<ColliderChangesComponent>,
         removed_joints: RemovedComponents<JointHandleComponent>,
     ) {
         self.removed_bodies.extend(
@@ -217,12 +222,14 @@ impl ModificationTracker {
         commands: &mut Commands,
         islands: &mut IslandManager,
         bodies: &mut Bodies,
-        joints: &mut JointSet,
+        impulse_joints: &mut ImpulseJointSet,
+        _multibody_joints: &mut MultibodyJointSet,
         joints_map: &mut JointsEntityMap,
     ) where
         Bodies: ComponentSetMut<dynamics::RigidBodyChanges>
             + ComponentSetMut<dynamics::RigidBodyColliders>
-            + ComponentSetMut<dynamics::RigidBodyActivation> // Needed for joint removal.
+            + ComponentSetMut<dynamics::RigidBodyActivation>
+            // Needed for joint removal.
             + ComponentSetMut<dynamics::RigidBodyIds> // Needed for joint removal.
             + ComponentSet<dynamics::RigidBodyType>, // Needed for joint removal.
     {
@@ -232,13 +239,13 @@ impl ModificationTracker {
                     commands
                         .entity(collider.entity())
                         .remove_bundle::<ColliderBundle>()
-                        .remove::<ColliderParent>();
+                        .remove::<ColliderParentComponent>();
                     self.removed_colliders.push(collider);
                 }
             }
 
             let mut removed_joints =
-                joints.remove_joints_attached_to_rigid_body(*removed_body, islands, bodies);
+                impulse_joints.remove_joints_attached_to_rigid_body(*removed_body, islands, bodies);
             self.removed_joints.append(&mut removed_joints);
         }
 
@@ -253,9 +260,12 @@ impl ModificationTracker {
                     }
 
                     // Detach the collider from the rigid-body.
-                    bodies.map_mut_internal(parent.0, |rb_colliders: &mut dynamics::RigidBodyColliders| {
-                        rb_colliders.detach_collider(&mut rb_changes, *removed_collider);
-                    });
+                    bodies.map_mut_internal(
+                        parent.0,
+                        |rb_colliders: &mut dynamics::RigidBodyColliders| {
+                            rb_colliders.detach_collider(&mut rb_changes, *removed_collider);
+                        },
+                    );
 
                     // Set the new rigid-body changes flags.
                     bodies.set_internal(parent.0, rb_changes);
@@ -272,7 +282,7 @@ impl ModificationTracker {
         for removed_joints in self.removed_joints.iter() {
             let joint_handle = joints_map.0.remove(&removed_joints.entity());
             if let Some(joint_handle) = joint_handle {
-                joints.remove(joint_handle, islands, bodies, true);
+                impulse_joints.remove(joint_handle, islands, bodies, true);
             }
         }
     }

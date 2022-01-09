@@ -3,9 +3,8 @@ extern crate rapier2d as rapier; // For the debug UI.
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-use bevy::render::pass::ClearColor;
 use nalgebra::Point2;
-use rapier2d::dynamics::{BallJoint, RigidBodyType};
+use rapier2d::dynamics::{RevoluteJoint, RigidBodyType};
 use rapier2d::pipeline::PhysicsPipeline;
 use ui::DebugUiPlugin;
 
@@ -27,8 +26,6 @@ fn main() {
         .insert_resource(Msaa::default())
         .insert_resource(DespawnResource::default())
         .add_plugins(DefaultPlugins)
-        .add_plugin(bevy_winit::WinitPlugin::default())
-        .add_plugin(bevy_wgpu::WgpuPlugin::default())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)
@@ -89,13 +86,13 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
             };
 
             let rigid_body = RigidBodyBundle {
-                body_type,
+                body_type: body_type.into(),
                 position: [fk * shift, -fi * shift].into(),
                 ..RigidBodyBundle::default()
             };
 
             let collider = ColliderBundle {
-                shape: ColliderShape::cuboid(rad, rad),
+                shape: ColliderShape::cuboid(rad, rad).into(),
                 ..ColliderBundle::default()
             };
             let child_entity = commands
@@ -107,7 +104,7 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
             // Vertical joint.
             if i > 0 {
                 let parent_entity = *body_entities.last().unwrap();
-                let joint = BallJoint::new(Point2::origin(), Point2::new(0.0, shift));
+                let joint = RevoluteJoint::new().local_anchor2(Point2::new(0.0, shift));
                 let entity = commands
                     .spawn()
                     .insert_bundle((JointBuilderComponent::new(
@@ -125,7 +122,7 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
             if k > 0 {
                 let parent_index = body_entities.len() - numi;
                 let parent_entity = body_entities[parent_index];
-                let joint = BallJoint::new(Point2::origin(), Point2::new(-shift, 0.0));
+                let joint = RevoluteJoint::new().local_anchor2(Point2::new(-shift, 0.0));
                 let entity = commands
                     .spawn()
                     .insert_bundle((JointBuilderComponent::new(

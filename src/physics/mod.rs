@@ -7,7 +7,7 @@ pub use self::systems::*;
 pub mod wrapper;
 use crate::rapier::data::{ComponentSet, ComponentSetMut, ComponentSetOption, Index};
 //use crate::rapier::prelude::*;
-use rapier2d::prelude::{JointHandle};
+use crate::rapier::prelude::JointHandle;
 use bevy::prelude::{Entity, Query};
 
 pub trait IntoHandle<H> {
@@ -53,16 +53,12 @@ pub trait BundleBuilder {
 }
 
 macro_rules! impl_component_set_mut(
-    ($ComponentsSet: ident, $T: ty,$NT:ty, |$data: ident| $data_expr: expr) => {
+    ($ComponentsSet: ident, $T: ty, $Wrapper:ty, |$data: ident| $data_expr: expr) => {
         impl<'world, 'state, 'a> ComponentSetOption<$T> for $ComponentsSet<'world, 'state, 'a> {
             #[inline(always)]
             fn get(&self, handle: Index) -> Option<&$T> {
-              let n:Option<&$NT> = self.0.get_component(handle.entity()).ok();
-              if let Some(z)= n{
-                Some(&z.0)
-              }else{
-                None
-              }
+                let n: Option<&$Wrapper> = self.0.get_component(handle.entity()).ok();
+                n.map(|z| &z.0)
             }
         }
 
@@ -77,17 +73,14 @@ macro_rules! impl_component_set_mut(
                 unsafe{
                   self.0.iter_unsafe().for_each(|$data| f($data.0.handle(), $data_expr))
                 }
-                
             }
         }
 
         impl<'world, 'state, 'a> ComponentSetMut<$T> for $ComponentsSet<'world, 'state, 'a> {
             #[inline(always)]
             fn set_internal(&mut self, handle: Index, val: $T) {
-                let n:Option<Mut<$NT>> = self.0.get_component_mut(handle.entity()).ok();
-                if let Some(_) =n{
-                  n.map(|mut data| **data = val);
-                }
+                let n:Option<Mut<$Wrapper>> = self.0.get_component_mut(handle.entity()).ok();
+                n.map(|mut data| **data = val);
             }
 
             #[inline(always)]
@@ -96,24 +89,20 @@ macro_rules! impl_component_set_mut(
                 handle: Index,
                 f: impl FnOnce(&mut $T) -> Result,
             ) -> Option<Result> {
-                let n:Option<Mut<$NT>> = self.0.get_component_mut(handle.entity()).ok();
-                if let Some(_)=n{
-                  n
-                  .map(|mut data| f(&mut data))
-                }else{
-                  None
-                }
+                let n: Option<Mut<$Wrapper>> = self.0.get_component_mut(handle.entity()).ok();
+                n.map(|mut data| f(&mut data))
             }
         }
     }
 );
 
 macro_rules! impl_component_set(
-    ($ComponentsSet: ident, $T: ty, |$data: ident| $data_expr: expr) => {
+    ($ComponentsSet: ident, $T: ty, $Wrapper: ty, |$data: ident| $data_expr: expr) => {
         impl<'a, 'w, 'b, 'c> ComponentSetOption<$T> for $ComponentsSet<'a, 'w, 'b, 'c> {
             #[inline(always)]
             fn get(&self, handle: Index) -> Option<&$T> {
-                self.0.get_component(handle.entity()).ok()
+                let n: Option<&$Wrapper> = self.0.get_component(handle.entity()).ok();
+                n.map(|z| &z.0)
             }
         }
 
@@ -132,27 +121,25 @@ macro_rules! impl_component_set(
 );
 
 macro_rules! impl_component_set_option(
-    ($ComponentsSet: ident, $T: ty,$NT:ty) => {
+    ($ComponentsSet: ident, $T: ty, $Wrapper:ty) => {
         impl<'world, 'state, 'a> ComponentSetOption<$T> for $ComponentsSet<'world, 'state, 'a> {
             #[inline(always)]
             fn get(&self, handle: Index) -> Option<&$T> {
-              let n:Option<&$NT> = self.0.get_component(handle.entity()).ok();
-              if let Some(z)= n{
-                Some(&z.0)
-              }else{
-                None
-              }
+              let n: Option<&$Wrapper> = self.0.get_component(handle.entity()).ok();
+              n.map(|z| &z.0)
             }
         }
     }
 );
 
-pub type ComponentSetQueryMut<'world, 'state, 'a, T> =
-    Query<'world, 'state, (Entity, &'a mut T)>;
+pub type ComponentSetQueryMut<'world, 'state, 'a, T> = Query<'world, 'state, (Entity, &'a mut T)>;
 
-pub struct QueryComponentSetMut<'world, 'state, 'a, T: 'static + Send + Sync + bevy::prelude::Component>(
-    ComponentSetQueryMut<'world, 'state, 'a, T>
-);
+pub struct QueryComponentSetMut<
+    'world,
+    'state,
+    'a,
+    T: 'static + Send + Sync + bevy::prelude::Component,
+>(ComponentSetQueryMut<'world, 'state, 'a, T>);
 
 impl<'world, 'state, 'a, T: 'static + Send + Sync + bevy::prelude::Component> ComponentSetOption<T>
     for QueryComponentSetMut<'world, 'state, 'a, T>
@@ -173,8 +160,10 @@ impl<'world, 'state, 'a, T: 'static + Send + Sync + bevy::prelude::Component> Co
 
     #[inline(always)]
     fn for_each(&self, mut f: impl FnMut(Index, &T)) {
-        unsafe{
-          self.0.iter_unsafe().for_each(|data| f(data.0.handle(), &data.1))
+        unsafe {
+            self.0
+                .iter_unsafe()
+                .for_each(|data| f(data.0.handle(), &data.1))
         }
     }
 }

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use bevy_rapier2d::rapier::na::Vector2;
-use bevy_rapier2d::physics::wrapper;
+
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
@@ -11,8 +11,6 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
-        .add_plugin(bevy_winit::WinitPlugin::default())
-        .add_plugin(bevy_wgpu::WgpuPlugin::default())
         .add_startup_system(spawn_player.system())
         .add_system(player_movement.system())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
@@ -23,11 +21,7 @@ fn main() {
 #[derive(Component)]
 struct Player(f32);
 
-fn spawn_player(
-    mut commands: Commands,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    mut rapier_config: ResMut<RapierConfiguration>,
-) {
+fn spawn_player(mut commands: Commands, mut rapier_config: ResMut<RapierConfiguration>) {
     // Set gravity to 0.0 and spawn camera.
     rapier_config.gravity = Vector2::zeros();
     commands
@@ -48,13 +42,16 @@ fn spawn_player(
     commands
         .spawn()
         .insert_bundle(SpriteBundle {
-            material: materials.add(Color::rgb(0.0, 0.0, 0.0).into()),
-            sprite: Sprite::new(Vec2::new(sprite_size_x, sprite_size_y)),
+            sprite: Sprite {
+                color: Color::rgb(0.0, 0.0, 0.0),
+                custom_size: Some(Vec2::new(sprite_size_x, sprite_size_y)),
+                ..Default::default()
+            },
             ..Default::default()
         })
         .insert_bundle(RigidBodyBundle::default())
         .insert_bundle(ColliderBundle {
-            position: wrapper::ColliderPosition([collider_size_x / 2.0, collider_size_y / 2.0].into()),
+            position: [collider_size_x / 2.0, collider_size_y / 2.0].into(),
             ..Default::default()
         })
         .insert(ColliderPositionSync::Discrete)
@@ -65,7 +62,7 @@ fn spawn_player(
 fn player_movement(
     keyboard_input: Res<Input<KeyCode>>,
     rapier_parameters: Res<RapierConfiguration>,
-    mut player_info: Query<(&Player, &mut wrapper::RigidBodyVelocity)>,
+    mut player_info: Query<(&Player, &mut RigidBodyVelocityComponent)>,
 ) {
     for (player, mut rb_vels) in player_info.iter_mut() {
         let up = keyboard_input.pressed(KeyCode::W) || keyboard_input.pressed(KeyCode::Up);

@@ -1,7 +1,7 @@
 use bevy::prelude::Color;
 use bevy::prelude::*;
 /// The desired render color of a Rapier collider.
-#[derive(Copy, Clone,Component)]
+#[derive(Copy, Clone, Component)]
 pub struct ColliderDebugRender {
     pub color: Color,
 }

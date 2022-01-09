@@ -1,13 +1,16 @@
 use super::{IntoEntity, IntoHandle};
+use crate::physics::wrapper::{
+    ColliderBroadPhaseDataComponent, ColliderChangesComponent, ColliderFlagsComponent,
+    ColliderMassPropsComponent, ColliderMaterialComponent, ColliderParentComponent,
+    ColliderPositionComponent, ColliderShapeComponent, ColliderTypeComponent,
+};
 use bevy::prelude::*;
 use rapier::data::{ComponentSet, ComponentSetMut, ComponentSetOption, Index};
-use crate::physics::wrapper::{ColliderMaterial,ColliderFlags,ColliderParent,ColliderPosition,ColliderBroadPhaseData,
-  ColliderMassProps,ColliderChanges,ColliderShape,ColliderType};
-use rapier::{geometry};
+use rapier::geometry;
 impl IntoHandle<geometry::ColliderHandle> for Entity {
     #[inline]
     fn handle(self) -> geometry::ColliderHandle {
-      geometry::ColliderHandle::from_raw_parts(self.id(), self.generation())
+        geometry::ColliderHandle::from_raw_parts(self.id(), self.generation())
     }
 }
 
@@ -23,9 +26,9 @@ pub type QueryPipelineColliderComponentsQuery<'world, 'state, 'a> = Query<
     'state,
     (
         Entity,
-        &'a ColliderPosition,
-        &'a ColliderShape,
-        &'a ColliderFlags,
+        &'a ColliderPositionComponent,
+        &'a ColliderShapeComponent,
+        &'a ColliderFlagsComponent,
     ),
 >;
 
@@ -35,15 +38,22 @@ pub struct QueryPipelineColliderComponentsSet<'world, 'state, 'a, 'c>(
 
 impl_component_set!(
     QueryPipelineColliderComponentsSet,
-    ColliderPosition,
+    geometry::ColliderPosition,
+    ColliderPositionComponent,
     |data| data.1
 );
-impl_component_set!(QueryPipelineColliderComponentsSet, ColliderShape, |data| {
-    data.2
-});
-impl_component_set!(QueryPipelineColliderComponentsSet, ColliderFlags, |data| {
-    data.3
-});
+impl_component_set!(
+    QueryPipelineColliderComponentsSet,
+    geometry::ColliderShape,
+    ColliderShapeComponent,
+    |data| data.2
+);
+impl_component_set!(
+    QueryPipelineColliderComponentsSet,
+    geometry::ColliderFlags,
+    ColliderFlagsComponent,
+    |data| data.3
+);
 
 pub struct ColliderComponentsSet<'world, 'state, 'a>(
     pub Query<'world, 'state, ColliderComponentsQueryPayload<'a>>,
@@ -51,38 +61,52 @@ pub struct ColliderComponentsSet<'world, 'state, 'a>(
 
 pub type ColliderComponentsQueryPayload<'a> = (
     Entity,
-    &'a mut ColliderChanges,
-    &'a mut ColliderPosition,
-    &'a mut ColliderBroadPhaseData,
-    &'a mut ColliderShape,
-    &'a mut ColliderType,
-    &'a mut ColliderMaterial,
-    &'a mut ColliderFlags,
-    Option<&'a ColliderParent>,
+    &'a mut ColliderChangesComponent,
+    &'a mut ColliderPositionComponent,
+    &'a mut ColliderBroadPhaseDataComponent,
+    &'a mut ColliderShapeComponent,
+    &'a mut ColliderTypeComponent,
+    &'a mut ColliderMaterialComponent,
+    &'a mut ColliderFlagsComponent,
+    Option<&'a ColliderParentComponent>,
 );
 
 pub type ColliderChangesQueryPayload<'a> = (
     Entity,
-    &'a mut ColliderChanges,
-    Or<(Changed<ColliderPosition>, Added<ColliderPosition>)>,
-    Or<(Changed<ColliderFlags>, Added<ColliderFlags>)>,
-    Or<(Changed<ColliderShape>, Added<ColliderShape>)>,
-    Or<(Changed<ColliderType>, Added<ColliderType>)>,
-    Option<Or<(Changed<ColliderParent>, Added<ColliderParent>)>>,
+    &'a mut ColliderChangesComponent,
+    Or<(
+        Changed<ColliderPositionComponent>,
+        Added<ColliderPositionComponent>,
+    )>,
+    Or<(
+        Changed<ColliderFlagsComponent>,
+        Added<ColliderFlagsComponent>,
+    )>,
+    Or<(
+        Changed<ColliderShapeComponent>,
+        Added<ColliderShapeComponent>,
+    )>,
+    Or<(Changed<ColliderTypeComponent>, Added<ColliderTypeComponent>)>,
+    Option<
+        Or<(
+            Changed<ColliderParentComponent>,
+            Added<ColliderParentComponent>,
+        )>,
+    >,
 );
 
 pub type ColliderChangesQueryFilter = (
     Or<(
-        Changed<ColliderPosition>,
-        Added<ColliderPosition>,
-        Changed<ColliderFlags>,
-        Added<ColliderFlags>,
-        Changed<ColliderShape>,
-        Added<ColliderShape>,
-        Changed<ColliderType>,
-        Added<ColliderType>,
-        Changed<ColliderParent>,
-        Added<ColliderParent>,
+        Changed<ColliderPositionComponent>,
+        Added<ColliderPositionComponent>,
+        Changed<ColliderFlagsComponent>,
+        Added<ColliderFlagsComponent>,
+        Changed<ColliderShapeComponent>,
+        Added<ColliderShapeComponent>,
+        Changed<ColliderTypeComponent>,
+        Added<ColliderTypeComponent>,
+        Changed<ColliderParentComponent>,
+        Added<ColliderParentComponent>,
     )>,
 );
 
@@ -97,38 +121,77 @@ pub type ColliderComponentsQuerySet<'world, 'state, 'a> = QuerySet<
     ),
 >;
 
-impl_component_set_mut!(ColliderComponentsSet, geometry::ColliderChanges,ColliderChanges, |data| &*data.1);
-impl_component_set_mut!(ColliderComponentsSet, geometry::ColliderPosition,ColliderPosition, |data| &*data.2);
-impl_component_set_mut!(ColliderComponentsSet, geometry::ColliderBroadPhaseData, ColliderBroadPhaseData,|d| &*d.3);
-impl_component_set_mut!(ColliderComponentsSet, geometry::ColliderShape,ColliderShape, |data| &*data.4);
-impl_component_set_mut!(ColliderComponentsSet, geometry::ColliderType,ColliderType, |data| &*data.5);
-impl_component_set_mut!(ColliderComponentsSet, geometry::ColliderMaterial,ColliderMaterial, |data| &*data.6);
-impl_component_set_mut!(ColliderComponentsSet, geometry::ColliderFlags,ColliderFlags,  |data| &*data.7);
-impl_component_set_option!(ColliderComponentsSet, geometry::ColliderParent,ColliderParent);
+impl_component_set_mut!(
+    ColliderComponentsSet,
+    geometry::ColliderChanges,
+    ColliderChangesComponent,
+    |data| &*data.1
+);
+impl_component_set_mut!(
+    ColliderComponentsSet,
+    geometry::ColliderPosition,
+    ColliderPositionComponent,
+    |data| &*data.2
+);
+impl_component_set_mut!(
+    ColliderComponentsSet,
+    geometry::ColliderBroadPhaseData,
+    ColliderBroadPhaseDataComponent,
+    |d| &*d.3
+);
+impl_component_set_mut!(
+    ColliderComponentsSet,
+    geometry::ColliderShape,
+    ColliderShapeComponent,
+    |data| &*data.4
+);
+impl_component_set_mut!(
+    ColliderComponentsSet,
+    geometry::ColliderType,
+    ColliderTypeComponent,
+    |data| &*data.5
+);
+impl_component_set_mut!(
+    ColliderComponentsSet,
+    geometry::ColliderMaterial,
+    ColliderMaterialComponent,
+    |data| &*data.6
+);
+impl_component_set_mut!(
+    ColliderComponentsSet,
+    geometry::ColliderFlags,
+    ColliderFlagsComponent,
+    |data| &*data.7
+);
+impl_component_set_option!(
+    ColliderComponentsSet,
+    geometry::ColliderParent,
+    ColliderParentComponent
+);
 
 #[derive(Bundle)]
 pub struct ColliderBundle {
-    pub collider_type: ColliderType,
-    pub shape: ColliderShape,
-    pub position: ColliderPosition,
-    pub material: ColliderMaterial,
-    pub flags: ColliderFlags,
-    pub mass_properties: ColliderMassProps,
-    pub changes: ColliderChanges,
-    pub bf_data: ColliderBroadPhaseData,
+    pub collider_type: ColliderTypeComponent,
+    pub shape: ColliderShapeComponent,
+    pub position: ColliderPositionComponent,
+    pub material: ColliderMaterialComponent,
+    pub flags: ColliderFlagsComponent,
+    pub mass_properties: ColliderMassPropsComponent,
+    pub changes: ColliderChangesComponent,
+    pub bf_data: ColliderBroadPhaseDataComponent,
 }
 
 impl Default for ColliderBundle {
     fn default() -> Self {
         Self {
-            collider_type: ColliderType(geometry::ColliderType::Solid),
-            shape: ColliderShape(geometry::ColliderShape::ball(0.5)),
-            position: ColliderPosition::default(),
-            material: ColliderMaterial::default(),
-            flags: ColliderFlags::default(),
-            mass_properties: ColliderMassProps::default(),
-            changes: ColliderChanges::default(),
-            bf_data: ColliderBroadPhaseData::default(),
+            collider_type: ColliderTypeComponent(geometry::ColliderType::Solid),
+            shape: ColliderShapeComponent(geometry::ColliderShape::ball(0.5)),
+            position: ColliderPositionComponent::default(),
+            material: ColliderMaterialComponent::default(),
+            flags: ColliderFlagsComponent::default(),
+            mass_properties: ColliderMassPropsComponent::default(),
+            changes: ColliderChangesComponent::default(),
+            bf_data: ColliderBroadPhaseDataComponent::default(),
         }
     }
 }

@@ -1,5 +1,6 @@
 [workspace]
 members = ["bevy_rapier2d", "bevy_rapier3d"]
+resolver = "2"
 
 [profile.release]
 codegen-units = 1
@@ -10,7 +11,3 @@ codegen-units = 1
 #parry3d = { path = "../parry/build/parry3d" }
 #rapier2d = { path = "../rapier/build/rapier2d" }
 #rapier3d = { path = "../rapier/build/rapier3d" }
-
-#rapier2d = { git = "https://github.com/dimforge/rapier" }
-#rapier3d = { git = "https://github.com/dimforge/rapier" }
-bevy = {path="../bevy" }

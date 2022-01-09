@@ -9,7 +9,9 @@ use crate::rapier::pipeline::QueryPipeline;
 use bevy::app::Events;
 use bevy::ecs::query::WorldQuery;
 use bevy::prelude::*;
-use rapier::dynamics::{CCDSolver, IntegrationParameters, IslandManager, JointSet};
+use rapier::dynamics::{
+    CCDSolver, ImpulseJointSet, IntegrationParameters, IslandManager, MultibodyJointSet,
+};
 use rapier::geometry::{BroadPhase, NarrowPhase};
 use rapier::pipeline::PhysicsPipeline;
 use std::marker::PhantomData;
@@ -67,7 +69,8 @@ impl<UserData: 'static + WorldQuery + Send + Sync> Plugin for RapierPhysicsPlugi
         .insert_resource(BroadPhase::new())
         .insert_resource(NarrowPhase::new())
         .insert_resource(IslandManager::new())
-        .insert_resource(JointSet::new())
+        .insert_resource(ImpulseJointSet::new())
+        .insert_resource(MultibodyJointSet::new())
         .insert_resource(CCDSolver::new())
         .insert_resource(Events::<IntersectionEvent>::default())
         .insert_resource(Events::<ContactEvent>::default())
@@ -81,8 +84,7 @@ impl<UserData: 'static + WorldQuery + Send + Sync> Plugin for RapierPhysicsPlugi
         )
         .add_system_to_stage(
             PhysicsStages::FinalizeCreations,
-            physics::create_joints_system
-                .label(physics::PhysicsSystems::CreateJoints),
+            physics::create_joints_system.label(physics::PhysicsSystems::CreateJoints),
         )
         .add_system_to_stage(
             CoreStage::PreUpdate,
@@ -91,18 +93,15 @@ impl<UserData: 'static + WorldQuery + Send + Sync> Plugin for RapierPhysicsPlugi
         )
         .add_system_to_stage(
             CoreStage::Update,
-            physics::step_world_system::<UserData>
-                .label(physics::PhysicsSystems::StepWorld),
+            physics::step_world_system::<UserData>.label(physics::PhysicsSystems::StepWorld),
         )
         .add_system_to_stage(
             PhysicsStages::SyncTransforms,
-            physics::sync_transforms
-                .label(physics::PhysicsSystems::SyncTransforms),
+            physics::sync_transforms.label(physics::PhysicsSystems::SyncTransforms),
         )
         .add_system_to_stage(
             CoreStage::PostUpdate,
-            physics::collect_removals
-                .label(physics::PhysicsSystems::CollectRemovals),
+            physics::collect_removals.label(physics::PhysicsSystems::CollectRemovals),
         );
         if app
             .world
