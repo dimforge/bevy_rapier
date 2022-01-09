@@ -3,7 +3,6 @@ extern crate rapier3d as rapier; // For the debug UI.
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
-use bevy::render::pass::ClearColor;
 use rapier::geometry::SolverFlags;
 use rapier3d::pipeline::{PairFilterContext, PhysicsPipeline};
 use ui::DebugUiPlugin;
@@ -11,7 +10,7 @@ use ui::DebugUiPlugin;
 #[path = "../../src_debug_ui/mod.rs"]
 mod ui;
 
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, Component)]
 enum CustomFilterTag {
     GroupA,
     GroupB,
@@ -57,8 +56,6 @@ fn main() {
         )))
         .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
-        .add_plugin(bevy_winit::WinitPlugin::default())
-        .add_plugin(bevy_wgpu::WgpuPlugin::default())
         .add_plugin(RapierPhysicsPlugin::<&CustomFilterTag>::default())
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)
@@ -73,11 +70,27 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    commands.spawn_bundle(PointLightBundle {
-        transform: Transform::from_translation(Vec3::new(100.0, 10.0, 200.0)),
-        point_light: PointLight {
-            intensity: 100_000.0,
-            range: 3000.0,
+    const HALF_SIZE: f32 = 100.0;
+
+    commands.spawn_bundle(DirectionalLightBundle {
+        directional_light: DirectionalLight {
+            illuminance: 10000.0,
+            // Configure the projection to better fit the scene
+            shadow_projection: OrthographicProjection {
+                left: -HALF_SIZE,
+                right: HALF_SIZE,
+                bottom: -HALF_SIZE,
+                top: HALF_SIZE,
+                near: -10.0 * HALF_SIZE,
+                far: 100.0 * HALF_SIZE,
+                ..Default::default()
+            },
+            shadows_enabled: true,
+            ..Default::default()
+        },
+        transform: Transform {
+            translation: Vec3::new(10.0, 2.0, 10.0),
+            rotation: Quat::from_rotation_x(-std::f32::consts::FRAC_PI_4),
             ..Default::default()
         },
         ..Default::default()
@@ -101,7 +114,7 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_size = 10.0;
 
     let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(ground_size, 1.2, ground_size),
+        shape: ColliderShape::cuboid(ground_size, 1.2, ground_size).into(),
         position: [0.0, -10.0, 0.0].into(),
         ..Default::default()
     };
@@ -112,7 +125,7 @@ pub fn setup_physics(mut commands: Commands) {
         .insert(CustomFilterTag::GroupA);
 
     let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(ground_size, 1.2, ground_size),
+        shape: ColliderShape::cuboid(ground_size, 1.2, ground_size).into(),
         ..Default::default()
     };
     commands
@@ -140,12 +153,12 @@ pub fn setup_physics(mut commands: Commands) {
 
             // Build the rigid body.
             let body = RigidBodyBundle {
-                position: [x, y, 0.0].into(),
+                position: Vec3::new(x, y, 0.0).into(),
                 ..Default::default()
             };
 
             let collider = ColliderBundle {
-                shape: ColliderShape::cuboid(rad, rad, rad),
+                shape: ColliderShape::cuboid(rad, rad, rad).into(),
                 flags: ActiveHooks::FILTER_CONTACT_PAIRS.into(),
                 ..Default::default()
             };

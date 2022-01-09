@@ -4,9 +4,8 @@ extern crate rapier3d as rapier; // For the debug UI.
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
-use bevy::render::pass::ClearColor;
 use na::{Isometry3, Point3, Unit, Vector3};
-use rapier::dynamics::{BallJoint, FixedJoint, PrismaticJoint, RevoluteJoint, RigidBodyType};
+use rapier::dynamics::{FixedJoint, PrismaticJoint, RevoluteJoint, RigidBodyType, SphericalJoint};
 use rapier3d::pipeline::PhysicsPipeline;
 use ui::DebugUiPlugin;
 
@@ -22,8 +21,6 @@ fn main() {
         )))
         .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
-        .add_plugin(bevy_winit::WinitPlugin::default())
-        .add_plugin(bevy_wgpu::WgpuPlugin::default())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)
@@ -38,11 +35,27 @@ fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    commands.spawn_bundle(PointLightBundle {
-        transform: Transform::from_translation(Vec3::new(100.0, 10.0, 200.0)),
-        point_light: PointLight {
-            intensity: 100_000.0,
-            range: 3000.0,
+    const HALF_SIZE: f32 = 100.0;
+
+    commands.spawn_bundle(DirectionalLightBundle {
+        directional_light: DirectionalLight {
+            illuminance: 10000.0,
+            // Configure the projection to better fit the scene
+            shadow_projection: OrthographicProjection {
+                left: -HALF_SIZE,
+                right: HALF_SIZE,
+                bottom: -HALF_SIZE,
+                top: HALF_SIZE,
+                near: -10.0 * HALF_SIZE,
+                far: 100.0 * HALF_SIZE,
+                ..Default::default()
+            },
+            shadows_enabled: true,
+            ..Default::default()
+        },
+        transform: Transform {
+            translation: Vec3::new(10.0, 2.0, 10.0),
+            rotation: Quat::from_rotation_x(-std::f32::consts::FRAC_PI_4),
             ..Default::default()
         },
         ..Default::default()
@@ -62,12 +75,12 @@ fn create_prismatic_joints(commands: &mut Commands, origin: Point3<f32>, num: us
     let shift = 1.0;
 
     let body = RigidBodyBundle {
-        body_type: RigidBodyType::Static,
+        body_type: RigidBodyType::Static.into(),
         position: origin.into(),
         ..Default::default()
     };
     let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(rad, rad, rad),
+        shape: ColliderShape::cuboid(rad, rad, rad).into(),
         ..Default::default()
     };
 
@@ -87,7 +100,7 @@ fn create_prismatic_joints(commands: &mut Commands, origin: Point3<f32>, num: us
         };
 
         let collider = ColliderBundle {
-            shape: ColliderShape::cuboid(rad, rad, rad),
+            shape: ColliderShape::cuboid(rad, rad, rad).into(),
             ..ColliderBundle::default()
         };
 
@@ -104,18 +117,9 @@ fn create_prismatic_joints(commands: &mut Commands, origin: Point3<f32>, num: us
             Unit::new_normalize(Vector3::new(-1.0, 1.0, 0.0))
         };
 
-        let z = Vector3::z();
-        let mut prism = PrismaticJoint::new(
-            Point3::origin(),
-            axis,
-            z,
-            Point3::new(0.0, 0.0, -shift),
-            axis,
-            z,
-        );
-        prism.limits_enabled = true;
-        prism.limits[0] = -2.0;
-        prism.limits[1] = 2.0;
+        let prism = PrismaticJoint::new(axis)
+            .local_anchor2(Point3::new(0.0, 0.0, -shift))
+            .limit_axis([-2.0, 2.0]);
 
         commands.spawn_bundle((JointBuilderComponent::new(prism, curr_parent, curr_child),));
 
@@ -128,13 +132,13 @@ fn create_revolute_joints(commands: &mut Commands, origin: Point3<f32>, num: usi
     let shift = 2.0;
 
     let ground = RigidBodyBundle {
-        body_type: RigidBodyType::Static,
+        body_type: RigidBodyType::Static.into(),
         position: [origin.x, origin.y, 0.0].into(),
         ..RigidBodyBundle::default()
     };
 
     let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(rad, rad, rad),
+        shape: ColliderShape::cuboid(rad, rad, rad).into(),
         ..ColliderBundle::default()
     };
 
@@ -163,7 +167,7 @@ fn create_revolute_joints(commands: &mut Commands, origin: Point3<f32>, num: usi
             };
 
             let collider = ColliderBundle {
-                shape: ColliderShape::cuboid(rad, rad, rad),
+                shape: ColliderShape::cuboid(rad, rad, rad).into(),
                 ..ColliderBundle::default()
             };
 
@@ -176,15 +180,14 @@ fn create_revolute_joints(commands: &mut Commands, origin: Point3<f32>, num: usi
         }
 
         // Setup four joints.
-        let o = Point3::origin();
         let x = Vector3::x_axis();
         let z = Vector3::z_axis();
 
         let revs = [
-            RevoluteJoint::new(o, z, Point3::new(0.0, 0.0, -shift), z),
-            RevoluteJoint::new(o, x, Point3::new(-shift, 0.0, 0.0), x),
-            RevoluteJoint::new(o, z, Point3::new(0.0, 0.0, -shift), z),
-            RevoluteJoint::new(o, x, Point3::new(shift, 0.0, 0.0), x),
+            RevoluteJoint::new(z).local_anchor2(Point3::new(0.0, 0.0, -shift)),
+            RevoluteJoint::new(x).local_anchor2(Point3::new(-shift, 0.0, 0.0)),
+            RevoluteJoint::new(z).local_anchor2(Point3::new(0.0, 0.0, -shift)),
+            RevoluteJoint::new(x).local_anchor2(Point3::new(shift, 0.0, 0.0)),
         ];
 
         commands.spawn_bundle((JointBuilderComponent::new(revs[0], curr_parent, handles[0]),));
@@ -219,13 +222,13 @@ fn create_fixed_joints(commands: &mut Commands, origin: Point3<f32>, num: usize)
             };
 
             let rigid_body = RigidBodyBundle {
-                body_type,
+                body_type: body_type.into(),
                 position: [origin.x + fk * shift, origin.y, origin.z + fi * shift].into(),
                 ..RigidBodyBundle::default()
             };
 
             let collider = ColliderBundle {
-                shape: ColliderShape::ball(rad),
+                shape: ColliderShape::ball(rad).into(),
                 ..ColliderBundle::default()
             };
 
@@ -239,10 +242,7 @@ fn create_fixed_joints(commands: &mut Commands, origin: Point3<f32>, num: usize)
             // Vertical joint.
             if i > 0 {
                 let parent_entity = *body_entities.last().unwrap();
-                let joint = FixedJoint::new(
-                    Isometry3::identity(),
-                    Isometry3::translation(0.0, 0.0, -shift),
-                );
+                let joint = FixedJoint::new().local_anchor2(point![0.0, 0.0, -shift]);
                 commands.spawn_bundle((JointBuilderComponent::new(
                     joint,
                     parent_entity,
@@ -254,10 +254,7 @@ fn create_fixed_joints(commands: &mut Commands, origin: Point3<f32>, num: usize)
             if k > 0 {
                 let parent_index = body_entities.len() - num;
                 let parent_entity = body_entities[parent_index];
-                let joint = FixedJoint::new(
-                    Isometry3::identity(),
-                    Isometry3::translation(-shift, 0.0, 0.0),
-                );
+                let joint = FixedJoint::new().local_anchor2(point![-shift, 0.0, 0.0]);
                 commands.spawn_bundle((JointBuilderComponent::new(
                     joint,
                     parent_entity,
@@ -290,13 +287,13 @@ fn create_ball_joints(commands: &mut Commands, num: usize) {
             };
 
             let rigid_body = RigidBodyBundle {
-                body_type,
+                body_type: body_type.into(),
                 position: [fk * shift, 0.0, fi * shift].into(),
                 ..Default::default()
             };
 
             let collider = ColliderBundle {
-                shape: ColliderShape::ball(rad),
+                shape: ColliderShape::ball(rad).into(),
                 ..Default::default()
             };
 
@@ -310,7 +307,7 @@ fn create_ball_joints(commands: &mut Commands, num: usize) {
             // Vertical joint.
             if i > 0 {
                 let parent_entity = *body_entities.last().unwrap();
-                let joint = BallJoint::new(Point3::origin(), Point3::new(0.0, 0.0, -shift));
+                let joint = SphericalJoint::new().local_anchor2(Point3::new(0.0, 0.0, -shift));
                 commands.spawn_bundle((JointBuilderComponent::new(
                     joint,
                     parent_entity,
@@ -322,7 +319,7 @@ fn create_ball_joints(commands: &mut Commands, num: usize) {
             if k > 0 {
                 let parent_index = body_entities.len() - num;
                 let parent_entity = body_entities[parent_index];
-                let joint = BallJoint::new(Point3::origin(), Point3::new(-shift, 0.0, 0.0));
+                let joint = SphericalJoint::new().local_anchor2(Point3::new(-shift, 0.0, 0.0));
                 commands.spawn_bundle((JointBuilderComponent::new(
                     joint,
                     parent_entity,

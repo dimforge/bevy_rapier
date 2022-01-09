@@ -3,7 +3,6 @@
 //       in https://github.com/dimforge/bevy_rapier/issues/75
 
 use bevy::prelude::*;
-use bevy::render::pass::ClearColor;
 use bevy_rapier2d::prelude::*;
 use nalgebra::Point2;
 
@@ -13,8 +12,6 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
         .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
-        .add_plugin(bevy_winit::WinitPlugin::default())
-        .add_plugin(bevy_wgpu::WgpuPlugin::default())
         .add_startup_system(setup_game.system())
         .add_system(cube_sleep_detection.system())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
@@ -56,7 +53,7 @@ struct Game {
     n_lanes: usize,
     n_rows: usize,
     stats: Stats,
-    cube_colors: Vec<Handle<ColorMaterial>>,
+    cube_colors: Vec<Color>,
     current_cube_joints: Vec<Entity>,
 }
 
@@ -90,7 +87,6 @@ fn setup_game(
     mut commands: Commands,
     mut game: ResMut<Game>,
     mut rapier_config: ResMut<RapierConfiguration>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     // While we want our sprite to look ~40 px square, we want to keep the physics units smaller
     // to prevent float rounding problems. To do this, we set the scale factor in RapierConfiguration
@@ -98,13 +94,13 @@ fn setup_game(
     rapier_config.scale = BLOCK_PX_SIZE;
 
     game.cube_colors = vec![
-        materials.add(byte_rgb(0, 244, 243).into()),
-        materials.add(byte_rgb(238, 243, 0).into()),
-        materials.add(byte_rgb(177, 0, 254).into()),
-        materials.add(byte_rgb(27, 0, 250).into()),
-        materials.add(byte_rgb(252, 157, 0).into()),
-        materials.add(byte_rgb(0, 247, 0).into()),
-        materials.add(byte_rgb(255, 0, 0).into()),
+        byte_rgb(0, 244, 243),
+        byte_rgb(238, 243, 0),
+        byte_rgb(177, 0, 254),
+        byte_rgb(27, 0, 250),
+        byte_rgb(252, 157, 0),
+        byte_rgb(0, 247, 0),
+        byte_rgb(255, 0, 0),
     ];
 
     commands
@@ -112,7 +108,7 @@ fn setup_game(
         .insert_bundle(OrthographicCameraBundle::new_2d())
         .id();
 
-    setup_board(&mut commands, &*game, materials);
+    setup_board(&mut commands, &*game);
 
     // initial cube
     spawn_cube(&mut commands, &mut game);
@@ -141,29 +137,34 @@ struct CubeLayout {
     joints: Vec<(usize, usize)>,
 }
 
+#[derive(Component)]
 struct Block;
 
-fn setup_board(commands: &mut Commands, game: &Game, mut materials: ResMut<Assets<ColorMaterial>>) {
+fn setup_board(commands: &mut Commands, game: &Game) {
     let floor_y = game.floor_y();
 
     // Add floor
     commands
         .spawn()
         .insert_bundle(SpriteBundle {
-            material: materials.add(Color::rgb(0.5, 0.5, 0.5).into()),
-            sprite: Sprite::new(Vec2::new(
-                game.n_lanes as f32 * BLOCK_PX_SIZE,
-                FLOOR_BLOCK_HEIGHT * BLOCK_PX_SIZE,
-            )),
+            sprite: Sprite {
+                color: Color::rgb(0.5, 0.5, 0.5),
+                custom_size: Some(Vec2::new(
+                    game.n_lanes as f32 * BLOCK_PX_SIZE,
+                    FLOOR_BLOCK_HEIGHT * BLOCK_PX_SIZE,
+                )),
+                ..Default::default()
+            },
             ..Default::default()
         })
         .insert_bundle(RigidBodyBundle {
-            body_type: bevy_rapier2d::prelude::RigidBodyType::Static,
+            body_type: RigidBodyType::Static.into(),
             position: [0.0, floor_y - (FLOOR_BLOCK_HEIGHT * 0.5)].into(),
             ..RigidBodyBundle::default()
         })
         .insert_bundle(ColliderBundle {
-            shape: ColliderShape::cuboid(game.n_lanes as f32 * 0.5, FLOOR_BLOCK_HEIGHT * 0.5),
+            shape: ColliderShape::cuboid(game.n_lanes as f32 * 0.5, FLOOR_BLOCK_HEIGHT * 0.5)
+                .into(),
             ..ColliderBundle::default()
         })
         .insert(RigidBodyPositionSync::Discrete);
@@ -194,7 +195,9 @@ fn spawn_cube(commands: &mut Commands, game: &mut Game) {
             commands
                 .spawn()
                 .insert_bundle((JointBuilderComponent::new(
-                    BallJoint::new(anchor_1, anchor_2),
+                    RevoluteJoint::new()
+                        .local_anchor1(anchor_1)
+                        .local_anchor2(anchor_2),
                     block_entities[*i],
                     block_entities[*j],
                 ),))
@@ -223,8 +226,11 @@ fn spawn_block(
     commands
         .spawn()
         .insert_bundle(SpriteBundle {
-            material: game.cube_colors[kind as usize].clone(),
-            sprite: Sprite::new(Vec2::new(BLOCK_PX_SIZE, BLOCK_PX_SIZE)),
+            sprite: Sprite {
+                color: game.cube_colors[kind as usize].clone(),
+                custom_size: Some(Vec2::new(BLOCK_PX_SIZE, BLOCK_PX_SIZE)),
+                ..Default::default()
+            },
             ..Default::default()
         })
         .insert_bundle(RigidBodyBundle {
@@ -232,11 +238,12 @@ fn spawn_block(
             damping: RigidBodyDamping {
                 linear_damping,
                 angular_damping: 0.0,
-            },
+            }
+            .into(),
             ..RigidBodyBundle::default()
         })
         .insert_bundle(ColliderBundle {
-            shape: ColliderShape::cuboid(0.5, 0.5),
+            shape: ColliderShape::cuboid(0.5, 0.5).into(),
             ..ColliderBundle::default()
         })
         .insert(RigidBodyPositionSync::Discrete)
@@ -247,7 +254,7 @@ fn spawn_block(
 fn cube_sleep_detection(
     mut commands: Commands,
     mut game: ResMut<Game>,
-    block_query: Query<(Entity, &RigidBodyPosition)>,
+    block_query: Query<(Entity, &RigidBodyPositionComponent)>,
 ) {
     let all_blocks_sleeping = true;
 
@@ -267,7 +274,7 @@ fn cube_sleep_detection(
 fn clear_filled_rows(
     commands: &mut Commands,
     game: &mut Game,
-    block_query: Query<(Entity, &RigidBodyPosition)>,
+    block_query: Query<(Entity, &RigidBodyPositionComponent)>,
 ) {
     let mut blocks_per_row: Vec<Vec<Entity>> = (0..game.n_rows).map(|_| vec![]).collect();
 

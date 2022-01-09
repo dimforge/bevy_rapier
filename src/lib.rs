@@ -25,6 +25,7 @@ pub mod physics;
 pub mod render;
 
 pub mod prelude {
+    pub use super::physics::wrapper::*;
     pub use super::physics::{
         ColliderBundle, ColliderComponentsSet, ColliderPositionSync, IntoEntity, IntoHandle,
         JointBuilderComponent, NoUserData, PhysicsHooksWithQuery, PhysicsHooksWithQueryObject,

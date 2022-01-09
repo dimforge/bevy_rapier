@@ -3,11 +3,9 @@ extern crate rapier2d as rapier; // For the debug UI.
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-use bevy::render::pass::ClearColor;
 use nalgebra::Isometry2;
 use rapier2d::pipeline::PhysicsPipeline;
 use ui::DebugUiPlugin;
-use bevy_rapier2d::physics::wrapper;
 #[path = "../../src_debug_ui/mod.rs"]
 mod ui;
 
@@ -20,8 +18,6 @@ fn main() {
         )))
         .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
-        .add_plugin(bevy_winit::WinitPlugin::default())
-        .add_plugin(bevy_wgpu::WgpuPlugin::default())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)
@@ -59,7 +55,7 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_size = 25.0;
 
     let collider = ColliderBundle {
-        shape: wrapper::ColliderShape(ColliderShape::cuboid(ground_size, 1.0)),
+        shape: ColliderShape::cuboid(ground_size, 1.0).into(),
         ..Default::default()
     };
     commands
@@ -68,12 +64,12 @@ pub fn setup_physics(mut commands: Commands) {
         .insert(ColliderPositionSync::Discrete);
 
     let collider = ColliderBundle {
-        shape: wrapper::ColliderShape(ColliderShape::cuboid(ground_size * 2.0, 1.2)),
-        position: wrapper::ColliderPosition(Isometry2::new(
+        shape: ColliderShape::cuboid(ground_size * 2.0, 1.2).into(),
+        position: Isometry2::new(
             [ground_size, ground_size * 2.0].into(),
             std::f32::consts::FRAC_PI_2,
         )
-        .into()),
+        .into(),
         ..Default::default()
     };
     commands
@@ -82,12 +78,12 @@ pub fn setup_physics(mut commands: Commands) {
         .insert(ColliderPositionSync::Discrete);
 
     let collider = ColliderBundle {
-        shape:wrapper::ColliderShape(ColliderShape::cuboid(ground_size * 2.0, 1.2)),
-        position: wrapper::ColliderPosition(Isometry2::new(
+        shape: ColliderShape::cuboid(ground_size * 2.0, 1.2).into(),
+        position: Isometry2::new(
             [-ground_size, ground_size * 2.0].into(),
             std::f32::consts::FRAC_PI_2,
         )
-        .into()),
+        .into(),
         ..Default::default()
     };
     commands
@@ -114,11 +110,11 @@ pub fn setup_physics(mut commands: Commands) {
 
             // Build the rigid body.
             let body = RigidBodyBundle {
-                position: wrapper::RigidBodyPosition([x, y].into()),
+                position: [x, y].into(),
                 ..Default::default()
             };
             let collider = ColliderBundle {
-                shape: wrapper::ColliderShape(ColliderShape::cuboid(rad, rad)),
+                shape: ColliderShape::cuboid(rad, rad).into(),
                 ..Default::default()
             };
             commands

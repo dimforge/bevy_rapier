@@ -3,7 +3,6 @@ extern crate rapier2d as rapier; // For the debug UI.
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-use bevy::render::pass::ClearColor;
 use rapier2d::pipeline::PhysicsPipeline;
 use ui::DebugUiPlugin;
 
@@ -19,8 +18,6 @@ fn main() {
         )))
         .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
-        .add_plugin(bevy_winit::WinitPlugin::default())
-        .add_plugin(bevy_wgpu::WgpuPlugin::default())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)
@@ -70,7 +67,7 @@ pub fn setup_physics(mut commands: Commands) {
      * Ground
      */
     let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(4.0, 1.2),
+        shape: ColliderShape::cuboid(4.0, 1.2).into(),
         ..Default::default()
     };
     commands
@@ -79,8 +76,8 @@ pub fn setup_physics(mut commands: Commands) {
         .insert(ColliderDebugRender::default());
 
     let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(4.0, 1.2),
-        collider_type: ColliderType::Sensor,
+        shape: ColliderShape::cuboid(4.0, 1.2).into(),
+        collider_type: ColliderType::Sensor.into(),
         position: [0.0, 5.0].into(),
         ..Default::default()
     };
@@ -94,7 +91,7 @@ pub fn setup_physics(mut commands: Commands) {
         ..Default::default()
     };
     let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(0.5, 0.5),
+        shape: ColliderShape::cuboid(0.5, 0.5).into(),
         flags: (ActiveEvents::INTERSECTION_EVENTS | ActiveEvents::CONTACT_EVENTS).into(),
         ..Default::default()
     };

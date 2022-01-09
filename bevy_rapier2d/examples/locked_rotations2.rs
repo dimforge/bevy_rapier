@@ -3,7 +3,6 @@ extern crate rapier2d as rapier; // For the debug UI.
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-use bevy::render::pass::ClearColor;
 use nalgebra::Isometry2;
 use rapier2d::pipeline::PhysicsPipeline;
 use ui::DebugUiPlugin;
@@ -20,8 +19,6 @@ fn main() {
         )))
         .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
-        .add_plugin(bevy_winit::WinitPlugin::default())
-        .add_plugin(bevy_wgpu::WgpuPlugin::default())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierRenderPlugin)
         .add_plugin(DebugUiPlugin)
@@ -60,7 +57,7 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_height = 0.1;
 
     let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(ground_size, ground_height),
+        shape: ColliderShape::cuboid(ground_size, ground_height).into(),
         position: [0.0, -ground_height].into(),
         ..Default::default()
     };
@@ -78,7 +75,7 @@ pub fn setup_physics(mut commands: Commands) {
         ..Default::default()
     };
     let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(2.0, 0.6),
+        shape: ColliderShape::cuboid(2.0, 0.6).into(),
         ..Default::default()
     };
     commands
@@ -96,7 +93,7 @@ pub fn setup_physics(mut commands: Commands) {
         ..Default::default()
     };
     let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(0.6, 0.4),
+        shape: ColliderShape::cuboid(0.6, 0.4).into(),
         ..Default::default()
     };
     commands

@@ -29,11 +29,11 @@ serde-serialize = [ "rapier3d/serde-serialize" ]
 enhanced-determinism = [ "rapier3d/enhanced-determinism" ]
 
 [dependencies]
-bevy = { version = "0.5", default-features = false }
-nalgebra = { version = "0.29", features = [ "convert-glam013" ] }
+bevy = { version = "0.6", default-features = false }
+nalgebra = { version = "0.30.1", features = [ "convert-glam020" ] }
 # Don't enable the default features because we don't need the ColliderSet/RigidBodySet
-rapier3d = { version = "^0.11", default-features = false, features = [ "dim3", "f32" ] }
+rapier3d = { version = "^0.12.0-alpha.0", default-features = false, features = [ "dim3", "f32" ] }
 
 [dev-dependencies]
-bevy_wgpu = "0.5"
-bevy_winit = { version = "0.5", features = [ "x11" ] }
+#bevy_wgpu = "0.5"
+#bevy_winit = { version = "0.5", features = [ "x11" ] }

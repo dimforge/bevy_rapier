@@ -1,8 +1,9 @@
+use crate::physics::wrapper::ColliderShapeComponent;
 use crate::physics::RapierConfiguration;
-use crate::physics::wrapper::ColliderShape;
 use crate::render::ColliderDebugRender;
 use bevy::prelude::*;
 use bevy::render::mesh::{Indices, VertexAttributeValues};
+use bevy::sprite::MaterialMesh2dBundle;
 use rapier::geometry::ShapeType;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
@@ -15,9 +16,10 @@ pub enum RenderSystems {
 pub fn create_collider_renders_system(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    #[cfg(feature = "dim2")] mut materials: ResMut<Assets<ColorMaterial>>,
+    #[cfg(feature = "dim3")] mut materials: ResMut<Assets<StandardMaterial>>,
     configuration: Res<RapierConfiguration>,
-    collider_shapes: Query<&ColliderShape>,
+    collider_shapes: Query<&ColliderShapeComponent>,
     render_tags: Query<(Entity, Option<&Parent>, &ColliderDebugRender), Without<Handle<Mesh>>>,
 ) {
     for (entity, parent, co_render) in &mut render_tags.iter() {
@@ -28,14 +30,24 @@ pub fn create_collider_renders_system(
 
         if let Some(co_shape) = co_shape {
             if let Some((mesh, scale)) = generate_collider_mesh(co_shape) {
-                let ground_pbr = PbrBundle {
+                let transform = Transform::from_scale(scale * configuration.scale);
+
+                #[cfg(feature = "dim2")]
+                let bundle = MaterialMesh2dBundle {
+                    mesh: meshes.add(mesh).into(),
+                    material: materials.add(co_render.color.into()),
+                    transform,
+                    ..Default::default()
+                };
+                #[cfg(feature = "dim3")]
+                let bundle = PbrBundle {
                     mesh: meshes.add(mesh),
                     material: materials.add(co_render.color.into()),
-                    transform: Transform::from_scale(scale * configuration.scale),
+                    transform,
                     ..Default::default()
                 };
 
-                commands.entity(entity).insert_bundle(ground_pbr);
+                commands.entity(entity).insert_bundle(bundle);
             }
         }
     }
@@ -46,9 +58,9 @@ pub fn update_collider_render_mesh(
     mut meshes: ResMut<Assets<Mesh>>,
     configuration: Res<RapierConfiguration>,
     colliders: Query<
-        (Entity, &ColliderShape),
+        (Entity, &ColliderShapeComponent),
         (
-            Changed<ColliderShape>,
+            Changed<ColliderShapeComponent>,
             With<Handle<Mesh>>,
             With<ColliderDebugRender>,
         ),
@@ -65,7 +77,7 @@ pub fn update_collider_render_mesh(
     }
 }
 
-fn generate_collider_mesh(co_shape: &ColliderShape) -> Option<(Mesh, Vec3)> {
+fn generate_collider_mesh(co_shape: &ColliderShapeComponent) -> Option<(Mesh, Vec3)> {
     let mesh = match co_shape.shape_type() {
         #[cfg(feature = "dim3")]
         ShapeType::Cuboid => Mesh::from(shape::Cube { size: 2.0 }),
@@ -80,7 +92,8 @@ fn generate_collider_mesh(co_shape: &ColliderShape) -> Option<(Mesh, Vec3)> {
         }),
         #[cfg(feature = "dim2")]
         ShapeType::TriMesh => {
-            let mut mesh = Mesh::new(bevy::render::pipeline::PrimitiveTopology::TriangleList);
+            let mut mesh =
+                Mesh::new(bevy::render::render_resource::PrimitiveTopology::TriangleList);
             let trimesh = co_shape.as_trimesh().unwrap();
             mesh.set_attribute(
                 Mesh::ATTRIBUTE_POSITION,
@@ -104,7 +117,8 @@ fn generate_collider_mesh(co_shape: &ColliderShape) -> Option<(Mesh, Vec3)> {
         }
         #[cfg(feature = "dim3")]
         ShapeType::TriMesh => {
-            let mut mesh = Mesh::new(bevy::render::pipeline::PrimitiveTopology::TriangleList);
+            let mut mesh =
+                Mesh::new(bevy::render::render_resource::PrimitiveTopology::TriangleList);
             let trimesh = co_shape.as_trimesh().unwrap();
             mesh.set_attribute(
                 Mesh::ATTRIBUTE_POSITION,
