@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.12.0
+### Modified
+- Switch to `rapier` 0.12.0-alpha.0 and `nalgebra` 0.30.
+- Switch to `bevy` 0.6.
+- All the Rapier components have been wrapped into wrapper types (for example `ColliderPosition`
+  has been wrapped into `ColliderPositionComponent`). These wrapper types are the ones that need
+  to be used as bevy components. To convert a Rapier component to it’s corresponding Bevy component,
+  simply use `.into()`. See the examples in `bevy_rapier2d/examples` and `bevy_rapier3d/examples`
+  for details.
+
 ## 0.11.0
 ### Modified
 - Switch to `Rapier` 0.11 and `nalgebra` 0.29.
