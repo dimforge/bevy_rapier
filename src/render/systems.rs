@@ -3,8 +3,10 @@ use crate::physics::RapierConfiguration;
 use crate::render::ColliderDebugRender;
 use bevy::prelude::*;
 use bevy::render::mesh::{Indices, VertexAttributeValues};
-use bevy::sprite::MaterialMesh2dBundle;
 use rapier::geometry::ShapeType;
+
+#[cfg(feature = "dim2")]
+use bevy::sprite::MaterialMesh2dBundle;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum RenderSystems {
