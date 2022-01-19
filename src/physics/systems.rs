@@ -17,6 +17,7 @@ use crate::prelude::{ContactEvent, IntersectionEvent};
 use crate::rapier::data::ComponentSetOption;
 
 use crate::rapier::pipeline::QueryPipeline;
+use bevy::ecs::entity::Entities;
 use bevy::ecs::query::{QueryState, WorldQuery};
 use bevy::prelude::*;
 use rapier::dynamics::{
@@ -27,6 +28,7 @@ use rapier::math::Isometry;
 use rapier::pipeline::PhysicsPipeline;
 use rapier::{dynamics, geometry};
 use std::sync::RwLock;
+
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum PhysicsSystems {
     AttachBodiesAndColliders,
@@ -229,6 +231,7 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
         RemovedComponents<ColliderChangesComponent>,
         RemovedComponents<JointHandleComponent>,
     ),
+    entities: &Entities,
 ) {
     use std::mem::replace;
 
@@ -243,6 +246,7 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
     let mut collider_components_set = ColliderComponentsSet(colliders_query.q0());
 
     modifs_tracker.propagate_removals(
+        &entities,
         &mut commands,
         &mut islands,
         &mut rigid_body_components_set,
