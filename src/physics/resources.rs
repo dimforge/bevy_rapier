@@ -7,6 +7,7 @@ use crate::physics::{
 use crate::physics::wrapper::{
     ColliderChangesComponent, ColliderParentComponent, RigidBodyChangesComponent,
 };
+use bevy::ecs::entity::Entities;
 use bevy::ecs::query::WorldQuery;
 use bevy::prelude::*;
 use rapier::data::{ComponentSet, ComponentSetMut};
@@ -18,6 +19,7 @@ use rapier::prelude::{
 use rapier::{dynamics, geometry};
 use std::collections::HashMap;
 use std::sync::RwLock;
+
 /// The different ways of adjusting the timestep length.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TimestepMode {
@@ -219,6 +221,7 @@ impl ModificationTracker {
 
     pub fn propagate_removals<Bodies>(
         &mut self,
+        entities: &Entities,
         commands: &mut Commands,
         islands: &mut IslandManager,
         bodies: &mut Bodies,
@@ -236,10 +239,13 @@ impl ModificationTracker {
         for removed_body in self.removed_bodies.iter() {
             if let Some(colliders) = self.body_colliders.remove(removed_body) {
                 for collider in colliders {
-                    commands
-                        .entity(collider.entity())
-                        .remove_bundle::<ColliderBundle>()
-                        .remove::<ColliderParentComponent>();
+                    if entities.contains(collider.entity()) {
+                        commands
+                            .entity(collider.entity())
+                            .remove_bundle::<ColliderBundle>()
+                            .remove::<ColliderParentComponent>();
+                    }
+
                     self.removed_colliders.push(collider);
                 }
             }
