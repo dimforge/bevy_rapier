@@ -38,6 +38,7 @@ pub enum TimestepMode {
 }
 
 /// A resource for specifying configuration information for the physics simulation
+#[derive(Copy, Clone, Debug)]
 pub struct RapierConfiguration {
     /// Specifying the gravity of the physics simulation.
     pub gravity: Vector<f32>,
