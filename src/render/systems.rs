@@ -90,7 +90,6 @@ fn generate_collider_mesh(co_shape: &ColliderShapeComponent) -> Option<(Mesh, Ve
             size: Vec2::new(2.0, 2.0),
             flip: false,
         }),
-        #[cfg(feature = "dim3")]
         ShapeType::Ball => Mesh::from(shape::Icosphere {
             subdivisions: 2,
             radius: 1.0,
