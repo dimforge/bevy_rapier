@@ -92,6 +92,14 @@ fn generate_collider_mesh(co_shape: &ColliderShapeComponent) -> Option<(Mesh, Ve
             subdivisions: 2,
             radius: 1.0,
         }),
+        // For capsules, use cuboids and then scale with the bounding box to better show the true shape of the collider.
+        #[cfg(feature = "dim3")]
+        ShapeType::Capsule => Mesh::from(shape::Cube { size: 2.0 }),
+        #[cfg(feature = "dim2")]
+        ShapeType::Capsule => Mesh::from(shape::Quad {
+            size: Vec2::new(2.0, 2.0),
+            flip: false,
+        }),
         #[cfg(feature = "dim2")]
         ShapeType::TriMesh => {
             let mut mesh =
@@ -194,6 +202,19 @@ fn generate_collider_mesh(co_shape: &ColliderShapeComponent) -> Option<(Mesh, Ve
             let b = co_shape.as_ball().unwrap();
             Vec3::new(b.radius, b.radius, b.radius)
         }
+        #[cfg(feature = "dim2")]
+        ShapeType::Capsule => {
+            let bb = co_shape.compute_local_aabb().half_extents();
+            let (x, y) = (bb[0], bb[1]);
+            Vec3::new(x, y, 1.0)
+        }
+        #[cfg(feature = "dim3")]
+        ShapeType::Capsule => {
+            let bb = co_shape.compute_local_aabb().half_extents();
+            let (x, y, z) = (bb[0], bb[1], bb[2]);
+            Vec3::new(x, y, z)
+        }
+
         ShapeType::TriMesh => Vec3::ONE,
         _ => unimplemented!(),
     };

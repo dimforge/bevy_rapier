@@ -9,13 +9,11 @@ impl Plugin for RapierRenderPlugin {
         app.add_system_to_stage(
             CoreStage::PreUpdate,
             systems::create_collider_renders_system
-                .system()
                 .label(systems::RenderSystems::CreateColliderRenders),
         );
         app.add_system_to_stage(
             CoreStage::PreUpdate,
             systems::update_collider_render_mesh
-                .system()
                 .label(systems::RenderSystems::UpdateColliderRenderMesh),
         );
     }

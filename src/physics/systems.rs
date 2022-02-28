@@ -371,10 +371,8 @@ pub(crate) fn sync_transform(pos: &Isometry<f32>, scale: f32, transform: &mut Tr
 #[cfg(feature = "dim3")]
 pub(crate) fn sync_transform(pos: &Isometry<f32>, scale: f32, transform: &mut Transform) {
     let (tra, rot) = (*pos).into();
-    transform.translation.x = tra.x * scale;
-    transform.translation.y = tra.y * scale;
-    transform.translation.z = tra.z * scale;
-    transform.rotation = Quat::from_xyzw(rot.x, rot.y, rot.z, rot.w);
+    transform.translation = tra * scale;
+    transform.rotation = rot;
 }
 
 /// System responsible for writing the rigid-bodies positions into the Bevy translation and rotation components.
