@@ -82,23 +82,18 @@ pub fn update_collider_render_mesh(
 fn generate_collider_mesh(co_shape: &ColliderShapeComponent) -> Option<(Mesh, Vec3)> {
     let mesh = match co_shape.shape_type() {
         #[cfg(feature = "dim3")]
-        ShapeType::Cuboid => Mesh::from(shape::Cube { size: 2.0 }),
+        ShapeType::Cuboid | ShapeType::Capsule | ShapeType::Cylinder => {
+            Mesh::from(shape::Cube { size: 2.0 })
+        }
         #[cfg(feature = "dim2")]
-        ShapeType::Cuboid => Mesh::from(shape::Quad {
+        ShapeType::Cuboid | ShapeType::Capsule => Mesh::from(shape::Quad {
             size: Vec2::new(2.0, 2.0),
             flip: false,
         }),
+        #[cfg(feature = "dim3")]
         ShapeType::Ball => Mesh::from(shape::Icosphere {
             subdivisions: 2,
             radius: 1.0,
-        }),
-        // For capsules, use cuboids and then scale with the bounding box to better show the true shape of the collider.
-        #[cfg(feature = "dim3")]
-        ShapeType::Capsule => Mesh::from(shape::Cube { size: 2.0 }),
-        #[cfg(feature = "dim2")]
-        ShapeType::Capsule => Mesh::from(shape::Quad {
-            size: Vec2::new(2.0, 2.0),
-            flip: false,
         }),
         #[cfg(feature = "dim2")]
         ShapeType::TriMesh => {
@@ -209,7 +204,7 @@ fn generate_collider_mesh(co_shape: &ColliderShapeComponent) -> Option<(Mesh, Ve
             Vec3::new(x, y, 1.0)
         }
         #[cfg(feature = "dim3")]
-        ShapeType::Capsule => {
+        ShapeType::Capsule | ShapeType::Cylinder => {
             let bb = co_shape.compute_local_aabb().half_extents();
             let (x, y, z) = (bb[0], bb[1], bb[2]);
             Vec3::new(x, y, z)
