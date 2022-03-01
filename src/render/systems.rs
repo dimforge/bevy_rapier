@@ -182,31 +182,18 @@ fn generate_collider_mesh(co_shape: &ColliderShapeComponent) -> Option<(Mesh, Ve
     };
 
     let scale = match co_shape.shape_type() {
-        #[cfg(feature = "dim2")]
-        ShapeType::Cuboid => {
-            let c = co_shape.as_cuboid().unwrap();
-            Vec3::new(c.half_extents.x, c.half_extents.y, 1.0)
-        }
-        #[cfg(feature = "dim3")]
-        ShapeType::Cuboid => {
-            let c = co_shape.as_cuboid().unwrap();
-            Vec3::new(c.half_extents.x, c.half_extents.y, c.half_extents.z)
-        }
         ShapeType::Ball => {
             let b = co_shape.as_ball().unwrap();
             Vec3::new(b.radius, b.radius, b.radius)
         }
         #[cfg(feature = "dim2")]
-        ShapeType::Capsule => {
+        ShapeType::Cuboid | ShapeType::Capsule => {
             let bb = co_shape.compute_local_aabb().half_extents();
-            let (x, y) = (bb[0], bb[1]);
-            Vec3::new(x, y, 1.0)
+            Vec3::new(bb[0], bb[1], 1.0)
         }
         #[cfg(feature = "dim3")]
-        ShapeType::Capsule | ShapeType::Cylinder => {
-            let bb = co_shape.compute_local_aabb().half_extents();
-            let (x, y, z) = (bb[0], bb[1], bb[2]);
-            Vec3::new(x, y, z)
+        ShapeType::Cuboid | ShapeType::Capsule | ShapeType::Cylinder => {
+            co_shape.compute_local_aabb().half_extents().into()
         }
 
         ShapeType::TriMesh => Vec3::ONE,
