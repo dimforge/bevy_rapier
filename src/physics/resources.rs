@@ -318,6 +318,13 @@ pub trait PhysicsHooksWithQuery<UserData: WorldQuery>: Send + Sync {
         _user_data: &Query<UserData>,
     ) {
     }
+
+    fn respond_to_contact_impulses(
+        &self,
+        _context: &mut ContactResponseContext<RigidBodyComponentsSet, ColliderComponentsSet>,
+        _user_data: &Query<UserData>,
+    ) {
+    }
 }
 
 impl<T, UserData> PhysicsHooksWithQuery<UserData> for T
@@ -343,6 +350,14 @@ where
         _: &Query<UserData>,
     ) {
         PhysicsHooks::modify_solver_contacts(self, context)
+    }
+
+    fn respond_to_contact_impulses(
+        &self,
+        context: &mut ContactResponseContext<RigidBodyComponentsSet, ColliderComponentsSet>,
+        _: &Query<UserData>,
+    ) {
+        PhysicsHooks::respond_to_contact_impulses(self, context)
     }
 }
 
@@ -379,5 +394,13 @@ impl<UserData: WorldQuery>
         context: &mut ContactModificationContext<RigidBodyComponentsSet, ColliderComponentsSet>,
     ) {
         self.hooks.modify_solver_contacts(context, &self.user_data)
+    }
+
+    fn respond_to_contact_impulses(
+        &self,
+        context: &mut ContactResponseContext<RigidBodyComponentsSet, ColliderComponentsSet>,
+    ) {
+        self.hooks
+            .respond_to_contact_impulses(context, &self.user_data)
     }
 }
