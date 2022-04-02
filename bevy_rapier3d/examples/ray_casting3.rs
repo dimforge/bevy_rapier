@@ -187,7 +187,7 @@ fn ray_from_mouse_position(
 
     let camera_inverse_matrix =
         camera_transform.compute_matrix() * camera.projection_matrix.inverse();
-    let near = camera_inverse_matrix * Vec3::new(x, y, 0.0).extend(1.0);
+    let near = camera_inverse_matrix * Vec3::new(x, y, -1.0).extend(1.0);
     let far = camera_inverse_matrix * Vec3::new(x, y, 1.0).extend(1.0);
 
     let near = near.truncate() / near.w;
