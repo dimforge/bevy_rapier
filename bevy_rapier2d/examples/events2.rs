@@ -49,16 +49,9 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
         .insert_bundle(OrthographicCameraBundle::new_2d());
 }
 
-fn display_events(
-    mut intersection_events: EventReader<IntersectionEvent>,
-    mut contact_events: EventReader<ContactEvent>,
-) {
-    for intersection_event in intersection_events.iter() {
-        println!("Received intersection event: {:?}", intersection_event);
-    }
-
-    for contact_event in contact_events.iter() {
-        println!("Received contact event: {:?}", contact_event);
+fn display_events(mut collision_events: EventReader<CollisionEvent>) {
+    for collision_event in collision_events.iter() {
+        println!("Received collision event: {:?}", collision_event);
     }
 }
 
@@ -92,7 +85,7 @@ pub fn setup_physics(mut commands: Commands) {
     };
     let collider = ColliderBundle {
         shape: ColliderShape::cuboid(0.5, 0.5).into(),
-        flags: (ActiveEvents::INTERSECTION_EVENTS | ActiveEvents::CONTACT_EVENTS).into(),
+        flags: (ActiveEvents::COLLISION_EVENTS).into(),
         ..Default::default()
     };
     commands

@@ -3,7 +3,7 @@ extern crate rapier3d as rapier; // For the debug UI.
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
-use rapier::dynamics::RigidBodyMassPropsFlags;
+use rapier::dynamics::LockedAxes;
 use rapier::geometry::ColliderShape;
 use rapier3d::pipeline::PhysicsPipeline;
 use ui::DebugUiPlugin;
@@ -89,9 +89,9 @@ pub fn setup_physics(mut commands: Commands) {
     /*
      * A rectangle that only rotates along the `x` axis.
      */
-    let locked_dofs = RigidBodyMassPropsFlags::TRANSLATION_LOCKED
-        | RigidBodyMassPropsFlags::ROTATION_LOCKED_Y
-        | RigidBodyMassPropsFlags::ROTATION_LOCKED_Z;
+    let locked_dofs = LockedAxes::TRANSLATION_LOCKED
+        | LockedAxes::ROTATION_LOCKED_Y
+        | LockedAxes::ROTATION_LOCKED_Z;
 
     let rigid_body = RigidBodyBundle {
         position: [0.0, 3.0, 0.0].into(),
@@ -114,7 +114,7 @@ pub fn setup_physics(mut commands: Commands) {
      */
     let rigid_body = RigidBodyBundle {
         position: (Vec3::new(0.0, 5.0, 0.0), Quat::from_rotation_x(1.0)).into(),
-        mass_properties: RigidBodyMassPropsFlags::ROTATION_LOCKED.into(),
+        mass_properties: LockedAxes::ROTATION_LOCKED.into(),
         ..RigidBodyBundle::default()
     };
 

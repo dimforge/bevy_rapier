@@ -158,7 +158,7 @@ fn setup_board(commands: &mut Commands, game: &Game) {
             ..Default::default()
         })
         .insert_bundle(RigidBodyBundle {
-            body_type: RigidBodyType::Static.into(),
+            body_type: RigidBodyType::Fixed.into(),
             position: [0.0, floor_y - (FLOOR_BLOCK_HEIGHT * 0.5)].into(),
             ..RigidBodyBundle::default()
         })
@@ -195,7 +195,7 @@ fn spawn_cube(commands: &mut Commands, game: &mut Game) {
             commands
                 .spawn()
                 .insert_bundle((JointBuilderComponent::new(
-                    RevoluteJoint::new()
+                    RevoluteJointBuilder::new()
                         .local_anchor1(anchor_1)
                         .local_anchor2(anchor_2),
                     block_entities[*i],

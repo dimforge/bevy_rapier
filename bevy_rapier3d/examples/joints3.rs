@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
 use na::{Isometry3, Point3, Unit, Vector3};
-use rapier::dynamics::{FixedJoint, PrismaticJoint, RevoluteJoint, RigidBodyType, SphericalJoint};
+use rapier::dynamics::RigidBodyType;
 use rapier3d::pipeline::PhysicsPipeline;
 use ui::DebugUiPlugin;
 
@@ -75,7 +75,7 @@ fn create_prismatic_joints(commands: &mut Commands, origin: Point3<f32>, num: us
     let shift = 1.0;
 
     let body = RigidBodyBundle {
-        body_type: RigidBodyType::Static.into(),
+        body_type: RigidBodyType::Fixed.into(),
         position: origin.into(),
         ..Default::default()
     };
@@ -117,9 +117,9 @@ fn create_prismatic_joints(commands: &mut Commands, origin: Point3<f32>, num: us
             Unit::new_normalize(Vector3::new(-1.0, 1.0, 0.0))
         };
 
-        let prism = PrismaticJoint::new(axis)
+        let prism = PrismaticJointBuilder::new(axis)
             .local_anchor2(Point3::new(0.0, 0.0, -shift))
-            .limit_axis([-2.0, 2.0]);
+            .limits([-2.0, 2.0]);
 
         commands.spawn_bundle((JointBuilderComponent::new(prism, curr_parent, curr_child),));
 
@@ -132,7 +132,7 @@ fn create_revolute_joints(commands: &mut Commands, origin: Point3<f32>, num: usi
     let shift = 2.0;
 
     let ground = RigidBodyBundle {
-        body_type: RigidBodyType::Static.into(),
+        body_type: RigidBodyType::Fixed.into(),
         position: [origin.x, origin.y, 0.0].into(),
         ..RigidBodyBundle::default()
     };
@@ -184,10 +184,10 @@ fn create_revolute_joints(commands: &mut Commands, origin: Point3<f32>, num: usi
         let z = Vector3::z_axis();
 
         let revs = [
-            RevoluteJoint::new(z).local_anchor2(Point3::new(0.0, 0.0, -shift)),
-            RevoluteJoint::new(x).local_anchor2(Point3::new(-shift, 0.0, 0.0)),
-            RevoluteJoint::new(z).local_anchor2(Point3::new(0.0, 0.0, -shift)),
-            RevoluteJoint::new(x).local_anchor2(Point3::new(shift, 0.0, 0.0)),
+            RevoluteJointBuilder::new(z).local_anchor2(Point3::new(0.0, 0.0, -shift)),
+            RevoluteJointBuilder::new(x).local_anchor2(Point3::new(-shift, 0.0, 0.0)),
+            RevoluteJointBuilder::new(z).local_anchor2(Point3::new(0.0, 0.0, -shift)),
+            RevoluteJointBuilder::new(x).local_anchor2(Point3::new(shift, 0.0, 0.0)),
         ];
 
         commands.spawn_bundle((JointBuilderComponent::new(revs[0], curr_parent, handles[0]),));
@@ -216,7 +216,7 @@ fn create_fixed_joints(commands: &mut Commands, origin: Point3<f32>, num: usize)
             // fixed bodies. Because physx will crash if we add
             // a joint between these.
             let body_type = if i == 0 && (k % 4 == 0 && k != num - 2 || k == num - 1) {
-                RigidBodyType::Static
+                RigidBodyType::Fixed
             } else {
                 RigidBodyType::Dynamic
             };
@@ -242,7 +242,7 @@ fn create_fixed_joints(commands: &mut Commands, origin: Point3<f32>, num: usize)
             // Vertical joint.
             if i > 0 {
                 let parent_entity = *body_entities.last().unwrap();
-                let joint = FixedJoint::new().local_anchor2(point![0.0, 0.0, -shift]);
+                let joint = FixedJointBuilder::new().local_anchor2(point![0.0, 0.0, -shift]);
                 commands.spawn_bundle((JointBuilderComponent::new(
                     joint,
                     parent_entity,
@@ -254,7 +254,7 @@ fn create_fixed_joints(commands: &mut Commands, origin: Point3<f32>, num: usize)
             if k > 0 {
                 let parent_index = body_entities.len() - num;
                 let parent_entity = body_entities[parent_index];
-                let joint = FixedJoint::new().local_anchor2(point![-shift, 0.0, 0.0]);
+                let joint = FixedJointBuilder::new().local_anchor2(point![-shift, 0.0, 0.0]);
                 commands.spawn_bundle((JointBuilderComponent::new(
                     joint,
                     parent_entity,
@@ -281,7 +281,7 @@ fn create_ball_joints(commands: &mut Commands, num: usize) {
             color += 1;
 
             let body_type = if i == 0 && (k % 4 == 0 || k == num - 1) {
-                RigidBodyType::Static
+                RigidBodyType::Fixed
             } else {
                 RigidBodyType::Dynamic
             };
@@ -307,7 +307,8 @@ fn create_ball_joints(commands: &mut Commands, num: usize) {
             // Vertical joint.
             if i > 0 {
                 let parent_entity = *body_entities.last().unwrap();
-                let joint = SphericalJoint::new().local_anchor2(Point3::new(0.0, 0.0, -shift));
+                let joint =
+                    SphericalJointBuilder::new().local_anchor2(Point3::new(0.0, 0.0, -shift));
                 commands.spawn_bundle((JointBuilderComponent::new(
                     joint,
                     parent_entity,
@@ -319,7 +320,8 @@ fn create_ball_joints(commands: &mut Commands, num: usize) {
             if k > 0 {
                 let parent_index = body_entities.len() - num;
                 let parent_entity = body_entities[parent_index];
-                let joint = SphericalJoint::new().local_anchor2(Point3::new(-shift, 0.0, 0.0));
+                let joint =
+                    SphericalJointBuilder::new().local_anchor2(Point3::new(-shift, 0.0, 0.0));
                 commands.spawn_bundle((JointBuilderComponent::new(
                     joint,
                     parent_entity,

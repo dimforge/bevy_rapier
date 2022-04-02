@@ -71,7 +71,7 @@ pub fn setup_physics(mut commands: Commands) {
      */
     let rigid_body = RigidBodyBundle {
         position: [0.0, 3.0].into(),
-        mass_properties: RigidBodyMassPropsFlags::TRANSLATION_LOCKED.into(),
+        mass_properties: LockedAxes::TRANSLATION_LOCKED.into(),
         ..Default::default()
     };
     let collider = ColliderBundle {
@@ -89,7 +89,7 @@ pub fn setup_physics(mut commands: Commands) {
      */
     let rigid_body = RigidBodyBundle {
         position: Isometry2::new([0.3, 5.0].into(), 1.0).into(),
-        mass_properties: RigidBodyMassPropsFlags::ROTATION_LOCKED.into(),
+        mass_properties: LockedAxes::ROTATION_LOCKED.into(),
         ..Default::default()
     };
     let collider = ColliderBundle {

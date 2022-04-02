@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
 use nalgebra::Point2;
-use rapier2d::dynamics::{RevoluteJoint, RigidBodyType};
+use rapier2d::dynamics::RigidBodyType;
 use rapier2d::pipeline::PhysicsPipeline;
 use ui::DebugUiPlugin;
 
@@ -80,7 +80,7 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
             color += 1;
 
             let body_type = if i == 0 && (k % 4 == 0 || k == numk - 1) {
-                RigidBodyType::Static
+                RigidBodyType::Fixed
             } else {
                 RigidBodyType::Dynamic
             };
@@ -104,7 +104,7 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
             // Vertical joint.
             if i > 0 {
                 let parent_entity = *body_entities.last().unwrap();
-                let joint = RevoluteJoint::new().local_anchor2(Point2::new(0.0, shift));
+                let joint = RevoluteJointBuilder::new().local_anchor2(Point2::new(0.0, shift));
                 let entity = commands
                     .spawn()
                     .insert_bundle((JointBuilderComponent::new(
@@ -122,7 +122,7 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
             if k > 0 {
                 let parent_index = body_entities.len() - numi;
                 let parent_entity = body_entities[parent_index];
-                let joint = RevoluteJoint::new().local_anchor2(Point2::new(-shift, 0.0));
+                let joint = RevoluteJointBuilder::new().local_anchor2(Point2::new(-shift, 0.0));
                 let entity = commands
                     .spawn()
                     .insert_bundle((JointBuilderComponent::new(
