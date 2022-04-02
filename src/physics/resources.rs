@@ -12,8 +12,8 @@ use bevy::ecs::query::WorldQuery;
 use bevy::prelude::*;
 use rapier::data::{ComponentSet, ComponentSetMut};
 use rapier::prelude::{
-    ContactEvent, ContactModificationContext, ContactPair, EventHandler, ImpulseJointSet,
-    IntersectionEvent, IslandManager, JointHandle, MultibodyJointSet, PairFilterContext,
+    CollisionEvent, ContactModificationContext, ContactPair, EventHandler, ImpulseJointHandle,
+    ImpulseJointSet, IslandManager, MultibodyJointSet, PairFilterContext,
     PhysicsHooks, SolverFlags, Vector,
 };
 use rapier::{dynamics, geometry};
@@ -73,20 +73,12 @@ impl Default for RapierConfiguration {
 /// A set of queues collecting events emitted by the physics engine.
 pub(crate) struct EventQueue<'a> {
     /// The unbounded contact event queue.
-    pub contact_events: RwLock<EventWriter<'a, 'a, ContactEvent>>,
-    /// The unbounded intersection event queue.
-    pub intersection_events: RwLock<EventWriter<'a, 'a, IntersectionEvent>>,
+    pub collision_events: RwLock<EventWriter<'a, 'a, CollisionEvent>>,
 }
 
 impl<'a> EventHandler for EventQueue<'a> {
-    fn handle_intersection_event(&self, event: IntersectionEvent) {
-        if let Ok(mut events) = self.intersection_events.write() {
-            events.send(event)
-        }
-    }
-
-    fn handle_contact_event(&self, event: ContactEvent, _: &ContactPair) {
-        if let Ok(mut events) = self.contact_events.write() {
+    fn handle_collision_event(&self, event: CollisionEvent, _: Option<&ContactPair>) {
+        if let Ok(mut events) = self.collision_events.write() {
             events.send(event)
         }
     }
@@ -101,16 +93,16 @@ pub struct SimulationToRenderTime {
 
 /// HashMaps of Bevy Entity to Rapier handles
 #[derive(Default)]
-pub struct JointsEntityMap(pub(crate) HashMap<Entity, JointHandle>);
+pub struct JointsEntityMap(pub(crate) HashMap<Entity, ImpulseJointHandle>);
 
 pub struct ModificationTracker {
     pub(crate) modified_bodies: Vec<dynamics::RigidBodyHandle>,
     pub(crate) modified_colliders: Vec<geometry::ColliderHandle>,
     pub(crate) removed_bodies: Vec<dynamics::RigidBodyHandle>,
     pub(crate) removed_colliders: Vec<geometry::ColliderHandle>,
-    // NOTE: right now, this actually contains an Entity instead of the JointHandle.
-    //       but we will switch to JointHandle soon.
-    pub(crate) removed_joints: Vec<JointHandle>,
+    // NOTE: right now, this actually contains an Entity instead of the ImpulseJointHandle.
+    //       but we will switch to ImpulseJointHandle soon.
+    pub(crate) removed_joints: Vec<ImpulseJointHandle>,
     // We need to maintain these two because we have to access them
     // when an entity containing a collider/rigid-body has been despawn.
     pub(crate) body_colliders: HashMap<dynamics::RigidBodyHandle, Vec<geometry::ColliderHandle>>,
@@ -216,7 +208,7 @@ impl ModificationTracker {
         self.removed_joints.extend(
             removed_joints
                 .iter()
-                .map(|e| IntoHandle::<JointHandle>::handle(e)),
+                .map(|e| IntoHandle::<ImpulseJointHandle>::handle(e)),
         );
     }
 

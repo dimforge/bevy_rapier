@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use rapier::dynamics::{JointData, JointHandle, RigidBodyHandle};
+use rapier::dynamics::{GenericJoint, ImpulseJointHandle, RigidBodyHandle};
 use rapier::geometry::ColliderHandle;
 use rapier::math::Isometry;
 
@@ -49,13 +49,13 @@ impl ColliderHandleComponent {
 /// added to an entity by the `JointBuilderComponent`.
 #[derive(Component)]
 pub struct JointHandleComponent {
-    handle: JointHandle,
+    handle: ImpulseJointHandle,
     entity1: Entity,
     entity2: Entity,
 }
 
 impl JointHandleComponent {
-    pub(crate) fn new(handle: JointHandle, entity1: Entity, entity2: Entity) -> Self {
+    pub(crate) fn new(handle: ImpulseJointHandle, entity1: Entity, entity2: Entity) -> Self {
         Self {
             handle,
             entity1,
@@ -64,7 +64,7 @@ impl JointHandleComponent {
     }
 
     /// The Rapier handle of the joint.
-    pub fn handle(&self) -> JointHandle {
+    pub fn handle(&self) -> ImpulseJointHandle {
         self.handle
     }
 
@@ -85,7 +85,7 @@ impl JointHandleComponent {
 /// once the Rapier joint it describes has been created and added to the `JointSet` resource.
 #[derive(Component)]
 pub struct JointBuilderComponent {
-    pub(crate) params: JointData,
+    pub(crate) params: GenericJoint,
     pub(crate) entity1: Entity,
     pub(crate) entity2: Entity,
 }
@@ -94,7 +94,7 @@ impl JointBuilderComponent {
     /// Initializes a joint builder from the given joint params and the entities attached to this joint.
     pub fn new<J>(joint: J, entity1: Entity, entity2: Entity) -> Self
     where
-        J: Into<JointData>,
+        J: Into<GenericJoint>,
     {
         JointBuilderComponent {
             params: joint.into(),

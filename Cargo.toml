@@ -9,5 +9,7 @@ codegen-units = 1
 #nalgebra = { path = "../nalgebra" }
 #parry2d = { path = "../parry/build/parry2d" }
 #parry3d = { path = "../parry/build/parry3d" }
-#rapier2d = { path = "../rapier/build/rapier2d" }
-#rapier3d = { path = "../rapier/build/rapier3d" }
+# rapier2d = { path = "../rapier/crates/rapier2d" }
+# rapier3d = { path = "../rapier/crates/rapier3d" }
+rapier2d = { git = "https://github.com/dimforge/rapier", rev = "7efcff615e821d97957fe813d066567117c8e999" }
+rapier3d = { git = "https://github.com/dimforge/rapier", rev = "7efcff615e821d97957fe813d066567117c8e999" }

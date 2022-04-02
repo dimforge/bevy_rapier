@@ -7,7 +7,7 @@ pub use self::systems::*;
 pub mod wrapper;
 use crate::rapier::data::{ComponentSet, ComponentSetMut, ComponentSetOption, Index};
 //use crate::rapier::prelude::*;
-use crate::rapier::prelude::JointHandle;
+use crate::rapier::prelude::ImpulseJointHandle;
 use bevy::prelude::{Entity, Query};
 
 pub trait IntoHandle<H> {
@@ -34,14 +34,14 @@ impl IntoEntity for Index {
     }
 }
 
-impl IntoHandle<JointHandle> for Entity {
+impl IntoHandle<ImpulseJointHandle> for Entity {
     #[inline]
-    fn handle(self) -> JointHandle {
-        JointHandle::from_raw_parts(self.id(), self.generation())
+    fn handle(self) -> ImpulseJointHandle {
+        ImpulseJointHandle::from_raw_parts(self.id(), self.generation())
     }
 }
 
-impl IntoEntity for JointHandle {
+impl IntoEntity for ImpulseJointHandle {
     fn entity(self) -> Entity {
         self.0.entity()
     }

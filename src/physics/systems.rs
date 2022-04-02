@@ -13,7 +13,7 @@ use crate::physics::wrapper::{
     RigidBodyCcdComponent, RigidBodyChangesComponent, RigidBodyCollidersComponent,
     RigidBodyIdsComponent, RigidBodyMassPropsComponent, RigidBodyPositionComponent,
 };
-use crate::prelude::{ContactEvent, IntersectionEvent};
+use crate::prelude::CollisionEvent;
 use crate::rapier::data::ComponentSetOption;
 
 use crate::rapier::pipeline::QueryPipeline;
@@ -218,10 +218,7 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
         ResMut<JointsEntityMap>,
     ),
     hooks: Res<PhysicsHooksWithQueryObject<UserData>>,
-    (intersection_events, contact_events): (
-        EventWriter<IntersectionEvent>,
-        EventWriter<ContactEvent>,
-    ),
+    collision_events: EventWriter<CollisionEvent>,
     user_data: Query<UserData>,
     mut position_sync_query: Query<(Entity, &mut RigidBodyPositionSync)>,
     mut bodies_query: RigidBodyComponentsQuerySet,
@@ -236,8 +233,7 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
     use std::mem::replace;
 
     let events = EventQueue {
-        intersection_events: RwLock::new(intersection_events),
-        contact_events: RwLock::new(contact_events),
+        collision_events: RwLock::new(collision_events),
     };
     modifs_tracker.detect_removals(removed_bodies, removed_colliders, removed_joints);
     modifs_tracker.detect_modifications(bodies_query.q1(), colliders_query.q1());
