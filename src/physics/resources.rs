@@ -342,7 +342,7 @@ pub struct PhysicsHooksWithQueryObject<UserData: WorldQuery>(
     pub Box<dyn PhysicsHooksWithQuery<UserData>>,
 );
 
-pub(crate) struct PhysicsHooksWithQueryInstance<'world, 'state, 'b, UserData: WorldQuery> {
+pub struct PhysicsHooksWithQueryInstance<'world, 'state, 'b, UserData: WorldQuery> {
     pub user_data: Query<'world, 'state, UserData>,
     pub hooks: &'b dyn PhysicsHooksWithQuery<UserData>,
 }
