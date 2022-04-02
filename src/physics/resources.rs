@@ -13,8 +13,8 @@ use bevy::prelude::*;
 use rapier::data::{ComponentSet, ComponentSetMut};
 use rapier::prelude::{
     CollisionEvent, ContactModificationContext, ContactPair, EventHandler, ImpulseJointHandle,
-    ImpulseJointSet, IslandManager, MultibodyJointSet, PairFilterContext,
-    PhysicsHooks, SolverFlags, Vector,
+    ImpulseJointSet, IslandManager, MultibodyJointSet, PairFilterContext, PhysicsHooks,
+    SolverFlags, Vector,
 };
 use rapier::{dynamics, geometry};
 use std::collections::HashMap;
