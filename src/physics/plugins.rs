@@ -6,7 +6,7 @@ use crate::physics::{
 use crate::prelude::IntersectionEvent;
 use crate::rapier::geometry::ContactEvent;
 use crate::rapier::pipeline::QueryPipeline;
-use bevy::app::Events;
+use bevy::ecs::event::Events;
 use bevy::ecs::query::WorldQuery;
 use bevy::prelude::*;
 use rapier::dynamics::{
