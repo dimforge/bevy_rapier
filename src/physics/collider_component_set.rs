@@ -110,14 +110,14 @@ pub type ColliderChangesQueryFilter = (
     )>,
 );
 
-pub type ColliderComponentsQuerySet<'world, 'state, 'a> = QuerySet<
+pub type ColliderComponentsQuerySet<'world, 'state, 'a> = ParamSet<
     'world,
     'state,
     (
         // Components query
-        QueryState<ColliderComponentsQueryPayload<'a>>,
+        Query<'world, 'state, ColliderComponentsQueryPayload<'a>>,
         // Changes query
-        QueryState<ColliderChangesQueryPayload<'a>, ColliderChangesQueryFilter>,
+        Query<'world, 'state, ColliderChangesQueryPayload<'a>, ColliderChangesQueryFilter>,
     ),
 >;
 

@@ -73,14 +73,14 @@ pub type RigidBodyChangesQueryFilter = (
     )>,
 );
 
-pub type RigidBodyComponentsQuerySet<'world, 'state, 'a> = QuerySet<
+pub type RigidBodyComponentsQuerySet<'world, 'state, 'a> = ParamSet<
     'world,
     'state,
     (
         // Components query
-        QueryState<RigidBodyComponentsQueryPayload<'a>>,
+        Query<'world, 'state, RigidBodyComponentsQueryPayload<'a>>,
         // Changes query
-        QueryState<RigidBodyChangesQueryPayload<'a>, RigidBodyChangesQueryFilter>,
+        Query<'world, 'state, RigidBodyChangesQueryPayload<'a>, RigidBodyChangesQueryFilter>,
     ),
 >;
 

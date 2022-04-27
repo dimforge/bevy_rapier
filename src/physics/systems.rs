@@ -18,7 +18,7 @@ use crate::rapier::data::ComponentSetOption;
 
 use crate::rapier::pipeline::QueryPipeline;
 use bevy::ecs::entity::Entities;
-use bevy::ecs::query::{QueryState, WorldQuery};
+use bevy::ecs::query::WorldQuery;
 use bevy::prelude::*;
 use rapier::dynamics::{
     CCDSolver, ImpulseJointSet, IntegrationParameters, IslandManager, MultibodyJointSet,
@@ -240,10 +240,10 @@ pub fn step_world_system<UserData: 'static + WorldQuery>(
         contact_events: RwLock::new(contact_events),
     };
     modifs_tracker.detect_removals(removed_bodies, removed_colliders, removed_joints);
-    modifs_tracker.detect_modifications(bodies_query.q1(), colliders_query.q1());
+    modifs_tracker.detect_modifications(bodies_query.p1(), colliders_query.p1());
 
-    let mut rigid_body_components_set = RigidBodyComponentsSet(bodies_query.q0());
-    let mut collider_components_set = ColliderComponentsSet(colliders_query.q0());
+    let mut rigid_body_components_set = RigidBodyComponentsSet(bodies_query.p0());
+    let mut collider_components_set = ColliderComponentsSet(colliders_query.p0());
 
     modifs_tracker.propagate_removals(
         &entities,
@@ -385,15 +385,15 @@ pub fn sync_transforms(
     integration_parameters: Res<IntegrationParameters>,
     rigid_body_sync_mode: Query<&RigidBodyPositionSync>,
     // TODO: add some Changed filters to only sync when something moved?
-    mut sync_query: QuerySet<(
-        QueryState<(
+    mut sync_query: ParamSet<(
+        Query<(
             Entity,
             &RigidBodyPositionComponent,
             &RigidBodyPositionSync,
             Option<&mut Transform>,
             Option<&mut GlobalTransform>,
         )>,
-        QueryState<(
+        Query<(
             Entity,
             &ColliderPositionComponent,
             &ColliderPositionSync,
@@ -408,7 +408,7 @@ pub fn sync_transforms(
     let alpha = dt / sim_dt;
 
     // Sync bodies.
-    for (entity, rb_pos, sync_mode, mut transform, global_transform) in sync_query.q0().iter_mut() {
+    for (entity, rb_pos, sync_mode, mut transform, global_transform) in sync_query.p0().iter_mut() {
         let mut new_transform = transform
             .as_deref_mut()
             .map(|t| t.clone())
@@ -445,7 +445,7 @@ pub fn sync_transforms(
 
     // Sync colliders.
     for (entity, co_pos, _, co_parent, mut transform, mut global_transform) in
-        QuerySet::<(_, _)>::q1(&mut sync_query).iter_mut()
+        ParamSet::<(_, _)>::p1(&mut sync_query).iter_mut()
     {
         let mut new_transform = transform
             .as_deref_mut()
