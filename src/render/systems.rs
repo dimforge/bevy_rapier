@@ -97,7 +97,7 @@ fn generate_collider_mesh(co_shape: &ColliderShapeComponent) -> Option<(Mesh, Ve
             let mut mesh =
                 Mesh::new(bevy::render::render_resource::PrimitiveTopology::TriangleList);
             let trimesh = co_shape.as_trimesh().unwrap();
-            mesh.set_attribute(
+            mesh.insert_attribute(
                 Mesh::ATTRIBUTE_POSITION,
                 VertexAttributeValues::from(
                     trimesh
@@ -122,7 +122,7 @@ fn generate_collider_mesh(co_shape: &ColliderShapeComponent) -> Option<(Mesh, Ve
             let mut mesh =
                 Mesh::new(bevy::render::render_resource::PrimitiveTopology::TriangleList);
             let trimesh = co_shape.as_trimesh().unwrap();
-            mesh.set_attribute(
+            mesh.insert_attribute(
                 Mesh::ATTRIBUTE_POSITION,
                 VertexAttributeValues::from(
                     trimesh
@@ -153,10 +153,10 @@ fn generate_collider_mesh(co_shape: &ColliderShapeComponent) -> Option<(Mesh, Ve
                     [normal.x, normal.y, normal.z]
                 })
                 .collect();
-            mesh.set_attribute(Mesh::ATTRIBUTE_NORMAL, VertexAttributeValues::from(normals));
+            mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, VertexAttributeValues::from(normals));
             // There's nothing particularly meaningful we can do
             // for this one without knowing anything about the overall topology.
-            mesh.set_attribute(
+            mesh.insert_attribute(
                 Mesh::ATTRIBUTE_UV_0,
                 VertexAttributeValues::from(
                     trimesh
