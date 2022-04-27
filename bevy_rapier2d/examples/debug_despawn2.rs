@@ -12,8 +12,8 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
         .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
-        .add_startup_system(setup_game.system())
-        .add_system(cube_sleep_detection.system())
+        .add_startup_system(setup_game)
+        .add_system(cube_sleep_detection)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .run();
 }

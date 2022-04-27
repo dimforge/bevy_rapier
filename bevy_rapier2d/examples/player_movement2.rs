@@ -11,8 +11,8 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
-        .add_startup_system(spawn_player.system())
-        .add_system(player_movement.system())
+        .add_startup_system(spawn_player)
+        .add_system(player_movement)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .run();
 }
