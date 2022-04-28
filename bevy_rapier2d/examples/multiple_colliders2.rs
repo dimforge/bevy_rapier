@@ -1,12 +1,5 @@
-extern crate rapier2d as rapier; // For the debug UI.
-
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-
-use ui::DebugUiPlugin;
-
-#[path = "../../src_debug_ui/mod.rs"]
-mod ui;
 
 fn main() {
     App::new()
@@ -17,53 +10,34 @@ fn main() {
         )))
         .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierRenderPlugin)
-        .add_plugin(DebugUiPlugin)
-        .add_startup_system(setup_graphics.system())
-        .add_startup_system(setup_physics.system())
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
+        .add_plugin(RapierDebugRenderPlugin::default())
+        .add_startup_system(setup_graphics)
+        .add_startup_system(setup_physics)
         .run();
 }
 
-fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
-    configuration.scale = 10.0;
-
-    let mut camera = OrthographicCameraBundle::new_2d();
-    camera.transform = Transform::from_translation(Vec3::new(0.0, 200.0, 0.0));
-    commands.spawn_bundle(PointLightBundle {
-        transform: Transform::from_translation(Vec3::new(1000.0, 10.0, 2000.0)),
-        point_light: PointLight {
-            intensity: 100_000_000_.0,
-            range: 6000.0,
-            ..Default::default()
-        },
-        ..Default::default()
-    });
-    commands.spawn_bundle(camera);
+fn setup_graphics(mut commands: Commands) {
+    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 }
 
 pub fn setup_physics(mut commands: Commands) {
     /*
      * Ground
      */
-    let ground_size = 50.0;
-    let ground_height = 0.1;
+    let ground_size = 500.0;
+    let ground_height = 1.0;
 
-    let collider = ColliderBundle {
-        position: [0.0, -ground_height].into(),
-        shape: ColliderShape::cuboid(ground_size, ground_height).into(),
-        ..Default::default()
-    };
     commands
-        .spawn_bundle(collider)
-        .insert(ColliderDebugRender::default())
-        .insert(ColliderPositionSync::Discrete);
+        .spawn()
+        .insert(Collider::cuboid(ground_size, ground_height))
+        .insert(Transform::from_xyz(0.0, -ground_height, 0.0));
 
     /*
      * Create the cubes
      */
     let num = 4;
-    let rad = 0.2;
+    let rad = 2.0;
 
     let shift = rad * 4.0 + rad;
     let centerx = shift * (num / 2) as f32;
@@ -78,42 +52,21 @@ pub fn setup_physics(mut commands: Commands) {
             let y = j as f32 * (shift * 5.0) + centery + 3.0;
             color += 1;
 
-            // Build the rigid body.
-            let rigid_body = RigidBodyBundle {
-                position: [x, y].into(),
-                ..Default::default()
-            };
-
-            // Attach multiple colliders to this rigid-body using Bevy hierarchy.
-            let collider1 = ColliderBundle {
-                shape: ColliderShape::cuboid(rad * 10.0, rad).into(),
-                ..Default::default()
-            };
-            let collider2 = ColliderBundle {
-                shape: ColliderShape::cuboid(rad, rad * 10.0).into(),
-                position: [rad * 10.0, rad * 10.0].into(),
-                ..Default::default()
-            };
-            let collider3 = ColliderBundle {
-                shape: ColliderShape::cuboid(rad, rad * 10.0).into(),
-                position: [-rad * 10.0, rad * 10.0].into(),
-                ..Default::default()
-            };
-
-            commands.spawn_bundle(rigid_body).with_children(|parent| {
-                parent
-                    .spawn_bundle(collider1)
-                    .insert(ColliderDebugRender::with_id(color))
-                    .insert(ColliderPositionSync::Discrete);
-                parent
-                    .spawn_bundle(collider2)
-                    .insert(ColliderDebugRender::with_id(color))
-                    .insert(ColliderPositionSync::Discrete);
-                parent
-                    .spawn_bundle(collider3)
-                    .insert(ColliderDebugRender::with_id(color))
-                    .insert(ColliderPositionSync::Discrete);
-            });
+            commands
+                .spawn()
+                .insert(RigidBody::Dynamic)
+                .insert(Transform::from_xyz(x, y, 0.0))
+                .with_children(|children| {
+                    children.spawn().insert(Collider::cuboid(rad * 10.0, rad));
+                    children
+                        .spawn()
+                        .insert(Collider::cuboid(rad, rad * 10.0))
+                        .insert(Transform::from_xyz(rad * 10.0, rad * 10.0, 0.0));
+                    children
+                        .spawn()
+                        .insert(Collider::cuboid(rad, rad * 10.0))
+                        .insert(Transform::from_xyz(-rad * 10.0, rad * 10.0, 0.0));
+                });
         }
 
         offset -= 0.05 * rad * (num as f32 - 1.0);

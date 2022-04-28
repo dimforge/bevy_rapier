@@ -1,14 +1,5 @@
-extern crate rapier2d as rapier; // For the debug UI.
-
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-
-use nalgebra::Isometry2;
-use rapier2d::pipeline::PhysicsPipeline;
-use ui::DebugUiPlugin;
-
-#[path = "../../src_debug_ui/mod.rs"]
-mod ui;
 
 fn main() {
     App::new()
@@ -19,33 +10,19 @@ fn main() {
         )))
         .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierRenderPlugin)
-        .add_plugin(DebugUiPlugin)
-        .add_startup_system(setup_graphics.system())
-        .add_startup_system(setup_physics.system())
-        .add_startup_system(enable_physics_profiling.system())
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
+        .add_plugin(RapierDebugRenderPlugin::default())
+        .add_startup_system(setup_graphics)
+        .add_startup_system(setup_physics)
         .run();
 }
 
-fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
-    pipeline.counters.enable()
-}
-
-fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
-    configuration.scale = 40.0;
-
+fn setup_graphics(mut commands: Commands) {
     let mut camera = OrthographicCameraBundle::new_2d();
-    camera.transform = Transform::from_translation(Vec3::new(0.0, 30.0, 0.0));
-    commands.spawn_bundle(PointLightBundle {
-        transform: Transform::from_translation(Vec3::new(1000.0, 10.0, 2000.0)),
-        point_light: PointLight {
-            intensity: 100_000_000_.0,
-            range: 6000.0,
-            ..Default::default()
-        },
-        ..Default::default()
-    });
+    camera.transform = Transform {
+        translation: Vec3::new(0.0, 200.0, 0.0),
+        ..Transform::identity()
+    };
     commands.spawn_bundle(camera);
 }
 
@@ -53,52 +30,31 @@ pub fn setup_physics(mut commands: Commands) {
     /*
      * The ground
      */
-    let ground_size = 5.0;
-    let ground_height = 0.1;
+    let ground_size = 500.0;
+    let ground_height = 10.0;
 
-    let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(ground_size, ground_height).into(),
-        position: [0.0, -ground_height].into(),
-        ..Default::default()
-    };
     commands
-        .spawn_bundle(collider)
-        .insert(ColliderPositionSync::Discrete)
-        .insert(ColliderDebugRender::default());
+        .spawn()
+        .insert(Collider::cuboid(ground_size, ground_height))
+        .insert(Transform::from_xyz(0.0, -ground_height, 0.0));
 
     /*
      * A rectangle that only rotate.
      */
-    let rigid_body = RigidBodyBundle {
-        position: [0.0, 3.0].into(),
-        mass_properties: RigidBodyMassPropsFlags::TRANSLATION_LOCKED.into(),
-        ..Default::default()
-    };
-    let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(2.0, 0.6).into(),
-        ..Default::default()
-    };
     commands
-        .spawn_bundle(rigid_body)
-        .insert_bundle(collider)
-        .insert(ColliderPositionSync::Discrete)
-        .insert(ColliderDebugRender::with_id(0));
+        .spawn()
+        .insert(RigidBody::Dynamic)
+        .insert(LockedAxes::TRANSLATION_LOCKED)
+        .insert(Collider::cuboid(200.0, 60.0))
+        .insert(Transform::from_xyz(0.0, 300.0, 0.0));
 
     /*
      * A tilted cuboid that cannot rotate.
      */
-    let rigid_body = RigidBodyBundle {
-        position: Isometry2::new([0.3, 5.0].into(), 1.0).into(),
-        mass_properties: RigidBodyMassPropsFlags::ROTATION_LOCKED.into(),
-        ..Default::default()
-    };
-    let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(0.6, 0.4).into(),
-        ..Default::default()
-    };
     commands
-        .spawn_bundle(rigid_body)
-        .insert_bundle(collider)
-        .insert(ColliderPositionSync::Discrete)
-        .insert(ColliderDebugRender::with_id(1));
+        .spawn()
+        .insert(RigidBody::Dynamic)
+        .insert(LockedAxes::ROTATION_LOCKED)
+        .insert(Collider::cuboid(60.0, 40.0))
+        .insert(Transform::from_xyz(50.0, 500.0, 0.0).with_rotation(Quat::from_rotation_z(1.0)));
 }

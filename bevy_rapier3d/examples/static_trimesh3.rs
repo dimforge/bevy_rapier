@@ -1,17 +1,7 @@
-extern crate rapier3d as rapier; // For the debug UI.
-
 use std::f32::consts::TAU;
 
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
-
-use rapier::geometry::{ColliderMaterial, ColliderShape};
-use rapier3d::dynamics::IntegrationParameters;
-use rapier3d::pipeline::PhysicsPipeline;
-use ui::DebugUiPlugin;
-
-#[path = "../../src_debug_ui/mod.rs"]
-mod ui;
 
 fn main() {
     App::new()
@@ -23,52 +13,24 @@ fn main() {
         .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierRenderPlugin)
-        .add_plugin(DebugUiPlugin)
-        .add_startup_system(setup_graphics.system())
-        .add_startup_system(setup_physics.system())
-        .add_startup_system(enable_physics_profiling.system())
+        .add_plugin(RapierDebugRenderPlugin::default())
+        .add_startup_system(setup_graphics)
+        .add_startup_system(setup_physics)
         .insert_resource(BallState::default())
-        .add_system(ball_spawner.system())
+        .add_system(ball_spawner)
         .run();
 }
 
-fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
-    pipeline.counters.enable()
-}
-
 fn setup_graphics(mut commands: Commands) {
-    const HALF_SIZE: f32 = 100.0;
-
-    commands.spawn_bundle(DirectionalLightBundle {
-        directional_light: DirectionalLight {
-            illuminance: 10000.0,
-            // Configure the projection to better fit the scene
-            shadow_projection: OrthographicProjection {
-                left: -HALF_SIZE,
-                right: HALF_SIZE,
-                bottom: -HALF_SIZE,
-                top: HALF_SIZE,
-                near: -10.0 * HALF_SIZE,
-                far: 100.0 * HALF_SIZE,
-                ..Default::default()
-            },
-            shadows_enabled: true,
-            ..Default::default()
-        },
-        transform: Transform {
-            translation: Vec3::new(10.0, 2.0, 10.0),
-            rotation: Quat::from_rotation_x(-std::f32::consts::FRAC_PI_4),
-            ..Default::default()
-        },
-        ..Default::default()
-    });
     commands.spawn_bundle(PerspectiveCameraBundle {
-        transform: Transform::from_matrix(Mat4::face_toward(
-            Vec3::new(-15.0, 8.0, 15.0),
-            Vec3::new(-5.0, 0.0, 5.0),
-            Vec3::new(0.0, 1.0, 0.0),
-        )),
+        transform: Transform::from_matrix(
+            Mat4::look_at_rh(
+                Vec3::new(-15.0, 8.0, 15.0),
+                Vec3::new(-5.0, 0.0, 5.0),
+                Vec3::new(0.0, 1.0, 0.0),
+            )
+            .inverse(),
+        ),
         ..Default::default()
     });
 }
@@ -78,41 +40,38 @@ fn ramp_size() -> Vec3 {
 }
 
 pub fn setup_physics(mut commands: Commands) {
-    use bevy_rapier3d::na::Point3;
-
     // Create the ramp.
-    let mut vertices: Vec<Point3<f32>> = Vec::new();
+    let mut vertices: Vec<Vec3> = Vec::new();
     let mut indices: Vec<[u32; 3]> = Vec::new();
     let segments = 32;
     let ramp_size = ramp_size();
+
     for i in 0..=segments {
         // Half cosine wave vertically (with middle of low point at origin)
         let x = i as f32 / segments as f32 * ramp_size.x;
         let y = (-(i as f32 / segments as f32 * TAU / 2.0).cos() + 1.0) * ramp_size.y / 2.0;
-        vertices.push(Point3::new(x, y, -ramp_size.z / 2.0));
-        vertices.push(Point3::new(x, y, ramp_size.z / 2.0));
+        vertices.push(Vec3::new(x, y, -ramp_size.z / 2.0));
+        vertices.push(Vec3::new(x, y, ramp_size.z / 2.0));
     }
     for i in 0..segments {
         // Two triangles making up a flat quad for each segment of the ramp.
         indices.push([2 * i + 0, 2 * i + 1, 2 * i + 2]);
         indices.push([2 * i + 2, 2 * i + 1, 2 * i + 3]);
     }
-    let collider = ColliderBundle {
-        shape: ColliderShape::trimesh(vertices, indices).into(),
-        ..Default::default()
-    };
+
     commands
-        .spawn_bundle(collider)
-        .insert(ColliderDebugRender::default())
-        .insert(ColliderPositionSync::Discrete);
+        .spawn()
+        .insert(Collider::trimesh(vertices, indices));
 
     // Create a bowl with a cosine cross-section,
     // so that we can join the end of the ramp smoothly
     // to the lip of the bowl.
-    let mut vertices: Vec<Point3<f32>> = Vec::new();
+    let mut vertices: Vec<Vec3> = Vec::new();
     let mut indices: Vec<[u32; 3]> = Vec::new();
+
     let segments = 32;
     let bowl_size = Vec3::new(10.0, 3.0, 10.0);
+
     for ix in 0..=segments {
         for iz in 0..=segments {
             // Map x and y into range [-1.0, 1.0];
@@ -123,7 +82,7 @@ pub fn setup_physics(mut commands: Commands) {
             let x = shifted_x * bowl_size.x / 2.0;
             let z = shifted_z * bowl_size.z / 2.0;
             let y = ((clamped_radius - 0.5) * TAU / 2.0).sin() * bowl_size.y / 2.0;
-            vertices.push(Point3::new(x, y, z));
+            vertices.push(Vec3::new(x, y, z));
         }
     }
     for ix in 0..segments {
@@ -138,20 +97,14 @@ pub fn setup_physics(mut commands: Commands) {
     }
     // Position so ramp connects smoothly
     // to one edge of the lip of the bowl.
-    let collider = ColliderBundle {
-        shape: ColliderShape::trimesh(vertices, indices).into(),
-        position: [
+    commands
+        .spawn()
+        .insert(Collider::trimesh(vertices, indices))
+        .insert(Transform::from_xyz(
             -bowl_size.x / 2.0,
             -bowl_size.y / 2.0,
             bowl_size.z / 2.0 - ramp_size.z / 2.0,
-        ]
-        .into(),
-        ..Default::default()
-    };
-    commands
-        .spawn_bundle(collider)
-        .insert(ColliderDebugRender::default())
-        .insert(ColliderPositionSync::Discrete);
+        ));
 }
 
 struct BallState {
@@ -174,7 +127,7 @@ impl Default for BallState {
 
 fn ball_spawner(
     mut commands: Commands,
-    integration_parameters: Res<IntegrationParameters>,
+    rapier_context: Res<RapierContext>,
     mut ball_state: ResMut<BallState>,
 ) {
     if ball_state.balls_spawned >= ball_state.max_balls {
@@ -183,7 +136,7 @@ fn ball_spawner(
 
     // NOTE: The timing here only works properly with `time_dependent_number_of_timesteps`
     // disabled, as it is for examples.
-    ball_state.seconds_until_next_spawn -= integration_parameters.dt;
+    ball_state.seconds_until_next_spawn -= rapier_context.integration_parameters.dt;
     if ball_state.seconds_until_next_spawn > 0.0 {
         return;
     }
@@ -192,21 +145,17 @@ fn ball_spawner(
     // Spawn a ball near the top of the ramp.
     let ramp_size = ramp_size();
     let rad = 0.3;
-    let rigid_body = RigidBodyBundle {
-        position: [ramp_size.x * 0.9, ramp_size.y / 2.0 + rad * 3.0, 0.0].into(),
-        ..Default::default()
-    };
-    let collider = ColliderBundle {
-        shape: ColliderShape::ball(rad).into(),
-        material: ColliderMaterial::new(1.0, 0.5).into(),
-        ..Default::default()
-    };
 
     commands
-        .spawn_bundle(collider)
-        .insert_bundle(rigid_body)
-        .insert(ColliderDebugRender::with_id(0))
-        .insert(ColliderPositionSync::Discrete);
+        .spawn()
+        .insert(RigidBody::Dynamic)
+        .insert(Collider::ball(rad))
+        .insert(Restitution::new(0.5))
+        .insert(Transform::from_xyz(
+            ramp_size.x * 0.9,
+            ramp_size.y / 2.0 + rad * 3.0,
+            0.0,
+        ));
 
     ball_state.balls_spawned += 1;
 }

@@ -9,7 +9,7 @@ repository = "https://github.com/dimforge/bevy_rapier"
 readme = "README.md"
 keywords = [ "physics", "dynamics", "rigid", "real-time", "joints" ]
 license = "Apache-2.0"
-edition = "2018"
+edition = "2021"
 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -18,22 +18,27 @@ path = "../src/lib.rs"
 required-features = [ "dim3" ]
 
 [features]
-default = [ "dim3", "render" ]
+default = [ "dim3", "debug-render" ]
 dim3 = []
-render = [ "bevy/render" ]
+debug-render = [ "bevy/render", "rapier3d/debug-render" ]
 parallel = [ "rapier3d/parallel" ]
 simd-stable = [ "rapier3d/simd-stable" ]
 simd-nightly = [ "rapier3d/simd-nightly" ]
 wasm-bindgen = [ "rapier3d/wasm-bindgen" ]
-serde-serialize = [ "rapier3d/serde-serialize" ]
+serde-serialize = [ "rapier3d/serde-serialize", "serde" ]
 enhanced-determinism = [ "rapier3d/enhanced-determinism" ]
 
 [dependencies]
-bevy = { version = "0.6", default-features = false }
+bevy = { version = "0.7", default-features = false }
 nalgebra = { version = "0.30.1", features = [ "convert-glam020" ] }
 # Don't enable the default features because we don't need the ColliderSet/RigidBodySet
-rapier3d = { version = "^0.12.0-alpha.0", default-features = false, features = [ "dim3", "f32" ] }
+rapier3d = "0.12.0-alpha.0"
+bitflags = "1"
+#bevy_prototype_debug_lines = { version = "0.6", features = ["3d"], optional = true }
+log = "0.4"
+serde = { version = "1", features = [ "derive" ], optional = true}
 
 [dev-dependencies]
+bevy = "0.7"
 #bevy_wgpu = "0.5"
 #bevy_winit = { version = "0.5", features = [ "x11" ] }

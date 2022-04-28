@@ -1,0 +1,163 @@
+use crate::pipeline::{CollisionEvent, PhysicsHooksWithQueryResource};
+use crate::plugin::configuration::SimulationToRenderTime;
+use crate::plugin::{systems, RapierConfiguration, RapierContext};
+use bevy::ecs::{event::Events, query::WorldQuery};
+use bevy::prelude::*;
+use std::marker::PhantomData;
+
+pub type NoUserData = ();
+pub struct RapierPhysicsPlugin<PhysicsHooksData = ()> {
+    physics_scale: f32,
+    _phantom: PhantomData<PhysicsHooksData>,
+}
+
+impl<PhysicsHooksData> RapierPhysicsPlugin<PhysicsHooksData> {
+    /// Specifies a scale ratio between the physics world and the bevy transforms.
+    ///
+    /// This affects the size of every elements in the physics engine, by multiplying
+    /// all the length-related quantities by the `physics_scale` factor. This should
+    /// likely always be 1.0 in 3D. In 2D, this is useful to specify a "pixels-per-meter"
+    /// conversion ratio.
+    pub fn with_physics_scale(physics_scale: f32) -> Self {
+        Self {
+            physics_scale,
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Specifies how many pixels on the 2D canvas equal one meter on the physics world.
+    ///
+    /// This conversion unit assumes that the 2D camera uses an unscaled projection.
+    #[cfg(feature = "dim2")]
+    pub fn pixels_per_meter(pixels_per_meter: f32) -> Self {
+        Self {
+            physics_scale: pixels_per_meter,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+#[cfg(feature = "dim3")]
+impl<PhysicsHooksData> Default for RapierPhysicsPlugin<PhysicsHooksData> {
+    fn default() -> Self {
+        Self {
+            physics_scale: 1.0,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
+pub enum RapierPhysicsSystem {
+    ApplyScale,
+    ApplyColliderUserChanges,
+    ApplyRigidBodyUserChanges,
+    ApplyJointUserChanges,
+    InitAsyncShapes,
+    InitRigidBodies,
+    InitColliders,
+    InitJoints,
+    DetectDespawn,
+    StepSimulation,
+    WritebackRigidBodies,
+}
+
+#[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
+pub enum PhysicsStages {
+    StepSimulation,
+    DetectDespawn,
+}
+
+impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
+    for RapierPhysicsPlugin<PhysicsHooksData>
+{
+    fn build(&self, app: &mut App) {
+        let mut context = RapierContext::default();
+        context.physics_scale = self.physics_scale;
+
+        app.add_stage_before(
+            CoreStage::Update,
+            PhysicsStages::StepSimulation,
+            SystemStage::parallel(),
+        );
+        app.add_stage_before(
+            CoreStage::Last,
+            PhysicsStages::DetectDespawn,
+            SystemStage::parallel(),
+        );
+        app.insert_resource(RapierConfiguration::default())
+            .insert_resource(SimulationToRenderTime::default())
+            .insert_resource(context)
+            .insert_resource(Events::<CollisionEvent>::default())
+            .add_system_set_to_stage(
+                PhysicsStages::StepSimulation,
+                SystemSet::new()
+                    .with_system(
+                        systems::init_async_shapes.label(RapierPhysicsSystem::InitAsyncShapes),
+                    )
+                    .with_system(
+                        systems::apply_scale
+                            .label(RapierPhysicsSystem::ApplyScale)
+                            .after(RapierPhysicsSystem::InitAsyncShapes),
+                    )
+                    .with_system(
+                        systems::apply_collider_user_changes
+                            .label(RapierPhysicsSystem::ApplyColliderUserChanges)
+                            .after(RapierPhysicsSystem::ApplyScale),
+                    )
+                    .with_system(
+                        systems::apply_rigid_body_user_changes
+                            .label(RapierPhysicsSystem::ApplyRigidBodyUserChanges)
+                            .after(RapierPhysicsSystem::ApplyColliderUserChanges),
+                    )
+                    .with_system(
+                        systems::apply_joint_user_changes
+                            .label(RapierPhysicsSystem::ApplyJointUserChanges)
+                            .after(RapierPhysicsSystem::ApplyRigidBodyUserChanges),
+                    )
+                    .with_system(
+                        systems::init_rigid_bodies
+                            .label(RapierPhysicsSystem::InitRigidBodies)
+                            .after(RapierPhysicsSystem::ApplyJointUserChanges),
+                    )
+                    .with_system(
+                        systems::init_colliders
+                            .label(RapierPhysicsSystem::InitColliders)
+                            .after(RapierPhysicsSystem::InitRigidBodies)
+                            .after(RapierPhysicsSystem::InitAsyncShapes),
+                    )
+                    .with_system(
+                        systems::init_joints
+                            .label(RapierPhysicsSystem::InitJoints)
+                            .after(RapierPhysicsSystem::InitColliders),
+                    )
+                    .with_system(
+                        systems::sync_removals
+                            .label(RapierPhysicsSystem::DetectDespawn)
+                            .after(RapierPhysicsSystem::InitJoints),
+                    )
+                    .with_system(
+                        systems::step_simulation::<PhysicsHooksData>
+                            .label(RapierPhysicsSystem::StepSimulation)
+                            .after(RapierPhysicsSystem::DetectDespawn),
+                    )
+                    .with_system(
+                        systems::writeback_rigid_bodies
+                            .label(RapierPhysicsSystem::WritebackRigidBodies)
+                            .after(RapierPhysicsSystem::StepSimulation),
+                    ),
+            )
+            // NOTE: we run sync_removals at the end of the frame to, in order to make sure we don’t miss any `RemovedComponents`.
+            .add_system_to_stage(PhysicsStages::DetectDespawn, systems::sync_removals);
+
+        if app
+            .world
+            .get_resource::<PhysicsHooksWithQueryResource<PhysicsHooksData>>()
+            .is_none()
+        {
+            app.insert_resource(PhysicsHooksWithQueryResource::<PhysicsHooksData>(Box::new(
+                (),
+            )));
+        }
+    }
+}

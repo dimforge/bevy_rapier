@@ -1,0 +1,51 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cargo",
+			"command": "check",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"label": "rust: cargo check",
+			"presentation": {
+				"clear": true
+			}
+		},
+		{
+			"type": "cargo",
+			"command": "run",
+			"args": [
+				"--release",
+				"--example",
+				"boxes3"
+			],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"label": "dim3/boxes3",
+			"presentation": {
+				"clear": true
+			}
+		},
+		{
+			"type": "cargo",
+			"command": "run",
+			"args": [
+				"--release",
+				"--example",
+				"boxes2"
+			],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"label": "dim2/boxes2",
+			"presentation": {
+				"clear": true
+			}
+		}
+	]
+}

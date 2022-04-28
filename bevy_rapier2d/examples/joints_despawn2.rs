@@ -1,15 +1,5 @@
-extern crate rapier2d as rapier; // For the debug UI.
-
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-
-use nalgebra::Point2;
-use rapier2d::dynamics::{RevoluteJoint, RigidBodyType};
-use rapier2d::pipeline::PhysicsPipeline;
-use ui::DebugUiPlugin;
-
-#[path = "../../src_debug_ui/mod.rs"]
-mod ui;
 
 #[derive(Default)]
 pub struct DespawnResource {
@@ -26,114 +16,85 @@ fn main() {
         .insert_resource(Msaa::default())
         .insert_resource(DespawnResource::default())
         .add_plugins(DefaultPlugins)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierRenderPlugin)
-        .add_plugin(DebugUiPlugin)
-        .add_startup_system(setup_graphics.system())
-        .add_startup_system(setup_physics.system())
-        .add_startup_system(enable_physics_profiling.system())
-        .add_system(despawn.system())
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
+        .add_plugin(RapierDebugRenderPlugin::default())
+        .add_startup_system(setup_graphics)
+        .add_startup_system(setup_physics)
+        .add_system(despawn)
         .run();
 }
 
-fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
-    pipeline.counters.enable()
-}
-
 fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
-    configuration.scale = 12.0;
-
     let mut camera = OrthographicCameraBundle::new_2d();
-    camera.transform = Transform::from_translation(Vec3::new(200.0, -200.0, 0.0));
-    commands.spawn_bundle(PointLightBundle {
-        transform: Transform::from_translation(Vec3::new(1000.0, 10.0, 2000.0)),
-        point_light: PointLight {
-            intensity: 100_000_000_.0,
-            range: 6000.0,
-            ..Default::default()
-        },
-        ..Default::default()
-    });
+    camera.transform = Transform {
+        translation: Vec3::new(0.0, -200.0, 0.0),
+        ..Transform::identity()
+    };
     commands.spawn_bundle(camera);
 }
 
 pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource>) {
-    /*
-     * Create the balls
-     */
     // Build the rigid body.
-    // NOTE: a smaller radius (e.g. 0.1) breaks Box2D so
-    // in order to be able to compare rapier with Box2D,
-    // we set it to 0.4.
-    let rad = 0.4;
+    let rad = 4.0;
     let numi = 40; // Num vertical nodes.
     let numk = 40; // Num horizontal nodes.
-    let shift = 1.0;
+    let shift = 10.0;
 
     let mut body_entities = Vec::new();
-    let mut color = 0;
 
     for k in 0..numk {
         for i in 0..numi {
             let fk = k as f32;
             let fi = i as f32;
-            color += 1;
 
-            let body_type = if i == 0 && (k % 4 == 0 || k == numk - 1) {
-                RigidBodyType::Static
+            let rigid_body = if i == 0 && (k % 4 == 0 || k == numk - 1) {
+                RigidBody::Fixed
             } else {
-                RigidBodyType::Dynamic
+                RigidBody::Dynamic
             };
 
-            let rigid_body = RigidBodyBundle {
-                body_type: body_type.into(),
-                position: [fk * shift, -fi * shift].into(),
-                ..RigidBodyBundle::default()
-            };
-
-            let collider = ColliderBundle {
-                shape: ColliderShape::cuboid(rad, rad).into(),
-                ..ColliderBundle::default()
-            };
             let child_entity = commands
-                .spawn_bundle(rigid_body)
-                .insert_bundle(collider)
-                .insert(ColliderPositionSync::Discrete)
-                .insert(ColliderDebugRender::with_id(color))
+                .spawn()
+                .insert(rigid_body)
+                .insert(Transform::from_xyz(fk * shift, -fi * shift, 0.0))
+                .insert(Collider::cuboid(rad, rad))
                 .id();
+
             // Vertical joint.
             if i > 0 {
                 let parent_entity = *body_entities.last().unwrap();
-                let joint = RevoluteJoint::new().local_anchor2(Point2::new(0.0, shift));
-                let entity = commands
-                    .spawn()
-                    .insert_bundle((JointBuilderComponent::new(
-                        joint,
-                        parent_entity,
-                        child_entity,
-                    ),))
-                    .id();
-                if i == (numi / 2) || (k % 4 == 0 || k == numk - 1) {
-                    despawn.entities.push(entity);
-                }
+                let joint = RevoluteJointBuilder::new().local_anchor2(Vec2::new(0.0, shift));
+                commands.entity(child_entity).with_children(|cmd| {
+                    // NOTE: we want to attach multiple impulse joints to this entity, so
+                    //       we need to add the components to children of the entity. Otherwise
+                    //       the second joint component would just overwrite the first one.
+                    let entity = cmd
+                        .spawn()
+                        .insert(ImpulseJoint::new(parent_entity, joint))
+                        .id();
+                    if i == (numi / 2) || (k % 4 == 0 || k == numk - 1) {
+                        despawn.entities.push(entity);
+                    }
+                });
             }
 
             // Horizontal joint.
             if k > 0 {
                 let parent_index = body_entities.len() - numi;
                 let parent_entity = body_entities[parent_index];
-                let joint = RevoluteJoint::new().local_anchor2(Point2::new(-shift, 0.0));
-                let entity = commands
-                    .spawn()
-                    .insert_bundle((JointBuilderComponent::new(
-                        joint,
-                        parent_entity,
-                        child_entity,
-                    ),))
-                    .id();
-                if i == (numi / 2) || (k % 4 == 0 || k == numk - 1) {
-                    despawn.entities.push(entity);
-                }
+                let joint = RevoluteJointBuilder::new().local_anchor2(Vec2::new(-shift, 0.0));
+                commands.entity(child_entity).with_children(|cmd| {
+                    // NOTE: we want to attach multiple impulse joints to this entity, so
+                    //       we need to add the components to children of the entity. Otherwise
+                    //       the second joint component would just overwrite the first one.
+                    let entity = cmd
+                        .spawn()
+                        .insert(ImpulseJoint::new(parent_entity, joint))
+                        .id();
+                    if i == (numi / 2) || (k % 4 == 0 || k == numk - 1) {
+                        despawn.entities.push(entity);
+                    }
+                });
             }
 
             body_entities.push(child_entity);
@@ -142,7 +103,7 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
 }
 
 pub fn despawn(mut commands: Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
-    if time.seconds_since_startup() > 10.0 {
+    if time.seconds_since_startup() > 4.0 {
         for entity in &despawn.entities {
             println!("Despawning joint entity");
             commands.entity(*entity).despawn();
