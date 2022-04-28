@@ -1,5 +1,5 @@
 use crate::dynamics::{GenericJoint, GenericJointBuilder};
-use crate::math::{Real, Rot, Vect};
+use crate::math::{Real, Vect};
 use rapier::dynamics::{JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel};
 
 #[derive(Copy, Clone, Debug, PartialEq)]

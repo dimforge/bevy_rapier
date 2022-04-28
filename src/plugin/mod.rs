@@ -46,6 +46,6 @@ pub(crate) fn transform_to_iso(transform: &Transform, physics_scale: Real) -> Is
 pub(crate) fn transform_to_iso(transform: &Transform, physics_scale: Real) -> Isometry<Real> {
     Isometry::new(
         (transform.translation / physics_scale).into(),
-        transform.rotation.to_scaled_axis(),
+        transform.rotation.to_scaled_axis().into(),
     )
 }

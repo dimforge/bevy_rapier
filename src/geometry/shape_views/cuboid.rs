@@ -1,5 +1,5 @@
 use crate::math::Vect;
-use rapier::geometry::{Cuboid, RoundCuboid};
+use rapier::geometry::Cuboid;
 
 pub struct CuboidView<'a> {
     pub raw: &'a Cuboid,

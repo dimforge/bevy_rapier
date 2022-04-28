@@ -1,11 +1,6 @@
 use crate::dynamics::GenericJoint;
-use crate::math::{Real, Rot, Vect};
 use bevy::prelude::*;
-use rapier::dynamics::{
-    GenericJoint as RapierGenericJoint, ImpulseJointHandle, JointAxesMask, JointAxis, JointLimits,
-    JointMotor, MotorModel, MultibodyJointHandle,
-};
-use rapier::math::SPATIAL_DIM;
+use rapier::dynamics::{ImpulseJointHandle, MultibodyJointHandle};
 
 #[derive(Copy, Clone, Debug, Component)]
 pub struct RapierImpulseJointHandle(pub ImpulseJointHandle);

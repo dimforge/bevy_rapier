@@ -1,10 +1,8 @@
 use super::*;
 use crate::math::Vect;
-use rapier::geometry::{Ball, Capsule, RoundShape, SharedShape};
+use rapier::geometry::{RoundShape, SharedShape};
 use rapier::parry::either::Either;
 use rapier::parry::shape::TypedShape;
-#[cfg(feature = "dim3")]
-use rapier::prelude::{Cone, Cylinder};
 
 pub enum ColliderView<'a> {
     /// A ball shape.
@@ -85,9 +83,7 @@ impl<'a> Into<ColliderView<'a>> for TypedShape<'a> {
             TypedShape::Cylinder(s) => ColliderView::Cylinder(CylinderView { raw: s }),
             #[cfg(feature = "dim3")]
             TypedShape::Cone(s) => ColliderView::Cone(ConeView { raw: s }),
-            /// A cuboid with rounded corners.
             TypedShape::RoundCuboid(s) => ColliderView::RoundCuboid(RoundCuboidView { raw: s }),
-            /// A triangle with rounded corners.
             TypedShape::RoundTriangle(s) => {
                 ColliderView::RoundTriangle(RoundTriangleView { raw: s })
             }
@@ -101,10 +97,8 @@ impl<'a> Into<ColliderView<'a>> for TypedShape<'a> {
             TypedShape::RoundCylinder(s) => {
                 ColliderView::RoundCylinder(RoundCylinderView { raw: s })
             }
-            /// A cone with rounded corners.
             #[cfg(feature = "dim3")]
             TypedShape::RoundCone(s) => ColliderView::RoundCone(RoundConeView { raw: s }),
-            /// A convex polyhedron with rounded corners.
             #[cfg(feature = "dim3")]
             TypedShape::RoundConvexPolyhedron(s) => {
                 ColliderView::RoundConvexPolyhedron(RoundConvexPolyhedronView { raw: s })

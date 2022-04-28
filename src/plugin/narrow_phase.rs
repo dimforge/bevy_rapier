@@ -298,7 +298,7 @@ impl<'a> ContactPairView<'a> {
     }
 
     pub fn has_any_active_contacts(&self) -> bool {
-        self.has_any_active_contacts()
+        self.raw.has_any_active_contact
     }
 
     pub fn find_deepest_contact(&self) -> Option<(ContactManifoldView, ContactView)> {
