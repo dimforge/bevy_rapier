@@ -1,14 +1,5 @@
-extern crate rapier2d as rapier; // For the debug UI.
-
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-
-use nalgebra::Isometry2;
-use rapier2d::pipeline::PhysicsPipeline;
-use ui::DebugUiPlugin;
-
-#[path = "../../src_debug_ui/mod.rs"]
-mod ui;
 
 #[derive(Default)]
 pub struct DespawnResource {
@@ -31,35 +22,21 @@ fn main() {
         .insert_resource(DespawnResource::default())
         .insert_resource(ResizeResource::default())
         .add_plugins(DefaultPlugins)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierRenderPlugin)
-        .add_plugin(DebugUiPlugin)
-        .add_startup_system(setup_graphics.system())
-        .add_startup_system(setup_physics.system())
-        .add_startup_system(enable_physics_profiling.system())
-        .add_system(despawn.system())
-        .add_system(resize.system())
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
+        .add_plugin(RapierDebugRenderPlugin::default())
+        .add_startup_system(setup_graphics)
+        .add_startup_system(setup_physics)
+        .add_system(despawn)
+        .add_system(resize)
         .run();
 }
 
-fn enable_physics_profiling(mut pipeline: ResMut<PhysicsPipeline>) {
-    pipeline.counters.enable()
-}
-
 fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
-    configuration.scale = 10.0;
-
     let mut camera = OrthographicCameraBundle::new_2d();
-    camera.transform = Transform::from_translation(Vec3::new(0.0, 200.0, 0.0));
-    commands.spawn_bundle(PointLightBundle {
-        transform: Transform::from_translation(Vec3::new(1000.0, 10.0, 2000.0)),
-        point_light: PointLight {
-            intensity: 100_000_000_.0,
-            range: 6000.0,
-            ..Default::default()
-        },
-        ..Default::default()
-    });
+    camera.transform = Transform {
+        translation: Vec3::new(0.0, 20.0, 0.0),
+        ..Transform::identity()
+    };
     commands.spawn_bundle(camera);
 }
 
@@ -71,53 +48,29 @@ pub fn setup_physics(
     /*
      * Ground
      */
-    let ground_size = 25.0;
-
-    let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(ground_size, 1.2).into(),
-        ..Default::default()
-    };
+    let ground_size = 250.0;
 
     let entity = commands
-        .spawn_bundle(collider)
-        .insert(ColliderDebugRender::default())
-        .insert(ColliderPositionSync::Discrete)
+        .spawn()
+        .insert(Collider::cuboid(ground_size, 12.0))
         .id();
     despawn.entities.push(entity);
 
-    let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(ground_size * 2.0, 1.2).into(),
-        position: Isometry2::new(
-            [ground_size, ground_size * 2.0].into(),
-            std::f32::consts::FRAC_PI_2,
-        )
-        .into(),
-        ..Default::default()
-    };
     commands
-        .spawn_bundle(collider)
-        .insert(ColliderDebugRender::default())
-        .insert(ColliderPositionSync::Discrete);
+        .spawn()
+        .insert(Collider::cuboid(12.0, ground_size * 2.0))
+        .insert(Transform::from_xyz(ground_size, ground_size * 2.0, 0.0));
 
-    let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(ground_size * 2.0, 1.2).into(),
-        position: Isometry2::new(
-            [-ground_size, ground_size * 2.0].into(),
-            std::f32::consts::FRAC_PI_2,
-        )
-        .into(),
-        ..Default::default()
-    };
     commands
-        .spawn_bundle(collider)
-        .insert(ColliderDebugRender::default())
-        .insert(ColliderPositionSync::Discrete);
+        .spawn()
+        .insert(Collider::cuboid(12.0, ground_size * 2.0))
+        .insert(Transform::from_xyz(-ground_size, ground_size * 2.0, 0.0));
 
     /*
      * Create the cubes
      */
     let num = 20;
-    let rad = 0.5;
+    let rad = 5.0;
 
     let shift = rad * 2.0;
     let centerx = shift * (num as f32) / 2.0;
@@ -130,21 +83,11 @@ pub fn setup_physics(
             let y = j as f32 * shift + centery + 2.0;
             color += 1;
 
-            // Build the rigid body.
-            // Build the rigid body.
-            let body = RigidBodyBundle {
-                position: [x, y].into(),
-                ..Default::default()
-            };
-            let collider = ColliderBundle {
-                shape: ColliderShape::cuboid(rad, rad).into(),
-                ..Default::default()
-            };
             let entity = commands
-                .spawn_bundle(body)
-                .insert_bundle(collider)
-                .insert(ColliderDebugRender::with_id(color))
-                .insert(ColliderPositionSync::Discrete)
+                .spawn()
+                .insert(RigidBody::Dynamic)
+                .insert(Collider::cuboid(rad, rad))
+                .insert(Transform::from_xyz(x, y, 0.0))
                 .id();
 
             if (i + j * num) % 100 == 0 {
@@ -168,10 +111,9 @@ pub fn resize(mut commands: Commands, time: Res<Time>, mut resize: ResMut<Resize
     if time.seconds_since_startup() > 6.0 {
         for entity in &resize.entities {
             println!("Resizing a block");
-            let new_shape = ColliderShape::cuboid(2.0, 2.0);
             commands
                 .entity(*entity)
-                .insert(ColliderShapeComponent(new_shape));
+                .insert(Collider::cuboid(20.0, 20.0));
         }
         resize.entities.clear();
     }

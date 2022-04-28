@@ -12,28 +12,47 @@
 
 // #![deny(missing_docs)] // FIXME: deny this
 
+#[macro_use]
+#[cfg(feature = "serde-serialize")]
+extern crate serde;
+
 pub extern crate nalgebra as na;
 #[cfg(feature = "dim2")]
 pub extern crate rapier2d as rapier;
 #[cfg(feature = "dim3")]
 pub extern crate rapier3d as rapier;
+pub use rapier::parry;
 
-/// Plugins, resources, and components for physics simulation.
-pub mod physics;
-/// Plugins, resources, and components for debug rendering.
-#[cfg(feature = "render")]
+#[cfg(feature = "dim2")]
+pub mod math {
+    use bevy::math::Vec2;
+    pub type Real = rapier::math::Real;
+    pub type Vect = Vec2;
+    pub type Rot = Real;
+}
+
+#[cfg(feature = "dim3")]
+pub mod math {
+    use bevy::math::{Quat, Vec3};
+    pub type Real = rapier::math::Real;
+    pub type Vect = Vec3;
+    pub type Rot = Quat;
+}
+
+pub mod dynamics;
+pub mod geometry;
+pub mod pipeline;
+pub mod plugin;
+
+#[cfg(feature = "debug-render")]
 pub mod render;
 
 pub mod prelude {
-    pub use super::physics::wrapper::*;
-    pub use super::physics::{
-        ColliderBundle, ColliderComponentsSet, ColliderPositionSync, IntoEntity, IntoHandle,
-        JointBuilderComponent, NoUserData, PhysicsHooksWithQuery, PhysicsHooksWithQueryObject,
-        QueryPipelineColliderComponentsQuery, QueryPipelineColliderComponentsSet,
-        RapierConfiguration, RapierPhysicsPlugin, RigidBodyBundle, RigidBodyComponentsSet,
-        RigidBodyPositionSync,
-    };
-    #[cfg(feature = "render")]
-    pub use super::render::{ColliderDebugRender, RapierRenderPlugin};
-    pub use rapier::prelude::*;
+    pub use crate::dynamics::*;
+    pub use crate::geometry::*;
+    pub use crate::math::*;
+    pub use crate::pipeline::*;
+    pub use crate::plugin::*;
+    #[cfg(feature = "debug-render")]
+    pub use crate::render::*;
 }
