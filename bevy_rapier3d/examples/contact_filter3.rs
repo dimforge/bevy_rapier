@@ -52,7 +52,7 @@ fn setup_graphics(mut commands: Commands) {
                 Vec3::new(0.0, 10.0, 0.0),
                 Vec3::new(0.0, 1.0, 0.0),
             )
-            .invers(),
+            .inverse(),
         ),
         ..Default::default()
     });

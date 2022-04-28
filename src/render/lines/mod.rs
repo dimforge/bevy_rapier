@@ -81,7 +81,7 @@ pub(crate) struct DebugLinesConfig {
 ///
 /// # Usage
 ///
-/// ```
+/// ```.ignore
 /// use bevy::prelude::*;
 /// use bevy_prototype_debug_lines::*;
 ///
@@ -93,7 +93,7 @@ pub(crate) struct DebugLinesConfig {
 ///
 /// Alternatively, you can initialize the plugin with depth testing, so that
 /// debug lines cut through geometry. To do this, use [`DebugLinesPlugin::with_depth_test(true)`].
-/// ```
+/// ```.ignore
 /// use bevy::prelude::*;
 /// use bevy_prototype_debug_lines::*;
 ///
@@ -250,7 +250,7 @@ pub(crate) struct RenderDebugLinesMesh;
 /// Bevy resource providing facilities to draw lines.
 ///
 /// # Usage
-/// ```
+/// ```.ignore
 /// use bevy::prelude::*;
 /// use bevy_prototype_debug_lines::*;
 ///
