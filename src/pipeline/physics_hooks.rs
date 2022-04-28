@@ -1,4 +1,3 @@
-use bevy::ecs::entity::Entities;
 use bevy::ecs::query::WorldQuery;
 use bevy::prelude::*;
 use rapier::geometry::SolverFlags;

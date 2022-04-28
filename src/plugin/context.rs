@@ -6,10 +6,9 @@ use rapier::prelude::*;
 
 use crate::geometry::{Collider, InteractionGroups, PointProjection, RayIntersection, Toi};
 use crate::math::{Rot, Vect};
-use crate::pipeline::{CollisionEvent, EventQueue, PhysicsHooksWithQuery};
+use crate::pipeline::{CollisionEvent, EventQueue};
 use bevy::prelude::{Entity, EventWriter, Query, Transform};
 use bevy::render::primitives::Aabb;
-use rapier::parry::query::NonlinearRigidMotion;
 
 use crate::dynamics::TransformInterpolation;
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};

@@ -1,6 +1,6 @@
 use super::ColliderView;
 use crate::math::{Rot, Vect};
-use rapier::parry::shape::{Compound, Shape};
+use rapier::parry::shape::Compound;
 
 pub struct CompoundView<'a> {
     pub raw: &'a Compound,

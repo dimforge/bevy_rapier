@@ -1,11 +1,9 @@
 use crate::dynamics::{FixedJoint, PrismaticJoint, RevoluteJoint};
 use crate::math::{Real, Rot, Vect};
-use bevy::prelude::*;
 use rapier::dynamics::{
-    GenericJoint as RapierGenericJoint, ImpulseJointHandle, JointAxesMask, JointAxis, JointLimits,
-    JointMotor, MotorModel, MultibodyJointHandle,
+    GenericJoint as RapierGenericJoint, JointAxesMask, JointAxis, JointLimits, JointMotor,
+    MotorModel,
 };
-use rapier::math::SPATIAL_DIM;
 
 #[cfg(feature = "dim3")]
 use crate::dynamics::SphericalJoint;

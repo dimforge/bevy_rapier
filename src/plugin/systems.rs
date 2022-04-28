@@ -2,7 +2,6 @@ use bevy::ecs::query::WorldQuery;
 use bevy::prelude::*;
 use rapier::prelude::*;
 use std::collections::HashMap;
-use std::thread::sleep;
 
 use crate::dynamics::{
     AdditionalMassProperties, Ccd, Damping, Dominance, ExternalForce, ExternalImpulse,
@@ -103,7 +102,7 @@ pub fn apply_scale(
 }
 
 pub fn apply_collider_user_changes(
-    mut config: Res<RapierConfiguration>,
+    config: Res<RapierConfiguration>,
     mut context: ResMut<RapierContext>,
     changed_collider_transforms: Query<
         (&RapierColliderHandle, &Transform),
@@ -222,7 +221,6 @@ pub fn apply_rigid_body_user_changes(
     let transform_changed =
         |handle: &RigidBodyHandle,
          transform: &Transform,
-         prev: &Isometry<Real>,
          last_transform_set: &HashMap<RigidBodyHandle, Transform>| {
             if let Some(prev) = last_transform_set.get(handle) {
                 let tra_changed = if cfg!(feature = "dim2") {
@@ -250,23 +248,13 @@ pub fn apply_rigid_body_user_changes(
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             match rb.body_type() {
                 RigidBodyType::KinematicPositionBased => {
-                    if transform_changed(
-                        &handle.0,
-                        transform,
-                        rb.next_position(),
-                        &context.last_body_transform_set,
-                    ) {
+                    if transform_changed(&handle.0, transform, &context.last_body_transform_set) {
                         rb.set_next_kinematic_position(super::transform_to_iso(transform, scale));
                         context.last_body_transform_set.insert(handle.0, *transform);
                     }
                 }
                 _ => {
-                    if transform_changed(
-                        &handle.0,
-                        transform,
-                        rb.position(),
-                        &context.last_body_transform_set,
-                    ) {
+                    if transform_changed(&handle.0, transform, &context.last_body_transform_set) {
                         rb.set_position(super::transform_to_iso(transform, scale), true);
                         context.last_body_transform_set.insert(handle.0, *transform);
                     }
@@ -771,7 +759,7 @@ pub fn init_joints(
     }
 
     for (entity, joint) in multibody_joints.iter() {
-        let mut target = context.entity2body.get(&entity);
+        let target = context.entity2body.get(&entity);
 
         if let (Some(target), Some(source)) = (target, context.entity2body.get(&joint.parent)) {
             if let Some(handle) =

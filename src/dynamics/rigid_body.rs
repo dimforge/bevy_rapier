@@ -1,8 +1,7 @@
-use crate::math::{Rot, Vect};
+use crate::math::Vect;
 use bevy::prelude::*;
 use rapier::prelude::{
-    Isometry, LockedAxes as RapierLockedAxes, RigidBodyActivation, RigidBodyHandle,
-    RigidBodyMassProps, RigidBodyType,
+    Isometry, LockedAxes as RapierLockedAxes, RigidBodyActivation, RigidBodyHandle, RigidBodyType,
 };
 
 #[derive(Copy, Clone, Debug, Component)]
@@ -58,7 +57,7 @@ pub struct MassProperties {
     #[cfg(feature = "dim2")]
     pub principal_inertia: f32,
     #[cfg(feature = "dim3")]
-    pub principal_inertia_local_frame: Rot,
+    pub principal_inertia_local_frame: crate::math::Rot,
     #[cfg(feature = "dim3")]
     pub principal_inertia: Vect,
 }

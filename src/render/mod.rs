@@ -1,7 +1,7 @@
 use crate::plugin::RapierContext;
 use bevy::prelude::*;
 use lines::DebugLines;
-use rapier::math::{Point, Real, DIM};
+use rapier::math::{Point, Real};
 use rapier::pipeline::{DebugRenderBackend, DebugRenderObject, DebugRenderPipeline};
 pub use rapier::pipeline::{DebugRenderMode, DebugRenderStyle};
 use std::fmt::Debug;

@@ -1,17 +1,10 @@
-use bevy::prelude::*;
-use rapier::prelude::{
-    Ball, Capsule, ColliderHandle, DVector, FeatureId, InteractionGroups, Point, Ray, SharedShape,
-    Vector, DIM,
-};
 #[cfg(feature = "dim3")]
-use rapier::prelude::{Cone, Cylinder};
+use crate::geometry::VHACDParameters;
+use bevy::prelude::*;
+use rapier::prelude::{ColliderHandle, InteractionGroups, SharedShape};
 
-use super::shape_views::*;
 use crate::dynamics::CoefficientCombineRule;
-use crate::geometry::{PointProjection, RayIntersection, VHACDParameters};
-use crate::math::{Real, Rot, Vect};
-
-use bevy::render::mesh::{Indices, VertexAttributeValues};
+use crate::math::Vect;
 
 #[derive(Copy, Clone, Debug, Component)]
 pub struct RapierColliderHandle(pub ColliderHandle);
