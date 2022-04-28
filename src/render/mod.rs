@@ -39,15 +39,25 @@ impl Default for RapierDebugRenderPlugin {
     }
 }
 
-#[derive(Default)]
 pub struct DebugRenderContext {
+    pub enabled: bool,
     pub pipeline: DebugRenderPipeline,
+}
+
+impl Default for DebugRenderContext {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            pipeline: DebugRenderPipeline::default(),
+        }
+    }
 }
 
 impl Plugin for RapierDebugRenderPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(lines::DebugLinesPlugin::with_depth_test(self.depth_test))
             .insert_resource(DebugRenderContext {
+                enabled: true,
                 pipeline: DebugRenderPipeline::new(self.style.clone(), self.mode),
             })
             .add_system_to_stage(CoreStage::Update, debug_render_scene);
@@ -123,6 +133,10 @@ fn debug_render_scene(
     mut lines: ResMut<DebugLines>,
     custom_colors: Query<&ColliderDebugColor>,
 ) {
+    if !render_context.enabled {
+        return;
+    }
+
     let mut backend = BevyLinesRenderBackend {
         physics_scale: rapier_context.physics_scale,
         custom_colors,
