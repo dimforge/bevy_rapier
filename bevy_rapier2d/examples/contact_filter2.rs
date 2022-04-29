@@ -46,7 +46,7 @@ fn main() {
         .run();
 }
 
-fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
+fn setup_graphics(mut commands: Commands) {
     let mut camera = OrthographicCameraBundle::new_2d();
     camera.transform = Transform {
         translation: Vec3::new(0.0, 20.0, 0.0),

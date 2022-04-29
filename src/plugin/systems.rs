@@ -1,8 +1,3 @@
-use bevy::ecs::query::WorldQuery;
-use bevy::prelude::*;
-use rapier::prelude::*;
-use std::collections::HashMap;
-
 use crate::dynamics::{
     AdditionalMassProperties, Ccd, Damping, Dominance, ExternalForce, ExternalImpulse,
     GravityScale, ImpulseJoint, LockedAxes, MassProperties, MultibodyJoint,
@@ -19,7 +14,12 @@ use crate::pipeline::{
 };
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
+use crate::utils;
+use bevy::ecs::query::WorldQuery;
 use bevy::math::Vec3Swizzles;
+use bevy::prelude::*;
+use rapier::prelude::*;
+use std::collections::HashMap;
 
 #[cfg(feature = "dim3")]
 use crate::prelude::AsyncCollider;
@@ -129,7 +129,7 @@ pub fn apply_collider_user_changes(
     for (handle, transform) in changed_collider_transforms.iter() {
         if let Some(co) = context.colliders.get_mut(handle.0) {
             if co.parent().is_none() {
-                co.set_position(super::transform_to_iso(transform, scale))
+                co.set_position(utils::transform_to_iso(transform, scale))
             }
         }
     }
@@ -250,13 +250,13 @@ pub fn apply_rigid_body_user_changes(
             match rb.body_type() {
                 RigidBodyType::KinematicPositionBased => {
                     if transform_changed(&handle.0, transform, &context.last_body_transform_set) {
-                        rb.set_next_kinematic_position(super::transform_to_iso(transform, scale));
+                        rb.set_next_kinematic_position(utils::transform_to_iso(transform, scale));
                         context.last_body_transform_set.insert(handle.0, *transform);
                     }
                 }
                 _ => {
                     if transform_changed(&handle.0, transform, &context.last_body_transform_set) {
-                        rb.set_position(super::transform_to_iso(transform, scale), true);
+                        rb.set_position(utils::transform_to_iso(transform, scale), true);
                         context.last_body_transform_set.insert(handle.0, *transform);
                     }
                 }
@@ -391,7 +391,7 @@ pub fn writeback_rigid_bodies(
             // by physics (for example because they are sleeping).
             if let Some(handle) = context.entity2body.get(&entity).copied() {
                 if let Some(rb) = context.bodies.get(handle) {
-                    let mut interpolated_pos = super::iso_to_transform(rb.position(), scale);
+                    let mut interpolated_pos = utils::iso_to_transform(rb.position(), scale);
 
                     if let TimestepMode::Interpolated { dt, .. } = config.timestep_mode {
                         if let Some(interpolation) = interpolation.as_deref_mut() {
@@ -402,7 +402,7 @@ pub fn writeback_rigid_bodies(
                             if let Some(interpolated) =
                                 interpolation.lerp_slerp((dt + sim_to_render_time.diff) / dt)
                             {
-                                interpolated_pos = super::iso_to_transform(&interpolated, scale);
+                                interpolated_pos = utils::iso_to_transform(&interpolated, scale);
                             }
                         }
                     }
@@ -604,7 +604,7 @@ pub fn init_colliders(
 
         if !is_in_rb_entity {
             if let Some(transform) = transform {
-                builder = builder.position(super::transform_to_iso(transform, scale));
+                builder = builder.position(utils::transform_to_iso(transform, scale));
             }
         }
 
@@ -657,7 +657,7 @@ pub fn init_rigid_bodies(
     {
         let mut builder = RigidBodyBuilder::new((*rb).into());
         if let Some(transform) = transform {
-            builder = builder.position(super::transform_to_iso(transform, scale));
+            builder = builder.position(utils::transform_to_iso(transform, scale));
         }
 
         if let Some(vel) = vel {

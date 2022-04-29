@@ -25,8 +25,6 @@ fn main() {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    const HALF_SIZE: f32 = 100.0;
-
     commands.spawn_bundle(PerspectiveCameraBundle {
         transform: Transform::from_matrix(
             Mat4::look_at_rh(
