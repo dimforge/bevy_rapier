@@ -215,6 +215,22 @@ pub fn apply_rigid_body_user_changes(
     let context = &mut *context;
     let scale = context.physics_scale;
 
+    // Deal with sleeping first, because other changes may then wake-up the
+    // rigid-body again.
+    for (handle, sleeping) in changed_sleeping.iter() {
+        if let Some(rb) = context.bodies.get_mut(handle.0) {
+            let activation = rb.activation_mut();
+            activation.linear_threshold = sleeping.linear_threshold;
+            activation.angular_threshold = sleeping.angular_threshold;
+
+            if !sleeping.sleeping && activation.sleeping {
+                rb.wake_up(true);
+            } else if sleeping.sleeping && !activation.sleeping {
+                rb.sleep();
+            }
+        }
+    }
+
     // Manually checks if the transform changed.
     // This is needed for detecting if the user actually changed the rigid-body
     // transform, or if it was just the change we made in our `writeback_rigid_bodies`
@@ -264,16 +280,16 @@ pub fn apply_rigid_body_user_changes(
         }
     }
 
-    for (handle, rb_type) in changed_rb_types.iter() {
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
-            rb.set_body_type((*rb_type).into());
-        }
-    }
-
     for (handle, velocity) in changed_velocities.iter() {
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_linvel((velocity.linvel / scale).into(), true);
             rb.set_angvel(velocity.angvel.into(), true);
+        }
+    }
+
+    for (handle, rb_type) in changed_rb_types.iter() {
+        if let Some(rb) = context.bodies.get_mut(handle.0) {
+            rb.set_body_type((*rb_type).into());
         }
     }
 
@@ -320,20 +336,6 @@ pub fn apply_rigid_body_user_changes(
     for (handle, dominance) in changed_dominance.iter() {
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_dominance_group(dominance.groups);
-        }
-    }
-
-    for (handle, sleeping) in changed_sleeping.iter() {
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
-            let activation = rb.activation_mut();
-            activation.linear_threshold = sleeping.linear_threshold;
-            activation.angular_threshold = sleeping.angular_threshold;
-
-            if !sleeping.sleeping && activation.sleeping {
-                rb.wake_up(true);
-            } else if sleeping.sleeping && !activation.sleeping {
-                rb.sleep();
-            }
         }
     }
 
@@ -419,8 +421,17 @@ pub fn writeback_rigid_bodies(
                         }
 
                         if let Some(velocity) = &mut velocity {
-                            velocity.linvel = (rb.linvel() * scale).into();
-                            velocity.angvel = rb.angvel();
+                            let new_vel = Velocity {
+                                linvel: (rb.linvel() * scale).into(),
+                                angvel: rb.angvel(),
+                            };
+
+                            // NOTE: we write the new value only if there was an
+                            //       actual change, in order to not trigger bevy’s
+                            //       change tracking when the values didn’t change.
+                            if **velocity != new_vel {
+                                **velocity = new_vel;
+                            }
                         }
                     }
 
@@ -435,13 +446,27 @@ pub fn writeback_rigid_bodies(
                         }
 
                         if let Some(velocity) = &mut velocity {
-                            velocity.linvel = (rb.linvel() * scale).into();
-                            velocity.angvel = (*rb.angvel()).into();
+                            let new_vel = Velocity {
+                                linvel: (rb.linvel() * scale).into(),
+                                angvel: (*rb.angvel()).into(),
+                            };
+
+                            // NOTE: we write the new value only if there was an
+                            //       actual change, in order to not trigger bevy’s
+                            //       change tracking when the values didn’t change.
+                            if **velocity != new_vel {
+                                **velocity = new_vel;
+                            }
                         }
                     }
 
                     if let Some(sleeping) = &mut sleeping {
-                        sleeping.sleeping = rb.is_sleeping();
+                        // NOTE: we write the new value only if there was an
+                        //       actual change, in order to not trigger bevy’s
+                        //       change tracking when the values didn’t change.
+                        if sleeping.sleeping != rb.is_sleeping() {
+                            sleeping.sleeping = rb.is_sleeping();
+                        }
                     }
                 }
             }
