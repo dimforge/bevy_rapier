@@ -53,7 +53,7 @@ impl Into<RigidBodyType> for RigidBody {
 /// Use this component to control and/or read the velocity of a dynamic or kinematic rigid-body.
 /// If this component isn’t present, a dynamic rigid-body will still be able to move (you will just
 /// not be able to read/modify its velocity).
-#[derive(Copy, Clone, Debug, Default, Component, Reflect)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 pub struct Velocity {
     /// The linear velocity of the rigid-body.
     pub linvel: Vect,
@@ -73,7 +73,7 @@ impl Velocity {
 }
 
 /// Mass-properties of a rigid-body, added to the contributions of its attached colliders.
-#[derive(Copy, Clone, Debug, Default, Component, Reflect)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 pub struct AdditionalMassProperties(pub MassProperties);
 
 /// Center-of-mass, mass, and angular inertia.
@@ -82,7 +82,7 @@ pub struct AdditionalMassProperties(pub MassProperties);
 /// a rigid-body (including the colliders contribution). Modifying this component won’t
 /// affect the mass-properties of the rigid-body (the attached colliders’ `ColliderMassProperties`
 /// and the `AdditionalMassProperties` should be modified instead).
-#[derive(Copy, Clone, Debug, Default, Component, Reflect)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 pub struct MassProperties {
     /// The center of mass of a rigid-body expressed in its local-space.
     pub local_center_of_mass: Vect,
@@ -166,7 +166,7 @@ impl Into<RapierLockedAxes> for LockedAxes {
 /// Constant external forces applied continuously to a rigid-body.
 ///
 /// This force is applied at each timestep.
-#[derive(Copy, Clone, Debug, Default, Component, Reflect)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 pub struct ExternalForce {
     /// The linear force applied to the rigid-body.
     pub force: Vect,
@@ -182,7 +182,7 @@ pub struct ExternalForce {
 ///
 /// The impulse is only applied once, and whenever it it modified (based
 /// on Bevy’s change detection).
-#[derive(Copy, Clone, Debug, Default, Component, Reflect)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 pub struct ExternalImpulse {
     /// The linear impulse applied to the rigid-body.
     pub impulse: Vect,
@@ -196,7 +196,7 @@ pub struct ExternalImpulse {
 
 /// Gravity is multiplied by this scaling factor before it's
 /// applied to this rigid-body.
-#[derive(Copy, Clone, Debug, Component, Reflect)]
+#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 pub struct GravityScale(pub f32);
 
 impl Default for GravityScale {
@@ -206,14 +206,14 @@ impl Default for GravityScale {
 }
 
 /// Information used for Continuous-Collision-Detection.
-#[derive(Copy, Clone, Debug, Default, Component, Reflect)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 pub struct Ccd {
     /// Is CCD enabled for this rigid-body?
     pub enabled: bool,
 }
 
 /// The dominance groups of a rigid-body.
-#[derive(Copy, Clone, Debug, Default, Component, Reflect)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 pub struct Dominance {
     /// The dominance groups of a rigid-body.
     pub groups: i8,
@@ -223,7 +223,7 @@ pub struct Dominance {
 ///
 /// This controls whether a body is sleeping or not.
 /// If the threshold is negative, the body never sleeps.
-#[derive(Copy, Clone, Debug, Component, Reflect)]
+#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 pub struct Sleeping {
     /// The threshold linear velocity bellow which the body can fall asleep.
     pub linear_threshold: f32,
@@ -255,7 +255,7 @@ impl Default for Sleeping {
 }
 
 /// Damping factors to gradually slow down a rigid-body.
-#[derive(Copy, Clone, Debug, Component, Reflect)]
+#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 pub struct Damping {
     /// Damping factor for gradually slowing down the translational motion of the rigid-body.
     pub linear_damping: f32,
@@ -275,7 +275,7 @@ impl Default for Damping {
 /// If the `TimestepMode::Interpolated` mode is set and this component is present,
 /// the associated rigid-body will have its position automatically interpolated
 /// between the last two rigid-body positions set by the physics engine.
-#[derive(Copy, Clone, Debug, Component)]
+#[derive(Copy, Clone, Debug, PartialEq, Component)]
 pub struct TransformInterpolation {
     /// The starting point of the interpolation.
     pub start: Option<Isometry<f32>>,

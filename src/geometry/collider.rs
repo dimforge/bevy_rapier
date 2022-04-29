@@ -41,7 +41,7 @@ impl Into<Collider> for SharedShape {
 }
 
 /// Overwrites the default application of `Transform::scale` to collider shapes.
-#[derive(Copy, Clone, Debug, Component)] // TODO: Reflect
+#[derive(Copy, Clone, Debug, PartialEq, Component)] // TODO: Reflect
 pub enum ColliderScale {
     /// This scale will be multiplied with the scale in the `Transform` component
     /// before being applied to the collider.
@@ -51,11 +51,11 @@ pub enum ColliderScale {
 }
 
 /// Defines the associated collider as a sensor (it will produce events but no contacts).
-#[derive(Copy, Clone, Debug, Component, Reflect)]
+#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 pub struct Sensor;
 
 /// Custom mass-properties of a collider.
-#[derive(Copy, Clone, Debug, Component, Reflect)]
+#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 pub enum ColliderMassProperties {
     /// The mass-properties are computed automatically from the collider’s shape and this density.
     Density(f32),
@@ -70,7 +70,7 @@ impl Default for ColliderMassProperties {
 }
 
 /// The friction affecting a collider.
-#[derive(Copy, Clone, Debug, Component, Reflect)]
+#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 pub struct Friction {
     /// The friction coefficient of a collider.
     ///
@@ -102,7 +102,7 @@ impl Friction {
 }
 
 /// The restitution affecting a collider.
-#[derive(Copy, Clone, Debug, Component, Reflect)]
+#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 pub struct Restitution {
     /// The restitution coefficient of a collider.
     ///
