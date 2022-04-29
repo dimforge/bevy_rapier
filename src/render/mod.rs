@@ -8,12 +8,26 @@ use std::fmt::Debug;
 
 mod lines;
 
+/// The color of a collider when using the debug-renderer.
+///
+/// Insert this component alongside the collider component to
+/// force to a specific value the color used to render the
+/// collider.
 #[derive(Copy, Clone, Component, PartialEq, Debug)]
 pub struct ColliderDebugColor(pub Color);
 
+/// Plugin rensponsible for rendering (using lines) what Rapier "sees" when performing
+/// its physics simulation. This is typically useful to check proper
+/// alignment between colliders and your own visual assets.
 pub struct RapierDebugRenderPlugin {
+    /// If set to `false`, depth-testing will be disabled when rendering,
+    /// meaning that the debug-render lines will always appear on top
+    /// of (won’t be occluded by) your own visual assets.
     pub depth_test: bool,
+    /// Control some aspects of the render coloring.
     pub style: DebugRenderStyle,
+    /// Flags to select what part of physics scene is rendered (by default
+    /// everything is rendered).
     pub mode: DebugRenderMode,
 }
 
@@ -39,8 +53,12 @@ impl Default for RapierDebugRenderPlugin {
     }
 }
 
+/// Context to control some aspect of the debug-renderer after initialization.
 pub struct DebugRenderContext {
+    /// Is the debug-rendering currently enabled?
     pub enabled: bool,
+    /// Pipeline responsible for rendering. Access `pipeline.mode` and `pipeline.style`
+    /// to modify the set of rendered elements, and modify the default coloring rules.
     pub pipeline: DebugRenderPipeline,
 }
 

@@ -4,6 +4,7 @@ use rapier::geometry::{RoundShape, SharedShape};
 use rapier::parry::either::Either;
 use rapier::parry::shape::TypedShape;
 
+/// Read-only access to the properties of a collider.
 pub enum ColliderView<'a> {
     /// A ball shape.
     Ball(BallView<'a>),
@@ -25,10 +26,11 @@ pub enum ColliderView<'a> {
     HeightField(HeightFieldView<'a>),
     /// A Compound shape.
     Compound(CompoundView<'a>),
+    /// A convex polygon.
     #[cfg(feature = "dim2")]
     ConvexPolygon(ConvexPolygonView<'a>),
-    #[cfg(feature = "dim3")]
     /// A convex polyhedron.
+    #[cfg(feature = "dim3")]
     ConvexPolyhedron(ConvexPolyhedronView<'a>),
     #[cfg(feature = "dim3")]
     /// A cylindrical shape.
@@ -109,6 +111,7 @@ impl<'a> Into<ColliderView<'a>> for TypedShape<'a> {
 }
 
 impl<'a> ColliderView<'a> {
+    /// Compute the scaled version of `self.raw`.
     pub fn raw_scale_by(&self, scale: Vect, num_subdivisions: u32) -> Option<SharedShape> {
         let result = match self {
             ColliderView::Cuboid(s) => SharedShape::new(s.raw.scaled(&scale.into())),

@@ -1,7 +1,9 @@
 use crate::math::{Real, Vect};
 use rapier::parry::shape::Triangle;
 
+/// Read-only access to the properties of a triangle.
 pub struct TriangleView<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a Triangle,
 }
 
@@ -77,7 +79,9 @@ macro_rules! impl_ref_methods(
 
 impl_ref_methods!(TriangleView);
 
+/// Read-write access to the properties of a triangle.
 pub struct TriangleViewMut<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a mut Triangle,
 }
 

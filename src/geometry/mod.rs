@@ -11,11 +11,15 @@ use rapier::prelude::FeatureId;
 
 mod collider;
 mod collider_impl;
+/// Wrappers around Rapier shapes to access their properties.
 pub mod shape_views;
 
+/// Result of the projection of a point on a shape.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct PointProjection {
+    /// Whether or not the point to project was inside of the shape.
     pub is_inside: bool,
+    /// The projection result.
     pub point: Vect,
 }
 
@@ -39,6 +43,7 @@ impl Into<PointProjection> for rapier::parry::query::PointProjection {
     }
 }
 
+/// Structure containing the result of a successful ray cast.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct RayIntersection {
     /// The time of impact of the ray with the object.  The exact contact point can be computed
@@ -73,6 +78,7 @@ impl RayIntersection {
     }
 }
 
+/// The result of a time-of-impact (TOI) computation.
 #[derive(Copy, Clone, Debug)]
 pub struct Toi {
     /// The time at which the objects touch.

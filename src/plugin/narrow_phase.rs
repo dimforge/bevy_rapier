@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use rapier::geometry::{Contact, ContactManifold, ContactPair, SolverContact, SolverFlags};
 
 impl RapierContext {
+    /// All the contacts involving the non-sensor collider attached to the given entity.
     pub fn contacts_with<'a>(&self, collider: Entity) -> impl Iterator<Item = ContactPairView> {
         self.entity2collider
             .get(&collider)
@@ -15,6 +16,10 @@ impl RapierContext {
             })
     }
 
+    /// All the intersections involving the collider attached to the given entity.
+    ///
+    /// Intersections between two colliders are reported only if at least one of
+    /// them is a sensor.
     pub fn intersections_with(
         &self,
         collider: Entity,
@@ -35,6 +40,11 @@ impl RapierContext {
             })
     }
 
+    /// The contact pair involving two specific colliders.
+    ///
+    /// If this returns `None`, there is no contact between the two colliders.
+    /// If this returns `Some`, then there may be a contact between the two colliders. Check the
+    /// result [`ContactPair::has_any_active_collider`] method to see if there is an actual contact.
     pub fn contact_pair(&self, collider1: Entity, collider2: Entity) -> Option<ContactPairView> {
         let h1 = self.entity2collider.get(&collider1)?;
         let h2 = self.entity2collider.get(&collider2)?;
@@ -43,18 +53,24 @@ impl RapierContext {
             .map(|raw| ContactPairView { context: self, raw })
     }
 
+    /// The intersection pair involving two specific colliders (at least one being a sensor).
+    ///
+    /// If this returns `None` or `Some(false)`, then there is no intersection between the two colliders.
+    /// If this returns `Some(true)`, then there may be an intersection between the two colliders.
     pub fn intersection_pair(&self, collider1: Entity, collider2: Entity) -> Option<bool> {
         let h1 = self.entity2collider.get(&collider1)?;
         let h2 = self.entity2collider.get(&collider2)?;
         self.narrow_phase.intersection_pair(*h1, *h2)
     }
 
+    /// All the contact pairs detected during the last timestep.
     pub fn contact_pairs(&self) -> impl Iterator<Item = ContactPairView> {
         self.narrow_phase
             .contact_pairs()
             .map(|raw| ContactPairView { context: self, raw })
     }
 
+    /// All the intersection pairs detected during the last timestep.
     pub fn intersection_pairs(&self) -> impl Iterator<Item = (Entity, Entity, bool)> + '_ {
         self.narrow_phase
             .intersection_pairs()
@@ -68,16 +84,20 @@ impl RapierContext {
     }
 }
 
+/// Read-only access to the properties of a contact manifold.
 pub struct ContactManifoldView<'a> {
     context: &'a RapierContext,
+    /// The raw contact manifold from Rapier.
     pub raw: &'a ContactManifold,
 }
 
 impl<'a> ContactManifoldView<'a> {
+    /// The number of points on this contact manifold.
     pub fn num_points(&self) -> usize {
         self.raw.points.len()
     }
 
+    /// Retrieves the i-th point of this contact manifold.
     pub fn point(&self, i: usize) -> Option<ContactView> {
         self.raw.points.get(i).map(|raw| ContactView { raw })
     }
@@ -178,7 +198,9 @@ impl<'a> ContactManifoldView<'a> {
     }
 }
 
+/// Read-only access to the properties of a single contact.
 pub struct ContactView<'a> {
+    /// The raw contact from Rapier.
     pub raw: &'a Contact,
 }
 
@@ -230,7 +252,9 @@ impl<'a> ContactView<'a> {
     }
 }
 
+/// Read-only access to the properties of a single solver contact.
 pub struct SolverContactView<'a> {
+    /// The raw solver contact from Rapier.
     pub raw: &'a SolverContact,
 }
 
@@ -265,24 +289,30 @@ impl<'a> SolverContactView<'a> {
     }
 }
 
+/// Read-only access to the properties of a contact pair.
 pub struct ContactPairView<'a> {
     context: &'a RapierContext,
+    /// The raw contact pair from Rapier.
     pub raw: &'a ContactPair,
 }
 
 impl<'a> ContactPairView<'a> {
+    /// The first collider involved in this contact pair.
     pub fn collider1(&self) -> Entity {
         self.context.collider_entity(self.raw.collider1).unwrap()
     }
 
+    /// The second collider involved in this contact pair.
     pub fn collider2(&self) -> Entity {
         self.context.collider_entity(self.raw.collider2).unwrap()
     }
 
+    /// The number of contact manifolds detected for this contact pair.
     pub fn manifolds_len(&self) -> usize {
         self.raw.manifolds.len()
     }
 
+    /// Gets the i-th contact manifold.
     pub fn manifold(&self, i: usize) -> Option<ContactManifoldView> {
         self.raw.manifolds.get(i).map(|raw| ContactManifoldView {
             context: self.context,
@@ -290,6 +320,7 @@ impl<'a> ContactPairView<'a> {
         })
     }
 
+    /// Iterate through all the contact manifolds of this contact pair.
     pub fn manifolds(&self) -> impl ExactSizeIterator<Item = ContactManifoldView> {
         self.raw.manifolds.iter().map(|raw| ContactManifoldView {
             context: self.context,
@@ -297,10 +328,18 @@ impl<'a> ContactPairView<'a> {
         })
     }
 
+    /// Is there any active contact in this contact pair?
     pub fn has_any_active_contacts(&self) -> bool {
         self.raw.has_any_active_contact
     }
 
+    /// Finds the contact with the smallest signed distance.
+    ///
+    /// If the colliders involved in this contact pair are penetrating, then
+    /// this returns the contact with the largest penetration depth.
+    ///
+    /// Returns a reference to the contact, as well as the contact manifold
+    /// it is part of.
     pub fn find_deepest_contact(&self) -> Option<(ContactManifoldView, ContactView)> {
         self.raw.find_deepest_contact().map(|(manifold, contact)| {
             (

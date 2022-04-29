@@ -16,19 +16,33 @@ use crate::prelude::RapierRigidBodyHandle;
 #[cfg(feature = "dim2")]
 use bevy::math::Vec3Swizzles;
 
+/// The Rapier context, containing all the state of the physics engine.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct RapierContext {
+    /// The island manager, which detects what object is sleeping
+    /// (not moving much) to reduce computations.
     pub islands: IslandManager,
+    /// The broad-phase, which detects potential contact pairs.
     pub broad_phase: BroadPhase,
+    /// The narrow-phase, which computes contact points, tests intersections,
+    /// and maintain the contact and intersection graphs.
     pub narrow_phase: NarrowPhase,
+    /// The set of rigid-bodies part of the simulation.
     pub bodies: RigidBodySet,
+    /// The set of colliders part of the simulation.
     pub colliders: ColliderSet,
+    /// The set of impulse joints part of the simulation.
     pub impulse_joints: ImpulseJointSet,
+    /// The set of multibody joints part of the simulation.
     pub multibody_joints: MultibodyJointSet,
+    /// The solver, which handles Continuous Collision Detection (CCD).
     pub ccd_solver: CCDSolver,
+    /// The physics pipeline, which advance the simulation step by step.
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub pipeline: PhysicsPipeline,
+    /// The query pipeline, which performs scene queries (ray-casting, point projection, etc.)
     pub query_pipeline: QueryPipeline,
+    /// The integration parameters, controlling various low-level coefficient of the simulation.
     pub integration_parameters: IntegrationParameters,
     pub(crate) physics_scale: Real,
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
@@ -78,18 +92,21 @@ impl Default for RapierContext {
 }
 
 impl RapierContext {
+    /// Retrieve the Bevy entity the given Rapier collider (identified by its handle) is attached.
     pub fn collider_entity(&self, handle: ColliderHandle) -> Option<Entity> {
         self.colliders
             .get(handle)
             .map(|c| Entity::from_bits(c.user_data as u64))
     }
 
+    /// Retrieve the Bevy entity the given Rapier rigid-body (identified by its handle) is attached.
     pub fn rigid_body_entity(&self, handle: RigidBodyHandle) -> Option<Entity> {
         self.bodies
             .get(handle)
             .map(|c| Entity::from_bits(c.user_data as u64))
     }
 
+    /// Advance the simulation, based on the given timestep mode.
     pub fn step_simulation(
         &mut self,
         gravity: Vect,
@@ -212,25 +229,36 @@ impl RapierContext {
         }
     }
 
+    /// This method makes sure tha the rigid-body positions have been propagated to
+    /// their attached colliders, without having to perform a srimulation step.
     pub fn propagate_modified_body_positions_to_colliders(&mut self) {
         self.bodies
             .propagate_modified_body_positions_to_colliders(&mut self.colliders);
     }
 
+    /// Updates the state of the query pipeline, based on the collider positions known
+    /// from the last timestep or the last call to `self.propagate_modified_body_positions_to_colliders()`.
     pub fn update_query_pipeline(&mut self) {
         self.query_pipeline
             .update(&self.islands, &self.bodies, &self.colliders);
     }
 
+    /// The map from entities to rigid-body handles.
     pub fn entity2body(&self) -> &HashMap<Entity, RigidBodyHandle> {
         &self.entity2body
     }
+
+    /// The map from entities to collider handles.
     pub fn entity2collider(&self) -> &HashMap<Entity, ColliderHandle> {
         &self.entity2collider
     }
+
+    /// The map from entities to impulse joint handles.
     pub fn entity2impulse_joint(&self) -> &HashMap<Entity, ImpulseJointHandle> {
         &self.entity2impulse_joint
     }
+
+    /// The map from entities to multibody joint handles.
     pub fn entity2multibody_joint(&self) -> &HashMap<Entity, MultibodyJointHandle> {
         &self.entity2multibody_joint
     }

@@ -8,13 +8,16 @@ use rapier::dynamics::{
 #[cfg(feature = "dim3")]
 use crate::dynamics::SphericalJoint;
 
+/// The description of any joint.
 #[derive(Copy, Clone, Debug, PartialEq, Default)]
 #[repr(transparent)]
 pub struct GenericJoint {
+    /// The raw Rapier description of the joint.
     pub raw: RapierGenericJoint,
 }
 
 impl GenericJoint {
+    /// Converts this joint into a Rapier joint.
     pub fn into_rapier(mut self, physics_scale: Real) -> RapierGenericJoint {
         self.raw.local_frame1.translation.vector /= physics_scale;
         self.raw.local_frame2.translation.vector /= physics_scale;

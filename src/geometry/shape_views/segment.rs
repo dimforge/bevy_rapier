@@ -1,7 +1,9 @@
 use crate::math::{Real, Vect};
 use rapier::parry::shape::Segment;
 
+/// Read-only access to the properties of a segment.
 pub struct SegmentView<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a Segment,
 }
 
@@ -75,7 +77,9 @@ macro_rules! impl_ref_methods(
 
 impl_ref_methods!(SegmentView);
 
+/// Read-write access to the properties of a segment.
 pub struct SegmentViewMut<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a mut Segment,
 }
 

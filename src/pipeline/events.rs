@@ -8,9 +8,12 @@ use rapier::pipeline::EventHandler;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
+/// Events occurring when two colliders start or stop colliding
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum CollisionEvent {
+    /// Event occurring when two colliders start colliding
     Started(Entity, Entity, CollisionEventFlags),
+    /// Event occurring when two colliders stop colliding
     Stopped(Entity, Entity, CollisionEventFlags),
 }
 

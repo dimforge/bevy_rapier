@@ -18,6 +18,8 @@ jobs:
         run: cargo fmt -- --check
   build:
     runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
     steps:
     - uses: actions/checkout@v2
     - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev

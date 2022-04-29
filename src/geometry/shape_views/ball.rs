@@ -1,7 +1,9 @@
 use crate::math::Real;
 use rapier::parry::shape::Ball;
 
+/// Read-only access to the properties of a ball.
 pub struct BallView<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a Ball,
 }
 
@@ -18,7 +20,9 @@ macro_rules! impl_ref_methods(
 
 impl_ref_methods!(BallView);
 
+/// Read-write access to the properties of a ball.
 pub struct BallViewMut<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a mut Ball,
 }
 

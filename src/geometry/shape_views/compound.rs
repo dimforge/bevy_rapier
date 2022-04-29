@@ -2,7 +2,9 @@ use super::ColliderView;
 use crate::math::{Rot, Vect};
 use rapier::parry::shape::Compound;
 
+/// Read-only access to the properties of a compound shape.
 pub struct CompoundView<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a Compound,
 }
 

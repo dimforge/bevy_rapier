@@ -6,18 +6,25 @@ use rapier::prelude::{ColliderHandle, InteractionGroups, SharedShape};
 use crate::dynamics::{CoefficientCombineRule, MassProperties};
 use crate::math::Vect;
 
+/// The Rapier handle of a collider that was inserted to the physics scene.
 #[derive(Copy, Clone, Debug, Component)]
 pub struct RapierColliderHandle(pub ColliderHandle);
 
+/// A collider that will be inserted in the future, once the referenced assets become available.
 #[cfg(feature = "dim3")]
 #[derive(Component, Debug, Clone)]
 pub enum AsyncCollider {
+    /// A future triangle-mesh collider based on a Bevy mesh asset.
     Mesh(Handle<Mesh>),
+    /// A future convex decomposition collider based on a Bevy mesh asset.
     ConvexDecomposition(Handle<Mesh>, VHACDParameters),
 }
 
+/// A geometric entity that can be attached to a body so it can be affected by contacts
+/// and intersection queries.
 #[derive(Component, Clone)] // TODO: Reflect
 pub struct Collider {
+    /// The raw shape from Rapier.
     pub raw: SharedShape,
     pub(crate) unscaled: SharedShape,
     pub(crate) scale: Vect,
@@ -33,6 +40,7 @@ impl Into<Collider> for SharedShape {
     }
 }
 
+/// Overwrites the default application of `Transform::scale` to collider shapes.
 #[derive(Copy, Clone, Debug, Component)] // TODO: Reflect
 pub enum ColliderScale {
     /// This scale will be multiplied with the scale in the `Transform` component
@@ -42,12 +50,16 @@ pub enum ColliderScale {
     Absolute(Vect),
 }
 
+/// Defines the associated collider as a sensor (it will produce events but no contacts).
 #[derive(Copy, Clone, Debug, Component, Reflect)]
 pub struct Sensor;
 
+/// Custom mass-properties of a collider.
 #[derive(Copy, Clone, Debug, Component, Reflect)]
 pub enum ColliderMassProperties {
+    /// The mass-properties are computed automatically from the collider’s shape and this density.
     Density(f32),
+    /// The mass-properties of the collider are replaced by the ones specified here.
     MassProperties(MassProperties),
 }
 
@@ -57,9 +69,15 @@ impl Default for ColliderMassProperties {
     }
 }
 
+/// The friction affecting a collider.
 #[derive(Copy, Clone, Debug, Component, Reflect)]
 pub struct Friction {
+    /// The friction coefficient of a collider.
+    ///
+    /// The greater the value, the stronger the friction forces will be.
+    /// Should be `>= 0`.
     pub coefficient: f32,
+    /// The rule applied to combine the friction coefficients of two colliders in contact.
     pub combine_rule: CoefficientCombineRule,
 }
 
@@ -73,6 +91,8 @@ impl Default for Friction {
 }
 
 impl Friction {
+    /// Creates a `Friction` component from the given friction coefficient, and using the default
+    /// `CoefficientCombineRule::Average` coefficient combine rule.
     pub fn new(coefficient: f32) -> Self {
         Self {
             coefficient,
@@ -81,13 +101,21 @@ impl Friction {
     }
 }
 
+/// The restitution affecting a collider.
 #[derive(Copy, Clone, Debug, Component, Reflect)]
 pub struct Restitution {
+    /// The restitution coefficient of a collider.
+    ///
+    /// The greater the value, the stronger the restitution forces will be.
+    /// Should be `>= 0`.
     pub coefficient: f32,
+    /// The rule applied to combine the friction coefficients of two colliders in contact.
     pub combine_rule: CoefficientCombineRule,
 }
 
 impl Restitution {
+    /// Creates a `Restitution` component from the given restitution coefficient, and using the default
+    /// `CoefficientCombineRule::Average` coefficient combine rule.
     pub fn new(coefficient: f32) -> Self {
         Self {
             coefficient,
@@ -148,9 +176,26 @@ impl Into<rapier::geometry::ActiveCollisionTypes> for ActiveCollisionTypes {
     }
 }
 
+/// Pairwise collision filtering using bit masks.
+///
+/// This filtering method is based on two 32-bit values:
+/// - The interaction groups memberships.
+/// - The interaction groups filter.
+///
+/// An interaction is allowed between two filters `a` and `b` when two conditions
+/// are met simultaneously:
+/// - The groups membership of `a` has at least one bit set to `1` in common with the groups filter of `b`.
+/// - The groups membership of `b` has at least one bit set to `1` in common with the groups filter of `a`.
+///
+/// In other words, interactions are allowed between two filter iff. the following condition is met:
+/// ```ignore
+/// (self.memberships & rhs.filter) != 0 && (rhs.memberships & self.filter) != 0
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Component, Reflect)]
 pub struct CollisionGroups {
+    /// Groups memberships.
     pub memberships: u32,
+    /// Groups filter.
     pub filters: u32,
 }
 
@@ -172,9 +217,14 @@ impl Into<InteractionGroups> for CollisionGroups {
     }
 }
 
+/// Pairwise constraints resolution filtering using bit masks.
+///
+/// This follows the same rules as the `CollisionGroups`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Component, Reflect)]
 pub struct SolverGroups {
+    /// Groups memberships.
     pub memberships: u32,
+    /// Groups filter.
     pub filters: u32,
 }
 

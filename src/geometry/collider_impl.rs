@@ -13,17 +13,19 @@ use crate::geometry::{Collider, PointProjection, RayIntersection, VHACDParameter
 use crate::math::{Real, Rot, Vect};
 
 impl Collider {
-    #[doc(hidden)]
+    /// The scaling factor that was applied to this collider.
     pub fn scale(&self) -> Vect {
         self.scale
     }
 
+    /// This replaces the unscaled version of this collider by its scaled version,
+    /// and resets `self.scale()` to `1.0`.
     pub fn promote_scaled_shape(&mut self) {
         self.unscaled = self.raw.clone();
         self.scale = Vect::ONE;
     }
 
-    /// Initialize a new collision shape with a compound shape.
+    /// Initialize a new collider with a compound shape.
     pub fn compound(shapes: Vec<(Vect, Rot, Collider)>) -> Self {
         let shapes = shapes
             .into_iter()
@@ -32,7 +34,7 @@ impl Collider {
         SharedShape::compound(shapes).into()
     }
 
-    /// Initialize a new collision shape with a ball shape defined by its radius.
+    /// Initialize a new collider with a ball shape defined by its radius.
     pub fn ball(radius: Real) -> Self {
         SharedShape::ball(radius).into()
     }
@@ -45,14 +47,14 @@ impl Collider {
         Unit::try_new(normal, 1.0e-6).map(|n| SharedShape::halfspace(n).into())
     }
 
-    /// Initialize a new collision shape with a cylindrical shape defined by its half-height
+    /// Initialize a new collider with a cylindrical shape defined by its half-height
     /// (along along the y axis) and its radius.
     #[cfg(feature = "dim3")]
     pub fn cylinder(half_height: Real, radius: Real) -> Self {
         SharedShape::cylinder(half_height, radius).into()
     }
 
-    /// Initialize a new collision shape with a rounded cylindrical shape defined by its half-height
+    /// Initialize a new collider with a rounded cylindrical shape defined by its half-height
     /// (along along the y axis), its radius, and its roundedness (the
     /// radius of the sphere used for dilating the cylinder).
     #[cfg(feature = "dim3")]
@@ -60,14 +62,14 @@ impl Collider {
         SharedShape::round_cylinder(half_height, radius, border_radius).into()
     }
 
-    /// Initialize a new collision shape with a cone shape defined by its half-height
+    /// Initialize a new collider with a cone shape defined by its half-height
     /// (along along the y axis) and its basis radius.
     #[cfg(feature = "dim3")]
     pub fn cone(half_height: Real, radius: Real) -> Self {
         SharedShape::cone(half_height, radius).into()
     }
 
-    /// Initialize a new collision shape with a rounded cone shape defined by its half-height
+    /// Initialize a new collider with a rounded cone shape defined by its half-height
     /// (along along the y axis), its radius, and its roundedness (the
     /// radius of the sphere used for dilating the cylinder).
     #[cfg(feature = "dim3")]
@@ -75,84 +77,84 @@ impl Collider {
         SharedShape::round_cone(half_height, radius, border_radius).into()
     }
 
-    /// Initialize a new collision shape with a cuboid shape defined by its half-extents.
+    /// Initialize a new collider with a cuboid shape defined by its half-extents.
     #[cfg(feature = "dim2")]
     pub fn cuboid(hx: Real, hy: Real) -> Self {
         SharedShape::cuboid(hx, hy).into()
     }
 
-    /// Initialize a new collision shape with a round cuboid shape defined by its half-extents
+    /// Initialize a new collider with a round cuboid shape defined by its half-extents
     /// and border radius.
     #[cfg(feature = "dim2")]
     pub fn round_cuboid(hx: Real, hy: Real, border_radius: Real) -> Self {
         SharedShape::round_cuboid(hx, hy, border_radius).into()
     }
 
-    /// Initialize a new collision shape with a capsule shape.
+    /// Initialize a new collider with a capsule shape.
     pub fn capsule(a: Vect, b: Vect, radius: Real) -> Self {
         SharedShape::capsule(a.into(), b.into(), radius).into()
     }
 
-    /// Initialize a new collision shape with a capsule shape aligned with the `x` axis.
+    /// Initialize a new collider with a capsule shape aligned with the `x` axis.
     pub fn capsule_x(half_height: Real, radius: Real) -> Self {
         let p = Point::from(Vector::x() * half_height);
         SharedShape::capsule(-p, p, radius).into()
     }
 
-    /// Initialize a new collision shape with a capsule shape aligned with the `y` axis.
+    /// Initialize a new collider with a capsule shape aligned with the `y` axis.
     pub fn capsule_y(half_height: Real, radius: Real) -> Self {
         let p = Point::from(Vector::y() * half_height);
         SharedShape::capsule(-p, p, radius).into()
     }
 
-    /// Initialize a new collision shape with a capsule shape aligned with the `z` axis.
+    /// Initialize a new collider with a capsule shape aligned with the `z` axis.
     #[cfg(feature = "dim3")]
     pub fn capsule_z(half_height: Real, radius: Real) -> Self {
         let p = Point::from(Vector::z() * half_height);
         SharedShape::capsule(-p, p, radius).into()
     }
 
-    /// Initialize a new collision shape with a cuboid shape defined by its half-extents.
+    /// Initialize a new collider with a cuboid shape defined by its half-extents.
     #[cfg(feature = "dim3")]
     pub fn cuboid(hx: Real, hy: Real, hz: Real) -> Self {
         SharedShape::cuboid(hx, hy, hz).into()
     }
 
-    /// Initialize a new collision shape with a round cuboid shape defined by its half-extents
+    /// Initialize a new collider with a round cuboid shape defined by its half-extents
     /// and border radius.
     #[cfg(feature = "dim3")]
     pub fn round_cuboid(hx: Real, hy: Real, hz: Real, border_radius: Real) -> Self {
         SharedShape::round_cuboid(hx, hy, hz, border_radius).into()
     }
 
-    /// Initializes a collision shape with a segment shape.
+    /// Initializes a collider with a segment shape.
     pub fn segment(a: Vect, b: Vect) -> Self {
         SharedShape::segment(a.into(), b.into()).into()
     }
 
-    /// Initializes a collision shape with a triangle shape.
+    /// Initializes a collider with a triangle shape.
     pub fn triangle(a: Vect, b: Vect, c: Vect) -> Self {
         SharedShape::triangle(a.into(), b.into(), c.into()).into()
     }
 
-    /// Initializes a collision shape with a triangle shape with round corners.
+    /// Initializes a collider with a triangle shape with round corners.
     pub fn round_triangle(a: Vect, b: Vect, c: Vect, border_radius: Real) -> Self {
         SharedShape::round_triangle(a.into(), b.into(), c.into(), border_radius).into()
     }
 
-    /// Initializes a collision shape with a polyline shape defined by its vertex and index buffers.
+    /// Initializes a collider with a polyline shape defined by its vertex and index buffers.
     pub fn polyline(vertices: Vec<Vect>, indices: Option<Vec<[u32; 2]>>) -> Self {
         let vertices = vertices.into_iter().map(|v| v.into()).collect();
         SharedShape::polyline(vertices, indices).into()
     }
 
-    /// Initializes a collision shape with a triangle mesh shape defined by its vertex and index buffers.
+    /// Initializes a collider with a triangle mesh shape defined by its vertex and index buffers.
     pub fn trimesh(vertices: Vec<Vect>, indices: Vec<[u32; 3]>) -> Self {
         let vertices = vertices.into_iter().map(|v| v.into()).collect();
         SharedShape::trimesh(vertices, indices).into()
     }
 
-    /// Initializes a collision shape with a Bevy Mesh.
+    /// Initializes a collider with a Bevy Mesh.
     ///
     /// Returns `None` if the index buffer or vertex buffer of the mesh are in an incompatible format.
     #[cfg(feature = "dim3")]
@@ -160,7 +162,7 @@ impl Collider {
         extract_mesh_vertices_indices(mesh).map(|(vtx, idx)| SharedShape::trimesh(vtx, idx).into())
     }
 
-    /// Initializes a collision shape with the convex decomposition of a Bevy Mesh.
+    /// Initializes a collider with the convex decomposition of a Bevy Mesh.
     ///
     /// Returns `None` if the index buffer or vertex buffer of the mesh are in an incompatible format.
     #[cfg(feature = "dim3")]
@@ -169,7 +171,7 @@ impl Collider {
             .map(|(vtx, idx)| SharedShape::convex_decomposition(&vtx, &idx).into())
     }
 
-    /// Initializes a collision shape with the convex decomposition of a Bevy Mesh, using custom convex decomposition parameters.
+    /// Initializes a collider with the convex decomposition of a Bevy Mesh, using custom convex decomposition parameters.
     ///
     /// Returns `None` if the index buffer or vertex buffer of the mesh are in an incompatible format.
     #[cfg(feature = "dim3")]
@@ -182,14 +184,14 @@ impl Collider {
         })
     }
 
-    /// Initializes a collision shape with a compound shape obtained from the decomposition of
+    /// Initializes a collider with a compound shape obtained from the decomposition of
     /// the given trimesh (in 3D) or polyline (in 2D) into convex parts.
     pub fn convex_decomposition(vertices: &[Vect], indices: &[[u32; DIM]]) -> Self {
         let vertices: Vec<_> = vertices.iter().map(|v| (*v).into()).collect();
         SharedShape::convex_decomposition(&vertices, indices).into()
     }
 
-    /// Initializes a collision shape with a compound shape obtained from the decomposition of
+    /// Initializes a collider with a compound shape obtained from the decomposition of
     /// the given trimesh (in 3D) or polyline (in 2D) into convex parts dilated with round corners.
     pub fn round_convex_decomposition(
         vertices: &[Vect],
@@ -200,7 +202,7 @@ impl Collider {
         SharedShape::round_convex_decomposition(&vertices, indices, border_radius).into()
     }
 
-    /// Initializes a collision shape with a compound shape obtained from the decomposition of
+    /// Initializes a collider with a compound shape obtained from the decomposition of
     /// the given trimesh (in 3D) or polyline (in 2D) into convex parts.
     pub fn convex_decomposition_with_params(
         vertices: &[Vect],
@@ -211,7 +213,7 @@ impl Collider {
         SharedShape::convex_decomposition_with_params(&vertices, indices, params).into()
     }
 
-    /// Initializes a collision shape with a compound shape obtained from the decomposition of
+    /// Initializes a collider with a compound shape obtained from the decomposition of
     /// the given trimesh (in 3D) or polyline (in 2D) into convex parts dilated with round corners.
     pub fn round_convex_decomposition_with_params(
         vertices: &[Vect],
@@ -229,14 +231,14 @@ impl Collider {
         .into()
     }
 
-    /// Initializes a new collision shape with a 2D convex polygon or 3D convex polyhedron
+    /// Initializes a new collider with a 2D convex polygon or 3D convex polyhedron
     /// obtained after computing the convex-hull of the given points.
     pub fn convex_hull(points: &[Vect]) -> Option<Self> {
         let points: Vec<_> = points.iter().map(|v| (*v).into()).collect();
         SharedShape::convex_hull(&points).map(Into::into)
     }
 
-    /// Initializes a new collision shape with a round 2D convex polygon or 3D convex polyhedron
+    /// Initializes a new collider with a round 2D convex polygon or 3D convex polyhedron
     /// obtained after computing the convex-hull of the given points. The shape is dilated
     /// by a sphere of radius `border_radius`.
     pub fn round_convex_hull(points: &[Vect], border_radius: Real) -> Option<Self> {
@@ -244,7 +246,7 @@ impl Collider {
         SharedShape::round_convex_hull(&points, border_radius).map(Into::into)
     }
 
-    /// Creates a new collision shape that is a convex polygon formed by the
+    /// Creates a new collider that is a convex polygon formed by the
     /// given polyline assumed to be convex (no convex-hull will be automatically
     /// computed).
     #[cfg(feature = "dim2")]
@@ -253,7 +255,7 @@ impl Collider {
         SharedShape::convex_polyline(points).map(Into::into)
     }
 
-    /// Creates a new collision shape that is a round convex polygon formed by the
+    /// Creates a new collider that is a round convex polygon formed by the
     /// given polyline assumed to be convex (no convex-hull will be automatically
     /// computed). The polygon shape is dilated by a sphere of radius `border_radius`.
     #[cfg(feature = "dim2")]
@@ -262,7 +264,7 @@ impl Collider {
         SharedShape::round_convex_polyline(points, border_radius).map(Into::into)
     }
 
-    /// Creates a new collision shape that is a convex polyhedron formed by the
+    /// Creates a new collider that is a convex polyhedron formed by the
     /// given triangle-mesh assumed to be convex (no convex-hull will be automatically
     /// computed).
     #[cfg(feature = "dim3")]
@@ -271,7 +273,7 @@ impl Collider {
         SharedShape::convex_mesh(points, indices).map(Into::into)
     }
 
-    /// Creates a new collision shape that is a round convex polyhedron formed by the
+    /// Creates a new collider that is a round convex polyhedron formed by the
     /// given triangle-mesh assumed to be convex (no convex-hull will be automatically
     /// computed). The triangle mesh shape is dilated by a sphere of radius `border_radius`.
     #[cfg(feature = "dim3")]
@@ -284,14 +286,14 @@ impl Collider {
         SharedShape::round_convex_mesh(points, indices, border_radius).map(Into::into)
     }
 
-    /// Initializes a collision shape with a heightfield shape defined by its set of height and a scale
+    /// Initializes a collider with a heightfield shape defined by its set of height and a scale
     /// factor along each coordinate axis.
     #[cfg(feature = "dim2")]
     pub fn heightfield(heights: Vec<Real>, scale: Vector<Real>) -> Self {
         SharedShape::heightfield(DVector::from_vec(heights), scale).into()
     }
 
-    /// Initializes a collision shape with a heightfield shape defined by its set of height (in
+    /// Initializes a collider with a heightfield shape defined by its set of height (in
     /// column-major format) and a scale factor along each coordinate axis.
     #[cfg(feature = "dim3")]
     pub fn heightfield(
@@ -309,56 +311,69 @@ impl Collider {
         SharedShape::heightfield(heights, scale).into()
     }
 
+    /// Takes a strongly typed reference of this collider.
     pub fn as_typed_shape(&self) -> ColliderView {
         self.raw.as_typed_shape().into()
     }
 
+    /// Takes a strongly typed reference of the unscaled version of this collider.
     pub fn as_unscaled_typed_shape(&self) -> ColliderView {
         self.unscaled.as_typed_shape().into()
     }
 
+    /// Downcast this collider to a ball, if it is one.
     pub fn as_ball(&self) -> Option<BallView> {
         self.raw.as_ball().map(|s| BallView { raw: s })
     }
 
+    /// Downcast this collider to a cuboid, if it is one.
     pub fn as_cuboid(&self) -> Option<CuboidView> {
         self.raw.as_cuboid().map(|s| CuboidView { raw: s })
     }
 
+    /// Downcast this collider to a capsule, if it is one.
     pub fn as_capsule(&self) -> Option<CapsuleView> {
         self.raw.as_capsule().map(|s| CapsuleView { raw: s })
     }
 
+    /// Downcast this collider to a segment, if it is one.
     pub fn as_segment(&self) -> Option<SegmentView> {
         self.raw.as_segment().map(|s| SegmentView { raw: s })
     }
 
+    /// Downcast this collider to a triangle, if it is one.
     pub fn as_triangle(&self) -> Option<TriangleView> {
         self.raw.as_triangle().map(|s| TriangleView { raw: s })
     }
 
+    /// Downcast this collider to a triangle mesh, if it is one.
     pub fn as_trimesh(&self) -> Option<TriMeshView> {
         self.raw.as_trimesh().map(|s| TriMeshView { raw: s })
     }
 
+    /// Downcast this collider to a polyline, if it is one.
     pub fn as_polyline(&self) -> Option<PolylineView> {
         self.raw.as_polyline().map(|s| PolylineView { raw: s })
     }
 
+    /// Downcast this collider to a half-space, if it is one.
     pub fn as_halfspace(&self) -> Option<HalfSpaceView> {
         self.raw.as_halfspace().map(|s| HalfSpaceView { raw: s })
     }
 
+    /// Downcast this collider to a heightfield, if it is one.
     pub fn as_heightfield(&self) -> Option<HeightFieldView> {
         self.raw
             .as_heightfield()
             .map(|s| HeightFieldView { raw: s })
     }
 
+    /// Downcast this collider to a compound shape, if it is one.
     pub fn as_compound(&self) -> Option<CompoundView> {
         self.raw.as_compound().map(|s| CompoundView { raw: s })
     }
 
+    /// Downcast this collider to a convex polygon, if it is one.
     #[cfg(feature = "dim2")]
     pub fn as_convex_polygon(&self) -> Option<ConvexPolygonView> {
         self.raw
@@ -366,6 +381,7 @@ impl Collider {
             .map(|s| ConvexPolygonView { raw: s })
     }
 
+    /// Downcast this collider to a convex polyhedron, if it is one.
     #[cfg(feature = "dim3")]
     pub fn as_convex_polyhedron(&self) -> Option<ConvexPolyhedronView> {
         self.raw
@@ -373,16 +389,19 @@ impl Collider {
             .map(|s| ConvexPolyhedronView { raw: s })
     }
 
+    /// Downcast this collider to a cylinder, if it is one.
     #[cfg(feature = "dim3")]
     pub fn as_cylinder(&self) -> Option<CylinderView> {
         self.raw.as_cylinder().map(|s| CylinderView { raw: s })
     }
 
+    /// Downcast this collider to a cone, if it is one.
     #[cfg(feature = "dim3")]
     pub fn as_cone(&self) -> Option<ConeView> {
         self.raw.as_cone().map(|s| ConeView { raw: s })
     }
 
+    /// Downcast this collider to a mutable ball, if it is one.
     pub fn as_ball_mut(&mut self) -> Option<BallViewMut> {
         self.raw
             .make_mut()
@@ -390,6 +409,7 @@ impl Collider {
             .map(|s| BallViewMut { raw: s })
     }
 
+    /// Downcast this collider to a mutable cuboid, if it is one.
     pub fn as_cuboid_mut(&mut self) -> Option<CuboidViewMut> {
         self.raw
             .make_mut()
@@ -397,6 +417,7 @@ impl Collider {
             .map(|s| CuboidViewMut { raw: s })
     }
 
+    /// Downcast this collider to a mutable capsule, if it is one.
     pub fn as_capsule_mut(&mut self) -> Option<CapsuleViewMut> {
         self.raw
             .make_mut()
@@ -404,6 +425,7 @@ impl Collider {
             .map(|s| CapsuleViewMut { raw: s })
     }
 
+    /// Downcast this collider to a mutable segment, if it is one.
     pub fn as_segment_mut(&mut self) -> Option<SegmentViewMut> {
         self.raw
             .make_mut()
@@ -411,6 +433,7 @@ impl Collider {
             .map(|s| SegmentViewMut { raw: s })
     }
 
+    /// Downcast this collider to a mutable triangle, if it is one.
     pub fn as_triangle_mut(&mut self) -> Option<TriangleViewMut> {
         self.raw
             .make_mut()
@@ -418,6 +441,7 @@ impl Collider {
             .map(|s| TriangleViewMut { raw: s })
     }
 
+    /// Downcast this collider to a mutable triangle mesh, if it is one.
     pub fn as_trimesh_mut(&mut self) -> Option<TriMeshViewMut> {
         self.raw
             .make_mut()
@@ -425,6 +449,7 @@ impl Collider {
             .map(|s| TriMeshViewMut { raw: s })
     }
 
+    /// Downcast this collider to a mutable polyline, if it is one.
     pub fn as_polyline_mut(&mut self) -> Option<PolylineViewMut> {
         self.raw
             .make_mut()
@@ -432,6 +457,7 @@ impl Collider {
             .map(|s| PolylineViewMut { raw: s })
     }
 
+    /// Downcast this collider to a mutable half-space, if it is one.
     pub fn as_halfspace_mut(&mut self) -> Option<HalfSpaceViewMut> {
         self.raw
             .make_mut()
@@ -439,6 +465,7 @@ impl Collider {
             .map(|s| HalfSpaceViewMut { raw: s })
     }
 
+    /// Downcast this collider to a mutable heightfield, if it is one.
     pub fn as_heightfield_mut(&mut self) -> Option<HeightFieldViewMut> {
         self.raw
             .make_mut()
@@ -446,12 +473,14 @@ impl Collider {
             .map(|s| HeightFieldViewMut { raw: s })
     }
 
+    // /// Downcast this collider to a mutable compound shape, if it is one.
     // pub fn as_compound_mut(&mut self) -> Option<CompoundViewMut> {
     //     self.raw.make_mut()
     //         .as_compound_mut()
     //         .map(|s| CompoundViewMut { raw: s })
     // }
 
+    // /// Downcast this collider to a mutable convex polygon, if it is one.
     // #[cfg(feature = "dim2")]
     // pub fn as_convex_polygon_mut(&mut self) -> Option<ConvexPolygonViewMut> {
     //     self.raw.make_mut()
@@ -459,6 +488,7 @@ impl Collider {
     //         .map(|s| ConvexPolygonViewMut { raw: s })
     // }
 
+    // /// Downcast this collider to a mutable convex polyhedron, if it is one.
     // #[cfg(feature = "dim3")]
     // pub fn as_convex_polyhedron_mut(&mut self) -> Option<ConvexPolyhedronViewMut> {
     //     self.raw.make_mut()
@@ -466,6 +496,7 @@ impl Collider {
     //         .map(|s| ConvexPolyhedronViewMut { raw: s })
     // }
 
+    /// Downcast this collider to a mutable cylinder, if it is one.
     #[cfg(feature = "dim3")]
     pub fn as_cylinder_mut(&mut self) -> Option<CylinderViewMut> {
         self.raw
@@ -474,6 +505,7 @@ impl Collider {
             .map(|s| CylinderViewMut { raw: s })
     }
 
+    /// Downcast this collider to a mutable cone, if it is one.
     #[cfg(feature = "dim3")]
     pub fn as_cone_mut(&mut self) -> Option<ConeViewMut> {
         self.raw
@@ -482,6 +514,13 @@ impl Collider {
             .map(|s| ConeViewMut { raw: s })
     }
 
+    /// Set the scaling factor of this shape.
+    ///
+    /// If the scaling factor is non-uniform, and the scaled shape can’t be
+    /// represented as a supported smooth shape (for example scalling a Ball
+    /// with a non-uniform scale results in an ellipse which isn’t supported),
+    /// the shape is approximated by a convex polygon/convex polyhedron using
+    /// `num_subdivisions` subdivisions.
     pub fn set_scale(&mut self, scale: Vect, num_subdivisions: u32) {
         if scale == self.scale {
             // Nothing to do.

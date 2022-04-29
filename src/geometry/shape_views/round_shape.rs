@@ -18,15 +18,19 @@ use {
 
 macro_rules!  round_shape_view(
     ($RoundShape: ident, $RoundShapeView: ident, $ShapeView: ident, $RoundShapeViewMut: ident, $ShapeViewMut: ident) => {
+        /// Read-only access to the properties of a round shape.
         pub struct $RoundShapeView<'a> {
+            /// The raw shape from Rapier.
             pub raw: &'a $RoundShape,
         }
 
         impl<'a> $RoundShapeView<'a> {
+            /// The radius of the round border of this shape.
             pub fn border_radius(&self) -> f32 {
                 self.raw.border_radius
             }
 
+            /// The underlying not-rounded shape.
             pub fn inner_shape(&self) -> $ShapeView {
                 $ShapeView {
                     raw: &self.raw.inner_shape,
@@ -34,19 +38,24 @@ macro_rules!  round_shape_view(
             }
         }
 
+        /// Read-write access to the properties of a round shape.
         pub struct $RoundShapeViewMut<'a> {
+            /// The raw shape from Rapier.
             pub raw: &'a mut $RoundShape,
         }
 
         impl<'a> $RoundShapeViewMut<'a> {
+            /// The radius of the round border of this shape.
             pub fn border_radius(&self) -> f32 {
                 self.raw.border_radius
             }
 
+            /// Set the radius of the round border of this shape.
             pub fn set_border_radius(&mut self, new_border_radius: f32) {
                 self.raw.border_radius = new_border_radius;
             }
 
+            /// The underlying not-rounded shape.
             pub fn inner_shape(&mut self) -> $ShapeViewMut {
                 $ShapeViewMut {
                     raw: &mut self.raw.inner_shape,

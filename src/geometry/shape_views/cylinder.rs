@@ -1,7 +1,9 @@
 use crate::math::Real;
 use rapier::parry::shape::Cylinder;
 
+/// Read-only access to the properties of a cylinder.
 pub struct CylinderView<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a Cylinder,
 }
 
@@ -23,7 +25,9 @@ macro_rules! impl_ref_methods(
 
 impl_ref_methods!(CylinderView);
 
+/// Read-write access to the properties of a cylinder.
 pub struct CylinderViewMut<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a mut Cylinder,
 }
 
