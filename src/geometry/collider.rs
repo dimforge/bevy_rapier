@@ -3,7 +3,7 @@ use crate::geometry::VHACDParameters;
 use bevy::prelude::*;
 use rapier::prelude::{ColliderHandle, InteractionGroups, SharedShape};
 
-use crate::dynamics::CoefficientCombineRule;
+use crate::dynamics::{CoefficientCombineRule, MassProperties};
 use crate::math::Vect;
 
 #[derive(Copy, Clone, Debug, Component)]
@@ -46,11 +46,14 @@ pub enum ColliderScale {
 pub struct Sensor;
 
 #[derive(Copy, Clone, Debug, Component, Reflect)]
-pub struct Density(pub f32);
+pub enum ColliderMassProperties {
+    Density(f32),
+    MassProperties(MassProperties),
+}
 
-impl Default for Density {
+impl Default for ColliderMassProperties {
     fn default() -> Self {
-        Self(1.0)
+        Self::Density(1.0)
     }
 }
 
