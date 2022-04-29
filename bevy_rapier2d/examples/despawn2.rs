@@ -31,7 +31,7 @@ fn main() {
         .run();
 }
 
-fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
+fn setup_graphics(mut commands: Commands) {
     let mut camera = OrthographicCameraBundle::new_2d();
     camera.transform = Transform {
         translation: Vec3::new(0.0, 20.0, 0.0),
@@ -75,13 +75,11 @@ pub fn setup_physics(
     let shift = rad * 2.0;
     let centerx = shift * (num as f32) / 2.0;
     let centery = shift / 2.0;
-    let mut color = 0;
 
     for i in 0..num {
         for j in 0usize..num * 5 {
             let x = i as f32 * shift - centerx;
             let y = j as f32 * shift + centery + 2.0;
-            color += 1;
 
             let entity = commands
                 .spawn()

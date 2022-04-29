@@ -46,6 +46,7 @@ pub mod plugin;
 
 #[cfg(feature = "debug-render")]
 pub mod render;
+pub mod utils;
 
 pub mod prelude {
     pub use crate::dynamics::*;

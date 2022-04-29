@@ -90,8 +90,7 @@ fn setup_game(mut commands: Commands, mut game: ResMut<Game>) {
 
     commands
         .spawn()
-        .insert_bundle(OrthographicCameraBundle::new_2d())
-        .id();
+        .insert_bundle(OrthographicCameraBundle::new_2d());
 
     setup_board(&mut commands, &*game);
 

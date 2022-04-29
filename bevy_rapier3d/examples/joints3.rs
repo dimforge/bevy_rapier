@@ -130,13 +130,11 @@ fn create_fixed_joints(commands: &mut Commands, origin: Vec3, num: usize) {
     let shift = 1.0;
 
     let mut body_entities = Vec::new();
-    let mut color = 0;
 
     for k in 0..num {
         for i in 0..num {
             let fk = k as f32;
             let fi = i as f32;
-            color += 1;
 
             // NOTE: the num - 2 test is to avoid two consecutive
             // fixed bodies. Because physx will crash if we add
@@ -195,13 +193,11 @@ fn create_ball_joints(commands: &mut Commands, num: usize) {
     let shift = 1.0;
 
     let mut body_entities = Vec::new();
-    let mut color = 0;
 
     for k in 0..num {
         for i in 0..num {
             let fk = k as f32;
             let fi = i as f32;
-            color += 1;
 
             let rigid_body = if i == 0 && (k % 4 == 0 || k == num - 1) {
                 RigidBody::Fixed
