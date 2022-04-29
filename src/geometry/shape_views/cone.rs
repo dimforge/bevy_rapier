@@ -1,7 +1,9 @@
 use crate::math::Real;
 use rapier::parry::shape::Cone;
 
+/// Read-only access to the properties of a cone.
 pub struct ConeView<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a Cone,
 }
 
@@ -23,7 +25,9 @@ macro_rules! impl_ref_methods(
 
 impl_ref_methods!(ConeView);
 
+/// Read-write access to the properties of a cone.
 pub struct ConeViewMut<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a mut Cone,
 }
 

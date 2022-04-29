@@ -32,7 +32,7 @@ type RigidBodyWritebackComponents<'a> = (
     Option<&'a mut Sleeping>,
 );
 
-pub type RigidBodyComponents<'a> = (
+type RigidBodyComponents<'a> = (
     Entity,
     &'a RigidBody,
     Option<&'a Transform>,
@@ -49,7 +49,7 @@ pub type RigidBodyComponents<'a> = (
     Option<&'a Damping>,
 );
 
-pub type ColliderComponents<'a> = (
+type ColliderComponents<'a> = (
     Entity,
     &'a Collider,
     Option<&'a Transform>,

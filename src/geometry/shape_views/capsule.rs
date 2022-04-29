@@ -2,7 +2,9 @@ use super::SegmentView;
 use crate::math::{Real, Rot, Vect};
 use rapier::parry::shape::Capsule;
 
+/// Read-only access to the properties of a capsule.
 pub struct CapsuleView<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a Capsule,
 }
 
@@ -64,7 +66,9 @@ macro_rules! impl_ref_methods(
 
 impl_ref_methods!(CapsuleView);
 
+/// Read-write access to the properties of a capsule.
 pub struct CapsuleViewMut<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a mut Capsule,
 }
 

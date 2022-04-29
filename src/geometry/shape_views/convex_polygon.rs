@@ -1,7 +1,9 @@
 use crate::math::Vect;
 use rapier::parry::shape::ConvexPolygon;
 
+/// Read-only access to the properties of a convex polygon.
 pub struct ConvexPolygonView<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a ConvexPolygon,
 }
 
@@ -17,7 +19,9 @@ impl<'a> ConvexPolygonView<'a> {
     }
 }
 
+/// Read-write access to the properties of a convex polygon.
 pub struct ConvexPolygonViewMut<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a mut ConvexPolygon,
 }
 

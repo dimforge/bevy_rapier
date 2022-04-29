@@ -1,7 +1,9 @@
 use crate::math::Vect;
 use rapier::parry::shape::Polyline;
 
+/// Read-only access to the properties of a polyline.
 pub struct PolylineView<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a Polyline,
 }
 
@@ -24,10 +26,12 @@ macro_rules! impl_ref_methods(
                 (seg.a.into(), seg.b.into())
             }
 
+            /// The vertex buffer, containing all the vertices of this polyline.
             pub fn vertices(&self) -> impl ExactSizeIterator<Item = Vect> + '_ {
                 self.raw.vertices().iter().map(|v| (*v).into())
             }
 
+            /// The index buffer, describing all the segments of this polyline.
             pub fn indices(&self) -> &[[u32; 2]] {
                 self.raw.indices()
             }
@@ -37,7 +41,9 @@ macro_rules! impl_ref_methods(
 
 impl_ref_methods!(PolylineView);
 
+/// Read-write access to the properties of a polyline.
 pub struct PolylineViewMut<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a mut Polyline,
 }
 

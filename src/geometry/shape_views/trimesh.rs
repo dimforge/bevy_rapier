@@ -1,7 +1,9 @@
 use crate::math::Vect;
 use rapier::parry::shape::{TopologyError, TriMesh, TriMeshFlags};
 
+/// Read-only access to the properties of a triangle mesh.
 pub struct TriMeshView<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a TriMesh,
 }
 
@@ -46,13 +48,16 @@ macro_rules! impl_ref_methods(
 
 impl_ref_methods!(TriMeshView);
 
+/// Read-write access to the properties of a triangle mesh.
 pub struct TriMeshViewMut<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a mut TriMesh,
 }
 
 impl_ref_methods!(TriMeshViewMut);
 
 impl<'a> TriMeshViewMut<'a> {
+    /// Sets the flags of this triangle mesh, controlling its optional associated data.
     pub fn set_flags(&mut self, flags: TriMeshFlags) -> Result<(), TopologyError> {
         self.raw.set_flags(flags)
     }

@@ -2,7 +2,9 @@ use crate::math::{Real, Vect};
 use rapier::parry::shape::HeightField;
 pub use rapier::parry::shape::HeightFieldCellStatus;
 
+/// Read-only access to the properties of a heightfield.
 pub struct HeightFieldView<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a HeightField,
 }
 
@@ -143,7 +145,9 @@ macro_rules! impl_ref_methods(
 
 impl_ref_methods!(HeightFieldView);
 
+/// Read-write access to the properties of a heightfield.
 pub struct HeightFieldViewMut<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a mut HeightField,
 }
 
@@ -151,6 +155,7 @@ impl_ref_methods!(HeightFieldViewMut);
 
 #[cfg(feature = "dim2")]
 impl<'a> HeightFieldViewMut<'a> {
+    /// Sets whether or not the given cell of the heightfield is deleted.
     pub fn set_segment_removed(&mut self, i: usize, removed: bool) {
         self.raw.set_segment_removed(i, removed)
     }
@@ -158,10 +163,12 @@ impl<'a> HeightFieldViewMut<'a> {
 
 #[cfg(feature = "dim3")]
 impl<'a> HeightFieldViewMut<'a> {
+    /// Set the status of the `(i, j)`-th cell.
     pub fn set_cell_status(&mut self, i: usize, j: usize, status: HeightFieldCellStatus) {
         self.raw.set_cell_status(i, j, status)
     }
 
+    /// The mutable statuses of all the cells of this heightfield.
     pub fn cells_statuses_mut(&mut self) -> &mut [HeightFieldCellStatus] {
         self.raw.cells_statuses_mut().as_mut_slice()
     }

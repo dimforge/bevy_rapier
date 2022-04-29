@@ -5,7 +5,13 @@ use bevy::ecs::{event::Events, query::WorldQuery};
 use bevy::prelude::*;
 use std::marker::PhantomData;
 
+/// No specific user-data is associated to the hooks.
 pub type NoUserData = ();
+
+/// A plugin responsible for setting up a full Rapier physics simulation pipeline and resources.
+//
+// This will automatically setup all the resources needed to run a physics simulation with the
+// Rapier physics engine.
 pub struct RapierPhysicsPlugin<PhysicsHooksData = ()> {
     physics_scale: f32,
     _phantom: PhantomData<PhysicsHooksData>,

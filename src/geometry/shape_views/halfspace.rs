@@ -1,7 +1,9 @@
 use crate::math::Vect;
 use rapier::parry::shape::HalfSpace;
 
+/// Read-only access to the properties of a half-space.
 pub struct HalfSpaceView<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a HalfSpace,
 }
 
@@ -18,7 +20,9 @@ macro_rules! impl_ref_methods(
 
 impl_ref_methods!(HalfSpaceView);
 
+/// Read-write access to the properties of a half-space.
 pub struct HalfSpaceViewMut<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a mut HalfSpace,
 }
 

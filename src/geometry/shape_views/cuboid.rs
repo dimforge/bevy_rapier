@@ -1,7 +1,9 @@
 use crate::math::Vect;
 use rapier::geometry::Cuboid;
 
+/// Read-only access to the properties of a cuboid.
 pub struct CuboidView<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a Cuboid,
 }
 
@@ -18,7 +20,9 @@ macro_rules! impl_ref_methods(
 
 impl_ref_methods!(CuboidView);
 
+/// Read-write access to the properties of a cuboid.
 pub struct CuboidViewMut<'a> {
+    /// The raw shape from Rapier.
     pub raw: &'a mut Cuboid,
 }
 
