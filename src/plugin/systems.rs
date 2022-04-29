@@ -10,8 +10,9 @@ use crate::dynamics::{
     Sleeping, TransformInterpolation, Velocity,
 };
 use crate::geometry::{
-    ActiveCollisionTypes, ActiveEvents, ActiveHooks, Collider, ColliderScale, CollisionGroups,
-    Density, Friction, RapierColliderHandle, Restitution, Sensor, SolverGroups,
+    ActiveCollisionTypes, ActiveEvents, ActiveHooks, Collider, ColliderMassProperties,
+    ColliderScale, CollisionGroups, Friction, RapierColliderHandle, Restitution, Sensor,
+    SolverGroups,
 };
 use crate::pipeline::{
     CollisionEvent, PhysicsHooksWithQueryInstance, PhysicsHooksWithQueryResource,
@@ -53,7 +54,7 @@ pub type ColliderComponents<'a> = (
     &'a Collider,
     Option<&'a Transform>,
     Option<&'a Sensor>,
-    Option<&'a Density>,
+    Option<&'a ColliderMassProperties>,
     Option<&'a ActiveEvents>,
     Option<&'a ActiveHooks>,
     Option<&'a ActiveCollisionTypes>,
@@ -529,7 +530,7 @@ pub fn init_colliders(
         shape,
         transform,
         sensor,
-        density,
+        mprops,
         active_events,
         active_hooks,
         active_collision_types,
@@ -547,8 +548,13 @@ pub fn init_colliders(
             builder = builder.sensor(true);
         }
 
-        if let Some(density) = density {
-            builder = builder.density(density.0);
+        if let Some(mprops) = mprops {
+            builder = match mprops {
+                ColliderMassProperties::Density(density) => builder.density(*density),
+                ColliderMassProperties::MassProperties(mprops) => {
+                    builder.mass_properties(mprops.into_rapier(scale))
+                }
+            };
         }
 
         if let Some(active_events) = active_events {
