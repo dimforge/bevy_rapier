@@ -50,9 +50,9 @@ pub enum ColliderScale {
     Absolute(Vect),
 }
 
-/// Defines the associated collider as a sensor (it will produce events but no contacts).
-#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
-pub struct Sensor;
+/// Indicates whether or not the collider is a sensor.
+#[derive(Copy, Clone, Debug, PartialEq, Default, Component, Reflect)]
+pub struct Sensor(pub bool);
 
 /// Custom mass-properties of a collider.
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]

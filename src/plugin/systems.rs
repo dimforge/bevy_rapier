@@ -123,6 +123,7 @@ pub fn apply_collider_user_changes(
         Changed<CollisionGroups>,
     >,
     changed_solver_groups: Query<(&RapierColliderHandle, &SolverGroups), Changed<SolverGroups>>,
+    changed_sensors: Query<(&RapierColliderHandle, &Sensor), Changed<Sensor>>,
 ) {
     let scale = context.physics_scale;
 
@@ -183,6 +184,12 @@ pub fn apply_collider_user_changes(
     for (handle, solver_groups) in changed_solver_groups.iter() {
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_solver_groups((*solver_groups).into());
+        }
+    }
+
+    for (handle, sensor) in changed_sensors.iter() {
+        if let Some(co) = context.colliders.get_mut(handle.0) {
+            co.set_sensor(sensor.0)
         }
     }
 }
@@ -569,8 +576,8 @@ pub fn init_colliders(
         scaled_shape.set_scale(shape.scale / scale, config.scaled_shape_subdivision);
         let mut builder = ColliderBuilder::new(scaled_shape.raw.clone());
 
-        if sensor.is_some() {
-            builder = builder.sensor(true);
+        if let Some(sensor) = sensor {
+            builder = builder.sensor(sensor.0);
         }
 
         if let Some(mprops) = mprops {
