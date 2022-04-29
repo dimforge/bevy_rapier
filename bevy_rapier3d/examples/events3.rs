@@ -50,7 +50,7 @@ pub fn setup_physics(mut commands: Commands) {
     commands
         .spawn()
         .insert(Collider::cuboid(4.0, 1.5, 1.0))
-        .insert(Sensor)
+        .insert(Sensor(true))
         .insert(Transform::from_xyz(0.0, 5.0, 0.0));
 
     commands
