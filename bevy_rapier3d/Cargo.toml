@@ -1,6 +1,6 @@
 [package]
 name = "bevy_rapier3d"
-version = "0.12.1"
+version = "0.13.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 description = "3-dimensional physics engine in Rust, official Bevy plugin."
 documentation = "http://docs.rs/bevy_rapier3d"
@@ -30,9 +30,9 @@ enhanced-determinism = [ "rapier3d/enhanced-determinism" ]
 
 [dependencies]
 bevy = { version = "0.7", default-features = false }
-nalgebra = { version = "0.30.1", features = [ "convert-glam020" ] }
+nalgebra = { version = "0.31", features = [ "convert-glam020" ] }
 # Don't enable the default features because we don't need the ColliderSet/RigidBodySet
-rapier3d = "0.12.0-alpha.0"
+rapier3d = "0.12.0"
 bitflags = "1"
 #bevy_prototype_debug_lines = { version = "0.6", features = ["3d"], optional = true }
 log = "0.4"
