@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.13.0 (30 Apr. 2022)
+This is a **complete rewrite of the plugin** (mostly likely the last large redesign this plugin
+will be subject to). It switches to `rapier` 0.12 and `bevy` 0.7. The focus of this rewrite was
+to significantly improve ergonomics while simplifying the codebase and adding new features.
+
+Refer to [#138](https://github.com/dimforge/bevy_rapier/pull/138) for extensive details
+on this change. See the folders `bevy_rapier2d/examples` and `bevy_rapier3d/examples`
+for some examples.
+
 ## 0.12.0
 ### Modified
 - Switch to `rapier` 0.12.0-alpha.0 and `nalgebra` 0.30.
