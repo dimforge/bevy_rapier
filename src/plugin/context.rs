@@ -92,6 +92,16 @@ impl Default for RapierContext {
 }
 
 impl RapierContext {
+    /// If the collider attached to `entity` is attached to a rigid-body, this
+    /// returns the `Entity` containing that rigid-body.
+    pub fn collider_parent(&self, entity: Entity) -> Option<Entity> {
+        self.entity2collider
+            .get(&entity)
+            .and_then(|h| self.colliders.get(*h))
+            .and_then(|co| co.parent())
+            .and_then(|h| self.rigid_body_entity(h))
+    }
+
     /// Retrieve the Bevy entity the given Rapier collider (identified by its handle) is attached.
     pub fn collider_entity(&self, handle: ColliderHandle) -> Option<Entity> {
         self.colliders
@@ -574,6 +584,7 @@ impl RapierContext {
     pub fn project_point_and_get_feature(
         &self,
         point: Vect,
+        // FIXME: should be a CollisionGroups
         query_groups: InteractionGroups,
         filter: Option<&dyn Fn(Entity) -> bool>,
     ) -> Option<(Entity, PointProjection, FeatureId)> {
