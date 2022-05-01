@@ -205,7 +205,7 @@ fn spawn_block(
         .spawn()
         .insert_bundle(SpriteBundle {
             sprite: Sprite {
-                color: game.cube_colors[kind as usize].clone(),
+                color: game.cube_colors[kind as usize],
                 custom_size: Some(Vec2::new(30.0, 30.0)),
                 ..Default::default()
             },

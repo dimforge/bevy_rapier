@@ -37,9 +37,9 @@ impl Default for RigidBody {
     }
 }
 
-impl Into<RigidBodyType> for RigidBody {
-    fn into(self) -> RigidBodyType {
-        match self {
+impl From<RigidBody> for RigidBodyType {
+    fn from(rigid_body: RigidBody) -> RigidBodyType {
+        match rigid_body {
             RigidBody::Dynamic => RigidBodyType::Dynamic,
             RigidBody::Fixed => RigidBodyType::Fixed,
             RigidBody::KinematicPositionBased => RigidBodyType::KinematicPositionBased,
@@ -132,6 +132,7 @@ impl MassProperties {
         rapier::dynamics::MassProperties::new(
             (self.local_center_of_mass / physics_scale).into(),
             self.mass,
+            #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             (self.principal_inertia / (physics_scale * physics_scale)).into(),
         )
     }
@@ -149,6 +150,7 @@ impl MassProperties {
 
     /// Converts Rapier’s `MassProperties` structure to `Self`.
     pub fn from_rapier(mprops: rapier::dynamics::MassProperties, physics_scale: f32) -> Self {
+        #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
         Self {
             mass: mprops.mass(),
             local_center_of_mass: (mprops.local_com * physics_scale).into(),
@@ -183,9 +185,9 @@ bitflags::bitflags! {
     }
 }
 
-impl Into<RapierLockedAxes> for LockedAxes {
-    fn into(self) -> RapierLockedAxes {
-        RapierLockedAxes::from_bits(self.bits()).expect("Internal conversion error.")
+impl From<LockedAxes> for RapierLockedAxes {
+    fn from(locked_axes: LockedAxes) -> RapierLockedAxes {
+        RapierLockedAxes::from_bits(locked_axes.bits()).expect("Internal conversion error.")
     }
 }
 
@@ -325,21 +327,12 @@ impl Default for Damping {
 /// If the `TimestepMode::Interpolated` mode is set and this component is present,
 /// the associated rigid-body will have its position automatically interpolated
 /// between the last two rigid-body positions set by the physics engine.
-#[derive(Copy, Clone, Debug, PartialEq, Component)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component)]
 pub struct TransformInterpolation {
     /// The starting point of the interpolation.
     pub start: Option<Isometry<f32>>,
     /// The end point of the interpolation.
     pub end: Option<Isometry<f32>>,
-}
-
-impl Default for TransformInterpolation {
-    fn default() -> Self {
-        Self {
-            start: None,
-            end: None,
-        }
-    }
 }
 
 impl TransformInterpolation {

@@ -416,8 +416,8 @@ impl GenericJointBuilder {
     }
 }
 
-impl Into<GenericJoint> for GenericJointBuilder {
-    fn into(self) -> GenericJoint {
-        self.0
+impl From<GenericJointBuilder> for GenericJoint {
+    fn from(joint: GenericJointBuilder) -> GenericJoint {
+        joint.0
     }
 }

@@ -16,29 +16,29 @@ jobs:
       - uses: actions/checkout@v2
       - name: Check formatting
         run: cargo fmt -- --check
-  build:
+  test:
     runs-on: ubuntu-latest
     env:
       RUSTFLAGS: -D warnings
     steps:
     - uses: actions/checkout@v2
     - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
-    - name: Build bevy_rapier2d
-      run: cargo build --verbose -p bevy_rapier2d;
-    - name: Build bevy_rapier3d
-      run: cargo build --verbose -p bevy_rapier3d;
-    - name: Check bevy_rapier2d examples
-      run: cargo test --verbose -p bevy_rapier2d;
-    - name: Check bevy_rapier3d examples
-      run: cargo test --verbose -p bevy_rapier3d;
-  build-wasm:
+    - name: Clippy for bevy_rapier2d
+      run: cargo build --verbose -p bevy_rapier2d
+    - name: Clippy for bevy_rapier3d
+      run: cargo build --verbose -p bevy_rapier3d
+    - name: Test for bevy_rapier2d
+      run: cargo test --verbose -p bevy_rapier2d
+    - name: Test for bevy_rapier3d
+      run: cargo test --verbose -p bevy_rapier3d
+  test-wasm:
     runs-on: ubuntu-latest
     env:
       RUSTFLAGS: -D warnings
     steps:
       - uses: actions/checkout@v2
       - run: rustup target add wasm32-unknown-unknown
-      - name: build bevy_rapier2d
-        run: cd bevy_rapier2d && cargo build --verbose --features wasm-bindgen --target wasm32-unknown-unknown;
-      - name: build bevy_rapier3d
-        run: cd bevy_rapier3d && cargo build --verbose --features wasm-bindgen --target wasm32-unknown-unknown;
+      - name: Clippy bevy_rapier2d
+        run: cd bevy_rapier2d && cargo clippy --verbose --features wasm-bindgen --target wasm32-unknown-unknown
+      - name: Clippy bevy_rapier3d
+        run: cd bevy_rapier3d && cargo clippy --verbose --features wasm-bindgen --target wasm32-unknown-unknown

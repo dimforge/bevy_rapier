@@ -5,7 +5,7 @@ use rapier::geometry::{Contact, ContactManifold, ContactPair, SolverContact, Sol
 
 impl RapierContext {
     /// All the contacts involving the non-sensor collider attached to the given entity.
-    pub fn contacts_with<'a>(&self, collider: Entity) -> impl Iterator<Item = ContactPairView> {
+    pub fn contacts_with(&self, collider: Entity) -> impl Iterator<Item = ContactPairView> {
         self.entity2collider
             .get(&collider)
             .into_iter()

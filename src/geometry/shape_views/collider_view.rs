@@ -60,9 +60,9 @@ pub enum ColliderView<'a> {
     RoundConvexPolygon(RoundConvexPolygonView<'a>),
 }
 
-impl<'a> Into<ColliderView<'a>> for TypedShape<'a> {
-    fn into(self) -> ColliderView<'a> {
-        match self {
+impl<'a> From<TypedShape<'a>> for ColliderView<'a> {
+    fn from(typed_shape: TypedShape<'a>) -> ColliderView<'a> {
+        match typed_shape {
             TypedShape::Ball(s) => ColliderView::Ball(BallView { raw: s }),
             TypedShape::Cuboid(s) => ColliderView::Cuboid(CuboidView { raw: s }),
             TypedShape::Capsule(s) => ColliderView::Capsule(CapsuleView { raw: s }),

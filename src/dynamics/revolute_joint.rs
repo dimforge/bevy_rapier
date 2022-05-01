@@ -9,6 +9,13 @@ pub struct RevoluteJoint {
     data: GenericJoint,
 }
 
+#[cfg(feature = "dim2")]
+impl Default for RevoluteJoint {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RevoluteJoint {
     /// Creates a new revolute joint allowing only relative rotations.
     #[cfg(feature = "dim2")]
@@ -121,9 +128,9 @@ impl RevoluteJoint {
     }
 }
 
-impl Into<GenericJoint> for RevoluteJoint {
-    fn into(self) -> GenericJoint {
-        self.data
+impl From<RevoluteJoint> for GenericJoint {
+    fn from(joint: RevoluteJoint) -> GenericJoint {
+        joint.data
     }
 }
 
@@ -132,6 +139,13 @@ impl Into<GenericJoint> for RevoluteJoint {
 /// A revolute joint locks all relative motion except for rotations along the joint’s principal axis.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct RevoluteJointBuilder(RevoluteJoint);
+
+#[cfg(feature = "dim2")]
+impl Default for RevoluteJointBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl RevoluteJointBuilder {
     /// Creates a new revolute joint builder.
@@ -217,8 +231,8 @@ impl RevoluteJointBuilder {
     }
 }
 
-impl Into<GenericJoint> for RevoluteJointBuilder {
-    fn into(self) -> GenericJoint {
-        self.0.into()
+impl From<RevoluteJointBuilder> for GenericJoint {
+    fn from(joint: RevoluteJointBuilder) -> GenericJoint {
+        joint.0.into()
     }
 }

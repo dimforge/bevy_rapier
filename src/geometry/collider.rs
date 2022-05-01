@@ -31,11 +31,11 @@ pub struct Collider {
     pub(crate) scale: Vect,
 }
 
-impl Into<Collider> for SharedShape {
-    fn into(self) -> Collider {
+impl From<SharedShape> for Collider {
+    fn from(shared_shape: SharedShape) -> Collider {
         Collider {
-            raw: self.clone(),
-            unscaled: self,
+            raw: shared_shape.clone(),
+            unscaled: shared_shape,
             scale: Vect::ONE,
         }
     }
@@ -188,9 +188,9 @@ impl Default for ActiveCollisionTypes {
     }
 }
 
-impl Into<rapier::geometry::ActiveCollisionTypes> for ActiveCollisionTypes {
-    fn into(self) -> rapier::geometry::ActiveCollisionTypes {
-        rapier::geometry::ActiveCollisionTypes::from_bits(self.bits)
+impl From<ActiveCollisionTypes> for rapier::geometry::ActiveCollisionTypes {
+    fn from(collision_types: ActiveCollisionTypes) -> rapier::geometry::ActiveCollisionTypes {
+        rapier::geometry::ActiveCollisionTypes::from_bits(collision_types.bits)
             .expect("Internal error: invalid active events conversion.")
     }
 }
@@ -237,11 +237,11 @@ impl CollisionGroups {
     }
 }
 
-impl Into<InteractionGroups> for CollisionGroups {
-    fn into(self) -> InteractionGroups {
+impl From<CollisionGroups> for InteractionGroups {
+    fn from(collision_groups: CollisionGroups) -> InteractionGroups {
         InteractionGroups {
-            memberships: self.memberships,
-            filter: self.filters,
+            memberships: collision_groups.memberships,
+            filter: collision_groups.filters,
         }
     }
 }
@@ -276,11 +276,11 @@ impl SolverGroups {
     }
 }
 
-impl Into<InteractionGroups> for SolverGroups {
-    fn into(self) -> InteractionGroups {
+impl From<SolverGroups> for InteractionGroups {
+    fn from(solver_groups: SolverGroups) -> InteractionGroups {
         InteractionGroups {
-            memberships: self.memberships,
-            filter: self.filters,
+            memberships: solver_groups.memberships,
+            filter: solver_groups.filters,
         }
     }
 }
@@ -299,9 +299,9 @@ bitflags::bitflags! {
     }
 }
 
-impl Into<rapier::pipeline::ActiveHooks> for ActiveHooks {
-    fn into(self) -> rapier::pipeline::ActiveHooks {
-        rapier::pipeline::ActiveHooks::from_bits(self.bits)
+impl From<ActiveHooks> for rapier::pipeline::ActiveHooks {
+    fn from(active_hooks: ActiveHooks) -> rapier::pipeline::ActiveHooks {
+        rapier::pipeline::ActiveHooks::from_bits(active_hooks.bits)
             .expect("Internal error: invalid active events conversion.")
     }
 }
@@ -317,9 +317,9 @@ bitflags::bitflags! {
     }
 }
 
-impl Into<rapier::pipeline::ActiveEvents> for ActiveEvents {
-    fn into(self) -> rapier::pipeline::ActiveEvents {
-        rapier::pipeline::ActiveEvents::from_bits(self.bits)
+impl From<ActiveEvents> for rapier::pipeline::ActiveEvents {
+    fn from(active_events: ActiveEvents) -> rapier::pipeline::ActiveEvents {
+        rapier::pipeline::ActiveEvents::from_bits(active_events.bits)
             .expect("Internal error: invalid active events conversion.")
     }
 }

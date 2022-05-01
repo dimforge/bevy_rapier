@@ -117,6 +117,7 @@ impl RapierContext {
     }
 
     /// Advance the simulation, based on the given timestep mode.
+    #[allow(clippy::too_many_arguments)]
     pub fn step_simulation(
         &mut self,
         gravity: Vect,
@@ -136,8 +137,7 @@ impl RapierContext {
 
         let events = self
             .event_handler
-            .as_ref()
-            .map(|h| &**h)
+            .as_deref()
             .or_else(|| event_queue.as_ref().map(|q| q as &dyn EventHandler))
             .unwrap_or(&() as &dyn EventHandler);
 
@@ -308,7 +308,7 @@ impl RapierContext {
                 max_toi,
                 solid,
                 query_groups,
-                Some(&|h| self.collider_entity(h).map(|e| filter(e)).unwrap_or(false)),
+                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
             )?
         } else {
             self.query_pipeline.cast_ray(
@@ -359,7 +359,7 @@ impl RapierContext {
                 max_toi,
                 solid,
                 query_groups,
-                Some(&|h| self.collider_entity(h).map(|e| filter(e)).unwrap_or(false)),
+                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
             )?
         } else {
             self.query_pipeline.cast_ray_and_get_normal(
@@ -394,6 +394,7 @@ impl RapierContext {
     /// * `callback`: function executed on each collider for which a ray intersection has been found.
     ///               There is no guarantees on the order the results will be yielded. If this callback returns `false`,
     ///               this method will exit early, ignore any further raycast.
+    #[allow(clippy::too_many_arguments)]
     pub fn intersections_with_ray(
         &self,
         ray_origin: Vect,
@@ -421,7 +422,7 @@ impl RapierContext {
                 max_toi,
                 solid,
                 query_groups,
-                Some(&|h| self.collider_entity(h).map(|e| filter(e)).unwrap_or(false)),
+                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
                 callback,
             );
         } else {
@@ -467,7 +468,7 @@ impl RapierContext {
                 &scaled_transform,
                 &*scaled_shape.raw,
                 query_groups,
-                Some(&|h| self.collider_entity(h).map(|e| filter(e)).unwrap_or(false)),
+                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
             )?
         } else {
             self.query_pipeline.intersection_with_shape(
@@ -509,7 +510,7 @@ impl RapierContext {
                 &(point / self.physics_scale).into(),
                 solid,
                 query_groups,
-                Some(&|h| self.collider_entity(h).map(|e| filter(e)).unwrap_or(false)),
+                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
             )?
         } else {
             self.query_pipeline.project_point(
@@ -544,6 +545,8 @@ impl RapierContext {
         filter: Option<&dyn Fn(Entity) -> bool>,
         mut callback: impl FnMut(Entity) -> bool,
     ) {
+        #[allow(clippy::redundant_closure)]
+        // False-positive, we can't move callback, closure becomes `FnOnce`
         let callback = |h| self.collider_entity(h).map(|e| callback(e)).unwrap_or(true);
 
         if let Some(filter) = filter {
@@ -551,7 +554,7 @@ impl RapierContext {
                 &self.colliders,
                 &(point / self.physics_scale).into(),
                 query_groups,
-                Some(&|h| self.collider_entity(h).map(|e| filter(e)).unwrap_or(false)),
+                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
                 callback,
             );
         } else {
@@ -593,7 +596,7 @@ impl RapierContext {
                 &self.colliders,
                 &(point / self.physics_scale).into(),
                 query_groups,
-                Some(&|h| self.collider_entity(h).map(|e| filter(e)).unwrap_or(false)),
+                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
             )?
         } else {
             self.query_pipeline.project_point_and_get_feature(
@@ -629,6 +632,8 @@ impl RapierContext {
             mins: (aabb.min() / self.physics_scale).into(),
             maxs: (aabb.max() / self.physics_scale).into(),
         };
+        #[allow(clippy::redundant_closure)]
+        // False-positive, we can't move callback, closure becomes `FnOnce`
         let callback = |h: &ColliderHandle| {
             self.collider_entity(*h)
                 .map(|e| callback(e))
@@ -655,6 +660,7 @@ impl RapierContext {
     /// * `filter` - a more fine-grained filter. A collider is taken into account by this query if
     ///             its `contact_group` is compatible with the `query_groups`, and if this `filter`
     ///             is either `None` or returns `true`.
+    #[allow(clippy::too_many_arguments)]
     pub fn cast_shape(
         &self,
         shape_pos: Vect,
@@ -679,7 +685,7 @@ impl RapierContext {
                 &*scaled_shape.raw,
                 max_toi,
                 query_groups,
-                Some(&|h| self.collider_entity(h).map(|e| filter(e)).unwrap_or(false)),
+                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
             )?
         } else {
             self.query_pipeline.cast_shape(
@@ -746,7 +752,7 @@ impl RapierContext {
                 end_time,
                 stop_at_penetration,
                 query_groups,
-                Some(&|h| self.collider_entity(h).map(|e| filter(e)).unwrap_or(false)),
+                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
             )?
         } else {
             self.query_pipeline.nonlinear_cast_shape(
@@ -792,6 +798,8 @@ impl RapierContext {
         //       RapierConfiguration::scaled_shape_subdivision here.
         scaled_shape.set_scale(shape.scale / self.physics_scale, 20);
 
+        #[allow(clippy::redundant_closure)]
+        // False-positive, we can't move callback, closure becomes `FnOnce`
         let callback = |h| self.collider_entity(h).map(|e| callback(e)).unwrap_or(true);
 
         if let Some(filter) = filter {
@@ -800,7 +808,7 @@ impl RapierContext {
                 &scaled_transform,
                 &*scaled_shape.raw,
                 query_groups,
-                Some(&|h| self.collider_entity(h).map(|e| filter(e)).unwrap_or(false)),
+                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
                 callback,
             );
         } else {
