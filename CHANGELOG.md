@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.13.1 (1 May 2022)
+### Added
+- Add the `CollidingEntities` components which tracks the set of entities colliding
+  with a given entity.
+- Add constructors `Velocity::linear`, `Velocity::angular`, `Ccd::enabled()`, `Ccd::disabled()`,
+  `Dominance::group`, `Friction::coefficient`, `Restitution::coefficient`, `CollisionGroups::new`,
+  `SolverGroups::new`.
+- Add `RapierContext::collider_parent` that returns the entity containing the parent `RigidBody`
+  of a collider.
+
+### Modified
+- Switched to linear ordering to order our systems.
+- Make the `plugin::systems` module public.
+
+
 ## 0.13.0 (30 Apr. 2022)
 This is a **complete rewrite of the plugin** (mostly likely the last large redesign this plugin
 will be subject to). It switches to `rapier` 0.12 and `bevy` 0.7. The focus of this rewrite was
