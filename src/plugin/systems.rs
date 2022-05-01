@@ -1,3 +1,5 @@
+//! Systems responsible for interfacing our Bevy components with the Rapier physics engine.
+
 use crate::dynamics::{
     AdditionalMassProperties, Ccd, Damping, Dominance, ExternalForce, ExternalImpulse,
     GravityScale, ImpulseJoint, LockedAxes, MassProperties, MultibodyJoint,
@@ -24,7 +26,8 @@ use std::collections::HashMap;
 #[cfg(feature = "dim3")]
 use crate::prelude::AsyncCollider;
 
-type RigidBodyWritebackComponents<'a> = (
+/// Components that will be updated after a physics step.
+pub type RigidBodyWritebackComponents<'a> = (
     Entity,
     Option<&'a mut Transform>,
     Option<&'a mut TransformInterpolation>,
@@ -32,7 +35,8 @@ type RigidBodyWritebackComponents<'a> = (
     Option<&'a mut Sleeping>,
 );
 
-type RigidBodyComponents<'a> = (
+/// Components related to rigid-bodies.
+pub type RigidBodyComponents<'a> = (
     Entity,
     &'a RigidBody,
     Option<&'a Transform>,
@@ -49,7 +53,8 @@ type RigidBodyComponents<'a> = (
     Option<&'a Damping>,
 );
 
-type ColliderComponents<'a> = (
+/// Components related to colliders.
+pub type ColliderComponents<'a> = (
     Entity,
     &'a Collider,
     Option<&'a Transform>,
@@ -64,6 +69,8 @@ type ColliderComponents<'a> = (
     Option<&'a SolverGroups>,
 );
 
+/// System responsible for applying `Transform::scale` and/or `ColliderScale` to
+/// colliders.
 pub fn apply_scale(
     config: Res<RapierConfiguration>,
     // TODO: should be GlobalTransform of Transform for reading the scaling?
@@ -102,6 +109,7 @@ pub fn apply_scale(
     }
 }
 
+/// System responsible for applying changes the user made to a collider-related component.
 pub fn apply_collider_user_changes(
     config: Res<RapierConfiguration>,
     mut context: ResMut<RapierContext>,
@@ -194,6 +202,7 @@ pub fn apply_collider_user_changes(
     }
 }
 
+/// System responsible for applying changes the user made to a rigid-body-related component.
 pub fn apply_rigid_body_user_changes(
     mut context: ResMut<RapierContext>,
     changed_rb_types: Query<(&RapierRigidBodyHandle, &RigidBody), Changed<RigidBody>>,
@@ -354,6 +363,7 @@ pub fn apply_rigid_body_user_changes(
     }
 }
 
+/// System responsible for applying changes the user made to a joint component.
 pub fn apply_joint_user_changes(
     mut context: ResMut<RapierContext>,
     changed_impulse_joints: Query<(&RapierImpulseJointHandle, &ImpulseJoint), Changed<RigidBody>>,
@@ -382,6 +392,8 @@ pub fn apply_joint_user_changes(
     }
 }
 
+/// System responsible for writing the result of the last simulation step into our `bevy_rapier`
+/// components and the `Transform` component.
 pub fn writeback_rigid_bodies(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
@@ -481,6 +493,8 @@ pub fn writeback_rigid_bodies(
     }
 }
 
+/// System responsible for advancing the physics simulation, and updating the internal state
+/// for scene queries.
 pub fn step_simulation<PhysicsHooksData: 'static + WorldQuery + Send + Sync>(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
@@ -517,10 +531,12 @@ pub fn step_simulation<PhysicsHooksData: 'static + WorldQuery + Send + Sync>(
     }
 }
 
-// NOTE: currently, this does nothing in 2D.
+/// NOTE: This currently does nothing in 2D.
 #[cfg(feature = "dim2")]
 pub fn init_async_shapes() {}
 
+/// System responsible for creating `Collider` components from `AsyncCollider` components if the
+/// corresponding resource has become available.
 #[cfg(feature = "dim3")]
 pub fn init_async_shapes(
     mut commands: Commands,
@@ -546,6 +562,7 @@ pub fn init_async_shapes(
     }
 }
 
+/// System responsible for creating new Rapier colliders from the related `bevy_rapier` components.
 pub fn init_colliders(
     mut commands: Commands,
     config: Res<RapierConfiguration>,
@@ -663,6 +680,7 @@ pub fn init_colliders(
     }
 }
 
+/// System responsible for creating new Rapier rigid-bodies from the related `bevy_rapier` components.
 pub fn init_rigid_bodies(
     mut commands: Commands,
     mut context: ResMut<RapierContext>,
@@ -762,6 +780,7 @@ pub fn init_rigid_bodies(
     }
 }
 
+/// System responsible for creating new Rapier joints from the related `bevy_rapier` components.
 pub fn init_joints(
     mut commands: Commands,
     mut context: ResMut<RapierContext>,
@@ -816,6 +835,9 @@ pub fn init_joints(
     }
 }
 
+/// System responsible for removing from Rapier the rigid-bodies/colliders/joints which had
+/// their related `bevy_rapier` components removed by the user (through component removal or
+/// despawn).
 pub fn sync_removals(
     mut commands: Commands,
     mut context: ResMut<RapierContext>,
