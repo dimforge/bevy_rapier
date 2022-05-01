@@ -305,8 +305,8 @@ impl CollidingEntities {
 
     /// Returns `true` if the collisions contains the specified entity.
     #[must_use]
-    pub fn contains(&self, entity: &Entity) -> bool {
-        self.0.contains(entity)
+    pub fn contains(&self, entity: Entity) -> bool {
+        self.0.contains(&entity)
     }
 
     /// An iterator visiting all colliding entities in arbitrary order.
