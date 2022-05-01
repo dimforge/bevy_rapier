@@ -1,6 +1,7 @@
 #[cfg(feature = "dim3")]
 use crate::geometry::VHACDParameters;
 use bevy::prelude::*;
+use bevy::utils::HashSet;
 use rapier::prelude::{ColliderHandle, InteractionGroups, SharedShape};
 
 use crate::dynamics::{CoefficientCombineRule, MassProperties};
@@ -282,5 +283,34 @@ impl Into<rapier::pipeline::ActiveEvents> for ActiveEvents {
     fn into(self) -> rapier::pipeline::ActiveEvents {
         rapier::pipeline::ActiveEvents::from_bits(self.bits)
             .expect("Internal error: invalid active events conversion.")
+    }
+}
+
+/// Component which will be filled (if present) with a list of entities with which the current entity is currently in contact.
+#[derive(Component, Default, Reflect)]
+pub struct CollidingEntities(pub(crate) HashSet<Entity>);
+
+impl CollidingEntities {
+    /// Returns the number of colliding entities.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    /// Returns `true` if there is no colliding entities.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    /// Returns `true` if the collisions contains the specified entity.
+    #[must_use]
+    pub fn contains(&self, entity: &Entity) -> bool {
+        self.0.contains(entity)
+    }
+
+    /// An iterator visiting all colliding entities in arbitrary order.
+    pub fn iter(&self) -> impl Iterator<Item = Entity> + '_ {
+        self.0.iter().copied()
     }
 }
