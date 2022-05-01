@@ -70,6 +70,32 @@ impl Velocity {
     pub fn zero() -> Self {
         Self::default()
     }
+
+    /// Initialize a velocity with the given linear velocity, and an angular velocity of zero.
+    pub fn linear(linvel: Vect) -> Self {
+        Self {
+            linvel,
+            ..Self::default()
+        }
+    }
+
+    /// Initialize a velocity with the given angular velocity, and a linear velocity of zero.
+    #[cfg(feature = "dim2")]
+    pub fn angular(angvel: f32) -> Self {
+        Self {
+            angvel,
+            ..Self::default()
+        }
+    }
+
+    /// Initialize a velocity with the given angular velocity, and a linear velocity of zero.
+    #[cfg(feature = "dim3")]
+    pub fn angular(angvel: Vect) -> Self {
+        Self {
+            angvel,
+            ..Self::default()
+        }
+    }
 }
 
 /// Mass-properties of a rigid-body, added to the contributions of its attached colliders.
@@ -212,11 +238,34 @@ pub struct Ccd {
     pub enabled: bool,
 }
 
+impl Ccd {
+    /// Enable CCD for a rigid-body.
+    pub fn enabled() -> Self {
+        Self { enabled: true }
+    }
+
+    /// Disable CCD for a rigid-body.
+    ///
+    /// Note that a rigid-body without the Ccd component attached
+    /// has CCD disabled by default.
+    pub fn disabled() -> Self {
+        Self { enabled: false }
+    }
+}
+
 /// The dominance groups of a rigid-body.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 pub struct Dominance {
+    // FIXME: rename this to `group` (no `s`).
     /// The dominance groups of a rigid-body.
     pub groups: i8,
+}
+
+impl Dominance {
+    /// Initialize the dominance to the given group.
+    pub fn group(group: i8) -> Self {
+        Self { groups: group }
+    }
 }
 
 /// The activation status of a body.
@@ -257,6 +306,7 @@ impl Default for Sleeping {
 /// Damping factors to gradually slow down a rigid-body.
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 pub struct Damping {
+    // TODO: rename these to "linear" and "angular"?
     /// Damping factor for gradually slowing down the translational motion of the rigid-body.
     pub linear_damping: f32,
     /// Damping factor for gradually slowing down the angular motion of the rigid-body.

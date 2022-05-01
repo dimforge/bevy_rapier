@@ -574,6 +574,7 @@ impl RapierContext {
     pub fn project_point_and_get_feature(
         &self,
         point: Vect,
+        // FIXME: should be a CollisionGroups
         query_groups: InteractionGroups,
         filter: Option<&dyn Fn(Entity) -> bool>,
     ) -> Option<(Entity, PointProjection, FeatureId)> {

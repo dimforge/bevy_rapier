@@ -99,6 +99,15 @@ impl Friction {
             ..Default::default()
         }
     }
+
+    /// Creates a `Friction` component from the given friction coefficient, and using the default
+    /// `CoefficientCombineRule::Average` coefficient combine rule.
+    pub fn coefficient(coefficient: f32) -> Self {
+        Self {
+            coefficient,
+            ..Default::default()
+        }
+    }
 }
 
 /// The restitution affecting a collider.
@@ -117,6 +126,15 @@ impl Restitution {
     /// Creates a `Restitution` component from the given restitution coefficient, and using the default
     /// `CoefficientCombineRule::Average` coefficient combine rule.
     pub fn new(coefficient: f32) -> Self {
+        Self {
+            coefficient,
+            ..Default::default()
+        }
+    }
+
+    /// Creates a `Restitution` component from the given restitution coefficient, and using the default
+    /// `CoefficientCombineRule::Average` coefficient combine rule.
+    pub fn coefficient(coefficient: f32) -> Self {
         Self {
             coefficient,
             ..Default::default()
@@ -208,6 +226,16 @@ impl Default for CollisionGroups {
     }
 }
 
+impl CollisionGroups {
+    /// Creates a new collision-groups with the given membership masks and filter masks.
+    pub fn new(memberships: u32, filters: u32) -> Self {
+        Self {
+            memberships,
+            filters,
+        }
+    }
+}
+
 impl Into<InteractionGroups> for CollisionGroups {
     fn into(self) -> InteractionGroups {
         InteractionGroups {
@@ -233,6 +261,16 @@ impl Default for SolverGroups {
         Self {
             memberships: u32::MAX,
             filters: u32::MAX,
+        }
+    }
+}
+
+impl SolverGroups {
+    /// Creates a new collision-groups with the given membership masks and filter masks.
+    pub fn new(memberships: u32, filters: u32) -> Self {
+        Self {
+            memberships,
+            filters,
         }
     }
 }
