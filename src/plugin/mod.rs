@@ -1,4 +1,4 @@
-pub use self::configuration::RapierConfiguration;
+pub use self::configuration::{RapierConfiguration, SimulationToRenderTime};
 pub use self::context::RapierContext;
 pub use self::plugin::{NoUserData, RapierPhysicsPlugin};
 
