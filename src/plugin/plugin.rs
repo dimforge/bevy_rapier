@@ -108,6 +108,10 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
                         systems::step_simulation::<PhysicsHooksData>.after(systems::sync_removals),
                     )
                     .with_system(
+                        systems::update_colliding_entities
+                            .after(systems::step_simulation::<PhysicsHooksData>),
+                    )
+                    .with_system(
                         systems::writeback_rigid_bodies
                             .after(systems::step_simulation::<PhysicsHooksData>),
                     ),

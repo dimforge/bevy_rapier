@@ -16,6 +16,7 @@ use crate::pipeline::{
 };
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
+use crate::prelude::CollidingEntities;
 use crate::utils;
 use bevy::ecs::query::WorldQuery;
 use bevy::math::Vec3Swizzles;
@@ -959,4 +960,125 @@ pub fn sync_removals(
 
     // TODO: update mass props after collider removal.
     // TODO: what about removing forces?
+}
+
+/// Adds entity to [`CollidingEntities`] on starting collision and removes from it when the
+/// collision ends.
+pub fn update_colliding_entities(
+    mut collision_events: EventReader<CollisionEvent>,
+    mut colliding_entities: Query<&mut CollidingEntities>,
+) {
+    for event in collision_events.iter() {
+        match event.to_owned() {
+            CollisionEvent::Started(entity1, entity2, _) => {
+                if let Ok(mut entities) = colliding_entities.get_mut(entity1) {
+                    entities.0.insert(entity2);
+                }
+                if let Ok(mut entities) = colliding_entities.get_mut(entity2) {
+                    entities.0.insert(entity1);
+                }
+            }
+            CollisionEvent::Stopped(entity1, entity2, _) => {
+                if let Ok(mut entities) = colliding_entities.get_mut(entity1) {
+                    entities.0.remove(&entity2);
+                }
+                if let Ok(mut entities) = colliding_entities.get_mut(entity2) {
+                    entities.0.remove(&entity1);
+                }
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use bevy::ecs::event::Events;
+
+    use super::*;
+
+    #[test]
+    fn colliding_entities_updates() {
+        let mut app = App::new();
+        app.add_event::<CollisionEvent>()
+            .add_system(update_colliding_entities);
+
+        let entity1 = app.world.spawn().insert(CollidingEntities::default()).id();
+        let entity2 = app.world.spawn().insert(CollidingEntities::default()).id();
+
+        let mut collision_events = app
+            .world
+            .get_resource_mut::<Events<CollisionEvent>>()
+            .unwrap();
+        collision_events.send(CollisionEvent::Started(
+            entity1,
+            entity2,
+            CollisionEventFlags::SENSOR,
+        ));
+
+        app.update();
+
+        let colliding_entities1 = app
+            .world
+            .entity(entity1)
+            .get::<CollidingEntities>()
+            .unwrap();
+        assert_eq!(
+            colliding_entities1.len(),
+            1,
+            "There should be one colliding entity"
+        );
+        assert_eq!(
+            colliding_entities1.iter().next().unwrap(),
+            entity2,
+            "Colliding entity should be equal to the second entity"
+        );
+
+        let colliding_entities2 = app
+            .world
+            .entity(entity2)
+            .get::<CollidingEntities>()
+            .unwrap();
+        assert_eq!(
+            colliding_entities2.len(),
+            1,
+            "There should be one colliding entity"
+        );
+        assert_eq!(
+            colliding_entities2.iter().next().unwrap(),
+            entity1,
+            "Colliding entity should be equal to the first entity"
+        );
+
+        let mut collision_events = app
+            .world
+            .get_resource_mut::<Events<CollisionEvent>>()
+            .unwrap();
+        collision_events.send(CollisionEvent::Stopped(
+            entity1,
+            entity2,
+            CollisionEventFlags::SENSOR,
+        ));
+
+        app.update();
+
+        let colliding_entities1 = app
+            .world
+            .entity(entity1)
+            .get::<CollidingEntities>()
+            .unwrap();
+        assert!(
+            colliding_entities1.is_empty(),
+            "Colliding entity should be removed from the CollidingEntities component when the collision ends"
+        );
+
+        let colliding_entities2 = app
+            .world
+            .entity(entity2)
+            .get::<CollidingEntities>()
+            .unwrap();
+        assert!(
+            colliding_entities2.is_empty(),
+            "Colliding entity should be removed from the CollidingEntities component when the collision ends"
+        );
+    }
 }
