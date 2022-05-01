@@ -12,14 +12,23 @@ pub struct SimulationToRenderTime {
 pub enum TimestepMode {
     /// Use a fixed timestep: the physics simulation will be advanced by the fixed value
     /// `dt` seconds at each Bevy tick by performing `substeps` of length `dt / substeps`.
-    Fixed { dt: f32, substeps: usize },
+    Fixed {
+        /// The physics simulation will be advanced by this total amount at each Bevy tick.
+        dt: f32,
+        /// This number of substeps of length `dt / substeps` will be performed at each Bevy tick.
+        substeps: usize
+    },
     /// Use a variable timestep: the physics simulation will be advanced by the variable value
     /// `min(max_dt, Time::delta_seconds() * time_scale)` seconds at each Bevy tick. If
     /// `time_scale > 1.0` then the simulation will appear to run faster than real-time whereas
     /// `time_scale < 1.0` makes the simulation run in slow-motion.
     Variable {
+        /// Maximum amount of time the physics simulation may be advanced at each Bevy tick.
         max_dt: f32,
+        /// Multiplier controlling if the physics simulation should advance faster (> 1.0),
+        /// at the same speed (= 1.0) or slower (< 1.0) than the real time.
         time_scale: f32,
+        /// The number of substeps that will be performed at each tick.
         substeps: usize,
     },
     /// Use a fixed timestep equal to `IntegrationParameters::dt`, but don't step if the
@@ -27,8 +36,13 @@ pub enum TimestepMode {
     /// Rigid-bodies with a component `InterpolatedTransform` attached will use interpolation to
     /// estimate the rigid-bodies position in-between steps.
     Interpolated {
+        /// The physics simulation will be advanced by this total amount at each Bevy tick, unless
+        /// the physics simulation time is ahead of a the real time.
         dt: f32,
+        /// Multiplier controlling if the physics simulation should advance faster (> 1.0),
+        /// at the same speed (= 1.0) or slower (< 1.0) than the real time.
         time_scale: f32,
+        /// The number of substeps that will be performed whenever the physics simulation is advanced.
         substeps: usize,
     },
 }
