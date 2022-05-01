@@ -53,21 +53,6 @@ impl<PhysicsHooksData> Default for RapierPhysicsPlugin<PhysicsHooksData> {
     }
 }
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
-pub enum RapierPhysicsSystem {
-    ApplyScale,
-    ApplyColliderUserChanges,
-    ApplyRigidBodyUserChanges,
-    ApplyJointUserChanges,
-    InitAsyncShapes,
-    InitRigidBodies,
-    InitColliders,
-    InitJoints,
-    DetectDespawn,
-    StepSimulation,
-    WritebackRigidBodies,
-}
-
 #[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
 pub enum PhysicsStages {
     StepSimulation,
@@ -98,59 +83,33 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
             .add_system_set_to_stage(
                 PhysicsStages::StepSimulation,
                 SystemSet::new()
-                    .with_system(
-                        systems::init_async_shapes.label(RapierPhysicsSystem::InitAsyncShapes),
-                    )
-                    .with_system(
-                        systems::apply_scale
-                            .label(RapierPhysicsSystem::ApplyScale)
-                            .after(RapierPhysicsSystem::InitAsyncShapes),
-                    )
-                    .with_system(
-                        systems::apply_collider_user_changes
-                            .label(RapierPhysicsSystem::ApplyColliderUserChanges)
-                            .after(RapierPhysicsSystem::ApplyScale),
-                    )
+                    .with_system(systems::init_async_shapes)
+                    .with_system(systems::apply_scale.after(systems::init_async_shapes))
+                    .with_system(systems::apply_collider_user_changes.after(systems::apply_scale))
                     .with_system(
                         systems::apply_rigid_body_user_changes
-                            .label(RapierPhysicsSystem::ApplyRigidBodyUserChanges)
-                            .after(RapierPhysicsSystem::ApplyColliderUserChanges),
+                            .after(systems::apply_collider_user_changes),
                     )
                     .with_system(
                         systems::apply_joint_user_changes
-                            .label(RapierPhysicsSystem::ApplyJointUserChanges)
-                            .after(RapierPhysicsSystem::ApplyRigidBodyUserChanges),
+                            .after(systems::apply_rigid_body_user_changes),
                     )
                     .with_system(
-                        systems::init_rigid_bodies
-                            .label(RapierPhysicsSystem::InitRigidBodies)
-                            .after(RapierPhysicsSystem::ApplyJointUserChanges),
+                        systems::init_rigid_bodies.after(systems::apply_joint_user_changes),
                     )
                     .with_system(
                         systems::init_colliders
-                            .label(RapierPhysicsSystem::InitColliders)
-                            .after(RapierPhysicsSystem::InitRigidBodies)
-                            .after(RapierPhysicsSystem::InitAsyncShapes),
+                            .after(systems::init_rigid_bodies)
+                            .after(systems::init_async_shapes),
                     )
+                    .with_system(systems::init_joints.after(systems::init_colliders))
+                    .with_system(systems::sync_removals.after(systems::init_joints))
                     .with_system(
-                        systems::init_joints
-                            .label(RapierPhysicsSystem::InitJoints)
-                            .after(RapierPhysicsSystem::InitColliders),
-                    )
-                    .with_system(
-                        systems::sync_removals
-                            .label(RapierPhysicsSystem::DetectDespawn)
-                            .after(RapierPhysicsSystem::InitJoints),
-                    )
-                    .with_system(
-                        systems::step_simulation::<PhysicsHooksData>
-                            .label(RapierPhysicsSystem::StepSimulation)
-                            .after(RapierPhysicsSystem::DetectDespawn),
+                        systems::step_simulation::<PhysicsHooksData>.after(systems::sync_removals),
                     )
                     .with_system(
                         systems::writeback_rigid_bodies
-                            .label(RapierPhysicsSystem::WritebackRigidBodies)
-                            .after(RapierPhysicsSystem::StepSimulation),
+                            .after(systems::step_simulation::<PhysicsHooksData>),
                     ),
             )
             // NOTE: we run sync_removals at the end of the frame to, in order to make sure we don’t miss any `RemovedComponents`.
