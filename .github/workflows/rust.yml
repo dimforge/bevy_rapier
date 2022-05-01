@@ -22,6 +22,7 @@ jobs:
       RUSTFLAGS: -D warnings
     steps:
     - uses: actions/checkout@v2
+    - uses: Swatinem/rust-cache@v1
     - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
     - name: Clippy for bevy_rapier2d
       run: cargo build --verbose -p bevy_rapier2d
@@ -38,6 +39,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: rustup target add wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v1
       - name: Clippy bevy_rapier2d
         run: cd bevy_rapier2d && cargo clippy --verbose --features wasm-bindgen --target wasm32-unknown-unknown
       - name: Clippy bevy_rapier3d
