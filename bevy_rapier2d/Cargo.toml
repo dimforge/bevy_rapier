@@ -20,7 +20,7 @@ required-features = [ "dim2" ]
 [features]
 default = [ "dim2", "debug-render" ]
 dim2 = []
-debug-render = [ "bevy/render", "rapier2d/debug-render" ]
+debug-render = [ "bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_render", "bevy/bevy_sprite", "rapier2d/debug-render" ]
 parallel = [ "rapier2d/parallel" ]
 simd-stable = [ "rapier2d/simd-stable" ]
 simd-nightly = [ "rapier2d/simd-nightly" ]
@@ -39,5 +39,5 @@ log = "0.4"
 serde = { version = "1", features = [ "derive" ], optional = true}
 
 [dev-dependencies]
-bevy = "0.7"
+bevy = { version = "0.7", default-features = false, features = ["x11"]}
 oorandom = "11"
