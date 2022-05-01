@@ -16,7 +16,7 @@ pub enum TimestepMode {
         /// The physics simulation will be advanced by this total amount at each Bevy tick.
         dt: f32,
         /// This number of substeps of length `dt / substeps` will be performed at each Bevy tick.
-        substeps: usize
+        substeps: usize,
     },
     /// Use a variable timestep: the physics simulation will be advanced by the variable value
     /// `min(max_dt, Time::delta_seconds() * time_scale)` seconds at each Bevy tick. If
