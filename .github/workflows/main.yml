@@ -25,9 +25,9 @@ jobs:
     - uses: Swatinem/rust-cache@v1
     - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
     - name: Clippy for bevy_rapier2d
-      run: cargo build --verbose -p bevy_rapier2d
+      run: cargo clippy --verbose -p bevy_rapier2d
     - name: Clippy for bevy_rapier3d
-      run: cargo build --verbose -p bevy_rapier3d
+      run: cargo clippy --verbose -p bevy_rapier3d
     - name: Test for bevy_rapier2d
       run: cargo test --verbose -p bevy_rapier2d
     - name: Test for bevy_rapier3d
