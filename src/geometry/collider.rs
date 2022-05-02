@@ -16,7 +16,7 @@ pub struct RapierColliderHandle(pub ColliderHandle);
 #[derive(Component, Debug, Clone)]
 pub enum AsyncCollider {
     /// A future triangle-mesh collider based on a Bevy mesh asset.
-    Mesh(Handle<Mesh>),
+    TriMesh(Handle<Mesh>),
     /// A future convex decomposition collider based on a Bevy mesh asset.
     ConvexDecomposition(Handle<Mesh>, VHACDParameters),
 }

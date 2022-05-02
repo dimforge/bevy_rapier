@@ -549,7 +549,7 @@ pub fn init_async_shapes(
 ) {
     for (entity, async_shape) in async_shapes.iter() {
         match async_shape {
-            AsyncCollider::Mesh(handle) => {
+            AsyncCollider::TriMesh(handle) => {
                 if let Some(coll) = meshes.get(handle).and_then(Collider::bevy_mesh) {
                     commands.entity(entity).insert(coll);
                 }
