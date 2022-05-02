@@ -23,9 +23,11 @@ use bevy::math::Vec3Swizzles;
 use bevy::prelude::*;
 use rapier::prelude::*;
 use std::collections::HashMap;
+#[cfg(feature = "dim3")]
+use std::collections::LinkedList;
 
 #[cfg(feature = "dim3")]
-use crate::prelude::AsyncCollider;
+use crate::prelude::{AsyncCollider, AsyncColliderShape, AsyncSceneCollider};
 
 /// Components that will be updated after a physics step.
 pub type RigidBodyWritebackComponents<'a> = (
@@ -537,33 +539,92 @@ pub fn step_simulation<PhysicsHooksData: 'static + WorldQuery + Send + Sync>(
 
 /// NOTE: This currently does nothing in 2D.
 #[cfg(feature = "dim2")]
-pub fn init_async_shapes() {}
+pub fn init_async_colliders() {}
 
 /// System responsible for creating `Collider` components from `AsyncCollider` components if the
-/// corresponding resource has become available.
+/// corresponding mesh has become available.
 #[cfg(feature = "dim3")]
-pub fn init_async_shapes(
+pub fn init_async_colliders(
     mut commands: Commands,
     meshes: Res<Assets<Mesh>>,
-    async_shapes: Query<(Entity, &AsyncCollider), Without<Collider>>,
+    async_colliders: Query<(Entity, &AsyncCollider)>,
 ) {
-    for (entity, async_shape) in async_shapes.iter() {
-        match async_shape {
-            AsyncCollider::Mesh(handle) => {
-                if let Some(coll) = meshes.get(handle).and_then(Collider::bevy_mesh) {
-                    commands.entity(entity).insert(coll);
+    for (entity, async_collider) in async_colliders.iter() {
+        if let Some(mesh) = meshes.get(&async_collider.handle) {
+            let collider = match &async_collider.shape {
+                AsyncColliderShape::TriMesh => Collider::bevy_mesh(mesh),
+                AsyncColliderShape::ConvexDecomposition(params) => {
+                    Collider::bevy_mesh_convex_decomposition_with_params(mesh, params)
                 }
-            }
-            AsyncCollider::ConvexDecomposition(handle, params) => {
-                if let Some(coll) = meshes
-                    .get(handle)
-                    .and_then(|m| Collider::bevy_mesh_convex_decomposition_with_params(m, params))
-                {
-                    commands.entity(entity).insert(coll);
+            };
+
+            match collider {
+                Some(collider) => {
+                    commands
+                        .entity(entity)
+                        .insert(collider)
+                        .remove::<AsyncCollider>();
                 }
+                None => panic!("Unable to generate collider from mesh"),
             }
         }
     }
+}
+
+/// System responsible for creating `Collider` components from `AsyncSceneCollider` components if the
+/// corresponding scene has become available.
+#[cfg(feature = "dim3")]
+pub fn init_async_scene_colliders(
+    mut commands: Commands,
+    meshes: Res<Assets<Mesh>>,
+    scenes: Res<Assets<Scene>>,
+    async_colliders: Query<(Entity, &AsyncSceneCollider)>,
+    children: Query<&Children>,
+    mesh_handles: Query<(&Name, &Handle<Mesh>)>,
+) {
+    for (entity, async_collider) in async_colliders.iter() {
+        if scenes.get(&async_collider.handle).is_some() {
+            for child in get_children_recursively(entity, &children) {
+                if let Ok((name, handle)) = mesh_handles.get(child) {
+                    let mesh = meshes.get(handle).unwrap(); // SAFETY: Mesh is already loaded
+                    let collider = match async_collider
+                        .named_shapes
+                        .get(name.as_str())
+                        .unwrap_or(&async_collider.shape)
+                    {
+                        AsyncColliderShape::TriMesh => Collider::bevy_mesh(mesh),
+                        AsyncColliderShape::ConvexDecomposition(params) => {
+                            Collider::bevy_mesh_convex_decomposition_with_params(mesh, params)
+                        }
+                    };
+                    match collider {
+                        Some(collider) => {
+                            commands.entity(child).insert(collider);
+                        }
+                        None => panic!("Unable to generate collider from mesh"),
+                    }
+                }
+            }
+            commands.entity(entity).remove::<AsyncSceneCollider>();
+        }
+    }
+}
+
+/// Iterates over children hierarchy recursively and returns a plain list of all children.
+/// [`LinkedList`] is used here for fast lists concatenation due to recursive iteration.
+#[cfg(feature = "dim3")]
+#[allow(clippy::linkedlist)]
+fn get_children_recursively(entity: Entity, children: &Query<&Children>) -> LinkedList<Entity> {
+    let mut all_children = LinkedList::new();
+    if let Ok(entity_children) = children.get(entity) {
+        for child in entity_children.iter() {
+            all_children.push_back(*child);
+
+            let mut children = get_children_recursively(*child, children);
+            all_children.append(&mut children);
+        }
+    }
+    all_children
 }
 
 /// System responsible for creating new Rapier colliders from the related `bevy_rapier` components.
@@ -998,7 +1059,16 @@ pub fn update_colliding_entities(
 
 #[cfg(test)]
 mod tests {
-    use bevy::ecs::event::Events;
+    #[cfg(feature = "dim3")]
+    use bevy::prelude::shape::{Capsule, Cube};
+    use bevy::{
+        asset::AssetPlugin,
+        core::CorePlugin,
+        ecs::event::Events,
+        render::{settings::WgpuSettings, RenderPlugin},
+        scene::ScenePlugin,
+        window::WindowPlugin,
+    };
 
     use super::*;
 
@@ -1086,5 +1156,107 @@ mod tests {
             colliding_entities2.is_empty(),
             "Colliding entity should be removed from the CollidingEntities component when the collision ends"
         );
+    }
+
+    #[test]
+    #[cfg(feature = "dim3")]
+    fn async_collider_initializes() {
+        let mut app = App::new();
+        app.add_plugin(HeadlessRenderPlugin)
+            .add_system(init_async_colliders);
+
+        let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
+        let cube = meshes.add(Cube::default().into());
+
+        let entity = app
+            .world
+            .spawn()
+            .insert(AsyncCollider {
+                handle: cube,
+                shape: AsyncColliderShape::TriMesh,
+            })
+            .id();
+
+        app.update();
+
+        let entity = app.world.entity(entity);
+        assert!(
+            entity.get::<Collider>().is_some(),
+            "Collider component should be added"
+        );
+        assert!(
+            entity.get::<AsyncCollider>().is_none(),
+            "AsyncCollider component should be removed after Collider component creation"
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "dim3")]
+    fn async_scene_collider_initializes() {
+        let mut app = App::new();
+        app.add_plugin(HeadlessRenderPlugin)
+            .add_system(init_async_scene_colliders);
+
+        let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
+        let cube_handle = meshes.add(Cube::default().into());
+        let capsule_handle = meshes.add(Capsule::default().into());
+        let cube = app
+            .world
+            .spawn()
+            .insert(Name::new("Cube"))
+            .insert(cube_handle)
+            .id();
+        let capsule = app
+            .world
+            .spawn()
+            .insert(Name::new("Capsule"))
+            .insert(capsule_handle)
+            .id();
+
+        let mut scenes = app.world.resource_mut::<Assets<Scene>>();
+        let scene = scenes.add(Scene::new(World::new()));
+
+        let parent = app
+            .world
+            .spawn()
+            .insert(AsyncSceneCollider {
+                handle: scene,
+                shape: AsyncColliderShape::TriMesh,
+                named_shapes: bevy::utils::HashMap::new(),
+            })
+            .push_children(&[cube, capsule])
+            .id();
+
+        app.update();
+
+        assert!(
+            app.world.entity(cube).get::<Collider>().is_some(),
+            "Collider component should be added for cube"
+        );
+        assert!(
+            app.world.entity(capsule).get::<Collider>().is_some(),
+            "Collider component should be added for capsule"
+        );
+        assert!(
+            app.world.entity(parent).get::<AsyncCollider>().is_none(),
+            "AsyncSceneCollider component should be removed after Collider components creation"
+        );
+    }
+
+    // Allows run tests for systems containing rendering related things without GPU
+    struct HeadlessRenderPlugin;
+
+    impl Plugin for HeadlessRenderPlugin {
+        fn build(&self, app: &mut App) {
+            app.insert_resource(WgpuSettings {
+                backends: None,
+                ..WgpuSettings::default()
+            })
+            .add_plugin(CorePlugin::default())
+            .add_plugin(WindowPlugin::default())
+            .add_plugin(AssetPlugin::default())
+            .add_plugin(ScenePlugin::default())
+            .add_plugin(RenderPlugin::default());
+        }
     }
 }
