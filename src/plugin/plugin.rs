@@ -63,9 +63,6 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
     for RapierPhysicsPlugin<PhysicsHooksData>
 {
     fn build(&self, app: &mut App) {
-        let mut context = RapierContext::default();
-        context.physics_scale = self.physics_scale;
-
         app.add_stage_before(
             CoreStage::Update,
             PhysicsStages::StepSimulation,
@@ -78,7 +75,10 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
         );
         app.insert_resource(RapierConfiguration::default())
             .insert_resource(SimulationToRenderTime::default())
-            .insert_resource(context)
+            .insert_resource(RapierContext {
+                physics_scale: self.physics_scale,
+                ..Default::default()
+            })
             .insert_resource(Events::<CollisionEvent>::default())
             .add_system_set_to_stage(
                 PhysicsStages::StepSimulation,

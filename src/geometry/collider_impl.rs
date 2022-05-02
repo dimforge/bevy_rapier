@@ -721,6 +721,7 @@ impl Collider {
 }
 
 #[cfg(feature = "dim3")]
+#[allow(clippy::type_complexity)]
 fn extract_mesh_vertices_indices(mesh: &Mesh) -> Option<(Vec<na::Point3<Real>>, Vec<[u32; 3]>)> {
     use rapier::na::point;
 

@@ -49,13 +49,13 @@ impl Default for CoefficientCombineRule {
     }
 }
 
-impl Into<RapierCoefficientCombineRule> for CoefficientCombineRule {
-    fn into(self) -> RapierCoefficientCombineRule {
-        match self {
-            Self::Average => RapierCoefficientCombineRule::Average,
-            Self::Min => RapierCoefficientCombineRule::Min,
-            Self::Multiply => RapierCoefficientCombineRule::Multiply,
-            Self::Max => RapierCoefficientCombineRule::Max,
+impl From<CoefficientCombineRule> for RapierCoefficientCombineRule {
+    fn from(combine_rule: CoefficientCombineRule) -> RapierCoefficientCombineRule {
+        match combine_rule {
+            CoefficientCombineRule::Average => RapierCoefficientCombineRule::Average,
+            CoefficientCombineRule::Min => RapierCoefficientCombineRule::Min,
+            CoefficientCombineRule::Multiply => RapierCoefficientCombineRule::Multiply,
+            CoefficientCombineRule::Max => RapierCoefficientCombineRule::Max,
         }
     }
 }

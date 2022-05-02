@@ -137,9 +137,9 @@ impl PrismaticJoint {
     }
 }
 
-impl Into<GenericJoint> for PrismaticJoint {
-    fn into(self) -> GenericJoint {
-        self.data
+impl From<PrismaticJoint> for GenericJoint {
+    fn from(joint: PrismaticJoint) -> GenericJoint {
+        joint.data
     }
 }
 
@@ -240,8 +240,8 @@ impl PrismaticJointBuilder {
     }
 }
 
-impl Into<GenericJoint> for PrismaticJointBuilder {
-    fn into(self) -> GenericJoint {
-        self.0.into()
+impl From<PrismaticJointBuilder> for GenericJoint {
+    fn from(joint: PrismaticJointBuilder) -> GenericJoint {
+        joint.0.into()
     }
 }

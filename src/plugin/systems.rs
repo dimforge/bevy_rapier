@@ -300,6 +300,7 @@ pub fn apply_rigid_body_user_changes(
     for (handle, velocity) in changed_velocities.iter() {
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_linvel((velocity.linvel / scale).into(), true);
+            #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             rb.set_angvel(velocity.angvel.into(), true);
         }
     }
@@ -327,6 +328,7 @@ pub fn apply_rigid_body_user_changes(
             rb.reset_forces(true);
             rb.reset_torques(true);
             rb.add_force((forces.force / scale).into(), true);
+            #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             rb.add_torque(forces.torque.into(), true);
         }
     }
@@ -334,6 +336,7 @@ pub fn apply_rigid_body_user_changes(
     for (handle, impulses) in changed_impulses.iter() {
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.apply_impulse((impulses.impulse / scale).into(), true);
+            #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             rb.apply_torque_impulse(impulses.torque_impulse.into(), true);
         }
     }
@@ -711,6 +714,7 @@ pub fn init_rigid_bodies(
             builder = builder.position(utils::transform_to_iso(transform, scale));
         }
 
+        #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
         if let Some(vel) = vel {
             builder = builder
                 .linvel((vel.linvel / scale).into())
@@ -751,6 +755,7 @@ pub fn init_rigid_bodies(
 
         let mut rb = builder.build();
 
+        #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
         if let Some(force) = force {
             rb.add_force((force.force / scale).into(), false);
             rb.add_torque(force.torque.into(), false);
@@ -758,6 +763,7 @@ pub fn init_rigid_bodies(
 
         // TODO: will this apply the impulse twice (once here, and once in apply_rigid_body_user_changes)
         //       in some scenarios?
+        #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
         if let Some(impulse) = impulse {
             rb.apply_impulse((impulse.impulse / scale).into(), false);
             rb.apply_torque_impulse(impulse.torque_impulse.into(), false);

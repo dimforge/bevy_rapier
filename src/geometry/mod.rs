@@ -34,11 +34,11 @@ impl PointProjection {
         }
     }
 }
-impl Into<PointProjection> for rapier::parry::query::PointProjection {
-    fn into(self) -> PointProjection {
+impl From<rapier::parry::query::PointProjection> for PointProjection {
+    fn from(projection: rapier::parry::query::PointProjection) -> PointProjection {
         PointProjection {
-            is_inside: self.is_inside,
-            point: self.point.into(),
+            is_inside: projection.is_inside,
+            point: projection.point.into(),
         }
     }
 }

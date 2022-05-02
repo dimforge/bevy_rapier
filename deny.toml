@@ -1,0 +1,21 @@
+[advisories]
+unmaintained = "deny"
+yanked = "deny"
+notice = "deny"
+
+[licenses]
+copyleft = "deny"
+allow-osi-fsf-free = "either"
+
+[[licenses.clarify]]
+name = "stretch"
+expression = "MIT"
+license-files = []
+
+[bans]
+multiple-versions = "allow"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

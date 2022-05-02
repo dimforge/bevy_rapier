@@ -34,12 +34,12 @@ pub struct RapierDebugRenderPlugin {
 impl Default for RapierDebugRenderPlugin {
     #[cfg(feature = "dim2")]
     fn default() -> Self {
-        let mut style = DebugRenderStyle::default();
-        style.rigid_body_axes_length = 20.0; // 20 pixels by default.
-
         Self {
             depth_test: cfg!(feature = "dim3"),
-            style,
+            style: DebugRenderStyle {
+                rigid_body_axes_length: 20.0,
+                ..Default::default()
+            },
             mode: DebugRenderMode::all(),
         }
     }
@@ -76,7 +76,7 @@ impl Plugin for RapierDebugRenderPlugin {
         app.add_plugin(lines::DebugLinesPlugin::with_depth_test(self.depth_test))
             .insert_resource(DebugRenderContext {
                 enabled: true,
-                pipeline: DebugRenderPipeline::new(self.style.clone(), self.mode),
+                pipeline: DebugRenderPipeline::new(self.style, self.mode),
             })
             .add_system_to_stage(CoreStage::Update, debug_render_scene);
     }
