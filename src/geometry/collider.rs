@@ -20,7 +20,7 @@ pub struct AsyncCollider {
     /// Mesh handle to use for collider generation.
     pub handle: Handle<Mesh>,
     /// Collider type that will be generated.
-    pub shape: AsyncColliderShape,
+    pub shape: ComputedColliderShape,
 }
 
 /// A component which will be replaced the specified collider types on children with meshes after the referenced scene become available.
@@ -30,15 +30,15 @@ pub struct AsyncSceneCollider {
     /// Scene handle to use for colliders generation.
     pub handle: Handle<Scene>,
     /// Collider type for each scene mesh not included in [`named_shapes`].
-    pub shape: AsyncColliderShape,
+    pub shape: ComputedColliderShape,
     /// Shape types for meshes by name
-    pub named_shapes: HashMap<String, AsyncColliderShape>,
+    pub named_shapes: HashMap<String, ComputedColliderShape>,
 }
 
 /// Shape type based on a Bevy mesh asset.
 #[cfg(feature = "dim3")]
 #[derive(Debug, Clone)]
-pub enum AsyncColliderShape {
+pub enum ComputedColliderShape {
     /// Triangle-mesh.
     TriMesh,
     /// Convex decomposition.

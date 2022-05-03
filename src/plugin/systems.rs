@@ -27,7 +27,7 @@ use std::collections::HashMap;
 use std::collections::LinkedList;
 
 #[cfg(feature = "dim3")]
-use crate::prelude::{AsyncCollider, AsyncColliderShape, AsyncSceneCollider};
+use crate::prelude::{AsyncCollider, AsyncSceneCollider};
 
 /// Components that will be updated after a physics step.
 pub type RigidBodyWritebackComponents<'a> = (
@@ -551,14 +551,7 @@ pub fn init_async_colliders(
 ) {
     for (entity, async_collider) in async_colliders.iter() {
         if let Some(mesh) = meshes.get(&async_collider.handle) {
-            let collider = match &async_collider.shape {
-                AsyncColliderShape::TriMesh => Collider::bevy_mesh(mesh),
-                AsyncColliderShape::ConvexDecomposition(params) => {
-                    Collider::bevy_mesh_convex_decomposition_with_params(mesh, params)
-                }
-            };
-
-            match collider {
+            match Collider::from_bevy_mesh(mesh, &async_collider.shape) {
                 Some(collider) => {
                     commands
                         .entity(entity)
@@ -587,17 +580,11 @@ pub fn init_async_scene_colliders(
             for child in get_children_recursively(entity, &children) {
                 if let Ok((name, handle)) = mesh_handles.get(child) {
                     let mesh = meshes.get(handle).unwrap(); // SAFETY: Mesh is already loaded
-                    let collider = match async_collider
+                    let shape = async_collider
                         .named_shapes
                         .get(name.as_str())
-                        .unwrap_or(&async_collider.shape)
-                    {
-                        AsyncColliderShape::TriMesh => Collider::bevy_mesh(mesh),
-                        AsyncColliderShape::ConvexDecomposition(params) => {
-                            Collider::bevy_mesh_convex_decomposition_with_params(mesh, params)
-                        }
-                    };
-                    match collider {
+                        .unwrap_or(&async_collider.shape);
+                    match Collider::from_bevy_mesh(mesh, shape) {
                         Some(collider) => {
                             commands.entity(child).insert(collider);
                         }
@@ -1071,6 +1058,8 @@ mod tests {
     };
 
     use super::*;
+    #[cfg(feature = "dim3")]
+    use crate::prelude::ComputedColliderShape;
 
     #[test]
     fn colliding_entities_updates() {
@@ -1173,7 +1162,7 @@ mod tests {
             .spawn()
             .insert(AsyncCollider {
                 handle: cube,
-                shape: AsyncColliderShape::TriMesh,
+                shape: ComputedColliderShape::TriMesh,
             })
             .id();
 
@@ -1221,7 +1210,7 @@ mod tests {
             .spawn()
             .insert(AsyncSceneCollider {
                 handle: scene,
-                shape: AsyncColliderShape::TriMesh,
+                shape: ComputedColliderShape::TriMesh,
                 named_shapes: bevy::utils::HashMap::new(),
             })
             .push_children(&[cube, capsule])
