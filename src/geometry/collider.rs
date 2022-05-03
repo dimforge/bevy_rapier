@@ -94,7 +94,7 @@ impl Default for Friction {
 impl Friction {
     /// Creates a `Friction` component from the given friction coefficient, and using the default
     /// `CoefficientCombineRule::Average` coefficient combine rule.
-    pub fn new(coefficient: f32) -> Self {
+    pub const fn new(coefficient: f32) -> Self {
         Self {
             coefficient,
             ..Default::default()
@@ -126,7 +126,7 @@ pub struct Restitution {
 impl Restitution {
     /// Creates a `Restitution` component from the given restitution coefficient, and using the default
     /// `CoefficientCombineRule::Average` coefficient combine rule.
-    pub fn new(coefficient: f32) -> Self {
+    pub const fn new(coefficient: f32) -> Self {
         Self {
             coefficient,
             ..Default::default()
@@ -229,7 +229,7 @@ impl Default for CollisionGroups {
 
 impl CollisionGroups {
     /// Creates a new collision-groups with the given membership masks and filter masks.
-    pub fn new(memberships: u32, filters: u32) -> Self {
+    pub const fn new(memberships: u32, filters: u32) -> Self {
         Self {
             memberships,
             filters,
@@ -268,7 +268,7 @@ impl Default for SolverGroups {
 
 impl SolverGroups {
     /// Creates a new collision-groups with the given membership masks and filter masks.
-    pub fn new(memberships: u32, filters: u32) -> Self {
+    pub const fn new(memberships: u32, filters: u32) -> Self {
         Self {
             memberships,
             filters,
