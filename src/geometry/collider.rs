@@ -29,10 +29,12 @@ pub struct AsyncCollider {
 pub struct AsyncSceneCollider {
     /// Scene handle to use for colliders generation.
     pub handle: Handle<Scene>,
-    /// Collider type for each scene mesh not included in [`named_shapes`].
-    pub shape: ComputedColliderShape,
-    /// Shape types for meshes by name
-    pub named_shapes: HashMap<String, ComputedColliderShape>,
+    /// Collider type for each scene mesh not included in [`named_shapes`]. If [`None`], then all
+    /// shapes will be skipped for processing except [`named_shapes`].
+    pub shape: Option<ComputedColliderShape>,
+    /// Shape types for meshes by name. If shape is [`None`], then it will be skipped for
+    /// processing.
+    pub named_shapes: HashMap<String, Option<ComputedColliderShape>>,
 }
 
 /// Shape type based on a Bevy mesh asset.

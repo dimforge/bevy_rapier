@@ -579,16 +579,18 @@ pub fn init_async_scene_colliders(
         if scenes.get(&async_collider.handle).is_some() {
             for child in get_children_recursively(entity, &children) {
                 if let Ok((name, handle)) = mesh_handles.get(child) {
-                    let mesh = meshes.get(handle).unwrap(); // SAFETY: Mesh is already loaded
                     let shape = async_collider
                         .named_shapes
                         .get(name.as_str())
                         .unwrap_or(&async_collider.shape);
-                    match Collider::from_bevy_mesh(mesh, shape) {
-                        Some(collider) => {
-                            commands.entity(child).insert(collider);
+                    if let Some(shape) = shape {
+                        let mesh = meshes.get(handle).unwrap(); // SAFETY: Mesh is already loaded
+                        match Collider::from_bevy_mesh(mesh, shape) {
+                            Some(collider) => {
+                                commands.entity(child).insert(collider);
+                            }
+                            None => panic!("Unable to generate collider from mesh"),
                         }
-                        None => panic!("Unable to generate collider from mesh"),
                     }
                 }
             }
@@ -1205,13 +1207,15 @@ mod tests {
         let mut scenes = app.world.resource_mut::<Assets<Scene>>();
         let scene = scenes.add(Scene::new(World::new()));
 
+        let mut named_shapes = bevy::utils::HashMap::new();
+        named_shapes.insert("Capsule".to_string(), None);
         let parent = app
             .world
             .spawn()
             .insert(AsyncSceneCollider {
                 handle: scene,
-                shape: ComputedColliderShape::TriMesh,
-                named_shapes: bevy::utils::HashMap::new(),
+                shape: Some(ComputedColliderShape::TriMesh),
+                named_shapes,
             })
             .push_children(&[cube, capsule])
             .id();
@@ -1223,8 +1227,8 @@ mod tests {
             "Collider component should be added for cube"
         );
         assert!(
-            app.world.entity(capsule).get::<Collider>().is_some(),
-            "Collider component should be added for capsule"
+            app.world.entity(capsule).get::<Collider>().is_none(),
+            "Collider component shouldn't be added for capsule"
         );
         assert!(
             app.world.entity(parent).get::<AsyncCollider>().is_none(),
