@@ -33,9 +33,7 @@ mod render_dim;
 // gates-specific code.
 #[cfg(feature = "dim3")]
 mod dim {
-    pub(crate) use crate::render::lines::render_dim::r3d::{
-        queue, DebugLinePipeline, DrawDebugLines,
-    };
+    pub(crate) use super::render_dim::r3d::{queue, DebugLinePipeline, DrawDebugLines};
     pub(crate) use bevy::core_pipeline::Opaque3d as Phase;
     use bevy::{asset::Handle, render::mesh::Mesh};
 
@@ -51,9 +49,7 @@ mod dim {
 }
 #[cfg(feature = "dim2")]
 mod dim {
-    pub(crate) use crate::render::lines::render_dim::r2d::{
-        queue, DebugLinePipeline, DrawDebugLines,
-    };
+    pub(crate) use super::render_dim::r2d::{queue, DebugLinePipeline, DrawDebugLines};
     pub(crate) use bevy::core_pipeline::Transparent2d as Phase;
     use bevy::{asset::Handle, render::mesh::Mesh, sprite::Mesh2dHandle};
 
@@ -194,7 +190,7 @@ fn update(
     // For each debug line mesh, fill its buffers with the relevant positions/colors chunks.
     for (mesh_handle, debug_lines_idx) in debug_line_meshes.iter() {
         let mesh = meshes.get_mut(dim::from_handle(mesh_handle)).unwrap();
-        use VertexAttributeValues::{Float32x3, Float32x4, Uint32};
+        use VertexAttributeValues::{Float32x3, Uint32};
         if let Some(Float32x3(vbuffer)) = mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION) {
             vbuffer.clear();
             if let Some(new_content) = lines
@@ -242,7 +238,7 @@ fn extract(mut commands: Commands, query: Query<Entity, With<DebugLinesMesh>>) {
 }
 
 #[derive(Component)]
-struct DebugLinesMesh(usize);
+pub(crate) struct DebugLinesMesh(usize);
 
 #[derive(Component)]
 pub(crate) struct RenderDebugLinesMesh;
