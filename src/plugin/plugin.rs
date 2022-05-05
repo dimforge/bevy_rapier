@@ -133,7 +133,8 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
 {
     fn build(&self, app: &mut App) {
         // Insert all of our required resources
-        app.insert_resource(SimulationToRenderTime::default())
+        app.insert_resource(RapierConfiguration::default())
+            .insert_resource(SimulationToRenderTime::default())
             .insert_resource(RapierContext {
                 physics_scale: self.physics_scale,
                 ..Default::default()
@@ -173,10 +174,6 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
             app.insert_resource(PhysicsHooksWithQueryResource::<PhysicsHooksData>(Box::new(
                 (),
             )));
-        }
-
-        if app.world.get_resource::<RapierConfiguration>().is_none() {
-            app.insert_resource(RapierConfiguration::default());
         }
     }
 }
