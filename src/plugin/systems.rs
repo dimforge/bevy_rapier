@@ -23,8 +23,6 @@ use bevy::math::Vec3Swizzles;
 use bevy::prelude::*;
 use rapier::prelude::*;
 use std::collections::HashMap;
-#[cfg(feature = "dim3")]
-use std::collections::LinkedList;
 
 #[cfg(feature = "dim3")]
 use crate::prelude::{AsyncCollider, AsyncSceneCollider};
@@ -558,7 +556,7 @@ pub fn init_async_colliders(
                         .insert(collider)
                         .remove::<AsyncCollider>();
                 }
-                None => panic!("Unable to generate collider from mesh"),
+                None => error!("Unable to generate collider from mesh {:?}", mesh),
             }
         }
     }
@@ -577,43 +575,38 @@ pub fn init_async_scene_colliders(
 ) {
     for (entity, async_collider) in async_colliders.iter() {
         if scenes.get(&async_collider.handle).is_some() {
-            for child in get_children_recursively(entity, &children) {
+            traverse_descendants(entity, &children, &mut |child| {
                 if let Ok((name, handle)) = mesh_handles.get(child) {
                     let shape = async_collider
                         .named_shapes
                         .get(name.as_str())
                         .unwrap_or(&async_collider.shape);
                     if let Some(shape) = shape {
-                        let mesh = meshes.get(handle).unwrap(); // SAFETY: Mesh is already loaded
+                        let mesh = meshes.get(handle).unwrap(); // NOTE: Mesh is already loaded
                         match Collider::from_bevy_mesh(mesh, shape) {
                             Some(collider) => {
                                 commands.entity(child).insert(collider);
                             }
-                            None => panic!("Unable to generate collider from mesh"),
+                            None => error!("Unable to generate collider from mesh {:?} with name {}", mesh, name),
                         }
                     }
                 }
-            }
+            });
+
             commands.entity(entity).remove::<AsyncSceneCollider>();
         }
     }
 }
 
-/// Iterates over children hierarchy recursively and returns a plain list of all children.
-/// [`LinkedList`] is used here for fast lists concatenation due to recursive iteration.
+/// Iterates over all descendants of the `entity` and applies `f`.
 #[cfg(feature = "dim3")]
-#[allow(clippy::linkedlist)]
-fn get_children_recursively(entity: Entity, children: &Query<&Children>) -> LinkedList<Entity> {
-    let mut all_children = LinkedList::new();
+fn traverse_descendants(entity: Entity, children: &Query<&Children>, f: &mut impl FnMut(Entity)) {
     if let Ok(entity_children) = children.get(entity) {
-        for child in entity_children.iter() {
-            all_children.push_back(*child);
-
-            let mut children = get_children_recursively(*child, children);
-            all_children.append(&mut children);
+        for child in entity_children.iter().copied() {
+            f(child);
+            traverse_descendants(child, children, f);
         }
     }
-    all_children
 }
 
 /// System responsible for creating new Rapier colliders from the related `bevy_rapier` components.
