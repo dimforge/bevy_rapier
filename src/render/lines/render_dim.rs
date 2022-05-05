@@ -15,29 +15,24 @@ pub mod r3d {
                 DepthStencilState, FragmentState, FrontFace, MultisampleState, PipelineCache,
                 PolygonMode, PrimitiveState, PrimitiveTopology, RenderPipelineDescriptor,
                 SpecializedMeshPipeline, SpecializedMeshPipelineError, SpecializedMeshPipelines,
-                StencilFaceState, StencilState, TextureFormat, VertexAttribute, VertexBufferLayout,
-                VertexFormat, VertexState, VertexStepMode,
+                StencilFaceState, StencilState, TextureFormat, VertexState,
             },
             texture::BevyDefault,
             view::{ExtractedView, Msaa},
         },
-        utils::Hashed,
     };
 
-    use crate::render::lines::{DebugLinesConfig, RenderDebugLinesMesh, DEBUG_LINES_SHADER_HANDLE};
+    use super::super::{DebugLinesConfig, RenderDebugLinesMesh, DEBUG_LINES_SHADER_HANDLE};
 
     pub(crate) struct DebugLinePipeline {
         mesh_pipeline: MeshPipeline,
         shader: Handle<Shader>,
-        //always_in_front: bool,
     }
     impl FromWorld for DebugLinePipeline {
         fn from_world(render_world: &mut World) -> Self {
-            //let config = render_world.get_resource::<DebugLinesConfig>().unwrap();
             DebugLinePipeline {
                 mesh_pipeline: render_world.get_resource::<MeshPipeline>().unwrap().clone(),
                 shader: DEBUG_LINES_SHADER_HANDLE.typed(),
-                //always_in_front: config.always_in_front,
             }
         }
     }
@@ -50,8 +45,6 @@ pub mod r3d {
             (depth_test, key): Self::Key,
             layout: &MeshVertexBufferLayout,
         ) -> Result<RenderPipelineDescriptor, SpecializedMeshPipelineError> {
-            //use VertexFormat::{Float32x3, Float32x4};
-
             let mut shader_defs = Vec::new();
             shader_defs.push("LINES_3D".to_string());
             if depth_test {
@@ -180,6 +173,7 @@ pub mod r3d {
 }
 
 pub mod r2d {
+    use crate::render::lines::DebugLinesConfig;
     use bevy::{
         asset::Handle,
         core::FloatOrd,
@@ -190,12 +184,10 @@ pub mod r2d {
             render_asset::RenderAssets,
             render_phase::{DrawFunctions, RenderPhase, SetItemPipeline},
             render_resource::{
-                BlendState, ColorTargetState, ColorWrites, CompareFunction, DepthBiasState,
-                DepthStencilState, FragmentState, FrontFace, MultisampleState, PipelineCache,
-                PolygonMode, PrimitiveState, PrimitiveTopology, RenderPipelineDescriptor, Shader,
-                SpecializedMeshPipeline, SpecializedMeshPipelineError, SpecializedMeshPipelines,
-                StencilFaceState, StencilState, TextureFormat, VertexAttribute, VertexBufferLayout,
-                VertexFormat, VertexState, VertexStepMode,
+                BlendState, ColorTargetState, ColorWrites, FragmentState, FrontFace,
+                MultisampleState, PipelineCache, PolygonMode, PrimitiveState, PrimitiveTopology,
+                RenderPipelineDescriptor, Shader, SpecializedMeshPipeline,
+                SpecializedMeshPipelineError, SpecializedMeshPipelines, TextureFormat, VertexState,
             },
             texture::BevyDefault,
             view::{Msaa, VisibleEntities},
@@ -206,7 +198,7 @@ pub mod r2d {
         },
     };
 
-    use crate::render::lines::{RenderDebugLinesMesh, DEBUG_LINES_SHADER_HANDLE};
+    use super::super::{RenderDebugLinesMesh, DEBUG_LINES_SHADER_HANDLE};
 
     pub(crate) struct DebugLinePipeline {
         mesh_pipeline: Mesh2dPipeline,
@@ -232,14 +224,6 @@ pub mod r2d {
             key: Self::Key,
             layout: &MeshVertexBufferLayout,
         ) -> Result<RenderPipelineDescriptor, SpecializedMeshPipelineError> {
-            /*
-                        let mut shader_defs = Vec::new();
-                        shader_defs.push("LINES_3D".to_string());
-                        if depth_test {
-                            shader_defs.push("DEPTH_TEST_ENABLED".to_string());
-                        }
-            */
-
             let vertex_buffer_layout = layout.get_layout(&[
                 Mesh::ATTRIBUTE_POSITION.at_shader_location(0),
                 Mesh::ATTRIBUTE_COLOR.at_shader_location(1),
@@ -284,6 +268,7 @@ pub mod r2d {
     }
 
     pub(crate) fn queue(
+        config: Res<DebugLinesConfig>,
         draw2d_functions: Res<DrawFunctions<Transparent2d>>,
         debug_line_pipeline: Res<DebugLinePipeline>,
         mut pipeline_cache: ResMut<PipelineCache>,
@@ -304,7 +289,11 @@ pub mod r2d {
                             | Mesh2dPipelineKey::from_primitive_topology(
                                 PrimitiveTopology::LineList,
                             );
-                        let mesh_z = uniform.transform.w_axis.z;
+                        let mesh_z = if config.depth_test {
+                            uniform.transform.w_axis.z
+                        } else {
+                            f32::MAX
+                        };
                         let pipeline = specialized_pipelines
                             .specialize(
                                 &mut pipeline_cache,
