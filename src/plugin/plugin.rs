@@ -54,8 +54,7 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<P
     /// Provided for use when staging systems outside of this plugin using
     /// [`with_system_setup(false)`](Self::with_system_setup) enabled.
     /// See [`PhysicsStages::SyncBackend`] for a description of these systems.
-    pub fn get_sync_backend_systems(&self) -> SystemSet {
-        // TODO: Error if not skipped?
+    pub fn get_sync_backend_systems() -> SystemSet {
         SystemSet::new()
             .with_system(systems::init_async_shapes)
             .with_system(systems::apply_scale.after(systems::init_async_shapes))
@@ -77,19 +76,19 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<P
     }
 
     /// See [`PhysicsStages::StepSimulation`] for a description of these systems.
-    pub fn get_step_simulation_systems(&self) -> SystemSet {
+    pub fn get_step_simulation_systems() -> SystemSet {
         SystemSet::new().with_system(systems::step_simulation::<PhysicsHooksData>)
     }
 
     /// See [`PhysicsStages::Writeback`] for a description of these systems.
-    pub fn get_writeback_systems(&self) -> SystemSet {
+    pub fn get_writeback_systems() -> SystemSet {
         SystemSet::new()
             .with_system(systems::update_colliding_entities)
             .with_system(systems::writeback_rigid_bodies)
     }
 
     /// See [`PhysicsStages::DetectDespawn`] for a description of these systems.
-    pub fn get_detect_despawn_systems(&self) -> SystemSet {
+    pub fn get_detect_despawn_systems() -> SystemSet {
         SystemSet::new().with_system(systems::sync_removals)
     }
 }
@@ -146,22 +145,22 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
             app.add_stage_before(
                 CoreStage::Update,
                 PhysicsStages::SyncBackend,
-                SystemStage::parallel().with_system_set(self.get_sync_backend_systems()),
+                SystemStage::parallel().with_system_set(Self::get_sync_backend_systems()),
             );
             app.add_stage_after(
                 PhysicsStages::SyncBackend,
                 PhysicsStages::StepSimulation,
-                SystemStage::parallel().with_system_set(self.get_step_simulation_systems()),
+                SystemStage::parallel().with_system_set(Self::get_step_simulation_systems()),
             );
             app.add_stage_after(
                 PhysicsStages::StepSimulation,
                 PhysicsStages::Writeback,
-                SystemStage::parallel().with_system_set(self.get_writeback_systems()),
+                SystemStage::parallel().with_system_set(Self::get_writeback_systems()),
             );
             app.add_stage_before(
                 CoreStage::Last,
                 PhysicsStages::DetectDespawn,
-                SystemStage::parallel().with_system_set(self.get_detect_despawn_systems()),
+                SystemStage::parallel().with_system_set(Self::get_detect_despawn_systems()),
             );
         }
 
