@@ -164,7 +164,6 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
             );
         }
 
-        // Insert all resources that the user has not yet added themselves
         if app
             .world
             .get_resource::<PhysicsHooksWithQueryResource<PhysicsHooksData>>()
