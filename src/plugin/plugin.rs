@@ -52,7 +52,7 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<P
     }
 
     /// Provided for use when staging systems outside of this plugin using
-    /// [`with_system_setup(false)`](Self::with_system_setup) enabled.
+    /// [`with_system_setup(false)`](Self::with_system_setup).
     /// See [`PhysicsStages::SyncBackend`] for a description of these systems.
     pub fn get_sync_backend_systems() -> SystemSet {
         SystemSet::new()
@@ -75,11 +75,15 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<P
             .with_system(systems::sync_removals.after(systems::init_joints))
     }
 
+    /// Provided for use when staging systems outside of this plugin using
+    /// [`with_system_setup(false)`](Self::with_system_setup).
     /// See [`PhysicsStages::StepSimulation`] for a description of these systems.
     pub fn get_step_simulation_systems() -> SystemSet {
         SystemSet::new().with_system(systems::step_simulation::<PhysicsHooksData>)
     }
 
+    /// Provided for use when staging systems outside of this plugin using
+    /// [`with_system_setup(false)`](Self::with_system_setup).
     /// See [`PhysicsStages::Writeback`] for a description of these systems.
     pub fn get_writeback_systems() -> SystemSet {
         SystemSet::new()
@@ -87,6 +91,8 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<P
             .with_system(systems::writeback_rigid_bodies)
     }
 
+    /// Provided for use when staging systems outside of this plugin using
+    /// [`with_system_setup(false)`](Self::with_system_setup).
     /// See [`PhysicsStages::DetectDespawn`] for a description of these systems.
     pub fn get_detect_despawn_systems() -> SystemSet {
         SystemSet::new().with_system(systems::sync_removals)
