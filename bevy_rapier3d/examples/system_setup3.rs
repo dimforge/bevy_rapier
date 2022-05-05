@@ -89,11 +89,7 @@ fn main() {
             .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_detect_despawn_systems()),
     );
 
-    app.add_plugin(
-        RapierPhysicsPlugin::<NoUserData>::default()
-            .with_physics_scale(100.)
-            .with_system_setup(false),
-    );
+    app.add_plugin(RapierPhysicsPlugin::<NoUserData>::default().with_system_setup(false));
 
     app.run();
 }
