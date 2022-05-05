@@ -8,6 +8,16 @@
 - `Collider::bevy_mesh`, `Collider::bevy_mesh_convex_decomposition` and `Collider::bevy_mesh_convex_decomposition_with_params` was replaced with single `Collider::from_bevy_mesh` function which accepts `ComputedColliderShape`.
 - `AsyncCollider` now a struct which contains a mesh handle and `ComputedColliderShape`.
 
+
+## 0.13.2 (5 May 2022)
+### Modified
+- The `TimestepMode` and `SimulationToRenderTime` structures are now public.
+
+### Fixed
+- Fixed colors rendered by the debug-renderer.
+- Fix issue where the debug-renderer would sometimes render lines behind the user’s meshes/sprites.
+
+
 ## 0.13.1 (1 May 2022)
 ### Added
 - Add the `CollidingEntities` components which tracks the set of entities colliding
