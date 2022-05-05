@@ -163,6 +163,8 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
                 PhysicsStages::Writeback,
                 SystemStage::parallel().with_system_set(Self::get_writeback_systems()),
             );
+
+            // NOTE: we run sync_removals at the end of the frame, too, in order to make sure we don’t miss any `RemovedComponents`.
             app.add_stage_before(
                 CoreStage::Last,
                 PhysicsStages::DetectDespawn,
