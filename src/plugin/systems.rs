@@ -587,7 +587,10 @@ pub fn init_async_scene_colliders(
                             Some(collider) => {
                                 commands.entity(child).insert(collider);
                             }
-                            None => error!("Unable to generate collider from mesh {:?} with name {}", mesh, name),
+                            None => error!(
+                                "Unable to generate collider from mesh {:?} with name {}",
+                                mesh, name
+                            ),
                         }
                     }
                 }
