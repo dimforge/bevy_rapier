@@ -1,6 +1,8 @@
 #[cfg(feature = "dim3")]
 use crate::geometry::VHACDParameters;
 use bevy::prelude::*;
+#[cfg(feature = "dim3")]
+use bevy::utils::HashMap;
 use bevy::utils::HashSet;
 use rapier::prelude::{ColliderHandle, InteractionGroups, SharedShape};
 
@@ -11,14 +13,38 @@ use crate::math::Vect;
 #[derive(Copy, Clone, Debug, Component)]
 pub struct RapierColliderHandle(pub ColliderHandle);
 
-/// A collider that will be inserted in the future, once the referenced assets become available.
+/// A component which will be replaced by the specified collider type after the referenced mesh become available.
 #[cfg(feature = "dim3")]
 #[derive(Component, Debug, Clone)]
-pub enum AsyncCollider {
-    /// A future triangle-mesh collider based on a Bevy mesh asset.
-    Mesh(Handle<Mesh>),
-    /// A future convex decomposition collider based on a Bevy mesh asset.
-    ConvexDecomposition(Handle<Mesh>, VHACDParameters),
+pub struct AsyncCollider {
+    /// Mesh handle to use for collider generation.
+    pub handle: Handle<Mesh>,
+    /// Collider type that will be generated.
+    pub shape: ComputedColliderShape,
+}
+
+/// A component which will be replaced the specified collider types on children with meshes after the referenced scene become available.
+#[cfg(feature = "dim3")]
+#[derive(Component, Debug, Clone)]
+pub struct AsyncSceneCollider {
+    /// Scene handle to use for colliders generation.
+    pub handle: Handle<Scene>,
+    /// Collider type for each scene mesh not included in [`named_shapes`]. If [`None`], then all
+    /// shapes will be skipped for processing except [`named_shapes`].
+    pub shape: Option<ComputedColliderShape>,
+    /// Shape types for meshes by name. If shape is [`None`], then it will be skipped for
+    /// processing.
+    pub named_shapes: HashMap<String, Option<ComputedColliderShape>>,
+}
+
+/// Shape type based on a Bevy mesh asset.
+#[cfg(feature = "dim3")]
+#[derive(Debug, Clone)]
+pub enum ComputedColliderShape {
+    /// Triangle-mesh.
+    TriMesh,
+    /// Convex decomposition.
+    ConvexDecomposition(VHACDParameters),
 }
 
 /// A geometric entity that can be attached to a body so it can be affected by contacts
