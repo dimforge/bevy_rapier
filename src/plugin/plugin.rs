@@ -14,21 +14,29 @@ pub type NoUserData = ();
 // Rapier physics engine.
 pub struct RapierPhysicsPlugin<PhysicsHooksData = ()> {
     physics_scale: f32,
+    default_system_setup: bool,
     _phantom: PhantomData<PhysicsHooksData>,
 }
 
-impl<PhysicsHooksData> RapierPhysicsPlugin<PhysicsHooksData> {
+impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<PhysicsHooksData> {
     /// Specifies a scale ratio between the physics world and the bevy transforms.
     ///
     /// This affects the size of every elements in the physics engine, by multiplying
     /// all the length-related quantities by the `physics_scale` factor. This should
     /// likely always be 1.0 in 3D. In 2D, this is useful to specify a "pixels-per-meter"
     /// conversion ratio.
-    pub fn with_physics_scale(physics_scale: f32) -> Self {
-        Self {
-            physics_scale,
-            _phantom: PhantomData,
-        }
+    pub fn with_physics_scale(mut self, physics_scale: f32) -> Self {
+        self.physics_scale = physics_scale;
+        self
+    }
+
+    /// Specifies whether the plugin should setup each of its [`PhysicsStages`]
+    /// (`true`), or if the user will set them up later (`false`).
+    ///
+    /// The default value is `true`.
+    pub fn with_default_system_setup(mut self, default_system_setup: bool) -> Self {
+        self.default_system_setup = default_system_setup;
+        self
     }
 
     /// Specifies how many pixels on the 2D canvas equal one meter on the physics world.
@@ -38,24 +46,77 @@ impl<PhysicsHooksData> RapierPhysicsPlugin<PhysicsHooksData> {
     pub fn pixels_per_meter(pixels_per_meter: f32) -> Self {
         Self {
             physics_scale: pixels_per_meter,
+            default_system_setup: true,
             _phantom: PhantomData,
+        }
+    }
+
+    /// Provided for use when staging systems outside of this plugin using
+    /// [`with_system_setup(false)`](Self::with_system_setup).
+    /// See [`PhysicsStages`] for a description of these systems.
+    pub fn get_systems(stage: PhysicsStages) -> SystemSet {
+        match stage {
+            PhysicsStages::SyncBackend => SystemSet::new()
+                .with_system(systems::init_async_colliders)
+                .with_system(systems::apply_scale.after(systems::init_async_colliders))
+                .with_system(systems::apply_collider_user_changes.after(systems::apply_scale))
+                .with_system(
+                    systems::apply_rigid_body_user_changes
+                        .after(systems::apply_collider_user_changes),
+                )
+                .with_system(
+                    systems::apply_joint_user_changes.after(systems::apply_rigid_body_user_changes),
+                )
+                .with_system(systems::init_rigid_bodies.after(systems::apply_joint_user_changes))
+                .with_system(
+                    systems::init_colliders
+                        .after(systems::init_rigid_bodies)
+                        .after(systems::init_async_colliders),
+                )
+                .with_system(systems::init_joints.after(systems::init_colliders))
+                .with_system(systems::sync_removals.after(systems::init_joints)),
+            PhysicsStages::StepSimulation => {
+                SystemSet::new().with_system(systems::step_simulation::<PhysicsHooksData>)
+            }
+            PhysicsStages::Writeback => SystemSet::new()
+                .with_system(systems::update_colliding_entities)
+                .with_system(systems::writeback_rigid_bodies),
+            PhysicsStages::DetectDespawn => SystemSet::new().with_system(systems::sync_removals),
         }
     }
 }
 
-#[cfg(feature = "dim3")]
 impl<PhysicsHooksData> Default for RapierPhysicsPlugin<PhysicsHooksData> {
     fn default() -> Self {
         Self {
             physics_scale: 1.0,
+            default_system_setup: true,
             _phantom: PhantomData,
         }
     }
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
+/// [`StageLabel`] for each phase of the plugin.
 pub enum PhysicsStages {
+    /// This stage runs the systems responsible for synchronizing (and
+    /// initializing) backend data structures with current component state.
+    /// These systems typically run at the start of [`CoreStage::Update`].
+    SyncBackend,
+    /// The systems responsible for advancing the physics simulation, and
+    /// updating the internal state for scene queries.
+    /// These systems typically run immediately after [`PhysicsStages::SyncBackend`].
     StepSimulation,
+    /// The systems responsible for updating
+    /// [`crate::geometry::collider::CollidingEntities`] and writing
+    /// the result of the last simulation step into our `bevy_rapier`
+    /// components and the [`Transform`] component.
+    /// These systems typically run immediately after [`PhysicsStages::StepSimulation`].
+    Writeback,
+    /// The systems responsible for removing from Rapier the
+    /// rigid-bodies/colliders/joints which had their related `bevy_rapier`
+    /// components removed by the user (through component removal or despawn).
+    /// These systems typically run at the start of [`CoreStage::Last`].
     DetectDespawn,
 }
 
@@ -63,61 +124,44 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
     for RapierPhysicsPlugin<PhysicsHooksData>
 {
     fn build(&self, app: &mut App) {
-        app.add_stage_before(
-            CoreStage::Update,
-            PhysicsStages::StepSimulation,
-            SystemStage::parallel(),
-        );
-        app.add_stage_before(
-            CoreStage::Last,
-            PhysicsStages::DetectDespawn,
-            SystemStage::parallel(),
-        );
+        // Insert all of our required resources
         app.insert_resource(RapierConfiguration::default())
             .insert_resource(SimulationToRenderTime::default())
             .insert_resource(RapierContext {
                 physics_scale: self.physics_scale,
                 ..Default::default()
             })
-            .insert_resource(Events::<CollisionEvent>::default())
-            .add_system_set_to_stage(
+            .insert_resource(Events::<CollisionEvent>::default());
+
+        // Add each stage as necessary
+        if self.default_system_setup {
+            app.add_stage_before(
+                CoreStage::Update,
+                PhysicsStages::SyncBackend,
+                SystemStage::parallel()
+                    .with_system_set(Self::get_systems(PhysicsStages::SyncBackend)),
+            );
+            app.add_stage_after(
+                PhysicsStages::SyncBackend,
                 PhysicsStages::StepSimulation,
-                SystemSet::new()
-                    .with_system(systems::init_async_colliders)
-                    .with_system(systems::apply_scale.after(systems::init_async_colliders))
-                    .with_system(systems::apply_collider_user_changes.after(systems::apply_scale))
-                    .with_system(
-                        systems::apply_rigid_body_user_changes
-                            .after(systems::apply_collider_user_changes),
-                    )
-                    .with_system(
-                        systems::apply_joint_user_changes
-                            .after(systems::apply_rigid_body_user_changes),
-                    )
-                    .with_system(
-                        systems::init_rigid_bodies.after(systems::apply_joint_user_changes),
-                    )
-                    .with_system(
-                        systems::init_colliders
-                            .after(systems::init_rigid_bodies)
-                            .after(systems::init_async_colliders),
-                    )
-                    .with_system(systems::init_joints.after(systems::init_colliders))
-                    .with_system(systems::sync_removals.after(systems::init_joints))
-                    .with_system(
-                        systems::step_simulation::<PhysicsHooksData>.after(systems::sync_removals),
-                    )
-                    .with_system(
-                        systems::update_colliding_entities
-                            .after(systems::step_simulation::<PhysicsHooksData>),
-                    )
-                    .with_system(
-                        systems::writeback_rigid_bodies
-                            .after(systems::step_simulation::<PhysicsHooksData>),
-                    ),
-            )
-            // NOTE: we run sync_removals at the end of the frame to, in order to make sure we don’t miss any `RemovedComponents`.
-            .add_system_to_stage(PhysicsStages::DetectDespawn, systems::sync_removals);
+                SystemStage::parallel()
+                    .with_system_set(Self::get_systems(PhysicsStages::StepSimulation)),
+            );
+            app.add_stage_after(
+                PhysicsStages::StepSimulation,
+                PhysicsStages::Writeback,
+                SystemStage::parallel()
+                    .with_system_set(Self::get_systems(PhysicsStages::Writeback)),
+            );
+
+            // NOTE: we run sync_removals at the end of the frame, too, in order to make sure we don’t miss any `RemovedComponents`.
+            app.add_stage_before(
+                CoreStage::Last,
+                PhysicsStages::DetectDespawn,
+                SystemStage::parallel()
+                    .with_system_set(Self::get_systems(PhysicsStages::DetectDespawn)),
+            );
+        }
 
         if app
             .world
