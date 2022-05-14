@@ -56,8 +56,8 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<P
     /// See [`PhysicsStages::SyncBackend`] for a description of these systems.
     pub fn get_sync_backend_systems() -> SystemSet {
         SystemSet::new()
-            .with_system(systems::init_async_shapes)
-            .with_system(systems::apply_scale.after(systems::init_async_shapes))
+            .with_system(systems::init_async_colliders)
+            .with_system(systems::apply_scale.after(systems::init_async_colliders))
             .with_system(systems::apply_collider_user_changes.after(systems::apply_scale))
             .with_system(
                 systems::apply_rigid_body_user_changes.after(systems::apply_collider_user_changes),
@@ -69,7 +69,7 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<P
             .with_system(
                 systems::init_colliders
                     .after(systems::init_rigid_bodies)
-                    .after(systems::init_async_shapes),
+                    .after(systems::init_async_colliders),
             )
             .with_system(systems::init_joints.after(systems::init_colliders))
             .with_system(systems::sync_removals.after(systems::init_joints))

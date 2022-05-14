@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+### Added
+- `AsyncSceneCollider` component to generate collision for scene meshes similar to `AsyncCollider`.
+
+### Modified
+- `Collider::bevy_mesh`, `Collider::bevy_mesh_convex_decomposition` and `Collider::bevy_mesh_convex_decomposition_with_params` was replaced with single `Collider::from_bevy_mesh` function which accepts `ComputedColliderShape`.
+- `AsyncCollider` now a struct which contains a mesh handle and `ComputedColliderShape`.
+
+
 ## 0.13.2 (5 May 2022)
 ### Modified
 - The `TimestepMode` and `SimulationToRenderTime` structures are now public.
