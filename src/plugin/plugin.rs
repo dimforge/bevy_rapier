@@ -1,6 +1,7 @@
 use crate::pipeline::{CollisionEvent, PhysicsHooksWithQueryResource};
 use crate::plugin::configuration::SimulationToRenderTime;
 use crate::plugin::{systems, RapierConfiguration, RapierContext};
+use crate::prelude::*;
 use bevy::ecs::{event::Events, query::WorldQuery};
 use bevy::prelude::*;
 use std::marker::PhantomData;
@@ -124,6 +125,26 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
     for RapierPhysicsPlugin<PhysicsHooksData>
 {
     fn build(&self, app: &mut App) {
+        // Register components as reflectable.
+        app.register_type::<RigidBody>()
+            .register_type::<Velocity>()
+            .register_type::<AdditionalMassProperties>()
+            .register_type::<MassProperties>()
+            .register_type::<LockedAxes>()
+            .register_type::<ExternalForce>()
+            .register_type::<ExternalImpulse>()
+            .register_type::<Sleeping>()
+            .register_type::<Damping>()
+            .register_type::<Dominance>()
+            .register_type::<Ccd>()
+            .register_type::<GravityScale>()
+            .register_type::<CollidingEntities>()
+            .register_type::<Sensor>()
+            .register_type::<Friction>()
+            .register_type::<Restitution>()
+            .register_type::<CollisionGroups>()
+            .register_type::<SolverGroups>();
+
         // Insert all of our required resources
         app.insert_resource(RapierConfiguration::default())
             .insert_resource(SimulationToRenderTime::default())
