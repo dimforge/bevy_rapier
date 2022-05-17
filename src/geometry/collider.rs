@@ -79,10 +79,12 @@ pub enum ColliderScale {
 
 /// Indicates whether or not the collider is a sensor.
 #[derive(Copy, Clone, Debug, PartialEq, Default, Component, Reflect)]
+#[reflect(Component)]
 pub struct Sensor(pub bool);
 
 /// Custom mass-properties of a collider.
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
+#[reflect(Component)]
 pub enum ColliderMassProperties {
     /// The mass-properties are computed automatically from the collider’s shape and this density.
     Density(f32),
@@ -98,6 +100,7 @@ impl Default for ColliderMassProperties {
 
 /// The friction affecting a collider.
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
+#[reflect(Component)]
 pub struct Friction {
     /// The friction coefficient of a collider.
     ///
@@ -139,6 +142,7 @@ impl Friction {
 
 /// The restitution affecting a collider.
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
+#[reflect(Component)]
 pub struct Restitution {
     /// The restitution coefficient of a collider.
     ///
@@ -237,6 +241,7 @@ impl From<ActiveCollisionTypes> for rapier::geometry::ActiveCollisionTypes {
 /// (self.memberships & rhs.filter) != 0 && (rhs.memberships & self.filter) != 0
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Component, Reflect)]
+#[reflect(Component)]
 pub struct CollisionGroups {
     /// Groups memberships.
     pub memberships: u32,
@@ -276,6 +281,7 @@ impl From<CollisionGroups> for InteractionGroups {
 ///
 /// This follows the same rules as the `CollisionGroups`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Component, Reflect)]
+#[reflect(Component)]
 pub struct SolverGroups {
     /// Groups memberships.
     pub memberships: u32,
@@ -312,7 +318,8 @@ impl From<SolverGroups> for InteractionGroups {
 }
 
 bitflags::bitflags! {
-    #[derive(Component, Reflect)]
+    #[derive(Default, Component, Reflect)]
+    #[reflect(Component)]
     #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
     /// Flags affecting the behavior of the constraints solver for a given contact manifold.
     pub struct ActiveHooks: u32 {
@@ -333,7 +340,8 @@ impl From<ActiveHooks> for rapier::pipeline::ActiveHooks {
 }
 
 bitflags::bitflags! {
-    #[derive(Component, Reflect)]
+    #[derive(Default, Component, Reflect)]
+    #[reflect(Component)]
     #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
     /// Flags affecting the events generated for this collider.
     pub struct ActiveEvents: u32 {
@@ -352,6 +360,7 @@ impl From<ActiveEvents> for rapier::pipeline::ActiveEvents {
 
 /// Component which will be filled (if present) with a list of entities with which the current entity is currently in contact.
 #[derive(Component, Default, Reflect)]
+#[reflect(Component)]
 pub struct CollidingEntities(pub(crate) HashSet<Entity>);
 
 impl CollidingEntities {
