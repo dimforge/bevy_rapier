@@ -1,5 +1,5 @@
 use crate::math::Vect;
-use bevy::prelude::*;
+use bevy::{prelude::*, reflect::FromReflect};
 use rapier::prelude::{
     Isometry, LockedAxes as RapierLockedAxes, RigidBodyActivation, RigidBodyHandle, RigidBodyType,
 };
@@ -9,8 +9,8 @@ use rapier::prelude::{
 pub struct RapierRigidBodyHandle(pub RigidBodyHandle);
 
 /// A rigid-body.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Component, Reflect, FromReflect)]
+#[reflect(Component, PartialEq)]
 pub enum RigidBody {
     /// A `RigidBody::Dynamic` body can be affected by all external forces.
     Dynamic,
@@ -54,8 +54,8 @@ impl From<RigidBody> for RigidBodyType {
 /// Use this component to control and/or read the velocity of a dynamic or kinematic rigid-body.
 /// If this component isn’t present, a dynamic rigid-body will still be able to move (you will just
 /// not be able to read/modify its velocity).
-#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect, FromReflect)]
+#[reflect(Component, PartialEq)]
 pub struct Velocity {
     /// The linear velocity of the rigid-body.
     pub linvel: Vect,
@@ -101,8 +101,8 @@ impl Velocity {
 }
 
 /// Mass-properties of a rigid-body, added to the contributions of its attached colliders.
-#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect, FromReflect)]
+#[reflect(Component, PartialEq)]
 pub struct AdditionalMassProperties(pub MassProperties);
 
 /// Center-of-mass, mass, and angular inertia.
@@ -111,8 +111,8 @@ pub struct AdditionalMassProperties(pub MassProperties);
 /// a rigid-body (including the colliders contribution). Modifying this component won’t
 /// affect the mass-properties of the rigid-body (the attached colliders’ `ColliderMassProperties`
 /// and the `AdditionalMassProperties` should be modified instead).
-#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect, FromReflect)]
+#[reflect(Component, PartialEq)]
 pub struct MassProperties {
     /// The center of mass of a rigid-body expressed in its local-space.
     pub local_center_of_mass: Vect,
@@ -167,8 +167,8 @@ impl MassProperties {
 }
 
 bitflags::bitflags! {
-    #[derive(Default, Component, Reflect)]
-    #[reflect(Component)]
+    #[derive(Default, Component, Reflect, FromReflect)]
+    #[reflect(Component, PartialEq)]
     /// Flags affecting the behavior of the constraints solver for a given contact manifold.
     pub struct LockedAxes: u8 {
         /// Flag indicating that the rigid-body cannot translate along the `X` axis.
@@ -199,8 +199,8 @@ impl From<LockedAxes> for RapierLockedAxes {
 /// Constant external forces applied continuously to a rigid-body.
 ///
 /// This force is applied at each timestep.
-#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect, FromReflect)]
+#[reflect(Component, PartialEq)]
 pub struct ExternalForce {
     /// The linear force applied to the rigid-body.
     pub force: Vect,
@@ -216,8 +216,8 @@ pub struct ExternalForce {
 ///
 /// The impulse is only applied once, and whenever it it modified (based
 /// on Bevy’s change detection).
-#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect, FromReflect)]
+#[reflect(Component, PartialEq)]
 pub struct ExternalImpulse {
     /// The linear impulse applied to the rigid-body.
     pub impulse: Vect,
@@ -231,8 +231,8 @@ pub struct ExternalImpulse {
 
 /// Gravity is multiplied by this scaling factor before it's
 /// applied to this rigid-body.
-#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect, FromReflect)]
+#[reflect(Component, PartialEq)]
 pub struct GravityScale(pub f32);
 
 impl Default for GravityScale {
@@ -242,8 +242,8 @@ impl Default for GravityScale {
 }
 
 /// Information used for Continuous-Collision-Detection.
-#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect, FromReflect)]
+#[reflect(Component, PartialEq)]
 pub struct Ccd {
     /// Is CCD enabled for this rigid-body?
     pub enabled: bool,
@@ -265,8 +265,8 @@ impl Ccd {
 }
 
 /// The dominance groups of a rigid-body.
-#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect, FromReflect)]
+#[reflect(Component, PartialEq)]
 pub struct Dominance {
     // FIXME: rename this to `group` (no `s`).
     /// The dominance groups of a rigid-body.
@@ -284,8 +284,8 @@ impl Dominance {
 ///
 /// This controls whether a body is sleeping or not.
 /// If the threshold is negative, the body never sleeps.
-#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect, FromReflect)]
+#[reflect(Component, PartialEq)]
 pub struct Sleeping {
     /// The threshold linear velocity bellow which the body can fall asleep.
     pub linear_threshold: f32,
@@ -317,8 +317,8 @@ impl Default for Sleeping {
 }
 
 /// Damping factors to gradually slow down a rigid-body.
-#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect, FromReflect)]
+#[reflect(Component, PartialEq)]
 pub struct Damping {
     // TODO: rename these to "linear" and "angular"?
     /// Damping factor for gradually slowing down the translational motion of the rigid-body.
