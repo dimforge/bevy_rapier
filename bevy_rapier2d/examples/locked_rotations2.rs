@@ -18,12 +18,10 @@ fn main() {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    let mut camera = OrthographicCameraBundle::new_2d();
-    camera.transform = Transform {
-        translation: Vec3::new(0.0, 200.0, 0.0),
-        ..Transform::identity()
-    };
-    commands.spawn_bundle(camera);
+    commands.spawn_bundle(OrthographicCameraBundle {
+        transform: Transform::from_xyz(0.0, 200.0, 0.0),
+        ..OrthographicCameraBundle::new_2d()
+    });
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -34,27 +32,33 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_height = 10.0;
 
     commands
-        .spawn()
-        .insert(Collider::cuboid(ground_size, ground_height))
-        .insert(Transform::from_xyz(0.0, -ground_height, 0.0));
+        .spawn_bundle(TransformBundle {
+            local: Transform::from_xyz(0.0, -ground_height, 0.0),
+            ..Default::default()
+        })
+        .insert(Collider::cuboid(ground_size, ground_height));
 
     /*
      * A rectangle that only rotate.
      */
     commands
-        .spawn()
+        .spawn_bundle(TransformBundle {
+            local: Transform::from_xyz(0.0, 300.0, 0.0),
+            ..Default::default()
+        })
         .insert(RigidBody::Dynamic)
         .insert(LockedAxes::TRANSLATION_LOCKED)
-        .insert(Collider::cuboid(200.0, 60.0))
-        .insert(Transform::from_xyz(0.0, 300.0, 0.0));
+        .insert(Collider::cuboid(200.0, 60.0));
 
     /*
      * A tilted cuboid that cannot rotate.
      */
     commands
-        .spawn()
+        .spawn_bundle(TransformBundle {
+            local: Transform::from_xyz(50.0, 500.0, 0.0).with_rotation(Quat::from_rotation_z(1.0)),
+            ..Default::default()
+        })
         .insert(RigidBody::Dynamic)
         .insert(LockedAxes::ROTATION_LOCKED)
-        .insert(Collider::cuboid(60.0, 40.0))
-        .insert(Transform::from_xyz(50.0, 500.0, 0.0).with_rotation(Quat::from_rotation_z(1.0)));
+        .insert(Collider::cuboid(60.0, 40.0));
 }

@@ -43,20 +43,26 @@ pub fn setup_physics(mut commands: Commands) {
      * Ground
      */
     commands
-        .spawn()
-        .insert(Collider::cuboid(4.0, 1.0, 1.0))
-        .insert(Transform::from_xyz(0.0, -1.2, 0.0));
+        .spawn_bundle(TransformBundle {
+            local: Transform::from_xyz(0.0, -1.2, 0.0),
+            ..Default::default()
+        })
+        .insert(Collider::cuboid(4.0, 1.0, 1.0));
 
     commands
-        .spawn()
+        .spawn_bundle(TransformBundle {
+            local: Transform::from_xyz(0.0, 5.0, 0.0),
+            ..Default::default()
+        })
         .insert(Collider::cuboid(4.0, 1.5, 1.0))
-        .insert(Sensor(true))
-        .insert(Transform::from_xyz(0.0, 5.0, 0.0));
+        .insert(Sensor(true));
 
     commands
-        .spawn()
+        .spawn_bundle(TransformBundle {
+            local: Transform::from_xyz(0.0, 13.0, 0.0),
+            ..Default::default()
+        })
         .insert(RigidBody::Dynamic)
         .insert(Collider::cuboid(0.5, 0.5, 0.5))
-        .insert(Transform::from_xyz(0.0, 13.0, 0.0))
         .insert(ActiveEvents::COLLISION_EVENTS);
 }

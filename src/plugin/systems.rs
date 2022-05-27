@@ -30,6 +30,7 @@ use crate::prelude::{AsyncCollider, AsyncSceneCollider};
 /// Components that will be updated after a physics step.
 pub type RigidBodyWritebackComponents<'a> = (
     Entity,
+    Option<&'a GlobalTransform>,
     Option<&'a mut Transform>,
     Option<&'a mut TransformInterpolation>,
     Option<&'a mut Velocity>,
@@ -40,7 +41,7 @@ pub type RigidBodyWritebackComponents<'a> = (
 pub type RigidBodyComponents<'a> = (
     Entity,
     &'a RigidBody,
-    Option<&'a Transform>,
+    Option<&'a GlobalTransform>,
     Option<&'a Velocity>,
     Option<&'a AdditionalMassProperties>,
     Option<&'a MassProperties>,
@@ -58,7 +59,7 @@ pub type RigidBodyComponents<'a> = (
 pub type ColliderComponents<'a> = (
     Entity,
     &'a Collider,
-    Option<&'a Transform>,
+    Option<&'a GlobalTransform>,
     Option<&'a Sensor>,
     Option<&'a ColliderMassProperties>,
     Option<&'a ActiveEvents>,
@@ -70,19 +71,15 @@ pub type ColliderComponents<'a> = (
     Option<&'a SolverGroups>,
 );
 
-/// System responsible for applying `Transform::scale` and/or `ColliderScale` to
+/// System responsible for applying [`GlobalTransform::scale`] and/or [`ColliderScale`] to
 /// colliders.
 pub fn apply_scale(
     config: Res<RapierConfiguration>,
-    // TODO: should be GlobalTransform of Transform for reading the scaling?
-    //       GlobalTransform sounds like the more appropriate, but it may
-    //       introduce a one-frame delay since this system runs before the
-    //       transform propagation of Bevy.
     mut changed_collider_scales: Query<
-        (&mut Collider, &Transform, Option<&ColliderScale>),
+        (&mut Collider, &GlobalTransform, Option<&ColliderScale>),
         Or<(
-            Changed<Transform>,
             Changed<Collider>,
+            Changed<GlobalTransform>,
             Changed<ColliderScale>,
         )>,
     >,
@@ -115,8 +112,8 @@ pub fn apply_collider_user_changes(
     config: Res<RapierConfiguration>,
     mut context: ResMut<RapierContext>,
     changed_collider_transforms: Query<
-        (&RapierColliderHandle, &Transform),
-        (Without<RapierRigidBodyHandle>, Changed<Transform>),
+        (&RapierColliderHandle, &GlobalTransform),
+        (Without<RapierRigidBodyHandle>, Changed<GlobalTransform>),
     >,
     changed_shapes: Query<(&RapierColliderHandle, &Collider), Changed<Collider>>,
     changed_active_events: Query<(&RapierColliderHandle, &ActiveEvents), Changed<ActiveEvents>>,
@@ -210,10 +207,10 @@ pub fn apply_rigid_body_user_changes(
     mut changed_transforms: Query<
         (
             &RapierRigidBodyHandle,
-            &Transform,
+            &GlobalTransform,
             Option<&mut TransformInterpolation>,
         ),
-        Changed<Transform>,
+        Changed<GlobalTransform>,
     >,
     changed_velocities: Query<(&RapierRigidBodyHandle, &Velocity), Changed<Velocity>>,
     changed_additional_mass_props: Query<
@@ -254,8 +251,8 @@ pub fn apply_rigid_body_user_changes(
     // system.
     let transform_changed =
         |handle: &RigidBodyHandle,
-         transform: &Transform,
-         last_transform_set: &HashMap<RigidBodyHandle, Transform>| {
+         transform: &GlobalTransform,
+         last_transform_set: &HashMap<RigidBodyHandle, GlobalTransform>| {
             if let Some(prev) = last_transform_set.get(handle) {
                 let tra_changed = if cfg!(feature = "dim2") {
                     // In 2D, ignore the z component which can be changed by the user
@@ -373,7 +370,7 @@ pub fn apply_joint_user_changes(
     changed_impulse_joints: Query<(&RapierImpulseJointHandle, &ImpulseJoint), Changed<RigidBody>>,
     changed_multibody_joints: Query<
         (&RapierMultibodyJointHandle, &MultibodyJoint),
-        Changed<Transform>,
+        Changed<GlobalTransform>,
     >,
 ) {
     let scale = context.physics_scale;
@@ -397,7 +394,7 @@ pub fn apply_joint_user_changes(
 }
 
 /// System responsible for writing the result of the last simulation step into our `bevy_rapier`
-/// components and the `Transform` component.
+/// components and the [`GlobalTransform`] component.
 pub fn writeback_rigid_bodies(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
@@ -408,8 +405,14 @@ pub fn writeback_rigid_bodies(
     let scale = context.physics_scale;
 
     if config.physics_pipeline_active {
-        for (entity, mut transform, mut interpolation, mut velocity, mut sleeping) in
-            writeback.iter_mut()
+        for (
+            entity,
+            global_transform,
+            mut transform,
+            mut interpolation,
+            mut velocity,
+            mut sleeping,
+        ) in writeback.iter_mut()
         {
             // TODO: do this the other way round: iterate through Rapier’s RigidBodySet on the active bodies,
             // and update the components accordingly. That way, we don’t have to iterate through the entities that weren’t changed
@@ -431,54 +434,48 @@ pub fn writeback_rigid_bodies(
                             }
                         }
                     }
-
-                    #[cfg(feature = "dim2")]
-                    {
-                        if let Some(transform) = &mut transform {
-                            transform.translation.x = interpolated_pos.translation.x;
-                            transform.translation.y = interpolated_pos.translation.y;
-                            transform.rotation = interpolated_pos.rotation;
-                            context
-                                .last_body_transform_set
-                                .insert(handle, interpolated_pos);
-                        }
-
-                        if let Some(velocity) = &mut velocity {
-                            let new_vel = Velocity {
-                                linvel: (rb.linvel() * scale).into(),
-                                angvel: rb.angvel(),
-                            };
-
-                            // NOTE: we write the new value only if there was an
-                            //       actual change, in order to not trigger bevy’s
-                            //       change tracking when the values didn’t change.
-                            if **velocity != new_vel {
-                                **velocity = new_vel;
+                    if let Some(transform) = &mut transform {
+                        if let Some(global_transform) = &global_transform {
+                            // In 2D, preserve the transform `z` component that may have been set by the user
+                            #[cfg(feature = "dim2")]
+                            {
+                                interpolated_pos.translation.z = global_transform.translation.z;
                             }
-                        }
-                    }
 
-                    #[cfg(feature = "dim3")]
-                    {
-                        if let Some(transform) = &mut transform {
-                            transform.translation = interpolated_pos.translation;
-                            transform.rotation = interpolated_pos.rotation;
+                            if transform.translation == global_transform.translation {
+                                transform.translation = interpolated_pos.translation;
+                            } else {
+                                transform.translation = interpolated_pos.translation
+                                    - (global_transform.translation - transform.translation);
+                            }
+
+                            if transform.rotation == global_transform.rotation {
+                                transform.rotation = interpolated_pos.rotation;
+                            } else {
+                                transform.rotation = interpolated_pos.rotation
+                                    * (global_transform.rotation * transform.rotation.conjugate())
+                                        .conjugate();
+                            }
+
                             context
                                 .last_body_transform_set
                                 .insert(handle, interpolated_pos);
-                        }
 
-                        if let Some(velocity) = &mut velocity {
-                            let new_vel = Velocity {
-                                linvel: (rb.linvel() * scale).into(),
-                                angvel: (*rb.angvel()).into(),
-                            };
+                            if let Some(velocity) = &mut velocity {
+                                let new_vel = Velocity {
+                                    linvel: (rb.linvel() * scale).into(),
+                                    #[cfg(feature = "dim3")]
+                                    angvel: (*rb.angvel()).into(),
+                                    #[cfg(feature = "dim2")]
+                                    angvel: rb.angvel(),
+                                };
 
-                            // NOTE: we write the new value only if there was an
-                            //       actual change, in order to not trigger bevy’s
-                            //       change tracking when the values didn’t change.
-                            if **velocity != new_vel {
-                                **velocity = new_vel;
+                                // NOTE: we write the new value only if there was an
+                                //       actual change, in order to not trigger bevy’s
+                                //       change tracking when the values didn’t change.
+                                if **velocity != new_vel {
+                                    **velocity = new_vel;
+                                }
                             }
                         }
                     }
@@ -1054,8 +1051,10 @@ mod tests {
         scene::ScenePlugin,
         window::WindowPlugin,
     };
+    use std::f32::consts::PI;
 
     use super::*;
+    use crate::plugin::{NoUserData, RapierPhysicsPlugin};
     #[cfg(feature = "dim3")]
     use crate::prelude::ComputedColliderShape;
 
@@ -1230,6 +1229,65 @@ mod tests {
             app.world.entity(parent).get::<AsyncCollider>().is_none(),
             "AsyncSceneCollider component should be removed after Collider components creation"
         );
+    }
+
+    #[test]
+    fn transform_propagation() {
+        let mut app = App::new();
+        app.add_plugin(HeadlessRenderPlugin)
+            .add_plugin(TransformPlugin)
+            .add_plugin(RapierPhysicsPlugin::<NoUserData>::default());
+
+        let zero = (Transform::default(), Transform::default());
+
+        let different = (
+            Transform {
+                translation: Vec3::X * 10.0,
+                rotation: Quat::from_rotation_x(PI),
+                ..Default::default()
+            },
+            Transform {
+                translation: Vec3::Y * 10.0,
+                rotation: Quat::from_rotation_x(PI),
+                ..Default::default()
+            },
+        );
+
+        let same = (different.0, different.0);
+
+        for (child_transform, parent_transform) in [zero, same, different] {
+            let child = app
+                .world
+                .spawn()
+                .insert_bundle(TransformBundle {
+                    local: child_transform,
+                    ..Default::default()
+                })
+                .insert(RigidBody::Fixed)
+                .insert(Collider::ball(1.0))
+                .id();
+
+            app.world
+                .spawn()
+                .insert_bundle(TransformBundle {
+                    local: parent_transform,
+                    ..Default::default()
+                })
+                .push_children(&[child]);
+
+            app.update();
+
+            let child_transform = app.world.entity(child).get::<GlobalTransform>().unwrap();
+            let context = app.world.resource::<RapierContext>();
+            let child_handle = context.entity2body[&child];
+            let child_body = context.bodies.get(child_handle).unwrap();
+            let body_transform =
+                utils::iso_to_transform(child_body.position(), context.physics_scale);
+            assert_eq!(
+                body_transform, *child_transform,
+                "Collider transform should have have global rotation and translation"
+            );
+        }
     }
 
     // Allows run tests for systems containing rendering related things without GPU

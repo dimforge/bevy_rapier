@@ -40,9 +40,11 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_height = 0.1;
 
     commands
-        .spawn()
-        .insert(Collider::cuboid(ground_size, ground_height, ground_size))
-        .insert(Transform::from_xyz(0.0, -ground_height, 0.0));
+        .spawn_bundle(TransformBundle {
+            local: Transform::from_xyz(0.0, -ground_height, 0.0),
+            ..Default::default()
+        })
+        .insert(Collider::cuboid(ground_size, ground_height, ground_size));
 
     /*
      * Create the cubes
@@ -66,10 +68,12 @@ pub fn setup_physics(mut commands: Commands) {
 
                 // Build the rigid body.
                 commands
-                    .spawn()
+                    .spawn_bundle(TransformBundle {
+                        local: Transform::from_xyz(x, y, z),
+                        ..Default::default()
+                    })
                     .insert(RigidBody::Dynamic)
-                    .insert(Collider::cuboid(rad, rad, rad))
-                    .insert(Transform::from_xyz(x, y, z));
+                    .insert(Collider::cuboid(rad, rad, rad));
             }
         }
 

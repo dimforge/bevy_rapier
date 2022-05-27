@@ -32,12 +32,10 @@ fn main() {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    let mut camera = OrthographicCameraBundle::new_2d();
-    camera.transform = Transform {
-        translation: Vec3::new(0.0, 20.0, 0.0),
-        ..Transform::identity()
-    };
-    commands.spawn_bundle(camera);
+    commands.spawn_bundle(OrthographicCameraBundle {
+        transform: Transform::from_xyz(0.0, 20.0, 0.0),
+        ..OrthographicCameraBundle::new_2d()
+    });
 }
 
 pub fn setup_physics(
@@ -57,14 +55,18 @@ pub fn setup_physics(
     despawn.entities.push(entity);
 
     commands
-        .spawn()
-        .insert(Collider::cuboid(12.0, ground_size * 2.0))
-        .insert(Transform::from_xyz(ground_size, ground_size * 2.0, 0.0));
+        .spawn_bundle(TransformBundle {
+            local: Transform::from_xyz(ground_size, ground_size * 2.0, 0.0),
+            ..Default::default()
+        })
+        .insert(Collider::cuboid(12.0, ground_size * 2.0));
 
     commands
-        .spawn()
-        .insert(Collider::cuboid(12.0, ground_size * 2.0))
-        .insert(Transform::from_xyz(-ground_size, ground_size * 2.0, 0.0));
+        .spawn_bundle(TransformBundle {
+            local: Transform::from_xyz(-ground_size, ground_size * 2.0, 0.0),
+            ..Default::default()
+        })
+        .insert(Collider::cuboid(12.0, ground_size * 2.0));
 
     /*
      * Create the cubes
@@ -82,10 +84,12 @@ pub fn setup_physics(
             let y = j as f32 * shift + centery + 2.0;
 
             let entity = commands
-                .spawn()
+                .spawn_bundle(TransformBundle {
+                    local: Transform::from_xyz(x, y, 0.0),
+                    ..Default::default()
+                })
                 .insert(RigidBody::Dynamic)
                 .insert(Collider::cuboid(rad, rad))
-                .insert(Transform::from_xyz(x, y, 0.0))
                 .id();
 
             if (i + j * num) % 100 == 0 {

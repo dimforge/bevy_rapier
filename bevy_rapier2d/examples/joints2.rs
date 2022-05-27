@@ -18,12 +18,10 @@ fn main() {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    let mut camera = OrthographicCameraBundle::new_2d();
-    camera.transform = Transform {
-        translation: Vec3::new(0.0, -200.0, 0.0),
-        ..Transform::identity()
-    };
-    commands.spawn_bundle(camera);
+    commands.spawn_bundle(OrthographicCameraBundle {
+        transform: Transform::from_xyz(0.0, -200.0, 0.0),
+        ..OrthographicCameraBundle::new_2d()
+    });
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -47,9 +45,11 @@ pub fn setup_physics(mut commands: Commands) {
             };
 
             let child_entity = commands
-                .spawn()
+                .spawn_bundle(TransformBundle {
+                    local: Transform::from_xyz(fk * shift, -fi * shift, 0.0),
+                    ..Default::default()
+                })
                 .insert(rigid_body)
-                .insert(Transform::from_xyz(fk * shift, -fi * shift, 0.0))
                 .insert(Collider::cuboid(rad, rad))
                 .id();
 
