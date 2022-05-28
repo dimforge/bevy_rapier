@@ -30,7 +30,7 @@ use crate::prelude::{AsyncCollider, AsyncSceneCollider};
 /// Components that will be updated after a physics step.
 pub type RigidBodyWritebackComponents<'a> = (
     Entity,
-    Option<&'a GlobalTransform>,
+    Option<&'a Parent>,
     Option<&'a mut Transform>,
     Option<&'a mut TransformInterpolation>,
     Option<&'a mut Velocity>,
@@ -399,20 +399,15 @@ pub fn writeback_rigid_bodies(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
     sim_to_render_time: Res<SimulationToRenderTime>,
+    global_transforms: Query<&GlobalTransform>,
     mut writeback: Query<RigidBodyWritebackComponents>,
 ) {
     let context = &mut *context;
     let scale = context.physics_scale;
 
     if config.physics_pipeline_active {
-        for (
-            entity,
-            global_transform,
-            mut transform,
-            mut interpolation,
-            mut velocity,
-            mut sleeping,
-        ) in writeback.iter_mut()
+        for (entity, parent, transform, mut interpolation, mut velocity, mut sleeping) in
+            writeback.iter_mut()
         {
             // TODO: do this the other way round: iterate through Rapier’s RigidBodySet on the active bodies,
             // and update the components accordingly. That way, we don’t have to iterate through the entities that weren’t changed
@@ -434,49 +429,78 @@ pub fn writeback_rigid_bodies(
                             }
                         }
                     }
-                    if let Some(transform) = &mut transform {
-                        if let Some(global_transform) = &global_transform {
+
+                    if let Some(mut transform) = transform {
+                        // NOTE: we query the parent’s global transform here, which is a bit
+                        //       unfortunate (performance-wise). An alternative would be to
+                        //       deduce the parent’s global transform from the current entity’s
+                        //       global transform. However, this makes it nearly impossible
+                        //       (because of rounding errors) to predict the exact next value this
+                        //       entity’s global transform will get after the next transform
+                        //       propagation, which breaks our transform modification detection
+                        //       that we do to detect if the user’s transform has to be written
+                        //       into the rigid-body.
+                        if let Some(parent_global_transform) =
+                            parent.and_then(|p| global_transforms.get(**p).ok())
+                        {
+                            // In 2D, preserve the transform `z` component that may have been set by the user
+                            #[cfg(feature = "dim2")]
+                            let prev_z = transform.translation.z;
+
+                            // We need to compute the new local transform such that:
+                            // curr_parent_global_transform * new_transform = interpolated_pos
+                            // new_transform = curr_parent_global_transform.inverse() * interpolated_pos
+                            let inv_parent_global_rot =
+                                parent_global_transform.rotation.conjugate();
+                            transform.rotation = inv_parent_global_rot * interpolated_pos.rotation;
+                            transform.translation = inv_parent_global_rot
+                                * (interpolated_pos.translation
+                                    - parent_global_transform.translation);
+
+                            #[cfg(feature = "dim2")]
+                            {
+                                transform.translation.z = prev_z;
+                            }
+
+                            // NOTE: we need to compute the result of the next transform propagation
+                            //       to make sure that our change detection for transforms is exact
+                            //       despite rounding errors.
+                            let new_global_transform =
+                                parent_global_transform.mul_transform(*transform);
+
+                            context
+                                .last_body_transform_set
+                                .insert(handle, new_global_transform);
+                        } else {
                             // In 2D, preserve the transform `z` component that may have been set by the user
                             #[cfg(feature = "dim2")]
                             {
-                                interpolated_pos.translation.z = global_transform.translation.z;
+                                interpolated_pos.translation.z = transform.translation.z;
                             }
 
-                            if transform.translation == global_transform.translation {
-                                transform.translation = interpolated_pos.translation;
-                            } else {
-                                transform.translation = interpolated_pos.translation
-                                    - (global_transform.translation - transform.translation);
-                            }
-
-                            if transform.rotation == global_transform.rotation {
-                                transform.rotation = interpolated_pos.rotation;
-                            } else {
-                                transform.rotation = interpolated_pos.rotation
-                                    * (global_transform.rotation * transform.rotation.conjugate())
-                                        .conjugate();
-                            }
+                            transform.rotation = interpolated_pos.rotation;
+                            transform.translation = interpolated_pos.translation;
 
                             context
                                 .last_body_transform_set
                                 .insert(handle, interpolated_pos);
+                        }
+                    }
 
-                            if let Some(velocity) = &mut velocity {
-                                let new_vel = Velocity {
-                                    linvel: (rb.linvel() * scale).into(),
-                                    #[cfg(feature = "dim3")]
-                                    angvel: (*rb.angvel()).into(),
-                                    #[cfg(feature = "dim2")]
-                                    angvel: rb.angvel(),
-                                };
+                    if let Some(velocity) = &mut velocity {
+                        let new_vel = Velocity {
+                            linvel: (rb.linvel() * scale).into(),
+                            #[cfg(feature = "dim3")]
+                            angvel: (*rb.angvel()).into(),
+                            #[cfg(feature = "dim2")]
+                            angvel: rb.angvel(),
+                        };
 
-                                // NOTE: we write the new value only if there was an
-                                //       actual change, in order to not trigger bevy’s
-                                //       change tracking when the values didn’t change.
-                                if **velocity != new_vel {
-                                    **velocity = new_vel;
-                                }
-                            }
+                        // NOTE: we write the new value only if there was an
+                        //       actual change, in order to not trigger bevy’s
+                        //       change tracking when the values didn’t change.
+                        if **velocity != new_vel {
+                            **velocity = new_vel;
                         }
                     }
 
@@ -1259,20 +1283,14 @@ mod tests {
             let child = app
                 .world
                 .spawn()
-                .insert_bundle(TransformBundle {
-                    local: child_transform,
-                    ..Default::default()
-                })
+                .insert_bundle(TransformBundle::from(child_transform))
                 .insert(RigidBody::Fixed)
                 .insert(Collider::ball(1.0))
                 .id();
 
             app.world
                 .spawn()
-                .insert_bundle(TransformBundle {
-                    local: parent_transform,
-                    ..Default::default()
-                })
+                .insert_bundle(TransformBundle::from(parent_transform))
                 .push_children(&[child]);
 
             app.update();
