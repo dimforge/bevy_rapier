@@ -86,7 +86,7 @@ pub fn setup_physics(
             let y = j as f32 * shift + centery + 2.0;
 
             let entity = commands
-                .spawn_bundle(TransformBundle::from(Transform::from_xyz(x, y, 0.0))
+                .spawn_bundle(TransformBundle::from(Transform::from_xyz(x, y, 0.0)))
                 .insert(RigidBody::Dynamic)
                 .insert(Collider::cuboid(rad, rad))
                 .id();

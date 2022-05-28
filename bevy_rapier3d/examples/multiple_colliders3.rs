@@ -83,7 +83,7 @@ pub fn setup_physics(mut commands: Commands) {
                             .insert(Collider::cuboid(rad * 10.0, rad, rad))
                             .insert(ColliderDebugColor(colors[color % 3]));
                         children
-                            .spawn_bundle(TransformBundle::form(Transform::from_xyz(
+                            .spawn_bundle(TransformBundle::from(Transform::from_xyz(
                                 rad * 10.0,
                                 rad * 10.0,
                                 0.0,
