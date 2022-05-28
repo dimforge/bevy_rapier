@@ -137,10 +137,11 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_height = 10.0;
 
     commands
-        .spawn_bundle(TransformBundle {
-            local: Transform::from_xyz(0.0, 0.0 * -ground_height, 0.0),
-            ..Default::default()
-        })
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+            0.0,
+            0.0 * -ground_height,
+            0.0,
+        )))
         .insert(Collider::cuboid(ground_size, ground_height));
 
     /*
@@ -161,10 +162,7 @@ pub fn setup_physics(mut commands: Commands) {
             let y = j as f32 * shift + centery + 30.0;
 
             commands
-                .spawn_bundle(TransformBundle {
-                    local: Transform::from_xyz(x, y, 0.0),
-                    ..Default::default()
-                })
+                .spawn_bundle(TransformBundle::from(Transform::from_xyz(x, y, 0.0)))
                 .insert(RigidBody::Dynamic)
                 .insert(Collider::cuboid(rad, rad));
         }

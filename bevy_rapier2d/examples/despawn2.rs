@@ -55,17 +55,19 @@ pub fn setup_physics(
     despawn.entities.push(entity);
 
     commands
-        .spawn_bundle(TransformBundle {
-            local: Transform::from_xyz(ground_size, ground_size * 2.0, 0.0),
-            ..Default::default()
-        })
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+            ground_size,
+            ground_size * 2.0,
+            0.0,
+        )))
         .insert(Collider::cuboid(12.0, ground_size * 2.0));
 
     commands
-        .spawn_bundle(TransformBundle {
-            local: Transform::from_xyz(-ground_size, ground_size * 2.0, 0.0),
-            ..Default::default()
-        })
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+            -ground_size,
+            ground_size * 2.0,
+            0.0,
+        )))
         .insert(Collider::cuboid(12.0, ground_size * 2.0));
 
     /*
@@ -84,10 +86,7 @@ pub fn setup_physics(
             let y = j as f32 * shift + centery + 2.0;
 
             let entity = commands
-                .spawn_bundle(TransformBundle {
-                    local: Transform::from_xyz(x, y, 0.0),
-                    ..Default::default()
-                })
+                .spawn_bundle(TransformBundle::from(Transform::from_xyz(x, y, 0.0))
                 .insert(RigidBody::Dynamic)
                 .insert(Collider::cuboid(rad, rad))
                 .id();

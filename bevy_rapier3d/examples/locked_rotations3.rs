@@ -39,20 +39,14 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_height = 0.1;
 
     commands
-        .spawn_bundle(TransformBundle {
-            local: Transform::from_xyz(0.0, -ground_height, 0.0),
-            ..Default::default()
-        })
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(0.0, -ground_height, 0.0)))
         .insert(Collider::cuboid(ground_size, ground_height, ground_size));
 
     /*
      * A rectangle that only rotates along the `x` axis.
      */
     commands
-        .spawn_bundle(TransformBundle {
-            local: Transform::from_xyz(0.0, 3.0, 0.0),
-            ..Default::default()
-        })
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(0.0, 3.0, 0.0)))
         .insert(RigidBody::Dynamic)
         .insert(
             LockedAxes::TRANSLATION_LOCKED
@@ -65,10 +59,7 @@ pub fn setup_physics(mut commands: Commands) {
      * A tilted cuboid that cannot rotate.
      */
     commands
-        .spawn_bundle(TransformBundle {
-            local: Transform::from_xyz(0.0, 5.0, 0.0).with_rotation(Quat::from_rotation_x(1.0)),
-            ..Default::default()
-        })
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(0.0, 5.0, 0.0).with_rotation(Quat::from_rotation_x(1.0)))
         .insert(RigidBody::Dynamic)
         .insert(LockedAxes::ROTATION_LOCKED)
         .insert(Collider::cuboid(0.6, 0.4, 0.4));

@@ -69,18 +69,12 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_size = 10.0;
 
     commands
-        .spawn_bundle(TransformBundle {
-            local: Transform::from_xyz(0.0, -10.0, 0.0),
-            ..Default::default()
-        })
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(0.0, -10.0, 0.0))
         .insert(Collider::cuboid(ground_size, 1.2, ground_size))
         .insert(CustomFilterTag::GroupA);
 
     commands
-        .spawn_bundle(TransformBundle {
-            local: Transform::from_xyz(0.0, 0.0, 0.0),
-            ..Default::default()
-        })
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(0.0, 0.0, 0.0))
         .insert(Collider::cuboid(ground_size, 1.2, ground_size))
         .insert(CustomFilterTag::GroupB);
 
@@ -104,10 +98,7 @@ pub fn setup_physics(mut commands: Commands) {
             group_id += 1;
 
             commands
-                .spawn_bundle(TransformBundle {
-                    local: Transform::from_xyz(x, y, 0.0),
-                    ..Default::default()
-                })
+                .spawn_bundle(TransformBundle::from(Transform::from_xyz(x, y, 0.0))
                 .insert(RigidBody::Dynamic)
                 .insert(Collider::cuboid(rad, rad, rad))
                 .insert(ActiveHooks::FILTER_CONTACT_PAIRS)

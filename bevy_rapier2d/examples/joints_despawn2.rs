@@ -52,10 +52,11 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
             };
 
             let child_entity = commands
-                .spawn_bundle(TransformBundle {
-                    local: Transform::from_xyz(fk * shift, -fi * shift, 0.0),
-                    ..Default::default()
-                })
+                .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+                    fk * shift,
+                    -fi * shift,
+                    0.0,
+                )))
                 .insert(rigid_body)
                 .insert(Collider::cuboid(rad, rad))
                 .id();

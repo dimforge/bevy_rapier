@@ -39,10 +39,11 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_height = 0.1;
 
     commands
-        .spawn_bundle(TransformBundle {
-            local: Transform::from_xyz(0.0, -ground_height, 0.0),
-            ..Default::default()
-        })
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+            0.0,
+            -ground_height,
+            0.0,
+        )))
         .insert(Collider::cuboid(ground_size, ground_height, ground_size));
 
     /*
@@ -74,10 +75,7 @@ pub fn setup_physics(mut commands: Commands) {
 
                 // Crate a rigid-body with multiple colliders attached, using Bevy hierarchy.
                 commands
-                    .spawn_bundle(TransformBundle {
-                        local: Transform::from_xyz(x, y, z),
-                        ..Default::default()
-                    })
+                    .spawn_bundle(TransformBundle::from(Transform::from_xyz(x, y, z)))
                     .insert(RigidBody::Dynamic)
                     .with_children(|children| {
                         children
@@ -85,17 +83,19 @@ pub fn setup_physics(mut commands: Commands) {
                             .insert(Collider::cuboid(rad * 10.0, rad, rad))
                             .insert(ColliderDebugColor(colors[color % 3]));
                         children
-                            .spawn_bundle(TransformBundle {
-                                local: Transform::from_xyz(rad * 10.0, rad * 10.0, 0.0),
-                                ..Default::default()
-                            })
+                            .spawn_bundle(TransformBundle::form(Transform::from_xyz(
+                                rad * 10.0,
+                                rad * 10.0,
+                                0.0,
+                            )))
                             .insert(Collider::cuboid(rad, rad * 10.0, rad))
                             .insert(ColliderDebugColor(colors[color % 3]));
                         children
-                            .spawn_bundle(TransformBundle {
-                                local: Transform::from_xyz(-rad * 10.0, rad * 10.0, 0.0),
-                                ..Default::default()
-                            })
+                            .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+                                -rad * 10.0,
+                                rad * 10.0,
+                                0.0,
+                            )))
                             .insert(Collider::cuboid(rad, rad * 10.0, rad))
                             .insert(ColliderDebugColor(colors[color % 3]));
                     });

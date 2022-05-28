@@ -46,10 +46,7 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
     let ground_height = 0.1;
 
     let ground_entity = commands
-        .spawn_bundle(TransformBundle {
-            local: Transform::from_xyz(0.0, -ground_height, 0.0),
-            ..Default::default()
-        })
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(0.0, -ground_height, 0.0))
         .insert(Collider::cuboid(ground_size, ground_height, ground_size))
         .id();
     despawn.entity = Some(ground_entity);
@@ -81,10 +78,7 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
                 color += 1;
 
                 commands
-                    .spawn_bundle(TransformBundle {
-                        local: Transform::from_xyz(x, y, z),
-                        ..Default::default()
-                    })
+                    .spawn_bundle(TransformBundle::from(Transform::from_xyz(x, y, z))
                     .insert(RigidBody::Dynamic)
                     .insert(Collider::cuboid(rad, rad, rad))
                     .insert(ColliderDebugColor(colors[color % 3]));
