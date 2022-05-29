@@ -29,9 +29,12 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_height = 1.0;
 
     commands
-        .spawn()
-        .insert(Collider::cuboid(ground_size, ground_height))
-        .insert(Transform::from_xyz(0.0, -ground_height, 0.0));
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+            0.0,
+            -ground_height,
+            0.0,
+        )))
+        .insert(Collider::cuboid(ground_size, ground_height));
 
     /*
      * Create the cubes
@@ -51,19 +54,24 @@ pub fn setup_physics(mut commands: Commands) {
             let y = j as f32 * (shift * 5.0) + centery + 3.0;
 
             commands
-                .spawn()
+                .spawn_bundle(TransformBundle::from(Transform::from_xyz(x, y, 0.0)))
                 .insert(RigidBody::Dynamic)
-                .insert(Transform::from_xyz(x, y, 0.0))
                 .with_children(|children| {
                     children.spawn().insert(Collider::cuboid(rad * 10.0, rad));
                     children
-                        .spawn()
-                        .insert(Collider::cuboid(rad, rad * 10.0))
-                        .insert(Transform::from_xyz(rad * 10.0, rad * 10.0, 0.0));
+                        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+                            rad * 10.0,
+                            rad * 10.0,
+                            0.0,
+                        )))
+                        .insert(Collider::cuboid(rad, rad * 10.0));
                     children
-                        .spawn()
-                        .insert(Collider::cuboid(rad, rad * 10.0))
-                        .insert(Transform::from_xyz(-rad * 10.0, rad * 10.0, 0.0));
+                        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+                            -rad * 10.0,
+                            rad * 10.0,
+                            0.0,
+                        )))
+                        .insert(Collider::cuboid(rad, rad * 10.0));
                 });
         }
 

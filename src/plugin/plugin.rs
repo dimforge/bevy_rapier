@@ -58,7 +58,11 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<P
     pub fn get_systems(stage: PhysicsStages) -> SystemSet {
         match stage {
             PhysicsStages::SyncBackend => SystemSet::new()
-                .with_system(systems::init_async_colliders)
+                .with_system(bevy::transform::transform_propagate_system) // Run Bevy transform propagation additionaly to sync [`GlobalTransform`]
+                .with_system(
+                    systems::init_async_colliders
+                        .after(bevy::transform::transform_propagate_system),
+                )
                 .with_system(systems::apply_scale.after(systems::init_async_colliders))
                 .with_system(systems::apply_collider_user_changes.after(systems::apply_scale))
                 .with_system(
@@ -102,7 +106,7 @@ impl<PhysicsHooksData> Default for RapierPhysicsPlugin<PhysicsHooksData> {
 pub enum PhysicsStages {
     /// This stage runs the systems responsible for synchronizing (and
     /// initializing) backend data structures with current component state.
-    /// These systems typically run at the start of [`CoreStage::Update`].
+    /// These systems typically run at the after [`CoreStage::Update`].
     SyncBackend,
     /// The systems responsible for advancing the physics simulation, and
     /// updating the internal state for scene queries.
@@ -111,7 +115,7 @@ pub enum PhysicsStages {
     /// The systems responsible for updating
     /// [`crate::geometry::collider::CollidingEntities`] and writing
     /// the result of the last simulation step into our `bevy_rapier`
-    /// components and the [`Transform`] component.
+    /// components and the [`GlobalTransform`] component.
     /// These systems typically run immediately after [`PhysicsStages::StepSimulation`].
     Writeback,
     /// The systems responsible for removing from Rapier the
@@ -156,7 +160,7 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
 
         // Add each stage as necessary
         if self.default_system_setup {
-            app.add_stage_before(
+            app.add_stage_after(
                 CoreStage::Update,
                 PhysicsStages::SyncBackend,
                 SystemStage::parallel()

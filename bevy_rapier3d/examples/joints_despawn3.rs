@@ -48,9 +48,10 @@ fn create_prismatic_joints(
     let shift = 1.0;
 
     let mut curr_parent = commands
-        .spawn()
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+            origin.x, origin.y, origin.z,
+        )))
         .insert(RigidBody::Fixed)
-        .insert(Transform::from_xyz(origin.x, origin.y, origin.z))
         .insert(Collider::cuboid(rad, rad, rad))
         .id();
 
@@ -69,9 +70,12 @@ fn create_prismatic_joints(
         let joint = ImpulseJoint::new(curr_parent, prism);
 
         curr_parent = commands
-            .spawn()
+            .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+                origin.x,
+                origin.y,
+                origin.z + dz,
+            )))
             .insert(RigidBody::Dynamic)
-            .insert(Transform::from_xyz(origin.x, origin.y, origin.z + dz))
             .insert(Collider::cuboid(rad, rad, rad))
             .insert(joint)
             .id();
@@ -92,9 +96,10 @@ fn create_revolute_joints(
     let shift = 2.0;
 
     let mut curr_parent = commands
-        .spawn()
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+            origin.x, origin.y, 0.0,
+        )))
         .insert(RigidBody::Fixed)
-        .insert(Transform::from_xyz(origin.x, origin.y, 0.0))
         .insert(Collider::cuboid(rad, rad, rad))
         .id();
 
@@ -111,9 +116,10 @@ fn create_revolute_joints(
         let mut handles = [curr_parent; 4];
         for k in 0..4 {
             handles[k] = commands
-                .spawn()
+                .spawn_bundle(TransformBundle::from(Transform::from_translation(
+                    positions[k],
+                )))
                 .insert(RigidBody::Dynamic)
-                .insert(Transform::from_translation(positions[k]))
                 .insert(Collider::cuboid(rad, rad, rad))
                 .id();
         }
@@ -178,12 +184,13 @@ fn create_fixed_joints(
                 RigidBody::Dynamic
             };
 
-            let transform =
-                Transform::from_xyz(origin.x + fk * shift, origin.y, origin.z + fi * shift);
             let child_entity = commands
-                .spawn()
+                .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+                    origin.x + fk * shift,
+                    origin.y,
+                    origin.z + fi * shift,
+                )))
                 .insert(rigid_body)
-                .insert(transform)
                 .insert(Collider::ball(rad))
                 .id();
 
@@ -240,12 +247,14 @@ fn create_ball_joints(commands: &mut Commands, num: usize, despawn: &mut Despawn
                 RigidBody::Dynamic
             };
 
-            let transform = Transform::from_xyz(fk * shift, 0.0, fi * shift);
             let child_entity = commands
-                .spawn()
+                .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+                    fk * shift,
+                    0.0,
+                    fi * shift,
+                )))
                 .insert(rigid_body)
                 .insert(Collider::ball(rad))
-                .insert(transform)
                 .id();
 
             // Vertical joint.

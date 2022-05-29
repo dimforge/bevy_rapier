@@ -13,7 +13,7 @@ impl SpecialStagingPlugin {
 
 impl SpecialStagingPlugin {
     fn build(self, app: &mut App) {
-        app.add_stage_before(
+        app.add_stage_after(
             CoreStage::Update,
             "special_staging_plugin_stage",
             SpecialStage::new(self.schedule),
@@ -123,12 +123,10 @@ fn despawn_one_box(
 }
 
 fn setup_graphics(mut commands: Commands) {
-    let mut camera = OrthographicCameraBundle::new_2d();
-    camera.transform = Transform {
-        translation: Vec3::new(0.0, 20.0, 0.0),
-        ..Transform::identity()
-    };
-    commands.spawn_bundle(camera);
+    commands.spawn_bundle(OrthographicCameraBundle {
+        transform: Transform::from_xyz(0.0, 20.0, 0.0),
+        ..OrthographicCameraBundle::new_2d()
+    });
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -139,9 +137,12 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_height = 10.0;
 
     commands
-        .spawn()
-        .insert(Collider::cuboid(ground_size, ground_height))
-        .insert(Transform::from_xyz(0.0, 0.0 * -ground_height, 0.0));
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+            0.0,
+            0.0 * -ground_height,
+            0.0,
+        )))
+        .insert(Collider::cuboid(ground_size, ground_height));
 
     /*
      * Create the cubes
@@ -161,9 +162,8 @@ pub fn setup_physics(mut commands: Commands) {
             let y = j as f32 * shift + centery + 30.0;
 
             commands
-                .spawn()
+                .spawn_bundle(TransformBundle::from(Transform::from_xyz(x, y, 0.0)))
                 .insert(RigidBody::Dynamic)
-                .insert(Transform::from_xyz(x, y, 0.0))
                 .insert(Collider::cuboid(rad, rad));
         }
 

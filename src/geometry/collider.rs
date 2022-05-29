@@ -68,13 +68,13 @@ impl From<SharedShape> for Collider {
     }
 }
 
-/// Overwrites the default application of `Transform::scale` to collider shapes.
+/// Overwrites the default application of [`GlobalTransform::scale`] to collider shapes.
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect, FromReflect)]
 pub enum ColliderScale {
-    /// This scale will be multiplied with the scale in the `Transform` component
+    /// This scale will be multiplied with the scale in the [`GlobalTransform`] component
     /// before being applied to the collider.
     Relative(Vect),
-    /// This scale will replace the one specified in the `Transform` component.
+    /// This scale will replace the one specified in the [`GlobalTransform`] component.
     Absolute(Vect),
 }
 

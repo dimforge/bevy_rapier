@@ -129,17 +129,16 @@ fn setup_board(commands: &mut Commands, game: &Game) {
 
     // Add floor
     commands
-        .spawn()
-        .insert_bundle(SpriteBundle {
+        .spawn_bundle(SpriteBundle {
             sprite: Sprite {
                 color: Color::rgb(0.5, 0.5, 0.5),
                 custom_size: Some(Vec2::new(game.n_lanes as f32 * 30.0, 60.0)),
                 ..Default::default()
             },
+            transform: Transform::from_xyz(0.0, floor_y - 30.0 * 0.5, 0.0),
             ..Default::default()
         })
         .insert(RigidBody::Fixed)
-        .insert(Transform::from_xyz(0.0, floor_y - 30.0 * 0.5, 0.0))
         .insert(Collider::cuboid(
             game.n_lanes as f32 * 30.0 / 2.0,
             60.0 / 2.0,
@@ -202,17 +201,16 @@ fn spawn_block(
     let linear_damping = 3.0;
 
     commands
-        .spawn()
-        .insert_bundle(SpriteBundle {
+        .spawn_bundle(SpriteBundle {
             sprite: Sprite {
                 color: game.cube_colors[kind as usize],
                 custom_size: Some(Vec2::new(30.0, 30.0)),
                 ..Default::default()
             },
+            transform: Transform::from_xyz(x, y, 0.0),
             ..Default::default()
         })
         .insert(RigidBody::Dynamic)
-        .insert(Transform::from_xyz(x, y, 0.0))
         .insert(Damping {
             linear_damping,
             angular_damping: 0.0,
@@ -225,7 +223,7 @@ fn spawn_block(
 fn cube_sleep_detection(
     mut commands: Commands,
     mut game: ResMut<Game>,
-    block_query: Query<(Entity, &Transform)>,
+    block_query: Query<(Entity, &GlobalTransform)>,
 ) {
     let all_blocks_sleeping = true;
 
@@ -245,7 +243,7 @@ fn cube_sleep_detection(
 fn clear_filled_rows(
     commands: &mut Commands,
     game: &mut Game,
-    block_query: Query<(Entity, &Transform)>,
+    block_query: Query<(Entity, &GlobalTransform)>,
 ) {
     let mut blocks_per_row: Vec<Vec<Entity>> = (0..game.n_rows).map(|_| vec![]).collect();
 

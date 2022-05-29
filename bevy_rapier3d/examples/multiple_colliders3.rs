@@ -39,9 +39,12 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_height = 0.1;
 
     commands
-        .spawn()
-        .insert(Collider::cuboid(ground_size, ground_height, ground_size))
-        .insert(Transform::from_xyz(0.0, -ground_height, 0.0));
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+            0.0,
+            -ground_height,
+            0.0,
+        )))
+        .insert(Collider::cuboid(ground_size, ground_height, ground_size));
 
     /*
      * Create the cubes
@@ -72,23 +75,28 @@ pub fn setup_physics(mut commands: Commands) {
 
                 // Crate a rigid-body with multiple colliders attached, using Bevy hierarchy.
                 commands
-                    .spawn()
+                    .spawn_bundle(TransformBundle::from(Transform::from_xyz(x, y, z)))
                     .insert(RigidBody::Dynamic)
-                    .insert(Transform::from_xyz(x, y, z))
                     .with_children(|children| {
                         children
                             .spawn()
                             .insert(Collider::cuboid(rad * 10.0, rad, rad))
                             .insert(ColliderDebugColor(colors[color % 3]));
                         children
-                            .spawn()
+                            .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+                                rad * 10.0,
+                                rad * 10.0,
+                                0.0,
+                            )))
                             .insert(Collider::cuboid(rad, rad * 10.0, rad))
-                            .insert(Transform::from_xyz(rad * 10.0, rad * 10.0, 0.0))
                             .insert(ColliderDebugColor(colors[color % 3]));
                         children
-                            .spawn()
+                            .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+                                -rad * 10.0,
+                                rad * 10.0,
+                                0.0,
+                            )))
                             .insert(Collider::cuboid(rad, rad * 10.0, rad))
-                            .insert(Transform::from_xyz(-rad * 10.0, rad * 10.0, 0.0))
                             .insert(ColliderDebugColor(colors[color % 3]));
                     });
             }

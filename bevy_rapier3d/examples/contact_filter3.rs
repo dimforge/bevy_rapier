@@ -69,15 +69,13 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_size = 10.0;
 
     commands
-        .spawn()
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(0.0, -10.0, 0.0)))
         .insert(Collider::cuboid(ground_size, 1.2, ground_size))
-        .insert(Transform::from_xyz(0.0, -10.0, 0.0))
         .insert(CustomFilterTag::GroupA);
 
     commands
-        .spawn()
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(0.0, 0.0, 0.0)))
         .insert(Collider::cuboid(ground_size, 1.2, ground_size))
-        .insert(Transform::from_xyz(0.0, 0.0, 0.0))
         .insert(CustomFilterTag::GroupB);
 
     /*
@@ -100,10 +98,9 @@ pub fn setup_physics(mut commands: Commands) {
             group_id += 1;
 
             commands
-                .spawn()
+                .spawn_bundle(TransformBundle::from(Transform::from_xyz(x, y, 0.0)))
                 .insert(RigidBody::Dynamic)
                 .insert(Collider::cuboid(rad, rad, rad))
-                .insert(Transform::from_xyz(x, y, 0.0))
                 .insert(ActiveHooks::FILTER_CONTACT_PAIRS)
                 .insert(tags[group_id % 2])
                 .insert(ColliderDebugColor(colors[group_id % 2]));

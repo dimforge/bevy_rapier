@@ -98,13 +98,12 @@ pub fn setup_physics(mut commands: Commands) {
     // Position so ramp connects smoothly
     // to one edge of the lip of the bowl.
     commands
-        .spawn()
-        .insert(Collider::trimesh(vertices, indices))
-        .insert(Transform::from_xyz(
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
             -bowl_size.x / 2.0,
             -bowl_size.y / 2.0,
             bowl_size.z / 2.0 - ramp_size.z / 2.0,
-        ));
+        )))
+        .insert(Collider::trimesh(vertices, indices));
 }
 
 struct BallState {
@@ -147,15 +146,14 @@ fn ball_spawner(
     let rad = 0.3;
 
     commands
-        .spawn()
-        .insert(RigidBody::Dynamic)
-        .insert(Collider::ball(rad))
-        .insert(Restitution::new(0.5))
-        .insert(Transform::from_xyz(
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
             ramp_size.x * 0.9,
             ramp_size.y / 2.0 + rad * 3.0,
             0.0,
-        ));
+        )))
+        .insert(RigidBody::Dynamic)
+        .insert(Collider::ball(rad))
+        .insert(Restitution::new(0.5));
 
     ball_state.balls_spawned += 1;
 }

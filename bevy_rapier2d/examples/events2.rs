@@ -33,20 +33,17 @@ pub fn setup_physics(mut commands: Commands) {
      * Ground
      */
     commands
-        .spawn()
-        .insert(Collider::cuboid(80.0, 20.0))
-        .insert(Transform::from_xyz(0.0, -24.0, 0.0));
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(0.0, -24.0, 0.0)))
+        .insert(Collider::cuboid(80.0, 20.0));
 
     commands
-        .spawn()
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(0.0, 100.0, 0.0)))
         .insert(Collider::cuboid(80.0, 30.0))
-        .insert(Sensor(true))
-        .insert(Transform::from_xyz(0.0, 100.0, 0.0));
+        .insert(Sensor(true));
 
     commands
-        .spawn()
+        .spawn_bundle(TransformBundle::from(Transform::from_xyz(0.0, 260.0, 0.0)))
         .insert(RigidBody::Dynamic)
         .insert(Collider::cuboid(10.0, 10.0))
-        .insert(Transform::from_xyz(0.0, 260.0, 0.0))
         .insert(ActiveEvents::COLLISION_EVENTS);
 }
