@@ -149,9 +149,13 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
             .register_type::<CollisionGroups>()
             .register_type::<SolverGroups>();
 
-        // Insert all of our required resources
-        app.insert_resource(RapierConfiguration::default())
-            .insert_resource(SimulationToRenderTime::default())
+        // Insert all of our required resources. Don’t overwrite
+        // the `RapierConfiguration` if it already exists.
+        if app.world.get_resource::<RapierConfiguration>().is_none() {
+            app.insert_resource(RapierConfiguration::default());
+        }
+
+        app.insert_resource(SimulationToRenderTime::default())
             .insert_resource(RapierContext {
                 physics_scale: self.physics_scale,
                 ..Default::default()

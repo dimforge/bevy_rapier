@@ -881,7 +881,7 @@ pub fn init_joints(
             let handle =
                 context
                     .impulse_joints
-                    .insert(*source, target, joint.data.into_rapier(scale));
+                    .insert(*source, target, joint.data.into_rapier(scale), true);
             commands
                 .entity(entity)
                 .insert(RapierImpulseJointHandle(handle));
@@ -893,11 +893,12 @@ pub fn init_joints(
         let target = context.entity2body.get(&entity);
 
         if let (Some(target), Some(source)) = (target, context.entity2body.get(&joint.parent)) {
-            if let Some(handle) =
-                context
-                    .multibody_joints
-                    .insert(*source, *target, joint.data.into_rapier(scale))
-            {
+            if let Some(handle) = context.multibody_joints.insert(
+                *source,
+                *target,
+                joint.data.into_rapier(scale),
+                true,
+            ) {
                 commands
                     .entity(entity)
                     .insert(RapierMultibodyJointHandle(handle));
@@ -988,17 +989,13 @@ pub fn sync_removals(
      */
     for entity in removed_impulse_joints.iter() {
         if let Some(handle) = context.entity2impulse_joint.remove(&entity) {
-            context
-                .impulse_joints
-                .remove(handle, &mut context.islands, &mut context.bodies, true);
+            context.impulse_joints.remove(handle, true);
         }
     }
 
     for entity in orphan_impulse_joints.iter() {
         if let Some(handle) = context.entity2impulse_joint.remove(&entity) {
-            context
-                .impulse_joints
-                .remove(handle, &mut context.islands, &mut context.bodies, true);
+            context.impulse_joints.remove(handle, true);
         }
         commands.entity(entity).remove::<RapierImpulseJointHandle>();
     }
@@ -1008,23 +1005,13 @@ pub fn sync_removals(
      */
     for entity in removed_multibody_joints.iter() {
         if let Some(handle) = context.entity2multibody_joint.remove(&entity) {
-            context.multibody_joints.remove(
-                handle,
-                &mut context.islands,
-                &mut context.bodies,
-                true,
-            );
+            context.multibody_joints.remove(handle, true);
         }
     }
 
     for entity in orphan_multibody_joints.iter() {
         if let Some(handle) = context.entity2multibody_joint.remove(&entity) {
-            context.multibody_joints.remove(
-                handle,
-                &mut context.islands,
-                &mut context.bodies,
-                true,
-            );
+            context.multibody_joints.remove(handle, true);
         }
         commands
             .entity(entity)
