@@ -881,7 +881,7 @@ pub fn init_joints(
             let handle =
                 context
                     .impulse_joints
-                    .insert(*source, target, joint.data.into_rapier(scale));
+                    .insert(*source, target, joint.data.into_rapier(scale), true);
             commands
                 .entity(entity)
                 .insert(RapierImpulseJointHandle(handle));
@@ -896,7 +896,7 @@ pub fn init_joints(
             if let Some(handle) =
                 context
                     .multibody_joints
-                    .insert(*source, *target, joint.data.into_rapier(scale))
+                    .insert(*source, *target, joint.data.into_rapier(scale), true)
             {
                 commands
                     .entity(entity)
@@ -990,7 +990,7 @@ pub fn sync_removals(
         if let Some(handle) = context.entity2impulse_joint.remove(&entity) {
             context
                 .impulse_joints
-                .remove(handle, &mut context.islands, &mut context.bodies, true);
+                .remove(handle, true);
         }
     }
 
@@ -998,7 +998,7 @@ pub fn sync_removals(
         if let Some(handle) = context.entity2impulse_joint.remove(&entity) {
             context
                 .impulse_joints
-                .remove(handle, &mut context.islands, &mut context.bodies, true);
+                .remove(handle, true);
         }
         commands.entity(entity).remove::<RapierImpulseJointHandle>();
     }
@@ -1010,8 +1010,6 @@ pub fn sync_removals(
         if let Some(handle) = context.entity2multibody_joint.remove(&entity) {
             context.multibody_joints.remove(
                 handle,
-                &mut context.islands,
-                &mut context.bodies,
                 true,
             );
         }
@@ -1021,8 +1019,6 @@ pub fn sync_removals(
         if let Some(handle) = context.entity2multibody_joint.remove(&entity) {
             context.multibody_joints.remove(
                 handle,
-                &mut context.islands,
-                &mut context.bodies,
                 true,
             );
         }

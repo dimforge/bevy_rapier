@@ -1,13 +1,20 @@
 # Changelog
 
-## Unreleased
+## 0.14.0 (31 May 2022)
 ### Added
-- `AsyncSceneCollider` component to generate collision for scene meshes similar to `AsyncCollider`.
+- Add the `AsyncSceneCollider` component to generate collision for scene meshes similar to `AsyncCollider`.
+- Add calls to `App::register_type` for the types implementing `Reflect`.
 
 ### Modified
 - `Collider::bevy_mesh`, `Collider::bevy_mesh_convex_decomposition` and `Collider::bevy_mesh_convex_decomposition_with_params` was replaced with single `Collider::from_bevy_mesh` function which accepts `ComputedColliderShape`.
-- `AsyncCollider` now a struct which contains a mesh handle and `ComputedColliderShape`.
-
+- `AsyncCollider` is now a struct which contains a mesh handle and `ComputedColliderShape`.
+- The physics systems are now running after `CoreStage::Update` but before `CoreStage::PostUpdate`.
+- The collider and rigid-body positions are read from the `GlobalTransform` instead of `Transform` (the 
+  transforms modified by Rapier are written back to the `Transform` component). It is therefore important
+  to insert both a `Transform` and `GlobalTransform` component (or the `TransformBundle` bundle).
+- It is now possible to prevent the plugin from registering its system thanks to `RapierPhysicsPlugin::with_default_system_setup(false)`.
+  If that’s the case, the `RapierPhysicsPlugin::get_systems` method can be called to retrieve the relevant `SystemSet`
+  that can be added to your own stages in order to apply your own scheduling.
 
 ## 0.13.2 (5 May 2022)
 ### Modified

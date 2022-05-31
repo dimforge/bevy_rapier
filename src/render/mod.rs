@@ -170,6 +170,7 @@ fn debug_render_scene(
         &rapier_context.colliders,
         &rapier_context.impulse_joints,
         &rapier_context.multibody_joints,
+        &rapier_context.narrow_phase,
     );
     render_context.pipeline.style = unscaled_style;
 }
