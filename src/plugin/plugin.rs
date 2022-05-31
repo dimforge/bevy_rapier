@@ -151,11 +151,7 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
 
         // Insert all of our required resources. Don’t overwrite
         // the `RapierConfiguration` if it already exists.
-        if app
-            .world
-            .get_resource::<RapierConfiguration>()
-            .is_none()
-        {
+        if app.world.get_resource::<RapierConfiguration>().is_none() {
             app.insert_resource(RapierConfiguration::default());
         }
 
