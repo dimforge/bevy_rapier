@@ -16,6 +16,11 @@
   If that’s the case, the `RapierPhysicsPlugin::get_systems` method can be called to retrieve the relevant `SystemSet`
   that can be added to your own stages in order to apply your own scheduling.
 
+### Fixed
+- Fixed issues where contact regularization (using compliance) would result in tunnelling despite tunnelling
+  being enabled.
+- Don’t overwrite the user’s `RapierConfiguration` if one already exists before initializing the plugin.
+
 ## 0.13.2 (5 May 2022)
 ### Modified
 - The `TimestepMode` and `SimulationToRenderTime` structures are now public.
