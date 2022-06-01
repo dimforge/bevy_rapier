@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.14.1 (01 June 2022)
 ### Fixed
 - Add the missing `init_async_scene_colliders` to the list of the plugin systems.
 

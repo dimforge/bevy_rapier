@@ -1,6 +1,6 @@
 [package]
 name = "bevy_rapier2d"
-version = "0.14.0"
+version = "0.14.1"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 description = "2-dimensional physics engine in Rust, official Bevy plugin."
 documentation = "http://docs.rs/bevy_rapier2d"
