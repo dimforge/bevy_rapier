@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+### Fixed
+- Add the missing `init_async_scene_colliders` to the list of the plugin systems.
+
 ## 0.14.0 (31 May 2022)
 ### Added
 - Add the `AsyncSceneCollider` component to generate collision for scene meshes similar to `AsyncCollider`.
