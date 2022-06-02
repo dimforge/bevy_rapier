@@ -367,10 +367,13 @@ pub fn apply_rigid_body_user_changes(
 /// System responsible for applying changes the user made to a joint component.
 pub fn apply_joint_user_changes(
     mut context: ResMut<RapierContext>,
-    changed_impulse_joints: Query<(&RapierImpulseJointHandle, &ImpulseJoint), Changed<RigidBody>>,
+    changed_impulse_joints: Query<
+        (&RapierImpulseJointHandle, &ImpulseJoint),
+        Changed<ImpulseJoint>,
+    >,
     changed_multibody_joints: Query<
         (&RapierMultibodyJointHandle, &MultibodyJoint),
-        Changed<GlobalTransform>,
+        Changed<MultibodyJoint>,
     >,
 ) {
     let scale = context.physics_scale;
