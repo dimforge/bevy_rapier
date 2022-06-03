@@ -245,6 +245,12 @@ pub fn apply_rigid_body_user_changes(
         }
     }
 
+    for (handle, rb_type) in changed_rb_types.iter() {
+        if let Some(rb) = context.bodies.get_mut(handle.0) {
+            rb.set_body_type((*rb_type).into());
+        }
+    }
+
     // Manually checks if the transform changed.
     // This is needed for detecting if the user actually changed the rigid-body
     // transform, or if it was just the change we made in our `writeback_rigid_bodies`
@@ -299,12 +305,6 @@ pub fn apply_rigid_body_user_changes(
             rb.set_linvel((velocity.linvel / scale).into(), true);
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             rb.set_angvel(velocity.angvel.into(), true);
-        }
-    }
-
-    for (handle, rb_type) in changed_rb_types.iter() {
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
-            rb.set_body_type((*rb_type).into());
         }
     }
 
