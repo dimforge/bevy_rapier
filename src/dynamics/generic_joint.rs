@@ -9,6 +9,7 @@ use rapier::dynamics::{
 use crate::dynamics::SphericalJoint;
 
 /// The description of any joint.
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq, Default)]
 #[repr(transparent)]
 pub struct GenericJoint {
@@ -286,6 +287,7 @@ impl GenericJoint {
 }
 
 /// Create generic joints using the builder pattern.
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug)]
 pub struct GenericJointBuilder(GenericJoint);
 

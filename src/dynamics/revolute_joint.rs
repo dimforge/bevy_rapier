@@ -2,6 +2,7 @@ use crate::dynamics::{GenericJoint, GenericJointBuilder};
 use crate::math::{Real, Vect};
 use rapier::dynamics::{JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel};
 
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(transparent)]
 /// A revolute joint, locks all relative motion except for rotation along the joint’s principal axis.
@@ -137,6 +138,7 @@ impl From<RevoluteJoint> for GenericJoint {
 /// Create revolute joints using the builder pattern.
 ///
 /// A revolute joint locks all relative motion except for rotations along the joint’s principal axis.
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct RevoluteJointBuilder(RevoluteJoint);
 
