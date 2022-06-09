@@ -79,9 +79,15 @@ pub enum ColliderScale {
 }
 
 /// Indicates whether or not the collider is a sensor.
-#[derive(Copy, Clone, Debug, PartialEq, Default, Component, Reflect, FromReflect)]
+#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect, FromReflect)]
 #[reflect(Component, PartialEq)]
 pub struct Sensor(pub bool);
+
+impl Default for Sensor {
+    fn default() -> Self {
+        Self(true)
+    }
+}
 
 /// Custom mass-properties of a collider.
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect, FromReflect)]
