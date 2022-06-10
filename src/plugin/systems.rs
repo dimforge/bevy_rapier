@@ -245,6 +245,12 @@ pub fn apply_rigid_body_user_changes(
         }
     }
 
+    // NOTE: we must change the rigid-body type before updating the
+    //       transform or velocity. Otherwise, if the rigid-body was fixed
+    //       and changed to anything else, the velocity change wouldn’t have any effect.
+    //       Similarly, if the rigid-body was kinematic position-based before and
+    //       changed to anything else, a transform change would modify the next
+    //       position instead of the current one.
     for (handle, rb_type) in changed_rb_types.iter() {
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_body_type((*rb_type).into());
