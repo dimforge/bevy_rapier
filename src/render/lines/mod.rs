@@ -23,6 +23,7 @@ use bevy::{
         render_phase::AddRenderCommand,
         render_resource::PrimitiveTopology,
         render_resource::Shader,
+        view::NoFrustumCulling,
     },
 };
 
@@ -176,6 +177,7 @@ fn setup(mut cmds: Commands, mut meshes: ResMut<Assets<Mesh>>) {
             GlobalTransform::default(),
             Visibility::default(),
             ComputedVisibility::default(),
+            NoFrustumCulling,
             DebugLinesMesh(i),
         ));
     }
