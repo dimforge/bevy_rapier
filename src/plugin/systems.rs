@@ -1304,6 +1304,63 @@ mod tests {
         }
     }
 
+    #[test]
+    fn transform_propagation2() {
+        let mut app = App::new();
+        app.add_plugin(HeadlessRenderPlugin)
+            .add_plugin(TransformPlugin)
+            .add_plugin(RapierPhysicsPlugin::<NoUserData>::default());
+
+        let zero = (Transform::default(), Transform::default());
+
+        let different = (
+            Transform {
+                translation: Vec3::X * 10.0,
+                rotation: Quat::from_rotation_x(PI),
+                ..Default::default()
+            },
+            Transform {
+                translation: Vec3::Y * 10.0,
+                rotation: Quat::from_rotation_x(PI),
+                ..Default::default()
+            },
+        );
+
+        let same = (different.0, different.0);
+
+        for (child_transform, parent_transform) in [zero, same, different] {
+            let child = app
+                .world
+                .spawn()
+                .insert_bundle(TransformBundle::from(child_transform))
+                .insert(Collider::ball(1.0))
+                .id();
+
+            let parent = app.world
+                .spawn()
+                .insert_bundle(TransformBundle::from(parent_transform))
+                .insert(RigidBody::Fixed)
+                .insert(Collider::ball(1.0))
+                .push_children(&[child])
+                .id();
+
+            app.update();
+
+            let child_transform = app.world.entity(child).get::<GlobalTransform>().unwrap();
+            let context = app.world.resource::<RapierContext>();
+            let parent_handle = context.entity2body[&parent];
+            let parent_body = context.bodies.get(parent_handle).unwrap();
+            let child_collider_handle = parent_body.colliders()[1];
+            let child_collider = context.colliders.get(child_collider_handle).unwrap();
+            let body_transform =
+                utils::iso_to_transform(child_collider.position(), context.physics_scale);
+            assert_eq!(
+                body_transform, *child_transform,
+                "Collider transform should have have global rotation and translation"
+            );
+        }
+    }
+
     // Allows run tests for systems containing rendering related things without GPU
     struct HeadlessRenderPlugin;
 
