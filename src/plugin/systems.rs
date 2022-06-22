@@ -649,7 +649,7 @@ pub fn init_colliders(
     mut context: ResMut<RapierContext>,
     colliders: Query<ColliderComponents, Without<RapierColliderHandle>>,
     mut rigid_body_mprops: Query<&mut MassProperties>,
-    parent_query: Query<&Parent>,
+    parent_query: Query<(&Parent, Option<&Transform>)>,
 ) {
     let context = &mut *context;
     let scale = context.physics_scale;
@@ -719,34 +719,34 @@ pub fn init_colliders(
         }
 
         let mut body_entity = entity;
-        let mut parent = context.entity2body.get(&body_entity).copied();
-        let is_in_rb_entity = parent.is_some();
-        while parent.is_none() {
-            if let Ok(parent_entity) = parent_query.get(body_entity) {
+        let mut body_handle = context.entity2body.get(&body_entity).copied();
+        let mut child_transform = Transform::default();
+        while body_handle.is_none() {
+            if let Ok((parent_entity, transform)) = parent_query.get(body_entity) {
+                if let Some(transform) = transform {
+                    child_transform = *transform * child_transform;
+                }
                 body_entity = parent_entity.0;
             } else {
                 break;
             }
 
-            parent = context.entity2body.get(&body_entity).copied();
+            body_handle = context.entity2body.get(&body_entity).copied();
         }
 
-        if !is_in_rb_entity {
-            if let Some(transform) = transform {
-                builder = builder.position(utils::transform_to_iso(transform, scale));
-            }
-        }
+        builder = builder.position(utils::transform_to_iso(&child_transform.into(), scale));
 
         builder = builder.user_data(entity.to_bits() as u128);
 
-        let handle = if let Some(parent) = parent {
-            let handle = context
-                .colliders
-                .insert_with_parent(builder, parent, &mut context.bodies);
+        let handle = if let Some(body_handle) = body_handle {
+            let handle =
+                context
+                    .colliders
+                    .insert_with_parent(builder, body_handle, &mut context.bodies);
             if let Ok(mut mprops) = rigid_body_mprops.get_mut(body_entity) {
                 // Inserting the collider changed the rigid-body’s mass properties.
                 // Read them back from the engine.
-                if let Some(parent_body) = context.bodies.get(parent) {
+                if let Some(parent_body) = context.bodies.get(body_handle) {
                     *mprops = MassProperties::from_rapier(*parent_body.mass_properties(), scale);
                 }
             }
@@ -1316,7 +1316,7 @@ mod tests {
         let different = (
             Transform {
                 translation: Vec3::X * 10.0,
-                rotation: Quat::from_rotation_x(PI),
+                rotation: Quat::from_rotation_x(PI), // TODO: Why doesn't this work?
                 ..Default::default()
             },
             Transform {
@@ -1340,7 +1340,6 @@ mod tests {
                 .spawn()
                 .insert_bundle(TransformBundle::from(parent_transform))
                 .insert(RigidBody::Fixed)
-                .insert(Collider::ball(1.0))
                 .push_children(&[child])
                 .id();
 
@@ -1350,7 +1349,7 @@ mod tests {
             let context = app.world.resource::<RapierContext>();
             let parent_handle = context.entity2body[&parent];
             let parent_body = context.bodies.get(parent_handle).unwrap();
-            let child_collider_handle = parent_body.colliders()[1];
+            let child_collider_handle = parent_body.colliders()[0];
             let child_collider = context.colliders.get(child_collider_handle).unwrap();
             let body_transform =
                 utils::iso_to_transform(child_collider.position(), context.physics_scale);
