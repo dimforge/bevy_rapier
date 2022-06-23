@@ -59,7 +59,6 @@ pub type RigidBodyComponents<'a> = (
 pub type ColliderComponents<'a> = (
     Entity,
     &'a Collider,
-    Option<&'a GlobalTransform>,
     Option<&'a Sensor>,
     Option<&'a ColliderMassProperties>,
     Option<&'a ActiveEvents>,
@@ -649,7 +648,7 @@ pub fn init_colliders(
     mut context: ResMut<RapierContext>,
     colliders: Query<ColliderComponents, Without<RapierColliderHandle>>,
     mut rigid_body_mprops: Query<&mut MassProperties>,
-    parent_query: Query<&Parent>,
+    parent_query: Query<(&Parent, Option<&Transform>)>,
 ) {
     let context = &mut *context;
     let scale = context.physics_scale;
@@ -657,7 +656,6 @@ pub fn init_colliders(
     for (
         entity,
         shape,
-        transform,
         sensor,
         mprops,
         active_events,
@@ -719,34 +717,33 @@ pub fn init_colliders(
         }
 
         let mut body_entity = entity;
-        let mut parent = context.entity2body.get(&body_entity).copied();
-        let is_in_rb_entity = parent.is_some();
-        while parent.is_none() {
-            if let Ok(parent_entity) = parent_query.get(body_entity) {
+        let mut body_handle = context.entity2body.get(&body_entity).copied();
+        let mut child_transform = Transform::default();
+        while body_handle.is_none() {
+            if let Ok((parent_entity, transform)) = parent_query.get(body_entity) {
+                if let Some(transform) = transform {
+                    child_transform = *transform * child_transform;
+                }
                 body_entity = parent_entity.0;
             } else {
                 break;
             }
 
-            parent = context.entity2body.get(&body_entity).copied();
+            body_handle = context.entity2body.get(&body_entity).copied();
         }
 
-        if !is_in_rb_entity {
-            if let Some(transform) = transform {
-                builder = builder.position(utils::transform_to_iso(transform, scale));
-            }
-        }
-
+        builder = builder.position(utils::transform_to_iso(&child_transform.into(), scale));
         builder = builder.user_data(entity.to_bits() as u128);
 
-        let handle = if let Some(parent) = parent {
-            let handle = context
-                .colliders
-                .insert_with_parent(builder, parent, &mut context.bodies);
+        let handle = if let Some(body_handle) = body_handle {
+            let handle =
+                context
+                    .colliders
+                    .insert_with_parent(builder, body_handle, &mut context.bodies);
             if let Ok(mut mprops) = rigid_body_mprops.get_mut(body_entity) {
                 // Inserting the collider changed the rigid-body’s mass properties.
                 // Read them back from the engine.
-                if let Some(parent_body) = context.bodies.get(parent) {
+                if let Some(parent_body) = context.bodies.get(body_handle) {
                     *mprops = MassProperties::from_rapier(*parent_body.mass_properties(), scale);
                 }
             }
@@ -1301,6 +1298,73 @@ mod tests {
                 body_transform, *child_transform,
                 "Collider transform should have have global rotation and translation"
             );
+        }
+    }
+
+    #[test]
+    fn transform_propagation2() {
+        let mut app = App::new();
+        app.add_plugin(HeadlessRenderPlugin)
+            .add_plugin(TransformPlugin)
+            .add_plugin(RapierPhysicsPlugin::<NoUserData>::default());
+
+        let zero = (Transform::default(), Transform::default());
+
+        let different = (
+            Transform {
+                translation: Vec3::X * 10.0,
+                // NOTE: in 2D the test will fail if the rotation is wrt. an axis
+                //       other than Z because 2D physics objects can’t rotate wrt.
+                //       other axes.
+                rotation: Quat::from_rotation_z(PI),
+                ..Default::default()
+            },
+            Transform {
+                translation: Vec3::Y * 10.0,
+                rotation: Quat::from_rotation_z(PI),
+                ..Default::default()
+            },
+        );
+
+        let same = (different.0, different.0);
+
+        for (child_transform, parent_transform) in [zero, same, different] {
+            let child = app
+                .world
+                .spawn()
+                .insert_bundle(TransformBundle::from(child_transform))
+                .insert(Collider::ball(1.0))
+                .id();
+
+            let parent = app
+                .world
+                .spawn()
+                .insert_bundle(TransformBundle::from(parent_transform))
+                .insert(RigidBody::Fixed)
+                .push_children(&[child])
+                .id();
+
+            app.update();
+
+            let child_transform = app.world.entity(child).get::<GlobalTransform>().unwrap();
+            let context = app.world.resource::<RapierContext>();
+            let parent_handle = context.entity2body[&parent];
+            let parent_body = context.bodies.get(parent_handle).unwrap();
+            let child_collider_handle = parent_body.colliders()[0];
+            let child_collider = context.colliders.get(child_collider_handle).unwrap();
+            let body_transform =
+                utils::iso_to_transform(child_collider.position(), context.physics_scale);
+            approx::assert_relative_eq!(
+                body_transform.translation,
+                child_transform.translation,
+                epsilon = 1.0e-5
+            );
+            approx::assert_relative_eq!(
+                body_transform.rotation,
+                child_transform.rotation,
+                epsilon = 1.0e-5
+            );
+            approx::assert_relative_eq!(body_transform.scale, child_transform.scale,);
         }
     }
 
