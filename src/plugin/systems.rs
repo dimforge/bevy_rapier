@@ -59,7 +59,6 @@ pub type RigidBodyComponents<'a> = (
 pub type ColliderComponents<'a> = (
     Entity,
     &'a Collider,
-    Option<&'a GlobalTransform>,
     Option<&'a Sensor>,
     Option<&'a ColliderMassProperties>,
     Option<&'a ActiveEvents>,
@@ -657,7 +656,6 @@ pub fn init_colliders(
     for (
         entity,
         shape,
-        transform,
         sensor,
         mprops,
         active_events,
@@ -735,7 +733,6 @@ pub fn init_colliders(
         }
 
         builder = builder.position(utils::transform_to_iso(&child_transform.into(), scale));
-
         builder = builder.user_data(entity.to_bits() as u128);
 
         let handle = if let Some(body_handle) = body_handle {
@@ -1336,7 +1333,8 @@ mod tests {
                 .insert(Collider::ball(1.0))
                 .id();
 
-            let parent = app.world
+            let parent = app
+                .world
                 .spawn()
                 .insert_bundle(TransformBundle::from(parent_transform))
                 .insert(RigidBody::Fixed)
