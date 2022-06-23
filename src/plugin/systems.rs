@@ -1313,12 +1313,15 @@ mod tests {
         let different = (
             Transform {
                 translation: Vec3::X * 10.0,
-                rotation: Quat::from_rotation_x(PI), // TODO: Why doesn't this work?
+                // NOTE: in 2D the test will fail if the rotation is wrt. an axis
+                //       other than Z because 2D physics objects can’t rotate wrt.
+                //       other axes.
+                rotation: Quat::from_rotation_z(PI),
                 ..Default::default()
             },
             Transform {
                 translation: Vec3::Y * 10.0,
-                rotation: Quat::from_rotation_x(PI),
+                rotation: Quat::from_rotation_z(PI),
                 ..Default::default()
             },
         );
@@ -1351,10 +1354,17 @@ mod tests {
             let child_collider = context.colliders.get(child_collider_handle).unwrap();
             let body_transform =
                 utils::iso_to_transform(child_collider.position(), context.physics_scale);
-            assert_eq!(
-                body_transform, *child_transform,
-                "Collider transform should have have global rotation and translation"
+            approx::assert_relative_eq!(
+                body_transform.translation,
+                child_transform.translation,
+                epsilon = 1.0e-5
             );
+            approx::assert_relative_eq!(
+                body_transform.rotation,
+                child_transform.rotation,
+                epsilon = 1.0e-5
+            );
+            approx::assert_relative_eq!(body_transform.scale, child_transform.scale,);
         }
     }
 
