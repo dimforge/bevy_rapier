@@ -5,8 +5,8 @@
     <a href="https://discord.gg/vt9DJSW">
         <img src="https://img.shields.io/discord/507548572338880513.svg?logo=discord&colorB=7289DA">
     </a>
-    <a href="https://travis-ci.org/dimforge/rapier">
-        <img src="https://travis-ci.org/dimforge/rapier.svg?branch=master" alt="Build status">
+    <a href="https://github.com/dimforge/bevy_rapier/actions">
+        <img src="https://github.com/dimforge/bevy_rapier/workflows/Rust/badge.svg" alt="Build status">
     </a>
     <a href="https://crates.io/crates/bevy_rapier2d">
          <img src="https://img.shields.io/crates/v/bevy_rapier2d.svg?style=flat-square" alt="crates.io">
