@@ -40,7 +40,7 @@ impl Default for RapierDebugRenderPlugin {
                 rigid_body_axes_length: 20.0,
                 ..Default::default()
             },
-            mode: DebugRenderMode::all(),
+            mode: DebugRenderMode::default(),
         }
     }
     #[cfg(feature = "dim3")]
@@ -48,7 +48,7 @@ impl Default for RapierDebugRenderPlugin {
         Self {
             depth_test: cfg!(feature = "dim3"),
             style: DebugRenderStyle::default(),
-            mode: DebugRenderMode::all(),
+            mode: DebugRenderMode::default(),
         }
     }
 }

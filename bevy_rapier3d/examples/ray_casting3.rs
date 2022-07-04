@@ -83,7 +83,6 @@ fn cast_ray(
     mut commands: Commands,
     windows: Res<Windows>,
     rapier_context: Res<RapierContext>,
-    bodies: Query<&RigidBody>,
     cameras: Query<(&Camera, &GlobalTransform)>,
 ) {
     // We will color in read the colliders hovered by the mouse.
@@ -98,19 +97,15 @@ fn cast_ray(
             ray_dir,
             f32::MAX,
             true,
-            InteractionGroups::default(),
-            None,
+            QueryFilter::only_dynamic(),
         );
 
         if let Some((entity, _toi)) = hit {
-            // Color in red the entity we just hit.
-            // But don't color it if the rigid-body is not dynamic.
-            if let Ok(rb) = bodies.get(entity) {
-                if *rb == RigidBody::Dynamic {
-                    let color = Color::BLUE; // Color in blue.
-                    commands.entity(entity).insert(ColliderDebugColor(color));
-                }
-            }
+            // Color in blue the entity we just hit.
+            // Because of the query filter, only colliders attached to a dynamic body
+            // will get an event.
+            let color = Color::BLUE;
+            commands.entity(entity).insert(ColliderDebugColor(color));
         }
     }
 }

@@ -8,11 +8,11 @@ use crate::dynamics::{
 };
 use crate::geometry::{
     ActiveCollisionTypes, ActiveEvents, ActiveHooks, Collider, ColliderMassProperties,
-    ColliderScale, CollisionGroups, Friction, RapierColliderHandle, Restitution, Sensor,
-    SolverGroups,
+    ColliderScale, CollisionGroups, ContactForceEventThreshold, Friction, RapierColliderHandle,
+    Restitution, Sensor, SolverGroups,
 };
 use crate::pipeline::{
-    CollisionEvent, PhysicsHooksWithQueryInstance, PhysicsHooksWithQueryResource,
+    CollisionEvent, ContactForceEvent, PhysicsHooksWithQueryInstance, PhysicsHooksWithQueryResource,
 };
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
@@ -68,6 +68,7 @@ pub type ColliderComponents<'a> = (
     Option<&'a Restitution>,
     Option<&'a CollisionGroups>,
     Option<&'a SolverGroups>,
+    Option<&'a ContactForceEventThreshold>,
 );
 
 /// System responsible for applying [`GlobalTransform::scale`] and/or [`ColliderScale`] to
@@ -129,6 +130,10 @@ pub fn apply_collider_user_changes(
     >,
     changed_solver_groups: Query<(&RapierColliderHandle, &SolverGroups), Changed<SolverGroups>>,
     changed_sensors: Query<(&RapierColliderHandle, &Sensor), Changed<Sensor>>,
+    changed_contact_force_threshold: Query<
+        (&RapierColliderHandle, &ContactForceEventThreshold),
+        Changed<ContactForceEventThreshold>,
+    >,
 ) {
     let scale = context.physics_scale;
 
@@ -195,6 +200,12 @@ pub fn apply_collider_user_changes(
     for (handle, _) in changed_sensors.iter() {
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_sensor(true);
+        }
+    }
+
+    for (handle, threshold) in changed_contact_force_threshold.iter() {
+        if let Some(co) = context.colliders.get_mut(handle.0) {
+            co.set_contact_force_event_threshold(threshold.0);
         }
     }
 }
@@ -533,7 +544,8 @@ pub fn step_simulation<PhysicsHooksData: 'static + WorldQuery + Send + Sync>(
     config: Res<RapierConfiguration>,
     hooks: Res<PhysicsHooksWithQueryResource<PhysicsHooksData>>,
     (time, mut sim_to_render_time): (Res<Time>, ResMut<SimulationToRenderTime>),
-    events: EventWriter<CollisionEvent>,
+    collision_events: EventWriter<CollisionEvent>,
+    contact_force_events: EventWriter<ContactForceEvent>,
     hooks_data: Query<PhysicsHooksData>,
     interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
 ) {
@@ -548,7 +560,7 @@ pub fn step_simulation<PhysicsHooksData: 'static + WorldQuery + Send + Sync>(
         context.step_simulation(
             config.gravity,
             config.timestep_mode,
-            Some(events),
+            Some((collision_events, contact_force_events)),
             &hooks_instance,
             &*time,
             &mut *sim_to_render_time,
@@ -665,6 +677,7 @@ pub fn init_colliders(
         restitution,
         collision_groups,
         solver_groups,
+        contact_force_event_threshold,
     ) in colliders.iter()
     {
         let mut scaled_shape = shape.clone();
@@ -712,6 +725,10 @@ pub fn init_colliders(
 
         if let Some(solver_groups) = solver_groups {
             builder = builder.solver_groups((*solver_groups).into());
+        }
+
+        if let Some(threshold) = contact_force_event_threshold {
+            builder = builder.contact_force_event_threshold(threshold.0);
         }
 
         let mut body_entity = entity;
