@@ -154,6 +154,17 @@ impl GenericJoint {
         self
     }
 
+    /// Are contacts between the attached rigid-bodies enabled?
+    pub fn contacts_enabled(&self) -> bool {
+        self.raw.contacts_enabled
+    }
+
+    /// Sets whether contacts between the attached rigid-bodies are enabled.
+    pub fn set_contacts_enabled(&mut self, enabled: bool) -> &mut Self {
+        self.raw.set_contacts_enabled(enabled);
+        self
+    }
+
     /// The joint limits along the specified axis.
     #[must_use]
     pub fn limits(&self, axis: JointAxis) -> Option<&JointLimits<Real>> {

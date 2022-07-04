@@ -23,6 +23,17 @@ impl FixedJoint {
         Self { data }
     }
 
+    /// Are contacts between the attached rigid-bodies enabled?
+    pub fn contacts_enabled(&self) -> bool {
+        self.data.contacts_enabled()
+    }
+
+    /// Sets whether contacts between the attached rigid-bodies are enabled.
+    pub fn set_contacts_enabled(&mut self, enabled: bool) -> &mut Self {
+        self.data.set_contacts_enabled(enabled);
+        self
+    }
+
     /// The joint’s basis, expressed in the first rigid-body’s local-space.
     #[must_use]
     pub fn local_basis1(&self) -> Rot {
