@@ -22,9 +22,16 @@ fn setup_graphics(mut commands: Commands) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 }
 
-fn display_events(mut collision_events: EventReader<CollisionEvent>) {
+fn display_events(
+    mut collision_events: EventReader<CollisionEvent>,
+    mut contact_force_events: EventReader<ContactForceEvent>,
+) {
     for collision_event in collision_events.iter() {
         println!("Received collision event: {:?}", collision_event);
+    }
+
+    for contact_force_event in contact_force_events.iter() {
+        println!("Received contact force event: {:?}", contact_force_event);
     }
 }
 
@@ -45,5 +52,6 @@ pub fn setup_physics(mut commands: Commands) {
         .spawn_bundle(TransformBundle::from(Transform::from_xyz(0.0, 260.0, 0.0)))
         .insert(RigidBody::Dynamic)
         .insert(Collider::cuboid(10.0, 10.0))
-        .insert(ActiveEvents::COLLISION_EVENTS);
+        .insert(ActiveEvents::COLLISION_EVENTS)
+        .insert(ContactForceEventThreshold(10.0));
 }
