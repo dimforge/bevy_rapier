@@ -1,4 +1,4 @@
-use crate::pipeline::{CollisionEvent, PhysicsHooksWithQueryResource};
+use crate::pipeline::{CollisionEvent, ContactForceEvent, PhysicsHooksWithQueryResource};
 use crate::plugin::configuration::SimulationToRenderTime;
 use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
@@ -176,7 +176,8 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
                 physics_scale: self.physics_scale,
                 ..Default::default()
             })
-            .insert_resource(Events::<CollisionEvent>::default());
+            .insert_resource(Events::<CollisionEvent>::default())
+            .insert_resource(Events::<ContactForceEvent>::default());
 
         // Add each stage as necessary
         if self.default_system_setup {

@@ -1,8 +1,9 @@
+use crate::math::{Real, Vect};
 use bevy::prelude::{Entity, EventWriter};
 use rapier::dynamics::RigidBodySet;
 use rapier::geometry::{
     ColliderHandle, ColliderSet, CollisionEvent as RapierCollisionEvent, CollisionEventFlags,
-    ContactPair,
+    ContactForceEvent as RapierContactForceEvent, ContactPair,
 };
 use rapier::pipeline::EventHandler;
 use std::collections::HashMap;
@@ -17,6 +18,28 @@ pub enum CollisionEvent {
     Stopped(Entity, Entity, CollisionEventFlags),
 }
 
+/// Event occurring when the sum of the magnitudes of the contact forces
+/// between two colliders exceed a threshold.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct ContactForceEvent {
+    /// The first collider involved in the contact.
+    pub collider1: Entity,
+    /// The second collider involved in the contact.
+    pub collider2: Entity,
+    /// The sum of all the forces between the two colliders.
+    pub total_force: Vect,
+    /// The sum of the magnitudes of each force between the two colliders.
+    ///
+    /// Note that this is **not** the same as the magnitude of `self.total_force`.
+    /// Here we are summing the magnitude of all the forces, instead of taking
+    /// the magnitude of their sum.
+    pub total_force_magnitude: Real,
+    /// The world-space (unit) direction of the force with strongest magnitude.
+    pub max_force_direction: Vect,
+    /// The magnitude of the largest force at a contact point of this contact pair.
+    pub max_force_magnitude: Real,
+}
+
 // TODO: it may be more efficient to use crossbeam channel.
 // However crossbeam channels cause a Segfault (I have not
 // investigated how to reproduce this exactly to open an
@@ -26,7 +49,18 @@ pub(crate) struct EventQueue<'a> {
     // Used ot retrieve the entity of colliders that have been removed from the simulation
     // since the last physics step.
     pub deleted_colliders: &'a HashMap<ColliderHandle, Entity>,
-    pub events: RwLock<EventWriter<'a, 'a, CollisionEvent>>,
+    pub collision_events: RwLock<EventWriter<'a, 'a, CollisionEvent>>,
+    pub contact_force_events: RwLock<EventWriter<'a, 'a, ContactForceEvent>>,
+}
+
+impl<'a> EventQueue<'a> {
+    fn collider2entity(&self, colliders: &ColliderSet, handle: ColliderHandle) -> Entity {
+        colliders
+            .get(handle)
+            .map(|co| Entity::from_bits(co.user_data as u64))
+            .or_else(|| self.deleted_colliders.get(&handle).copied())
+            .expect("Internal error: entity not found for collision event.")
+    }
 }
 
 impl<'a> EventHandler for EventQueue<'a> {
@@ -37,28 +71,45 @@ impl<'a> EventHandler for EventQueue<'a> {
         event: RapierCollisionEvent,
         _: Option<&ContactPair>,
     ) {
-        let collider2entity = |handle| {
-            colliders
-                .get(handle)
-                .map(|co| Entity::from_bits(co.user_data as u64))
-                .or_else(|| self.deleted_colliders.get(&handle).copied())
-                .expect("Internal error: entity not found for collision event.")
+        let event = match event {
+            RapierCollisionEvent::Started(h1, h2, flags) => {
+                let e1 = self.collider2entity(colliders, h1);
+                let e2 = self.collider2entity(colliders, h2);
+                CollisionEvent::Started(e1, e2, flags)
+            }
+            RapierCollisionEvent::Stopped(h1, h2, flags) => {
+                let e1 = self.collider2entity(colliders, h1);
+                let e2 = self.collider2entity(colliders, h2);
+                CollisionEvent::Stopped(e1, e2, flags)
+            }
         };
 
-        if let Ok(mut events) = self.events.write() {
-            let event = match event {
-                RapierCollisionEvent::Started(h1, h2, flags) => {
-                    let e1 = collider2entity(h1);
-                    let e2 = collider2entity(h2);
-                    CollisionEvent::Started(e1, e2, flags)
-                }
-                RapierCollisionEvent::Stopped(h1, h2, flags) => {
-                    let e1 = collider2entity(h1);
-                    let e2 = collider2entity(h2);
-                    CollisionEvent::Stopped(e1, e2, flags)
-                }
-            };
+        if let Ok(mut events) = self.collision_events.write() {
             events.send(event)
+        }
+    }
+
+    fn handle_contact_force_event(
+        &self,
+        dt: Real,
+        _bodies: &RigidBodySet,
+        colliders: &ColliderSet,
+        contact_pair: &ContactPair,
+        total_force_magnitude: Real,
+    ) {
+        let rapier_event =
+            RapierContactForceEvent::from_contact_pair(dt, contact_pair, total_force_magnitude);
+        let event = ContactForceEvent {
+            collider1: self.collider2entity(colliders, rapier_event.collider1),
+            collider2: self.collider2entity(colliders, rapier_event.collider2),
+            total_force: rapier_event.total_force.into(),
+            total_force_magnitude: rapier_event.total_force_magnitude,
+            max_force_direction: rapier_event.max_force_direction.into(),
+            max_force_magnitude: rapier_event.max_force_magnitude,
+        };
+
+        if let Ok(mut events) = self.contact_force_events.write() {
+            events.send(event);
         }
     }
 }
