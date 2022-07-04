@@ -163,7 +163,8 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
             .register_type::<Friction>()
             .register_type::<Restitution>()
             .register_type::<CollisionGroups>()
-            .register_type::<SolverGroups>();
+            .register_type::<SolverGroups>()
+            .register_type::<ContactForceEventThreshold>();
 
         // Insert all of our required resources. Don’t overwrite
         // the `RapierConfiguration` if it already exists.

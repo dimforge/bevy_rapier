@@ -347,8 +347,8 @@ bitflags::bitflags! {
     #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
     /// Flags affecting the events generated for this collider.
     pub struct ActiveEvents: u32 {
-        /// If set, Rapier will call `EventHandler::handle_intersection_event` and
-        /// `EventHandler::handle_contact_event` whenever relevant for this collider.
+        /// If set, Rapier will call `EventHandler::handle_collision_event`
+        /// whenever relevant for this collider.
         const COLLISION_EVENTS = 0b0001;
     }
 }
@@ -360,7 +360,19 @@ impl From<ActiveEvents> for rapier::pipeline::ActiveEvents {
     }
 }
 
-/// Component which will be filled (if present) with a list of entities with which the current entity is currently in contact.
+/// The total force magnitude beyond which a contact force event can be emitted.
+#[derive(Copy, Clone, PartialEq, Component, Reflect, FromReflect)]
+#[reflect(Component)]
+pub struct ContactForceEventThreshold(pub f32);
+
+impl Default for ContactForceEventThreshold {
+    fn default() -> Self {
+        Self(f32::MAX)
+    }
+}
+
+/// Component which will be filled (if present) with a list of entities with which the current
+/// entity is currently in contact.
 #[derive(Component, Default, Reflect, FromReflect)]
 #[reflect(Component)]
 pub struct CollidingEntities(pub(crate) HashSet<Entity>);

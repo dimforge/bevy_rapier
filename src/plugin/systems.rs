@@ -8,8 +8,8 @@ use crate::dynamics::{
 };
 use crate::geometry::{
     ActiveCollisionTypes, ActiveEvents, ActiveHooks, Collider, ColliderMassProperties,
-    ColliderScale, CollisionGroups, Friction, RapierColliderHandle, Restitution, Sensor,
-    SolverGroups,
+    ColliderScale, CollisionGroups, ContactForceEventThreshold, Friction, RapierColliderHandle,
+    Restitution, Sensor, SolverGroups,
 };
 use crate::pipeline::{
     CollisionEvent, ContactForceEvent, PhysicsHooksWithQueryInstance, PhysicsHooksWithQueryResource,
@@ -68,6 +68,7 @@ pub type ColliderComponents<'a> = (
     Option<&'a Restitution>,
     Option<&'a CollisionGroups>,
     Option<&'a SolverGroups>,
+    Option<&'a ContactForceEventThreshold>,
 );
 
 /// System responsible for applying [`GlobalTransform::scale`] and/or [`ColliderScale`] to
@@ -129,6 +130,10 @@ pub fn apply_collider_user_changes(
     >,
     changed_solver_groups: Query<(&RapierColliderHandle, &SolverGroups), Changed<SolverGroups>>,
     changed_sensors: Query<(&RapierColliderHandle, &Sensor), Changed<Sensor>>,
+    changed_contact_force_threshold: Query<
+        (&RapierColliderHandle, &ContactForceEventThreshold),
+        Changed<ContactForceEventThreshold>,
+    >,
 ) {
     let scale = context.physics_scale;
 
@@ -195,6 +200,12 @@ pub fn apply_collider_user_changes(
     for (handle, _) in changed_sensors.iter() {
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_sensor(true);
+        }
+    }
+
+    for (handle, threshold) in changed_contact_force_threshold.iter() {
+        if let Some(co) = context.colliders.get_mut(handle.0) {
+            co.set_contact_force_event_threshold(threshold.0);
         }
     }
 }
@@ -666,6 +677,7 @@ pub fn init_colliders(
         restitution,
         collision_groups,
         solver_groups,
+        contact_force_event_threshold,
     ) in colliders.iter()
     {
         let mut scaled_shape = shape.clone();
@@ -713,6 +725,10 @@ pub fn init_colliders(
 
         if let Some(solver_groups) = solver_groups {
             builder = builder.solver_groups((*solver_groups).into());
+        }
+
+        if let Some(threshold) = contact_force_event_threshold {
+            builder = builder.contact_force_event_threshold(threshold.0);
         }
 
         let mut body_entity = entity;
