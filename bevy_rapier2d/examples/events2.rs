@@ -39,7 +39,7 @@ pub fn setup_physics(mut commands: Commands) {
     commands
         .spawn_bundle(TransformBundle::from(Transform::from_xyz(0.0, 100.0, 0.0)))
         .insert(Collider::cuboid(80.0, 30.0))
-        .insert(Sensor(true));
+        .insert(Sensor);
 
     commands
         .spawn_bundle(TransformBundle::from(Transform::from_xyz(0.0, 260.0, 0.0)))

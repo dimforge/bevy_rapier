@@ -192,9 +192,9 @@ pub fn apply_collider_user_changes(
         }
     }
 
-    for (handle, sensor) in changed_sensors.iter() {
+    for (handle, _) in changed_sensors.iter() {
         if let Some(co) = context.colliders.get_mut(handle.0) {
-            co.set_sensor(sensor.0)
+            co.set_sensor(true);
         }
     }
 }
@@ -671,9 +671,7 @@ pub fn init_colliders(
         scaled_shape.set_scale(shape.scale / scale, config.scaled_shape_subdivision);
         let mut builder = ColliderBuilder::new(scaled_shape.raw.clone());
 
-        if let Some(sensor) = sensor {
-            builder = builder.sensor(sensor.0);
-        }
+        builder = builder.sensor(sensor.is_some());
 
         if let Some(mprops) = mprops {
             builder = match mprops {
@@ -933,6 +931,8 @@ pub fn sync_removals(
         Entity,
         (With<RapierMultibodyJointHandle>, Without<MultibodyJoint>),
     >,
+
+    removed_sensors: RemovedComponents<Sensor>,
 ) {
     /*
      * Rigid-bodies removal detection.
@@ -1022,6 +1022,17 @@ pub fn sync_removals(
         commands
             .entity(entity)
             .remove::<RapierMultibodyJointHandle>();
+    }
+
+    /*
+     * Sensor marker component removal detection.
+     */
+    for entity in removed_sensors.iter() {
+        if let Some(handle) = context.entity2collider.get(&entity) {
+            if let Some(co) = context.colliders.get_mut(*handle) {
+                co.set_sensor(false);
+            }
+        }
     }
 
     // TODO: update mass props after collider removal.
