@@ -710,6 +710,12 @@ impl Collider {
     }
 }
 
+impl Default for Collider {
+    fn default() -> Self {
+        Self::ball(0.5)
+    }
+}
+
 #[cfg(feature = "dim3")]
 #[allow(clippy::type_complexity)]
 fn extract_mesh_vertices_indices(mesh: &Mesh) -> Option<(Vec<na::Point3<Real>>, Vec<[u32; 3]>)> {
