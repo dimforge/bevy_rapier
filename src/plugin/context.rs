@@ -2,11 +2,17 @@ use bevy::core::Time;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
-use rapier::prelude::*;
+use rapier::prelude::{
+    BroadPhase, CCDSolver, ColliderHandle, ColliderSet, EventHandler, FeatureId,
+    ImpulseJointHandle, ImpulseJointSet, IntegrationParameters, IslandManager,
+    MultibodyJointHandle, MultibodyJointSet, NarrowPhase, PhysicsHooks, PhysicsPipeline,
+    QueryFilter as RapierQueryFilter, QueryPipeline, Ray, Real, RigidBodyHandle, RigidBodySet,
+    AABB,
+};
 
-use crate::geometry::{Collider, InteractionGroups, PointProjection, RayIntersection, Toi};
+use crate::geometry::{Collider, PointProjection, RayIntersection, Toi};
 use crate::math::{Rot, Vect};
-use crate::pipeline::{CollisionEvent, EventQueue};
+use crate::pipeline::{CollisionEvent, ContactForceEvent, EventQueue, QueryFilter};
 use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query};
 use bevy::render::primitives::Aabb;
 
@@ -116,13 +122,41 @@ impl RapierContext {
             .map(|c| Entity::from_bits(c.user_data as u64))
     }
 
+    fn with_query_filter<T>(
+        &self,
+        filter: QueryFilter,
+        f: impl FnOnce(RapierQueryFilter) -> T,
+    ) -> T {
+        let mut rapier_filter = RapierQueryFilter {
+            flags: filter.flags,
+            groups: filter.groups,
+            exclude_collider: filter
+                .exclude_collider
+                .and_then(|c| self.entity2collider.get(&c).copied()),
+            exclude_rigid_body: filter
+                .exclude_rigid_body
+                .and_then(|b| self.entity2body.get(&b).copied()),
+            predicate: None,
+        };
+
+        if let Some(predicate) = filter.predicate {
+            let wrapped_predicate = |h: ColliderHandle, _: &rapier::geometry::Collider| {
+                self.collider_entity(h).map(predicate).unwrap_or(false)
+            };
+            rapier_filter.predicate = Some(&wrapped_predicate);
+            f(rapier_filter)
+        } else {
+            f(rapier_filter)
+        }
+    }
+
     /// Advance the simulation, based on the given timestep mode.
     #[allow(clippy::too_many_arguments)]
     pub fn step_simulation(
         &mut self,
         gravity: Vect,
         timestep_mode: TimestepMode,
-        events: Option<EventWriter<CollisionEvent>>,
+        events: Option<(EventWriter<CollisionEvent>, EventWriter<ContactForceEvent>)>,
         hooks: &dyn PhysicsHooks,
         time: &Time,
         sim_to_render_time: &mut SimulationToRenderTime,
@@ -130,9 +164,10 @@ impl RapierContext {
             Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
         >,
     ) {
-        let event_queue = events.map(|e| EventQueue {
+        let event_queue = events.map(|(ce, fe)| EventQueue {
             deleted_colliders: &self.deleted_colliders,
-            events: RwLock::new(e),
+            collision_events: RwLock::new(ce),
+            contact_force_events: RwLock::new(fe),
         });
 
         let events = self
@@ -283,43 +318,30 @@ impl RapierContext {
     /// * `solid`: if this is `true` an impact at time 0.0 (i.e. at the ray origin) is returned if
     ///            it starts inside of a shape. If this `false` then the ray will hit the shape's boundary
     ///            even if its starts inside of it.
-    /// * `query_groups`: the interaction groups which will be tested against the collider's `contact_group`
-    ///                   to determine if it should be taken into account by this query.
-    /// * `filter`: a more fine-grained filter. A collider is taken into account by this query if
-    ///             its `contact_group` is compatible with the `query_groups`, and if this `filter`
-    ///             is either `None` or returns `true`.
+    /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     pub fn cast_ray(
         &self,
         ray_origin: Vect,
         ray_dir: Vect,
         max_toi: Real,
         solid: bool,
-        query_groups: InteractionGroups,
-        filter: Option<&dyn Fn(Entity) -> bool>,
+        filter: QueryFilter,
     ) -> Option<(Entity, Real)> {
         let ray = Ray::new(
             (ray_origin / self.physics_scale).into(),
             (ray_dir / self.physics_scale).into(),
         );
-        let (h, toi) = if let Some(filter) = filter {
+
+        let (h, toi) = self.with_query_filter(filter, move |filter| {
             self.query_pipeline.cast_ray(
+                &self.bodies,
                 &self.colliders,
                 &ray,
                 max_toi,
                 solid,
-                query_groups,
-                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
-            )?
-        } else {
-            self.query_pipeline.cast_ray(
-                &self.colliders,
-                &ray,
-                max_toi,
-                solid,
-                query_groups,
-                None,
-            )?
-        };
+                filter,
+            )
+        })?;
 
         self.collider_entity(h).map(|e| (e, toi))
     }
@@ -334,43 +356,30 @@ impl RapierContext {
     /// * `solid`: if this is `true` an impact at time 0.0 (i.e. at the ray origin) is returned if
     ///            it starts inside of a shape. If this `false` then the ray will hit the shape's boundary
     ///            even if its starts inside of it.
-    /// * `query_groups`: the interaction groups which will be tested against the collider's `contact_group`
-    ///                   to determine if it should be taken into account by this query.
-    /// * `filter`: a more fine-grained filter. A collider is taken into account by this query if
-    ///             its `contact_group` is compatible with the `query_groups`, and if this `filter`
-    ///             is either `None` or returns `true`.
+    /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     pub fn cast_ray_and_get_normal(
         &self,
         ray_origin: Vect,
         ray_dir: Vect,
         max_toi: Real,
         solid: bool,
-        query_groups: InteractionGroups,
-        filter: Option<&dyn Fn(Entity) -> bool>,
+        filter: QueryFilter,
     ) -> Option<(Entity, RayIntersection)> {
         let ray = Ray::new(
             (ray_origin / self.physics_scale).into(),
             (ray_dir / self.physics_scale).into(),
         );
-        let (h, result) = if let Some(filter) = filter {
+
+        let (h, result) = self.with_query_filter(filter, move |filter| {
             self.query_pipeline.cast_ray_and_get_normal(
+                &self.bodies,
                 &self.colliders,
                 &ray,
                 max_toi,
                 solid,
-                query_groups,
-                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
-            )?
-        } else {
-            self.query_pipeline.cast_ray_and_get_normal(
-                &self.colliders,
-                &ray,
-                max_toi,
-                solid,
-                query_groups,
-                None,
-            )?
-        };
+                filter,
+            )
+        })?;
 
         self.collider_entity(h)
             .map(|e| (e, RayIntersection::from_rapier(result, ray_origin, ray_dir)))
@@ -386,11 +395,7 @@ impl RapierContext {
     /// * `solid`: if this is `true` an impact at time 0.0 (i.e. at the ray origin) is returned if
     ///            it starts inside of a shape. If this `false` then the ray will hit the shape's boundary
     ///            even if its starts inside of it.
-    /// * `query_groups`: the interaction groups which will be tested against the collider's `contact_group`
-    ///                   to determine if it should be taken into account by this query.
-    /// * `filter`: a more fine-grained filter. A collider is taken into account by this query if
-    ///             its `contact_group` is compatible with the `query_groups`, and if this `filter`
-    ///             is either `None` or returns `true`.
+    /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     /// * `callback`: function executed on each collider for which a ray intersection has been found.
     ///               There is no guarantees on the order the results will be yielded. If this callback returns `false`,
     ///               this method will exit early, ignore any further raycast.
@@ -401,8 +406,7 @@ impl RapierContext {
         ray_dir: Vect,
         max_toi: Real,
         solid: bool,
-        query_groups: InteractionGroups,
-        filter: Option<&dyn Fn(Entity) -> bool>,
+        filter: QueryFilter,
         mut callback: impl FnMut(Entity, RayIntersection) -> bool,
     ) {
         let ray = Ray::new(
@@ -415,27 +419,17 @@ impl RapierContext {
                 .unwrap_or(true)
         };
 
-        if let Some(filter) = filter {
+        self.with_query_filter(filter, move |filter| {
             self.query_pipeline.intersections_with_ray(
+                &self.bodies,
                 &self.colliders,
                 &ray,
                 max_toi,
                 solid,
-                query_groups,
-                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
+                filter,
                 callback,
-            );
-        } else {
-            self.query_pipeline.intersections_with_ray(
-                &self.colliders,
-                &ray,
-                max_toi,
-                solid,
-                query_groups,
-                None,
-                callback,
-            );
-        }
+            )
+        });
     }
 
     /// Gets the handle of up to one collider intersecting the given shape.
@@ -443,18 +437,13 @@ impl RapierContext {
     /// # Parameters
     /// * `shape_pos` - The position of the shape used for the intersection test.
     /// * `shape` - The shape used for the intersection test.
-    /// * `query_groups` - the interaction groups which will be tested against the collider's `contact_group`
-    ///                   to determine if it should be taken into account by this query.
-    /// * `filter` - a more fine-grained filter. A collider is taken into account by this query if
-    ///             its `contact_group` is compatible with the `query_groups`, and if this `filter`
-    ///             is either `None` or returns `true`.
+    /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     pub fn intersection_with_shape(
         &self,
         shape_pos: Vect,
         shape_rot: Rot,
         shape: &Collider,
-        query_groups: InteractionGroups,
-        filter: Option<&dyn Fn(Entity) -> bool>,
+        filter: QueryFilter,
     ) -> Option<Entity> {
         let scaled_transform = (shape_pos / self.physics_scale, shape_rot).into();
         let mut scaled_shape = shape.clone();
@@ -462,23 +451,15 @@ impl RapierContext {
         //       RapierConfiguration::scaled_shape_subdivision here.
         scaled_shape.set_scale(shape.scale / self.physics_scale, 20);
 
-        let h = if let Some(filter) = filter {
+        let h = self.with_query_filter(filter, move |filter| {
             self.query_pipeline.intersection_with_shape(
+                &self.bodies,
                 &self.colliders,
                 &scaled_transform,
                 &*scaled_shape.raw,
-                query_groups,
-                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
-            )?
-        } else {
-            self.query_pipeline.intersection_with_shape(
-                &self.colliders,
-                &scaled_transform,
-                &*scaled_shape.raw,
-                query_groups,
-                None,
-            )?
-        };
+                filter,
+            )
+        })?;
 
         self.collider_entity(h)
     }
@@ -492,35 +473,22 @@ impl RapierContext {
     ///   itself). If it is set to `false` the collider shapes are considered to be hollow
     ///   (if the point is located inside of an hollow shape, it is projected on the shape's
     ///   boundary).
-    /// * `query_groups` - the interaction groups which will be tested against the collider's `contact_group`
-    ///                   to determine if it should be taken into account by this query.
-    /// * `filter` - a more fine-grained filter. A collider is taken into account by this query if
-    ///             its `contact_group` is compatible with the `query_groups`, and if this `filter`
-    ///             is either `None` or returns `true`.
+    /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     pub fn project_point(
         &self,
         point: Vect,
         solid: bool,
-        query_groups: InteractionGroups,
-        filter: Option<&dyn Fn(Entity) -> bool>,
+        filter: QueryFilter,
     ) -> Option<(Entity, PointProjection)> {
-        let (h, result) = if let Some(filter) = filter {
+        let (h, result) = self.with_query_filter(filter, move |filter| {
             self.query_pipeline.project_point(
+                &self.bodies,
                 &self.colliders,
                 &(point / self.physics_scale).into(),
                 solid,
-                query_groups,
-                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
-            )?
-        } else {
-            self.query_pipeline.project_point(
-                &self.colliders,
-                &(point / self.physics_scale).into(),
-                solid,
-                query_groups,
-                None,
-            )?
-        };
+                filter,
+            )
+        })?;
 
         self.collider_entity(h)
             .map(|e| (e, PointProjection::from_rapier(self.physics_scale, result)))
@@ -530,42 +498,29 @@ impl RapierContext {
     ///
     /// # Parameters
     /// * `point` - The point used for the containment test.
-    /// * `query_groups` - the interaction groups which will be tested against the collider's `contact_group`
-    ///                   to determine if it should be taken into account by this query.
-    /// * `filter` - a more fine-grained filter. A collider is taken into account by this query if
-    ///             its `contact_group` is compatible with the `query_groups`, and if this `filter`
-    ///             is either `None` or returns `true`.
+    /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     /// * `callback` - A function called with each collider with a shape containing the `point`.
     ///                If this callback returns `false`, this method will exit early, ignore any
     ///                further point projection.
     pub fn intersections_with_point(
         &self,
         point: Vect,
-        query_groups: InteractionGroups,
-        filter: Option<&dyn Fn(Entity) -> bool>,
+        filter: QueryFilter,
         mut callback: impl FnMut(Entity) -> bool,
     ) {
         #[allow(clippy::redundant_closure)]
         // False-positive, we can't move callback, closure becomes `FnOnce`
         let callback = |h| self.collider_entity(h).map(|e| callback(e)).unwrap_or(true);
 
-        if let Some(filter) = filter {
+        self.with_query_filter(filter, move |filter| {
             self.query_pipeline.intersections_with_point(
+                &self.bodies,
                 &self.colliders,
                 &(point / self.physics_scale).into(),
-                query_groups,
-                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
+                filter,
                 callback,
-            );
-        } else {
-            self.query_pipeline.intersections_with_point(
-                &self.colliders,
-                &(point / self.physics_scale).into(),
-                query_groups,
-                None,
-                callback,
-            );
-        }
+            )
+        });
     }
 
     /// Find the projection of a point on the closest collider.
@@ -579,33 +534,20 @@ impl RapierContext {
     ///   itself). If it is set to `false` the collider shapes are considered to be hollow
     ///   (if the point is located inside of an hollow shape, it is projected on the shape's
     ///   boundary).
-    /// * `query_groups` - the interaction groups which will be tested against the collider's `contact_group`
-    ///                   to determine if it should be taken into account by this query.
-    /// * `filter` - a more fine-grained filter. A collider is taken into account by this query if
-    ///             its `contact_group` is compatible with the `query_groups`, and if this `filter`
-    ///             is either `None` or returns `true`.
+    /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     pub fn project_point_and_get_feature(
         &self,
         point: Vect,
-        // FIXME: should be a CollisionGroups
-        query_groups: InteractionGroups,
-        filter: Option<&dyn Fn(Entity) -> bool>,
+        filter: QueryFilter,
     ) -> Option<(Entity, PointProjection, FeatureId)> {
-        let (h, proj, fid) = if let Some(filter) = filter {
+        let (h, proj, fid) = self.with_query_filter(filter, move |filter| {
             self.query_pipeline.project_point_and_get_feature(
+                &self.bodies,
                 &self.colliders,
                 &(point / self.physics_scale).into(),
-                query_groups,
-                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
-            )?
-        } else {
-            self.query_pipeline.project_point_and_get_feature(
-                &self.colliders,
-                &(point / self.physics_scale).into(),
-                query_groups,
-                None,
-            )?
-        };
+                filter,
+            )
+        })?;
 
         self.collider_entity(h).map(|e| {
             (
@@ -655,11 +597,7 @@ impl RapierContext {
     /// * `shape` - The shape to cast.
     /// * `max_toi` - The maximum time-of-impact that can be reported by this cast. This effectively
     ///   limits the distance traveled by the shape to `shapeVel.norm() * maxToi`.
-    /// * `query_groups` - the interaction groups which will be tested against the collider's `contact_group`
-    ///                   to determine if it should be taken into account by this query.
-    /// * `filter` - a more fine-grained filter. A collider is taken into account by this query if
-    ///             its `contact_group` is compatible with the `query_groups`, and if this `filter`
-    ///             is either `None` or returns `true`.
+    /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     #[allow(clippy::too_many_arguments)]
     pub fn cast_shape(
         &self,
@@ -668,8 +606,7 @@ impl RapierContext {
         shape_vel: Vect,
         shape: &Collider,
         max_toi: Real,
-        query_groups: InteractionGroups,
-        filter: Option<&dyn Fn(Entity) -> bool>,
+        filter: QueryFilter,
     ) -> Option<(Entity, Toi)> {
         let scaled_transform = (shape_pos / self.physics_scale, shape_rot).into();
         let mut scaled_shape = shape.clone();
@@ -677,27 +614,17 @@ impl RapierContext {
         //       RapierConfiguration::scaled_shape_subdivision here.
         scaled_shape.set_scale(shape.scale / self.physics_scale, 20);
 
-        let (h, result) = if let Some(filter) = filter {
+        let (h, result) = self.with_query_filter(filter, move |filter| {
             self.query_pipeline.cast_shape(
+                &self.bodies,
                 &self.colliders,
                 &scaled_transform,
                 &(shape_vel / self.physics_scale).into(),
                 &*scaled_shape.raw,
                 max_toi,
-                query_groups,
-                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
-            )?
-        } else {
-            self.query_pipeline.cast_shape(
-                &self.colliders,
-                &scaled_transform,
-                &(shape_vel / self.physics_scale).into(),
-                &*scaled_shape.raw,
-                max_toi,
-                query_groups,
-                None,
-            )?
-        };
+                filter,
+            )
+        })?;
 
         self.collider_entity(h)
             .map(|e| (e, Toi::from_rapier(self.physics_scale, result)))
@@ -722,11 +649,7 @@ impl RapierContext {
     ///    would result in tunnelling. If it does not (i.e. we have a separating velocity along
     ///    that normal) then the nonlinear shape-casting will attempt to find another impact,
     ///    at a time `> start_time` that could result in tunnelling.
-    /// * `query_groups` - the interaction groups which will be tested against the collider's `contact_group`
-    ///                   to determine if it should be taken into account by this query.
-    /// * `filter` - a more fine-grained filter. A collider is taken into account by this query if
-    ///             its `contact_group` is compatible with the `query_groups`, and if this `filter`
-    ///             is either `None` or returns `true`.
+    /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     pub fn nonlinear_cast_shape(
         &self,
         shape_motion: &NonlinearRigidMotion,
@@ -734,8 +657,7 @@ impl RapierContext {
         start_time: Real,
         end_time: Real,
         stop_at_penetration: bool,
-        query_groups: InteractionGroups,
-        filter: Option<&dyn Fn(Entity) -> bool>,
+        filter: QueryFilter,
     ) -> Option<(Entity, Toi)> {
         let scaled_transform = (shape_pos * self.physics_scale, shape_rot).into();
         let mut scaled_shape = shape.clone();
@@ -743,29 +665,18 @@ impl RapierContext {
         //       RapierConfiguration::scaled_shape_subdivision here.
         scaled_shape.set_scale(shape.scale * self.physics_scale, 20);
 
-        let (h, result) = if let Some(filter) = filter {
+        let (h, result) = self.with_query_filter(filter, move |filter| {
             self.query_pipeline.nonlinear_cast_shape(
+                &self.bodies,
                 &self.colliders,
                 shape_motion,
                 &*scaled_shape.raw,
                 start_time,
                 end_time,
                 stop_at_penetration,
-                query_groups,
-                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
-            )?
-        } else {
-            self.query_pipeline.nonlinear_cast_shape(
-                &self.colliders,
-                shape_motion,
-                &*scaled_shape.raw,
-                start_time,
-                end_time,
-                stop_at_penetration,
-                query_groups,
-                None,
-            )?
-        };
+                filter,
+            )
+        })?;
 
         self.collider_entity(h).map(|e| (e, result))
     }
@@ -777,19 +688,14 @@ impl RapierContext {
     /// * `shapePos` - The position of the shape to test.
     /// * `shapeRot` - The orientation of the shape to test.
     /// * `shape` - The shape to test.
-    /// * `query_groups` - the interaction groups which will be tested against the collider's `contact_group`
-    ///                   to determine if it should be taken into account by this query.
-    /// * `filter` - a more fine-grained filter. A collider is taken into account by this query if
-    ///             its `contact_group` is compatible with the `query_groups`, and if this `filter`
-    ///             is either `None` or returns `true`.
+    /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     /// * `callback` - A function called with the entities of each collider intersecting the `shape`.
     pub fn intersections_with_shape(
         &self,
         shape_pos: Vect,
         shape_rot: Rot,
         shape: &Collider,
-        query_groups: InteractionGroups,
-        filter: Option<&dyn Fn(Entity) -> bool>,
+        filter: QueryFilter,
         mut callback: impl FnMut(Entity) -> bool,
     ) {
         let scaled_transform = (shape_pos / self.physics_scale, shape_rot).into();
@@ -802,24 +708,15 @@ impl RapierContext {
         // False-positive, we can't move callback, closure becomes `FnOnce`
         let callback = |h| self.collider_entity(h).map(|e| callback(e)).unwrap_or(true);
 
-        if let Some(filter) = filter {
+        self.with_query_filter(filter, move |filter| {
             self.query_pipeline.intersections_with_shape(
+                &self.bodies,
                 &self.colliders,
                 &scaled_transform,
                 &*scaled_shape.raw,
-                query_groups,
-                Some(&|h| self.collider_entity(h).map(filter).unwrap_or(false)),
+                filter,
                 callback,
-            );
-        } else {
-            self.query_pipeline.intersections_with_shape(
-                &self.colliders,
-                &scaled_transform,
-                &*scaled_shape.raw,
-                query_groups,
-                None,
-                callback,
-            );
-        }
+            )
+        });
     }
 }

@@ -12,7 +12,7 @@ use crate::geometry::{
     SolverGroups,
 };
 use crate::pipeline::{
-    CollisionEvent, PhysicsHooksWithQueryInstance, PhysicsHooksWithQueryResource,
+    CollisionEvent, ContactForceEvent, PhysicsHooksWithQueryInstance, PhysicsHooksWithQueryResource,
 };
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
@@ -533,7 +533,8 @@ pub fn step_simulation<PhysicsHooksData: 'static + WorldQuery + Send + Sync>(
     config: Res<RapierConfiguration>,
     hooks: Res<PhysicsHooksWithQueryResource<PhysicsHooksData>>,
     (time, mut sim_to_render_time): (Res<Time>, ResMut<SimulationToRenderTime>),
-    events: EventWriter<CollisionEvent>,
+    collision_events: EventWriter<CollisionEvent>,
+    contact_force_events: EventWriter<ContactForceEvent>,
     hooks_data: Query<PhysicsHooksData>,
     interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
 ) {
@@ -548,7 +549,7 @@ pub fn step_simulation<PhysicsHooksData: 'static + WorldQuery + Send + Sync>(
         context.step_simulation(
             config.gravity,
             config.timestep_mode,
-            Some(events),
+            Some((collision_events, contact_force_events)),
             &hooks_instance,
             &*time,
             &mut *sim_to_render_time,
