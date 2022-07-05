@@ -89,6 +89,8 @@ pub struct Sensor;
 pub enum ColliderMassProperties {
     /// The mass-properties are computed automatically from the collider’s shape and this density.
     Density(f32),
+    /// The mass-properties are computed automatically from the collider’s shape and this mass.
+    Mass(f32),
     /// The mass-properties of the collider are replaced by the ones specified here.
     MassProperties(MassProperties),
 }
