@@ -923,6 +923,8 @@ pub fn apply_initial_rigid_body_impulses(
             rb.recompute_mass_properties_from_colliders(&context.colliders);
             // Apply the impulse.
             rb.apply_impulse((impulse.impulse / scale).into(), false);
+
+            #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             rb.apply_torque_impulse(impulse.torque_impulse.into(), false);
         }
     }
