@@ -7,6 +7,10 @@
   contact manifolds (like triangle meshes).
 - Fix transform hierarchies not being properly taken into account for colliders with a 
   parent rigid-body.
+- Fix force and impulse application when the `ExternalImpulse` or `ExternalForce` components were added
+  at the same time as the rigid-body creation.
+- Fix sleeping threshold application when these thresholds are set at the same time as the rigid-body
+  creation.
 
 ### Added
 - Add the `ColliderMassProperties::Mass` variant to let the user specify a collider’s mass directly (instead of its density).

@@ -83,7 +83,14 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<P
                             .after(systems::init_async_colliders),
                     )
                     .with_system(systems::init_joints.after(systems::init_colliders))
-                    .with_system(systems::sync_removals.after(systems::init_joints));
+                    .with_system(
+                        systems::apply_initial_rigid_body_impulses.after(systems::init_colliders),
+                    )
+                    .with_system(
+                        systems::sync_removals
+                            .after(systems::init_joints)
+                            .after(systems::apply_initial_rigid_body_impulses),
+                    );
 
                 #[cfg(feature = "dim3")]
                 {

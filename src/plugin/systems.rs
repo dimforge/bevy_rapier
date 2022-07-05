@@ -47,7 +47,6 @@ pub type RigidBodyComponents<'a> = (
     Option<&'a ReadMassProperties>,
     Option<&'a LockedAxes>,
     Option<&'a ExternalForce>,
-    Option<&'a ExternalImpulse>,
     Option<&'a GravityScale>,
     Option<&'a Ccd>,
     Option<&'a Dominance>,
@@ -813,7 +812,6 @@ pub fn init_rigid_bodies(
         _mass_props,
         locked_axes,
         force,
-        impulse,
         gravity_scale,
         ccd,
         dominance,
@@ -878,13 +876,9 @@ pub fn init_rigid_bodies(
             rb.add_torque(force.torque.into(), false);
         }
 
-        // TODO: will this apply the impulse twice (once here, and once in apply_rigid_body_user_changes)
-        //       in some scenarios?
-        #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
-        if let Some(impulse) = impulse {
-            rb.apply_impulse((impulse.impulse / scale).into(), false);
-            rb.apply_torque_impulse(impulse.torque_impulse.into(), false);
-        }
+        // NOTE: we can’t apply impulses yet at this point because
+        //       the rigid-body’s mass isn’t up-to-date yet (its
+        //       attached colliders, if any, haven’t been created yet).
 
         if let Some(sleep) = sleep {
             let activation = rb.activation_mut();
@@ -892,7 +886,7 @@ pub fn init_rigid_bodies(
             activation.angular_threshold = sleep.angular_threshold;
         }
 
-        let handle = context.bodies.insert(builder);
+        let handle = context.bodies.insert(rb);
         commands
             .entity(entity)
             .insert(RapierRigidBodyHandle(handle));
@@ -900,6 +894,38 @@ pub fn init_rigid_bodies(
 
         if let Some(transform) = transform {
             context.last_body_transform_set.insert(handle, *transform);
+        }
+    }
+}
+
+/// This applies the initial impulse given to a rigid-body when it is created.
+///
+/// This cannot be done inside `init_rigid_bodies` because impulses require the rigid-body
+/// mass to be available, which it was not because colliders were not created yet. As a
+/// result, we run this system after the collider creation.
+pub fn apply_initial_rigid_body_impulses(
+    mut context: ResMut<RapierContext>,
+    // We can’t use RapierRigidBodyHandle yet because its creation command hasn’t been
+    // executed yet.
+    init_impulses: Query<(Entity, &ExternalImpulse), Without<RapierRigidBodyHandle>>,
+) {
+    let context = &mut *context;
+    let scale = context.physics_scale;
+
+    for (entity, impulse) in init_impulses.iter() {
+        let bodies = &mut context.bodies;
+        if let Some(rb) = context
+            .entity2body
+            .get(&entity)
+            .and_then(|h| bodies.get_mut(*h))
+        {
+            // Make sure the mass-properties are computed.
+            rb.recompute_mass_properties_from_colliders(&context.colliders);
+            // Apply the impulse.
+            rb.apply_impulse((impulse.impulse / scale).into(), false);
+
+            #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
+            rb.apply_torque_impulse(impulse.torque_impulse.into(), false);
         }
     }
 }
