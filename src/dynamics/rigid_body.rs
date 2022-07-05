@@ -101,9 +101,22 @@ impl Velocity {
 }
 
 /// Mass-properties of a rigid-body, added to the contributions of its attached colliders.
-#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect, FromReflect)]
+#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect, FromReflect)]
 #[reflect(Component, PartialEq)]
-pub struct AdditionalMassProperties(pub MassProperties);
+pub enum AdditionalMassProperties {
+    /// This mass will be added to the rigid-body. The rigid-body’s total
+    /// angular inertia tensor (obtained from its attached colliders) will
+    /// be scaled accordingly.
+    Mass(f32),
+    /// These mass properties will be added to the rigid-body.
+    MassProperties(MassProperties),
+}
+
+impl Default for AdditionalMassProperties {
+    fn default() -> Self {
+        Self::MassProperties(MassProperties::default())
+    }
+}
 
 /// Center-of-mass, mass, and angular inertia.
 ///
@@ -113,6 +126,14 @@ pub struct AdditionalMassProperties(pub MassProperties);
 /// and the `AdditionalMassProperties` should be modified instead).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect, FromReflect)]
 #[reflect(Component, PartialEq)]
+pub struct ReadMassProperties(pub MassProperties);
+
+/// Center-of-mass, mass, and angular inertia.
+///
+/// This cannot be used as a component. Use the components `ReadMassProperties` to read a rigid-body’s
+/// mass-properties or `AdditionalMassProperties` to set its additional mass-properties.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Reflect, FromReflect)]
+#[reflect(PartialEq)]
 pub struct MassProperties {
     /// The center of mass of a rigid-body expressed in its local-space.
     pub local_center_of_mass: Vect,

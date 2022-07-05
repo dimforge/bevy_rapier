@@ -3,8 +3,8 @@
 use crate::dynamics::{
     AdditionalMassProperties, Ccd, Damping, Dominance, ExternalForce, ExternalImpulse,
     GravityScale, ImpulseJoint, LockedAxes, MassProperties, MultibodyJoint,
-    RapierImpulseJointHandle, RapierMultibodyJointHandle, RapierRigidBodyHandle, RigidBody,
-    Sleeping, TransformInterpolation, Velocity,
+    RapierImpulseJointHandle, RapierMultibodyJointHandle, RapierRigidBodyHandle,
+    ReadMassProperties, RigidBody, Sleeping, TransformInterpolation, Velocity,
 };
 use crate::geometry::{
     ActiveCollisionTypes, ActiveEvents, ActiveHooks, Collider, ColliderMassProperties,
@@ -44,7 +44,7 @@ pub type RigidBodyComponents<'a> = (
     Option<&'a GlobalTransform>,
     Option<&'a Velocity>,
     Option<&'a AdditionalMassProperties>,
-    Option<&'a MassProperties>,
+    Option<&'a ReadMassProperties>,
     Option<&'a LockedAxes>,
     Option<&'a ExternalForce>,
     Option<&'a ExternalImpulse>,
@@ -134,6 +134,10 @@ pub fn apply_collider_user_changes(
         (&RapierColliderHandle, &ContactForceEventThreshold),
         Changed<ContactForceEventThreshold>,
     >,
+    changed_collider_mass_props: Query<
+        (&RapierColliderHandle, &ColliderMassProperties),
+        Changed<ColliderMassProperties>,
+    >,
 ) {
     let scale = context.physics_scale;
 
@@ -206,6 +210,18 @@ pub fn apply_collider_user_changes(
     for (handle, threshold) in changed_contact_force_threshold.iter() {
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_contact_force_event_threshold(threshold.0);
+        }
+    }
+
+    for (handle, mprops) in changed_collider_mass_props.iter() {
+        if let Some(co) = context.colliders.get_mut(handle.0) {
+            match mprops {
+                ColliderMassProperties::Density(density) => co.set_density(*density),
+                ColliderMassProperties::Mass(mass) => co.set_mass(*mass),
+                ColliderMassProperties::MassProperties(mprops) => {
+                    co.set_mass_properties(mprops.into_rapier(scale))
+                }
+            }
         }
     }
 }
@@ -326,7 +342,14 @@ pub fn apply_rigid_body_user_changes(
 
     for (handle, mprops) in changed_additional_mass_props.iter() {
         if let Some(rb) = context.bodies.get_mut(handle.0) {
-            rb.set_additional_mass_properties(mprops.0.into_rapier(scale), true);
+            match mprops {
+                AdditionalMassProperties::MassProperties(mprops) => {
+                    rb.set_additional_mass_properties(mprops.into_rapier(scale), true);
+                }
+                AdditionalMassProperties::Mass(mass) => {
+                    rb.set_additional_mass(*mass, true);
+                }
+            }
         }
     }
 
@@ -659,7 +682,7 @@ pub fn init_colliders(
     config: Res<RapierConfiguration>,
     mut context: ResMut<RapierContext>,
     colliders: Query<ColliderComponents, Without<RapierColliderHandle>>,
-    mut rigid_body_mprops: Query<&mut MassProperties>,
+    mut rigid_body_mprops: Query<&mut ReadMassProperties>,
     parent_query: Query<(&Parent, Option<&Transform>)>,
 ) {
     let context = &mut *context;
@@ -689,6 +712,7 @@ pub fn init_colliders(
         if let Some(mprops) = mprops {
             builder = match mprops {
                 ColliderMassProperties::Density(density) => builder.density(*density),
+                ColliderMassProperties::Mass(mass) => builder.mass(*mass),
                 ColliderMassProperties::MassProperties(mprops) => {
                     builder.mass_properties(mprops.into_rapier(scale))
                 }
@@ -759,7 +783,7 @@ pub fn init_colliders(
                 // Inserting the collider changed the rigid-body’s mass properties.
                 // Read them back from the engine.
                 if let Some(parent_body) = context.bodies.get(body_handle) {
-                    *mprops = MassProperties::from_rapier(*parent_body.mass_properties(), scale);
+                    mprops.0 = MassProperties::from_rapier(*parent_body.mass_properties(), scale);
                 }
             }
             handle
@@ -836,7 +860,12 @@ pub fn init_rigid_bodies(
         }
 
         if let Some(mprops) = additional_mass_props {
-            builder = builder.additional_mass_properties(mprops.0.into_rapier(scale));
+            builder = match mprops {
+                AdditionalMassProperties::MassProperties(mprops) => {
+                    builder.additional_mass_properties(mprops.into_rapier(scale))
+                }
+                AdditionalMassProperties::Mass(mass) => builder.additional_mass(*mass),
+            };
         }
 
         builder = builder.user_data(entity.to_bits() as u128);

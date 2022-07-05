@@ -1,5 +1,36 @@
 # Changelog
 
+## Unreleased
+### Fixed
+- Fix unpredictable broad-phase panic when using small colliders in the simulation.
+- Fix collision events being incorrectly generated for any shape that produces multiple
+  contact manifolds (like triangle meshes).
+- Fix transform hierarchies not being properly taken into account for colliders with a 
+  parent rigid-body.
+
+### Added
+- Add the `ColliderMassProperties::Mass` variant to let the user specify a collider’s mass directly (instead of its density).
+  As a result the collider’s angular inertia tensor will be automatically be computed based on this mass and its shape.
+- Add the `ContactForceEvent` event. It can be read by a bevy system with the `EventReader<ContactForceEvent>`. This
+  event is useful to read contact forces. A `ContactForceEvent` is generated whenever the sum of the magnitudes of the
+  forces applied by contacts between two colliders exceeds the value specified by the `ContactForceEventThreshold`
+  component.
+- Add the `QueryFilter` struct that is now used by all the scene queries instead of the `CollisionGroups` and
+ `Fn(Entity) -> bool` closure. This `QueryFilter` provides easy access to most common filtering strategies
+ (e.g. dynamic bodies only, excluding one particular entity, etc.) for scene queries.
+- Added some missing serialization of joints.
+- Implement `Default` for `Collider`. It defaults to a `Ball` with radius 0.5.
+- Added a `contacts_enabled` flag to all the joints. If this flag is set to `false` for a joint, no contact will be 
+  computed between two colliders attached to rigid-bodies liked by that joint.
+
+### Modified
+- The `MassProperties` struct is no longer a `Component`. A common mistake was to assume that `MassProperties` could
+  be used to initialize the mass/angular inertia tensor of a rigid-body. It is not the case. Instead, the user should
+  use the `AdditionalMassProperties` component. The `ReadMassProperties` component has been added to read the mass
+  properties of a rigid-body.
+- The `Sensor` component is now a marker component: if it exists the related collider is a sensor, otherwise it is
+  a solid collider.
+
 ## 0.14.1 (01 June 2022)
 ### Fixed
 - Add the missing `init_async_scene_colliders` to the list of the plugin systems.
