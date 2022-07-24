@@ -104,7 +104,7 @@ impl<'world, 'state, 'a, 'b, 'c> BevyLinesRenderBackend<'world, 'state, 'a, 'b, 
             _ => None,
         };
 
-        color.map(|co| co.as_hlsa_f32()).unwrap_or(default)
+        color.map(|co| co.as_hsla_f32()).unwrap_or(default)
     }
 }
 

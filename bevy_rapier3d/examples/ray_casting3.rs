@@ -19,15 +19,9 @@ fn main() {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    commands.spawn_bundle(PerspectiveCameraBundle {
-        transform: Transform::from_matrix(
-            Mat4::look_at_rh(
-                Vec3::new(-30.0, 30.0, 100.0),
-                Vec3::new(0.0, 10.0, 0.0),
-                Vec3::new(0.0, 1.0, 0.0),
-            )
-            .inverse(),
-        ),
+    commands.spawn_bundle(Camera3dBundle {
+        transform: Transform::from_xyz(-30.0, 30.0, 100.0)
+            .looking_at(Vec3::new(0.0, 10.0, 0.0), Vec3::Y),
         ..Default::default()
     });
 }
@@ -122,7 +116,7 @@ fn ray_from_mouse_position(
     let y = 2.0 * (mouse_position.y / window.height() as f32) - 1.0;
 
     let camera_inverse_matrix =
-        camera_transform.compute_matrix() * camera.projection_matrix.inverse();
+        camera_transform.compute_matrix() * camera.projection_matrix().inverse();
     let near = camera_inverse_matrix * Vec3::new(x, y, -1.0).extend(1.0);
     let far = camera_inverse_matrix * Vec3::new(x, y, 1.0).extend(1.0);
 

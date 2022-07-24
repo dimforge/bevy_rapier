@@ -90,14 +90,18 @@ pub fn apply_scale(
         #[cfg(feature = "dim2")]
         let effective_scale = match custom_scale {
             Some(ColliderScale::Absolute(scale)) => *scale,
-            Some(ColliderScale::Relative(scale)) => *scale * transform.scale.xy(),
-            None => transform.scale.xy(),
+            Some(ColliderScale::Relative(scale)) => {
+                *scale * transform.to_scale_rotation_translation().0.xy()
+            }
+            None => transform.to_scale_rotation_translation().0.xy(),
         };
         #[cfg(feature = "dim3")]
         let effective_scale = match custom_scale {
             Some(ColliderScale::Absolute(scale)) => *scale,
-            Some(ColliderScale::Relative(scale)) => *scale * transform.scale,
-            None => transform.scale,
+            Some(ColliderScale::Relative(scale)) => {
+                *scale * transform.to_scale_rotation_translation().0
+            }
+            None => transform.to_scale_rotation_translation().0,
         };
 
         if shape.scale != effective_scale {
@@ -143,7 +147,10 @@ pub fn apply_collider_user_changes(
     for (handle, transform) in changed_collider_transforms.iter() {
         if let Some(co) = context.colliders.get_mut(handle.0) {
             if co.parent().is_none() {
-                co.set_position(utils::transform_to_iso(transform, scale))
+                co.set_position(utils::transform_to_iso(
+                    &transform.compute_transform(),
+                    scale,
+                ))
             }
         }
     }
@@ -288,8 +295,8 @@ pub fn apply_rigid_body_user_changes(
     // system.
     let transform_changed =
         |handle: &RigidBodyHandle,
-         transform: &GlobalTransform,
-         last_transform_set: &HashMap<RigidBodyHandle, GlobalTransform>| {
+         transform: &Transform,
+         last_transform_set: &HashMap<RigidBodyHandle, Transform>| {
             if let Some(prev) = last_transform_set.get(handle) {
                 let tra_changed = if cfg!(feature = "dim2") {
                     // In 2D, ignore the z component which can be changed by the user
@@ -305,7 +312,7 @@ pub fn apply_rigid_body_user_changes(
             }
         };
 
-    for (handle, transform, mut interpolation) in changed_transforms.iter_mut() {
+    for (handle, global_transform, mut interpolation) in changed_transforms.iter_mut() {
         if let Some(interpolation) = interpolation.as_deref_mut() {
             // Reset the interpolation so we don’t overwrite
             // the user’s input.
@@ -314,6 +321,7 @@ pub fn apply_rigid_body_user_changes(
         }
 
         if let Some(rb) = context.bodies.get_mut(handle.0) {
+            let transform = &global_transform.compute_transform();
             match rb.body_type() {
                 RigidBodyType::KinematicPositionBased => {
                     if transform_changed(&handle.0, transform, &context.last_body_transform_set) {
@@ -481,8 +489,9 @@ pub fn writeback_rigid_bodies(
                         //       propagation, which breaks our transform modification detection
                         //       that we do to detect if the user’s transform has to be written
                         //       into the rigid-body.
-                        if let Some(parent_global_transform) =
-                            parent.and_then(|p| global_transforms.get(**p).ok())
+                        if let Some(parent_global_transform) = parent
+                            .and_then(|p| global_transforms.get(**p).ok())
+                            .map(GlobalTransform::compute_transform)
                         {
                             // In 2D, preserve the transform `z` component that may have been set by the user
                             #[cfg(feature = "dim2")]
@@ -762,7 +771,7 @@ pub fn init_colliders(
                 if let Some(transform) = transform {
                     child_transform = *transform * child_transform;
                 }
-                body_entity = parent_entity.0;
+                body_entity = parent_entity.get();
             } else {
                 break;
             }
@@ -821,7 +830,10 @@ pub fn init_rigid_bodies(
     {
         let mut builder = RigidBodyBuilder::new((*rb).into());
         if let Some(transform) = transform {
-            builder = builder.position(utils::transform_to_iso(transform, scale));
+            builder = builder.position(utils::transform_to_iso(
+                &transform.compute_transform(),
+                scale,
+            ));
         }
 
         #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
@@ -893,7 +905,9 @@ pub fn init_rigid_bodies(
         context.entity2body.insert(entity, handle);
 
         if let Some(transform) = transform {
-            context.last_body_transform_set.insert(handle, *transform);
+            context
+                .last_body_transform_set
+                .insert(handle, transform.compute_transform());
         }
     }
 }
@@ -947,7 +961,7 @@ pub fn init_joints(
         while target.is_none() {
             target = context.entity2body.get(&body_entity).copied();
             if let Ok(parent_entity) = parent_query.get(body_entity) {
-                body_entity = parent_entity.0;
+                body_entity = parent_entity.get();
             } else {
                 break;
             }
@@ -1149,6 +1163,7 @@ mod tests {
         ecs::event::Events,
         render::{settings::WgpuSettings, RenderPlugin},
         scene::ScenePlugin,
+        time::TimePlugin,
         window::WindowPlugin,
     };
     use std::f32::consts::PI;
@@ -1336,6 +1351,7 @@ mod tests {
         let mut app = App::new();
         app.add_plugin(HeadlessRenderPlugin)
             .add_plugin(TransformPlugin)
+            .add_plugin(TimePlugin)
             .add_plugin(RapierPhysicsPlugin::<NoUserData>::default());
 
         let zero = (Transform::default(), Transform::default());
@@ -1378,7 +1394,8 @@ mod tests {
             let body_transform =
                 utils::iso_to_transform(child_body.position(), context.physics_scale);
             assert_eq!(
-                body_transform, *child_transform,
+                GlobalTransform::from(body_transform),
+                *child_transform,
                 "Collider transform should have have global rotation and translation"
             );
         }
@@ -1389,6 +1406,7 @@ mod tests {
         let mut app = App::new();
         app.add_plugin(HeadlessRenderPlugin)
             .add_plugin(TransformPlugin)
+            .add_plugin(TimePlugin)
             .add_plugin(RapierPhysicsPlugin::<NoUserData>::default());
 
         let zero = (Transform::default(), Transform::default());
@@ -1429,7 +1447,12 @@ mod tests {
 
             app.update();
 
-            let child_transform = app.world.entity(child).get::<GlobalTransform>().unwrap();
+            let child_transform = app
+                .world
+                .entity(child)
+                .get::<GlobalTransform>()
+                .unwrap()
+                .compute_transform();
             let context = app.world.resource::<RapierContext>();
             let parent_handle = context.entity2body[&parent];
             let parent_body = context.bodies.get(parent_handle).unwrap();

@@ -123,9 +123,9 @@ fn despawn_one_box(
 }
 
 fn setup_graphics(mut commands: Commands) {
-    commands.spawn_bundle(OrthographicCameraBundle {
+    commands.spawn_bundle(Camera2dBundle {
         transform: Transform::from_xyz(0.0, 20.0, 0.0),
-        ..OrthographicCameraBundle::new_2d()
+        ..default()
     });
 }
 

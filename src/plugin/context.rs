@@ -1,4 +1,4 @@
-use bevy::core::Time;
+use bevy::time::Time;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
@@ -13,7 +13,7 @@ use rapier::prelude::{
 use crate::geometry::{Collider, PointProjection, RayIntersection, Toi};
 use crate::math::{Rot, Vect};
 use crate::pipeline::{CollisionEvent, ContactForceEvent, EventQueue, QueryFilter};
-use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query};
+use bevy::prelude::{Entity, EventWriter, Query, Transform};
 use bevy::render::primitives::Aabb;
 
 use crate::dynamics::TransformInterpolation;
@@ -55,7 +55,7 @@ pub struct RapierContext {
     pub(crate) event_handler: Option<Box<dyn EventHandler>>,
     // For transform change detection.
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
-    pub(crate) last_body_transform_set: HashMap<RigidBodyHandle, GlobalTransform>,
+    pub(crate) last_body_transform_set: HashMap<RigidBodyHandle, Transform>,
     // NOTE: these maps are needed to handle despawning.
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub(crate) entity2body: HashMap<Entity, RigidBodyHandle>,
