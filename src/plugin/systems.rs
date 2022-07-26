@@ -489,9 +489,8 @@ pub fn writeback_rigid_bodies(
                         //       propagation, which breaks our transform modification detection
                         //       that we do to detect if the user’s transform has to be written
                         //       into the rigid-body.
-                        if let Some(parent_global_transform) = parent
-                            .and_then(|p| global_transforms.get(**p).ok())
-                            .map(GlobalTransform::compute_transform)
+                        if let Some(parent_global_transform) =
+                            parent.and_then(|p| global_transforms.get(**p).ok())
                         {
                             // In 2D, preserve the transform `z` component that may have been set by the user
                             #[cfg(feature = "dim2")]
@@ -500,12 +499,15 @@ pub fn writeback_rigid_bodies(
                             // We need to compute the new local transform such that:
                             // curr_parent_global_transform * new_transform = interpolated_pos
                             // new_transform = curr_parent_global_transform.inverse() * interpolated_pos
-                            let inv_parent_global_rot =
-                                parent_global_transform.rotation.conjugate();
-                            transform.rotation = inv_parent_global_rot * interpolated_pos.rotation;
-                            transform.translation = inv_parent_global_rot
-                                * (interpolated_pos.translation
-                                    - parent_global_transform.translation);
+                            let (_, inverse_parent_rotation, inverse_parent_translation) =
+                                parent_global_transform
+                                    .affine()
+                                    .inverse()
+                                    .to_scale_rotation_translation();
+                            transform.rotation =
+                                inverse_parent_rotation * interpolated_pos.rotation;
+                            transform.translation = inverse_parent_rotation
+                                * (interpolated_pos.translation + inverse_parent_translation);
 
                             #[cfg(feature = "dim2")]
                             {
@@ -520,7 +522,7 @@ pub fn writeback_rigid_bodies(
 
                             context
                                 .last_body_transform_set
-                                .insert(handle, new_global_transform);
+                                .insert(handle, new_global_transform.compute_transform());
                         } else {
                             // In 2D, preserve the transform `z` component that may have been set by the user
                             #[cfg(feature = "dim2")]
