@@ -91,17 +91,15 @@ pub fn apply_scale(
         let effective_scale = match custom_scale {
             Some(ColliderScale::Absolute(scale)) => *scale,
             Some(ColliderScale::Relative(scale)) => {
-                *scale * transform.to_scale_rotation_translation().0.xy()
+                *scale * transform.compute_transform().scale.xy()
             }
-            None => transform.to_scale_rotation_translation().0.xy(),
+            None => transform.compute_transform().scale.xy(),
         };
         #[cfg(feature = "dim3")]
         let effective_scale = match custom_scale {
             Some(ColliderScale::Absolute(scale)) => *scale,
-            Some(ColliderScale::Relative(scale)) => {
-                *scale * transform.to_scale_rotation_translation().0
-            }
-            None => transform.to_scale_rotation_translation().0,
+            Some(ColliderScale::Relative(scale)) => *scale * transform.compute_transform().scale,
+            None => transform.compute_transform().scale,
         };
 
         if shape.scale != effective_scale {

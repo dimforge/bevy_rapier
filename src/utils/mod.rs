@@ -8,10 +8,7 @@ use rapier::math::{Isometry, Real};
 pub fn iso_to_transform(iso: &Isometry<Real>, physics_scale: Real) -> Transform {
     Transform {
         translation: (iso.translation.vector.push(0.0) * physics_scale).into(),
-        rotation: bevy::prelude::Quat::from_axis_angle(
-            bevy::prelude::Vec3::Z,
-            iso.rotation.angle(),
-        ),
+        rotation: bevy::prelude::Quat::from_rotation_x(iso.rotation.angle()),
         ..Default::default()
     }
 }
