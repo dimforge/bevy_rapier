@@ -29,7 +29,7 @@ serde-serialize = [ "rapier3d/serde-serialize", "serde" ]
 enhanced-determinism = [ "rapier3d/enhanced-determinism" ]
 
 [dependencies]
-bevy = { version = "0.8", default-features = false }
+bevy = { version = "0.8.0-dev", default-features = false, features = ["bevy_asset", "bevy_scene"] }
 nalgebra = { version = "0.31", features = [ "convert-glam021" ] }
 # Don't enable the default features because we don't need the ColliderSet/RigidBodySet
 rapier3d = "0.14.0"
