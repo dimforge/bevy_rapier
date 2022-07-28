@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+### Removed
+- `AsyncCollider` and `AsyncSceneCollider`. The approach used is very restrictive. This will be solved on the Bevy side with asset preprocessing: https://github.com/bevyengine/bevy/issues/4933. In the meanwhile there is a dedicated plugin that can do this and even more: https://github.com/nicopap/bevy-scene-hook.
+
 ## 0.15.0 (10 July 2022)
 ### Fixed
 - Fix unpredictable broad-phase panic when using small colliders in the simulation.

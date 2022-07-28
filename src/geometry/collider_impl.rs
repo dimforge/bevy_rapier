@@ -9,8 +9,6 @@ use {
 use rapier::prelude::{FeatureId, Point, Ray, SharedShape, Vector, DIM};
 
 use super::shape_views::*;
-#[cfg(feature = "dim3")]
-use crate::geometry::ComputedColliderShape;
 use crate::geometry::{Collider, PointProjection, RayIntersection, VHACDParameters};
 use crate::math::{Real, Rot, Vect};
 
@@ -160,18 +158,30 @@ impl Collider {
     ///
     /// Returns `None` if the index buffer or vertex buffer of the mesh are in an incompatible format.
     #[cfg(feature = "dim3")]
-    pub fn from_bevy_mesh(mesh: &Mesh, collider_shape: &ComputedColliderShape) -> Option<Self> {
-        let vertices_indices = extract_mesh_vertices_indices(mesh);
-        match collider_shape {
-            ComputedColliderShape::TriMesh => {
-                vertices_indices.map(|(vtx, idx)| SharedShape::trimesh(vtx, idx).into())
-            }
-            ComputedColliderShape::ConvexDecomposition(params) => {
-                vertices_indices.map(|(vtx, idx)| {
-                    SharedShape::convex_decomposition_with_params(&vtx, &idx, params).into()
-                })
-            }
-        }
+    pub fn bevy_mesh(mesh: &Mesh) -> Option<Self> {
+        extract_mesh_vertices_indices(mesh).map(|(vtx, idx)| SharedShape::trimesh(vtx, idx).into())
+    }
+
+    /// Initializes a collider with the convex decomposition of a Bevy Mesh.
+    ///
+    /// Returns `None` if the index buffer or vertex buffer of the mesh are in an incompatible format.
+    #[cfg(feature = "dim3")]
+    pub fn bevy_mesh_convex_decomposition(mesh: &Mesh) -> Option<Self> {
+        extract_mesh_vertices_indices(mesh)
+            .map(|(vtx, idx)| SharedShape::convex_decomposition(&vtx, &idx).into())
+    }
+
+    /// Initializes a collider with the convex decomposition of a Bevy Mesh, using custom convex decomposition parameters.
+    ///
+    /// Returns `None` if the index buffer or vertex buffer of the mesh are in an incompatible format.
+    #[cfg(feature = "dim3")]
+    pub fn bevy_mesh_convex_decomposition_with_params(
+        mesh: &Mesh,
+        params: &VHACDParameters,
+    ) -> Option<Self> {
+        extract_mesh_vertices_indices(mesh).map(|(vtx, idx)| {
+            SharedShape::convex_decomposition_with_params(&vtx, &idx, params).into()
+        })
     }
 
     /// Initializes a collider with a compound shape obtained from the decomposition of
