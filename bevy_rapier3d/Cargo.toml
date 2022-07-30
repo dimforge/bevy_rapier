@@ -19,7 +19,7 @@ required-features = [ "dim3" ]
 
 [features]
 default = [ "dim3", "debug-render" ]
-dim3 = []
+dim3 = ["bevy/bevy_render"]
 debug-render = [ "bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_render", "rapier3d/debug-render" ]
 parallel = [ "rapier3d/parallel" ]
 simd-stable = [ "rapier3d/simd-stable" ]
