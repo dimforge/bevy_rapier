@@ -88,9 +88,7 @@ fn setup_game(mut commands: Commands, mut game: ResMut<Game>) {
         byte_rgb(255, 0, 0),
     ];
 
-    commands
-        .spawn()
-        .insert_bundle(OrthographicCameraBundle::new_2d());
+    commands.spawn().insert_bundle(Camera2dBundle::default());
 
     setup_board(&mut commands, &*game);
 
@@ -250,7 +248,7 @@ fn clear_filled_rows(
     let floor_y = game.floor_y();
 
     for (block_entity, position) in block_query.iter() {
-        let floor_distance = position.translation.y - floor_y;
+        let floor_distance = position.translation().y - floor_y;
 
         // The center of a block on the floor is 0.5 above the floor, so .floor() the number ;)
         let row = floor_distance.floor() as i32;

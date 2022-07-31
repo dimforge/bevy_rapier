@@ -29,8 +29,8 @@ serde-serialize = [ "rapier2d/serde-serialize", "serde" ]
 enhanced-determinism = [ "rapier2d/enhanced-determinism" ]
 
 [dependencies]
-bevy = { version = "0.7", default-features = false }
-nalgebra = { version = "0.31", features = [ "convert-glam020" ] }
+bevy = { version = "0.8.0", default-features = false, features = ["bevy_asset", "bevy_scene"] }
+nalgebra = { version = "^0.31.1", features = [ "convert-glam021" ] }
 # Don't enable the default features because we don't need the ColliderSet/RigidBodySet
 rapier2d = "0.14.0"
 bitflags = "1"
@@ -39,7 +39,11 @@ log = "0.4"
 serde = { version = "1", features = [ "derive" ], optional = true}
 
 [dev-dependencies]
-bevy = { version = "0.7", default-features = false, features = ["x11"]}
+bevy = { version = "0.8", default-features = false, features = ["x11"]}
 oorandom = "11"
 approx = "0.5.1"
-glam = { version = "0.20", features = [ "approx" ] }
+glam = { version = "0.21", features = [ "approx" ] }
+
+[package.metadata.docs.rs]
+# Enable all the features when building the docs on docs.rs
+features = [ "debug-render", "serde-serialize" ]

@@ -19,13 +19,15 @@ use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::CollidingEntities;
 use crate::utils;
 use bevy::ecs::query::WorldQuery;
-use bevy::math::Vec3Swizzles;
 use bevy::prelude::*;
 use rapier::prelude::*;
 use std::collections::HashMap;
 
 #[cfg(feature = "dim3")]
 use crate::prelude::{AsyncCollider, AsyncSceneCollider};
+
+#[cfg(feature = "dim2")]
+use bevy::math::Vec3Swizzles;
 
 /// Components that will be updated after a physics step.
 pub type RigidBodyWritebackComponents<'a> = (
@@ -90,14 +92,16 @@ pub fn apply_scale(
         #[cfg(feature = "dim2")]
         let effective_scale = match custom_scale {
             Some(ColliderScale::Absolute(scale)) => *scale,
-            Some(ColliderScale::Relative(scale)) => *scale * transform.scale.xy(),
-            None => transform.scale.xy(),
+            Some(ColliderScale::Relative(scale)) => {
+                *scale * transform.compute_transform().scale.xy()
+            }
+            None => transform.compute_transform().scale.xy(),
         };
         #[cfg(feature = "dim3")]
         let effective_scale = match custom_scale {
             Some(ColliderScale::Absolute(scale)) => *scale,
-            Some(ColliderScale::Relative(scale)) => *scale * transform.scale,
-            None => transform.scale,
+            Some(ColliderScale::Relative(scale)) => *scale * transform.compute_transform().scale,
+            None => transform.compute_transform().scale,
         };
 
         if shape.scale != effective_scale {
@@ -143,7 +147,10 @@ pub fn apply_collider_user_changes(
     for (handle, transform) in changed_collider_transforms.iter() {
         if let Some(co) = context.colliders.get_mut(handle.0) {
             if co.parent().is_none() {
-                co.set_position(utils::transform_to_iso(transform, scale))
+                co.set_position(utils::transform_to_iso(
+                    &transform.compute_transform(),
+                    scale,
+                ))
             }
         }
     }
@@ -291,21 +298,13 @@ pub fn apply_rigid_body_user_changes(
          transform: &GlobalTransform,
          last_transform_set: &HashMap<RigidBodyHandle, GlobalTransform>| {
             if let Some(prev) = last_transform_set.get(handle) {
-                let tra_changed = if cfg!(feature = "dim2") {
-                    // In 2D, ignore the z component which can be changed by the user
-                    // without affecting the physics.
-                    transform.translation.xy() != prev.translation.xy()
-                } else {
-                    transform.translation != prev.translation
-                };
-
-                tra_changed || prev.rotation != transform.rotation
+                *prev != *transform
             } else {
                 true
             }
         };
 
-    for (handle, transform, mut interpolation) in changed_transforms.iter_mut() {
+    for (handle, global_transform, mut interpolation) in changed_transforms.iter_mut() {
         if let Some(interpolation) = interpolation.as_deref_mut() {
             // Reset the interpolation so we don’t overwrite
             // the user’s input.
@@ -316,15 +315,33 @@ pub fn apply_rigid_body_user_changes(
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             match rb.body_type() {
                 RigidBodyType::KinematicPositionBased => {
-                    if transform_changed(&handle.0, transform, &context.last_body_transform_set) {
-                        rb.set_next_kinematic_position(utils::transform_to_iso(transform, scale));
-                        context.last_body_transform_set.insert(handle.0, *transform);
+                    if transform_changed(
+                        &handle.0,
+                        global_transform,
+                        &context.last_body_transform_set,
+                    ) {
+                        rb.set_next_kinematic_position(utils::transform_to_iso(
+                            &global_transform.compute_transform(),
+                            scale,
+                        ));
+                        context
+                            .last_body_transform_set
+                            .insert(handle.0, *global_transform);
                     }
                 }
                 _ => {
-                    if transform_changed(&handle.0, transform, &context.last_body_transform_set) {
-                        rb.set_position(utils::transform_to_iso(transform, scale), true);
-                        context.last_body_transform_set.insert(handle.0, *transform);
+                    if transform_changed(
+                        &handle.0,
+                        global_transform,
+                        &context.last_body_transform_set,
+                    ) {
+                        rb.set_position(
+                            utils::transform_to_iso(&global_transform.compute_transform(), scale),
+                            true,
+                        );
+                        context
+                            .last_body_transform_set
+                            .insert(handle.0, *global_transform);
                     }
                 }
             }
@@ -491,12 +508,16 @@ pub fn writeback_rigid_bodies(
                             // We need to compute the new local transform such that:
                             // curr_parent_global_transform * new_transform = interpolated_pos
                             // new_transform = curr_parent_global_transform.inverse() * interpolated_pos
-                            let inv_parent_global_rot =
-                                parent_global_transform.rotation.conjugate();
-                            transform.rotation = inv_parent_global_rot * interpolated_pos.rotation;
-                            transform.translation = inv_parent_global_rot
-                                * (interpolated_pos.translation
-                                    - parent_global_transform.translation);
+                            let (_, inverse_parent_rotation, inverse_parent_translation) =
+                                parent_global_transform
+                                    .affine()
+                                    .inverse()
+                                    .to_scale_rotation_translation();
+                            transform.rotation =
+                                inverse_parent_rotation * interpolated_pos.rotation;
+                            transform.translation = inverse_parent_rotation
+                                * interpolated_pos.translation
+                                + inverse_parent_translation;
 
                             #[cfg(feature = "dim2")]
                             {
@@ -524,7 +545,7 @@ pub fn writeback_rigid_bodies(
 
                             context
                                 .last_body_transform_set
-                                .insert(handle, interpolated_pos);
+                                .insert(handle, GlobalTransform::from(interpolated_pos));
                         }
                     }
 
@@ -584,8 +605,8 @@ pub fn step_simulation<PhysicsHooksData: 'static + WorldQuery + Send + Sync>(
             config.timestep_mode,
             Some((collision_events, contact_force_events)),
             &hooks_instance,
-            &*time,
-            &mut *sim_to_render_time,
+            &time,
+            &mut sim_to_render_time,
             Some(interpolation_query),
         );
         context.deleted_colliders.clear();
@@ -762,7 +783,7 @@ pub fn init_colliders(
                 if let Some(transform) = transform {
                     child_transform = *transform * child_transform;
                 }
-                body_entity = parent_entity.0;
+                body_entity = parent_entity.get();
             } else {
                 break;
             }
@@ -770,7 +791,7 @@ pub fn init_colliders(
             body_handle = context.entity2body.get(&body_entity).copied();
         }
 
-        builder = builder.position(utils::transform_to_iso(&child_transform.into(), scale));
+        builder = builder.position(utils::transform_to_iso(&child_transform, scale));
         builder = builder.user_data(entity.to_bits() as u128);
 
         let handle = if let Some(body_handle) = body_handle {
@@ -821,7 +842,10 @@ pub fn init_rigid_bodies(
     {
         let mut builder = RigidBodyBuilder::new((*rb).into());
         if let Some(transform) = transform {
-            builder = builder.position(utils::transform_to_iso(transform, scale));
+            builder = builder.position(utils::transform_to_iso(
+                &transform.compute_transform(),
+                scale,
+            ));
         }
 
         #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
@@ -947,7 +971,7 @@ pub fn init_joints(
         while target.is_none() {
             target = context.entity2body.get(&body_entity).copied();
             if let Ok(parent_entity) = parent_query.get(body_entity) {
-                body_entity = parent_entity.0;
+                body_entity = parent_entity.get();
             } else {
                 break;
             }
@@ -1149,6 +1173,7 @@ mod tests {
         ecs::event::Events,
         render::{settings::WgpuSettings, RenderPlugin},
         scene::ScenePlugin,
+        time::TimePlugin,
         window::WindowPlugin,
     };
     use std::f32::consts::PI;
@@ -1336,6 +1361,7 @@ mod tests {
         let mut app = App::new();
         app.add_plugin(HeadlessRenderPlugin)
             .add_plugin(TransformPlugin)
+            .add_plugin(TimePlugin)
             .add_plugin(RapierPhysicsPlugin::<NoUserData>::default());
 
         let zero = (Transform::default(), Transform::default());
@@ -1378,7 +1404,8 @@ mod tests {
             let body_transform =
                 utils::iso_to_transform(child_body.position(), context.physics_scale);
             assert_eq!(
-                body_transform, *child_transform,
+                GlobalTransform::from(body_transform),
+                *child_transform,
                 "Collider transform should have have global rotation and translation"
             );
         }
@@ -1389,6 +1416,7 @@ mod tests {
         let mut app = App::new();
         app.add_plugin(HeadlessRenderPlugin)
             .add_plugin(TransformPlugin)
+            .add_plugin(TimePlugin)
             .add_plugin(RapierPhysicsPlugin::<NoUserData>::default());
 
         let zero = (Transform::default(), Transform::default());
@@ -1429,7 +1457,12 @@ mod tests {
 
             app.update();
 
-            let child_transform = app.world.entity(child).get::<GlobalTransform>().unwrap();
+            let child_transform = app
+                .world
+                .entity(child)
+                .get::<GlobalTransform>()
+                .unwrap()
+                .compute_transform();
             let context = app.world.resource::<RapierContext>();
             let parent_handle = context.entity2body[&parent];
             let parent_body = context.bodies.get(parent_handle).unwrap();
@@ -1442,9 +1475,18 @@ mod tests {
                 child_transform.translation,
                 epsilon = 1.0e-5
             );
+
+            // Adjust signs to account for the quaternion’s double covering.
+            let comparison_child_rotation =
+                if body_transform.rotation.w * child_transform.rotation.w < 0.0 {
+                    -child_transform.rotation
+                } else {
+                    child_transform.rotation
+                };
+
             approx::assert_relative_eq!(
                 body_transform.rotation,
-                child_transform.rotation,
+                comparison_child_rotation,
                 epsilon = 1.0e-5
             );
             approx::assert_relative_eq!(body_transform.scale, child_transform.scale,);

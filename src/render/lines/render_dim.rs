@@ -1,7 +1,7 @@
 #[cfg(feature = "dim3")]
 pub mod r3d {
     use bevy::{
-        core_pipeline::Opaque3d,
+        core_pipeline::core_3d::Opaque3d,
         pbr::{
             DrawMesh, MeshPipeline, MeshPipelineKey, MeshUniform, SetMeshBindGroup,
             SetMeshViewBindGroup,
@@ -83,11 +83,11 @@ pub mod r3d {
                     shader: self.shader.clone_weak(),
                     shader_defs,
                     entry_point: "fragment".into(),
-                    targets: vec![ColorTargetState {
+                    targets: vec![Some(ColorTargetState {
                         format: TextureFormat::bevy_default(),
                         blend,
                         write_mask: ColorWrites::ALL,
-                    }],
+                    })],
                 }),
                 layout: Some(vec![self.mesh_pipeline.view_layout.clone()]),
                 primitive: PrimitiveState {
@@ -178,8 +178,7 @@ pub mod r2d {
     use crate::render::lines::DebugLinesConfig;
     use bevy::{
         asset::Handle,
-        core::FloatOrd,
-        core_pipeline::Transparent2d,
+        core_pipeline::core_2d::Transparent2d,
         prelude::*,
         render::{
             mesh::MeshVertexBufferLayout,
@@ -198,6 +197,7 @@ pub mod r2d {
             DrawMesh2d, Mesh2dHandle, Mesh2dPipeline, Mesh2dPipelineKey, Mesh2dUniform,
             SetMesh2dBindGroup, SetMesh2dViewBindGroup,
         },
+        utils::FloatOrd,
     };
 
     use super::super::{RenderDebugLinesMesh, DEBUG_LINES_SHADER_HANDLE};
@@ -242,11 +242,11 @@ pub mod r2d {
                     shader: self.shader.clone_weak(),
                     shader_defs: vec![],
                     entry_point: "fragment".into(),
-                    targets: vec![ColorTargetState {
+                    targets: vec![Some(ColorTargetState {
                         format: TextureFormat::bevy_default(),
                         blend: Some(BlendState::ALPHA_BLENDING),
                         write_mask: ColorWrites::ALL,
-                    }],
+                    })],
                 }),
                 layout: Some(vec![self.mesh_pipeline.view_layout.clone()]),
                 primitive: PrimitiveState {
