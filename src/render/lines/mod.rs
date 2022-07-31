@@ -142,7 +142,7 @@ impl Plugin for DebugLinesPlugin {
     }
 }
 
-// Number of meshes per dimension to separate line buffers into.
+// Number of meshes to separate line buffers into.
 // We don't really do culling currently but this is a gateway to that.
 const MESH_COUNT: usize = 4;
 // Maximum number of points for each individual mesh.
