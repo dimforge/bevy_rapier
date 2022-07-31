@@ -79,7 +79,7 @@ pub enum ColliderScale {
 }
 
 /// Indicates whether or not the collider is a sensor.
-#[derive(Copy, Clone, Default, Debug, PartialEq, Component, Reflect, FromReflect)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Component, Reflect, FromReflect)]
 #[reflect(Component, PartialEq)]
 pub struct Sensor;
 

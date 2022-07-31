@@ -161,8 +161,8 @@ fn debug_render_scene(
     let mut backend = BevyLinesRenderBackend {
         physics_scale: rapier_context.physics_scale,
         custom_colors,
-        context: &*rapier_context,
-        lines: &mut *lines,
+        context: &rapier_context,
+        lines: &mut lines,
     };
 
     let unscaled_style = render_context.pipeline.style;

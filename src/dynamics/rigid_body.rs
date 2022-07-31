@@ -263,7 +263,7 @@ impl Default for GravityScale {
 }
 
 /// Information used for Continuous-Collision-Detection.
-#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect, FromReflect)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Component, Reflect, FromReflect)]
 #[reflect(Component, PartialEq)]
 pub struct Ccd {
     /// Is CCD enabled for this rigid-body?
@@ -286,7 +286,7 @@ impl Ccd {
 }
 
 /// The dominance groups of a rigid-body.
-#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect, FromReflect)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Component, Reflect, FromReflect)]
 #[reflect(Component, PartialEq)]
 pub struct Dominance {
     // FIXME: rename this to `group` (no `s`).

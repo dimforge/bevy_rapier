@@ -605,8 +605,8 @@ pub fn step_simulation<PhysicsHooksData: 'static + WorldQuery + Send + Sync>(
             config.timestep_mode,
             Some((collision_events, contact_force_events)),
             &hooks_instance,
-            &*time,
-            &mut *sim_to_render_time,
+            &time,
+            &mut sim_to_render_time,
             Some(interpolation_query),
         );
         context.deleted_colliders.clear();
