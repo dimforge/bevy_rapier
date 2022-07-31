@@ -37,15 +37,12 @@ mod render_dim;
 #[cfg(feature = "debug-render-3d")]
 mod dim3 {
     pub(crate) use super::render_dim::r3d::{queue, DebugLinePipeline, DrawDebugLines};
-    pub(crate) use bevy::{
-        core_pipeline::core_3d::Opaque3d as Phase,
-        pbr::{NotShadowCaster, NotShadowReceiver},
-    };
+    pub(crate) use bevy::core_pipeline::core_3d::Opaque3d as Phase;
 }
 #[cfg(feature = "debug-render-2d")]
 mod dim2 {
     pub(crate) use super::render_dim::r2d::{queue, DebugLinePipeline, DrawDebugLines};
-    pub(crate) use bevy::{core_pipeline::core_2d::Transparent2d as Phase, sprite::Mesh2dHandle};
+    pub(crate) use bevy::core_pipeline::core_2d::Transparent2d as Phase;
 }
 
 pub(crate) const SHADER_FILE: &str = include_str!("debuglines.wgsl");
@@ -178,13 +175,17 @@ fn setup(mut cmds: Commands, mut meshes: ResMut<Assets<Mesh>>) {
             DebugLinesMesh(i),
         ));
 
-        let mesh = meshes.add(mesh);
+        let mesh_handle = meshes.add(mesh);
 
         #[cfg(feature = "debug-render-3d")]
-        entity_cmd.insert_bundle((mesh.clone(), dim3::NotShadowCaster, dim3::NotShadowReceiver));
+        entity_cmd.insert_bundle((
+            mesh_handle.clone(),
+            bevy::pbr::NotShadowCaster,
+            bevy::pbr::NotShadowReceiver,
+        ));
 
         #[cfg(feature = "debug-render-2d")]
-        entity_cmd.insert(dim2::Mesh2dHandle(mesh));
+        entity_cmd.insert(bevy::sprite::Mesh2dHandle(mesh_handle));
     }
 }
 
@@ -194,7 +195,7 @@ fn update(
         &DebugLinesMesh,
     )>,
     #[cfg(feature = "debug-render-2d")] debug_line_meshes_2d: Query<(
-        &dim2::Mesh2dHandle,
+        &bevy::sprite::Mesh2dHandle,
         &DebugLinesMesh,
     )>,
     time: Res<Time>,
