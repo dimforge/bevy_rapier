@@ -13,7 +13,7 @@ use rapier::prelude::{
 use crate::geometry::{Collider, PointProjection, RayIntersection, Toi};
 use crate::math::{Rot, Vect};
 use crate::pipeline::{CollisionEvent, ContactForceEvent, EventQueue, QueryFilter};
-use bevy::prelude::{Entity, EventWriter, Query, Transform};
+use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query};
 use bevy::render::primitives::Aabb;
 
 use crate::dynamics::TransformInterpolation;
@@ -55,7 +55,7 @@ pub struct RapierContext {
     pub(crate) event_handler: Option<Box<dyn EventHandler>>,
     // For transform change detection.
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
-    pub(crate) last_body_transform_set: HashMap<RigidBodyHandle, Transform>,
+    pub(crate) last_body_transform_set: HashMap<RigidBodyHandle, GlobalTransform>,
     // NOTE: these maps are needed to handle despawning.
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub(crate) entity2body: HashMap<Entity, RigidBodyHandle>,

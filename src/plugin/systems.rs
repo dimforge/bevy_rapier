@@ -19,13 +19,15 @@ use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::CollidingEntities;
 use crate::utils;
 use bevy::ecs::query::WorldQuery;
-use bevy::math::Vec3Swizzles;
 use bevy::prelude::*;
 use rapier::prelude::*;
 use std::collections::HashMap;
 
 #[cfg(feature = "dim3")]
 use crate::prelude::{AsyncCollider, AsyncSceneCollider};
+
+#[cfg(feature = "dim2")]
+use bevy::math::Vec3Swizzles;
 
 /// Components that will be updated after a physics step.
 pub type RigidBodyWritebackComponents<'a> = (
@@ -293,18 +295,10 @@ pub fn apply_rigid_body_user_changes(
     // system.
     let transform_changed =
         |handle: &RigidBodyHandle,
-         transform: &Transform,
-         last_transform_set: &HashMap<RigidBodyHandle, Transform>| {
+         transform: &GlobalTransform,
+         last_transform_set: &HashMap<RigidBodyHandle, GlobalTransform>| {
             if let Some(prev) = last_transform_set.get(handle) {
-                let tra_changed = if cfg!(feature = "dim2") {
-                    // In 2D, ignore the z component which can be changed by the user
-                    // without affecting the physics.
-                    transform.translation.xy() != prev.translation.xy()
-                } else {
-                    transform.translation != prev.translation
-                };
-
-                tra_changed || prev.rotation != transform.rotation
+                *prev != *transform
             } else {
                 true
             }
@@ -319,18 +313,35 @@ pub fn apply_rigid_body_user_changes(
         }
 
         if let Some(rb) = context.bodies.get_mut(handle.0) {
-            let transform = &global_transform.compute_transform();
             match rb.body_type() {
                 RigidBodyType::KinematicPositionBased => {
-                    if transform_changed(&handle.0, transform, &context.last_body_transform_set) {
-                        rb.set_next_kinematic_position(utils::transform_to_iso(transform, scale));
-                        context.last_body_transform_set.insert(handle.0, *transform);
+                    if transform_changed(
+                        &handle.0,
+                        global_transform,
+                        &context.last_body_transform_set,
+                    ) {
+                        rb.set_next_kinematic_position(utils::transform_to_iso(
+                            &global_transform.compute_transform(),
+                            scale,
+                        ));
+                        context
+                            .last_body_transform_set
+                            .insert(handle.0, *global_transform);
                     }
                 }
                 _ => {
-                    if transform_changed(&handle.0, transform, &context.last_body_transform_set) {
-                        rb.set_position(utils::transform_to_iso(transform, scale), true);
-                        context.last_body_transform_set.insert(handle.0, *transform);
+                    if transform_changed(
+                        &handle.0,
+                        global_transform,
+                        &context.last_body_transform_set,
+                    ) {
+                        rb.set_position(
+                            utils::transform_to_iso(&global_transform.compute_transform(), scale),
+                            true,
+                        );
+                        context
+                            .last_body_transform_set
+                            .insert(handle.0, *global_transform);
                     }
                 }
             }
@@ -505,7 +516,8 @@ pub fn writeback_rigid_bodies(
                             transform.rotation =
                                 inverse_parent_rotation * interpolated_pos.rotation;
                             transform.translation = inverse_parent_rotation
-                                * (interpolated_pos.translation + inverse_parent_translation);
+                                * interpolated_pos.translation
+                                + inverse_parent_translation;
 
                             #[cfg(feature = "dim2")]
                             {
@@ -520,7 +532,7 @@ pub fn writeback_rigid_bodies(
 
                             context
                                 .last_body_transform_set
-                                .insert(handle, new_global_transform.compute_transform());
+                                .insert(handle, new_global_transform);
                         } else {
                             // In 2D, preserve the transform `z` component that may have been set by the user
                             #[cfg(feature = "dim2")]
@@ -533,7 +545,7 @@ pub fn writeback_rigid_bodies(
 
                             context
                                 .last_body_transform_set
-                                .insert(handle, interpolated_pos);
+                                .insert(handle, GlobalTransform::from(interpolated_pos));
                         }
                     }
 
@@ -905,9 +917,7 @@ pub fn init_rigid_bodies(
         context.entity2body.insert(entity, handle);
 
         if let Some(transform) = transform {
-            context
-                .last_body_transform_set
-                .insert(handle, transform.compute_transform());
+            context.last_body_transform_set.insert(handle, *transform);
         }
     }
 }
@@ -1465,9 +1475,18 @@ mod tests {
                 child_transform.translation,
                 epsilon = 1.0e-5
             );
+
+            // Adjust signs to account for the quaternion’s double covering.
+            let comparison_child_rotation =
+                if body_transform.rotation.w * child_transform.rotation.w < 0.0 {
+                    -child_transform.rotation
+                } else {
+                    child_transform.rotation
+                };
+
             approx::assert_relative_eq!(
                 body_transform.rotation,
-                child_transform.rotation,
+                comparison_child_rotation,
                 epsilon = 1.0e-5
             );
             approx::assert_relative_eq!(body_transform.scale, child_transform.scale,);
