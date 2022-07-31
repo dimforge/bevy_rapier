@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.16.0 (31 July 2022)
+### Modified
+- Switch to Bevy 0.8.
+
 ## 0.15.0 (10 July 2022)
 ### Fixed
 - Fix unpredictable broad-phase panic when using small colliders in the simulation.
