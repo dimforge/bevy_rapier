@@ -779,7 +779,7 @@ pub fn init_colliders(
             body_handle = context.entity2body.get(&body_entity).copied();
         }
 
-        builder = builder.position(utils::transform_to_iso(&child_transform.into(), scale));
+        builder = builder.position(utils::transform_to_iso(&child_transform, scale));
         builder = builder.user_data(entity.to_bits() as u128);
 
         let handle = if let Some(body_handle) = body_handle {
