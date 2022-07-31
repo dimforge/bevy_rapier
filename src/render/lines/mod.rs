@@ -247,8 +247,8 @@ fn update(
     }
 
     #[cfg(feature = "debug-render-2d")]
-    for (mesh_handle, debug_lines_idx) in &debug_line_meshes_2d {
-        let mesh = meshes.get_mut(&mesh_handle.0).unwrap();
+    for (mesh2d_handle, debug_lines_idx) in &debug_line_meshes_2d {
+        let mesh = meshes.get_mut(&mesh2d_handle.0).unwrap();
         update(mesh, debug_lines_idx);
     }
 
