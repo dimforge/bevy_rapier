@@ -108,6 +108,10 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<P
                 .with_system(
                     Events::<CollisionEvent>::update_system
                         .before(systems::step_simulation::<PhysicsHooksData>),
+                )
+                .with_system(
+                    Events::<ContactForceEvent>::update_system
+                        .before(systems::step_simulation::<PhysicsHooksData>),
                 ),
             PhysicsStages::Writeback => SystemSet::new()
                 .with_system(systems::update_colliding_entities)
