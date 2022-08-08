@@ -15,7 +15,6 @@
  */
 use bevy::{
     asset::{Assets, HandleUntyped},
-    pbr::{NotShadowCaster, NotShadowReceiver},
     prelude::*,
     reflect::TypeUuid,
     render::{
@@ -166,8 +165,10 @@ fn setup(mut cmds: Commands, mut meshes: ResMut<Assets<Mesh>>) {
 
         cmds.spawn_bundle((
             dim::into_handle(meshes.add(mesh)),
-            NotShadowCaster,
-            NotShadowReceiver,
+            #[cfg(feature = "dim3")]
+            bevy::pbr::NotShadowCaster,
+            #[cfg(feature = "dim3")]
+            bevy::pbr::NotShadowReceiver,
             Transform::default(),
             GlobalTransform::default(),
             Visibility::default(),
