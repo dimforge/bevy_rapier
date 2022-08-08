@@ -16,12 +16,23 @@ pub struct RapierColliderHandle(pub ColliderHandle);
 
 /// A component which will be replaced by the specified collider type after the referenced mesh become available.
 #[cfg(feature = "dim3")]
-#[derive(Component, Debug, Clone)]
+#[derive(Component, Debug, Clone, Reflect)]
+#[reflect(Component)]
 pub struct AsyncCollider {
     /// Mesh handle to use for collider generation.
     pub handle: Handle<Mesh>,
     /// Collider type that will be generated.
     pub shape: ComputedColliderShape,
+}
+
+#[cfg(feature = "dim3")]
+impl Default for AsyncCollider {
+    fn default() -> Self {
+        Self {
+            handle: Default::default(),
+            shape: ComputedColliderShape::TriMesh,
+        }
+    }
 }
 
 /// A component which will be replaced the specified collider types on children with meshes after the referenced scene become available.
@@ -40,7 +51,7 @@ pub struct AsyncSceneCollider {
 
 /// Shape type based on a Bevy mesh asset.
 #[cfg(feature = "dim3")]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Reflect)]
 pub enum ComputedColliderShape {
     /// Triangle-mesh.
     TriMesh,
