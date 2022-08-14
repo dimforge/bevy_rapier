@@ -15,7 +15,9 @@ struct VertexOutput {
 }
 
 struct FragmentOutput {
+#ifdef LINES_3D // We don’t need frag_depth 2D.
     @builtin(frag_depth) depth: f32,
+#endif
     @location(0) color: vec4<f32>,
 }
 
@@ -36,10 +38,12 @@ fn fragment(in: VertexOutput) -> FragmentOutput {
 // This should be #ifdef DEPTH_TEST_ENABLED && LINES_3D, but the
 // preprocessor doesn't support that yet.
 // Luckily, DEPTH_TEST_ENABLED isn't set in 2d anyway.
-#ifdef DEPTH_TEST_ENABLED
-    out.depth = in.clip_position.z;
-#else
-    out.depth = 1.0;
+#ifdef LINES_3D
+    #ifdef DEPTH_TEST_ENABLED
+        out.depth = in.clip_position.z;
+    #else
+        out.depth = 1.0;
+    #endif
 #endif
     out.color = in.color;
     return out;
