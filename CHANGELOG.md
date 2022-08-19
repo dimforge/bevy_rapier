@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.16.1 (19 August 2022)
+### Fixed
+- Fix crash of the 2D debug-render on certain platforms (including Metal/MacOS).
+- Fix bug where collision events and contact force events were not cleared automatically.
+- Implement `Reflect` for `AsyncCollider`.
+
 ## 0.16.0 (31 July 2022)
 ### Modified
 - Switch to Bevy 0.8.
