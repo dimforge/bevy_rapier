@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[cfg(feature = "dim3")]
 use crate::geometry::VHACDParameters;
 use bevy::prelude::*;
@@ -76,6 +78,11 @@ impl From<SharedShape> for Collider {
             unscaled: shared_shape,
             scale: Vect::ONE,
         }
+    }
+}
+impl fmt::Debug for Collider {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.as_typed_shape().fmt(f)
     }
 }
 
