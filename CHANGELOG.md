@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.16.2 (23 August 2022)
+### Added
+- Implement `Debug` for `Collider` and `ColliderView`.
+- Add the missing `ActiveEvent::CONTACT_FORCE_EVENTS` to enable contact force events on a collider.
+
 ## 0.16.1 (19 August 2022)
 ### Fixed
 - Fix crash of the 2D debug-render on certain platforms (including Metal/MacOS).
