@@ -815,7 +815,7 @@ pub fn init_colliders(
         let mut child_transform = *transform;
         while body_handle.is_none() {
             if let Ok((parent_entity, transform)) = parent_query.get(body_entity) {
-                if let Some(transform) = transform {
+                if let Some(transform) = transform && body_entity != entity {
                     child_transform = *transform * child_transform;
                 }
                 body_entity = parent_entity.get();
