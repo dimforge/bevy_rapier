@@ -511,15 +511,38 @@ impl Collider {
     /// with a non-uniform scale results in an ellipse which isn’t supported),
     /// the shape is approximated by a convex polygon/convex polyhedron using
     /// `num_subdivisions` subdivisions.
-    pub fn set_scale(&mut self, scale: Vect, num_subdivisions: u32) {
+    pub fn set_scale(&mut self, mut scale: Vect, num_subdivisions: u32) {
+        /// First, we need to snap the new value to the old one if it’s close
+        /// enough. This protects us from the numerical jitters due to the scale
+        /// extraction from the global transformation matrix.
+        /// We do a special-case for when we are close to 1.0: if the new scaling
+        /// is close to 1.0, we snap it to 1.0 to recover the exact identity.
+        fn snap_value(new: &mut f32, old: f32) {
+            const SCALE_EPS: f32 = 1.0e-4;
+
+            if (*new - 1.0).abs() <= SCALE_EPS {
+                *new = 1.0;
+            } else if (*new - (-1.0)).abs() <= SCALE_EPS {
+                *new = -1.0;
+            } else if (*new - old).abs() <= SCALE_EPS {
+                *new = old;
+            }
+        }
+
+        snap_value(&mut scale.x, self.scale.x);
+        snap_value(&mut scale.y, self.scale.y);
+        #[cfg(feature = "dim3")]
+        snap_value(&mut scale.z, self.scale.z);
+
         if scale == self.scale {
             // Nothing to do.
+            return;
         }
 
         if scale == Vect::ONE {
             // Trivial case.
             self.raw = self.unscaled.clone();
-            self.scale = scale;
+            self.scale = Vect::ONE;
             return;
         }
 
