@@ -755,7 +755,7 @@ pub fn init_colliders(
             solver_groups,
             contact_force_event_threshold,
         ),
-        transform,
+        global_transform,
     ) in colliders.iter()
     {
         let mut scaled_shape = shape.clone();
@@ -845,9 +845,9 @@ pub fn init_colliders(
             }
             handle
         } else {
-            let transform = transform.cloned().unwrap_or_default();
+            let global_transform = global_transform.cloned().unwrap_or_default();
             builder = builder.position(utils::transform_to_iso(
-                &transform.compute_transform(),
+                &global_transform.compute_transform(),
                 scale,
             ));
             context.colliders.insert(builder)
