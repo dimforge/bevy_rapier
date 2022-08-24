@@ -733,7 +733,7 @@ pub fn init_colliders(
     mut commands: Commands,
     config: Res<RapierConfiguration>,
     mut context: ResMut<RapierContext>,
-    colliders: Query<ColliderComponents, Without<RapierColliderHandle>>,
+    colliders: Query<(ColliderComponents, &Transform), Without<RapierColliderHandle>>,
     mut rigid_body_mprops: Query<&mut ReadMassProperties>,
     parent_query: Query<(&Parent, Option<&Transform>)>,
 ) {
@@ -741,18 +741,21 @@ pub fn init_colliders(
     let physics_scale = context.physics_scale;
 
     for (
-        entity,
-        shape,
-        sensor,
-        mprops,
-        active_events,
-        active_hooks,
-        active_collision_types,
-        friction,
-        restitution,
-        collision_groups,
-        solver_groups,
-        contact_force_event_threshold,
+        (
+            entity,
+            shape,
+            sensor,
+            mprops,
+            active_events,
+            active_hooks,
+            active_collision_types,
+            friction,
+            restitution,
+            collision_groups,
+            solver_groups,
+            contact_force_event_threshold,
+        ),
+        transform,
     ) in colliders.iter()
     {
         let mut scaled_shape = shape.clone();
@@ -809,7 +812,7 @@ pub fn init_colliders(
 
         let mut body_entity = entity;
         let mut body_handle = context.entity2body.get(&body_entity).copied();
-        let mut child_transform = Transform::default();
+        let mut child_transform = *transform;
         while body_handle.is_none() {
             if let Ok((parent_entity, transform)) = parent_query.get(body_entity) {
                 if let Some(transform) = transform {
