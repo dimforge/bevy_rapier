@@ -733,7 +733,7 @@ pub fn init_colliders(
     mut commands: Commands,
     config: Res<RapierConfiguration>,
     mut context: ResMut<RapierContext>,
-    colliders: Query<(ColliderComponents, Option<&Transform>), Without<RapierColliderHandle>>,
+    colliders: Query<(ColliderComponents, Option<&GlobalTransform>), Without<RapierColliderHandle>>,
     mut rigid_body_mprops: Query<&mut ReadMassProperties>,
     parent_query: Query<(&Parent, Option<&Transform>)>,
 ) {
@@ -812,13 +812,11 @@ pub fn init_colliders(
 
         let mut body_entity = entity;
         let mut body_handle = context.entity2body.get(&body_entity).copied();
-        let mut child_transform = *transform.unwrap_or(&Transform::default());
+        let mut child_transform = Transform::default();
         while body_handle.is_none() {
             if let Ok((parent_entity, transform)) = parent_query.get(body_entity) {
                 if let Some(transform) = transform {
-                    if body_entity != entity {
-                        child_transform = *transform * child_transform;
-                    }
+                    child_transform = *transform * child_transform;
                 }
                 body_entity = parent_entity.get();
             } else {
@@ -832,6 +830,7 @@ pub fn init_colliders(
         builder = builder.user_data(entity.to_bits() as u128);
 
         let handle = if let Some(body_handle) = body_handle {
+            builder = builder.position(utils::transform_to_iso(&child_transform, scale));
             let handle =
                 context
                     .colliders
@@ -846,6 +845,11 @@ pub fn init_colliders(
             }
             handle
         } else {
+            let transform = transform.cloned().unwrap_or_default();
+            builder = builder.position(utils::transform_to_iso(
+                &transform.compute_transform(),
+                scale,
+            ));
             context.colliders.insert(builder)
         };
 
