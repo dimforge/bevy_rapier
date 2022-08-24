@@ -733,7 +733,7 @@ pub fn init_colliders(
     mut commands: Commands,
     config: Res<RapierConfiguration>,
     mut context: ResMut<RapierContext>,
-    colliders: Query<(ColliderComponents, &Transform), Without<RapierColliderHandle>>,
+    colliders: Query<(ColliderComponents, Option<&Transform>), Without<RapierColliderHandle>>,
     mut rigid_body_mprops: Query<&mut ReadMassProperties>,
     parent_query: Query<(&Parent, Option<&Transform>)>,
 ) {
@@ -812,7 +812,7 @@ pub fn init_colliders(
 
         let mut body_entity = entity;
         let mut body_handle = context.entity2body.get(&body_entity).copied();
-        let mut child_transform = *transform;
+        let mut child_transform = *transform.unwrap_or(&Transform::default());
         while body_handle.is_none() {
             if let Ok((parent_entity, transform)) = parent_query.get(body_entity) {
                 if let Some(transform) = transform && body_entity != entity {
