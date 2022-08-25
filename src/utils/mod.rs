@@ -51,14 +51,15 @@ pub(crate) fn transform_to_iso(transform: &Transform, physics_scale: Real) -> Is
 #[cfg(test)]
 #[cfg(feature = "dim3")]
 mod tests {
-    use bevy::prelude::Transform;
     use super::*;
+    use bevy::prelude::Transform;
 
     #[test]
     fn convert_back_to_equal_transform() {
         let transform = Transform {
             translation: bevy::prelude::Vec3::new(-2.1855694e-8, 0.0, 0.0),
-            rotation: bevy::prelude::Quat::from_xyzw(0.99999994, 0.0, 1.6292068e-7, 0.0).normalize(),
+            rotation: bevy::prelude::Quat::from_xyzw(0.99999994, 0.0, 1.6292068e-7, 0.0)
+                .normalize(),
             ..Default::default()
         };
         let converted_transform = iso_to_transform(&transform_to_iso(&transform, 1.0), 1.0);
