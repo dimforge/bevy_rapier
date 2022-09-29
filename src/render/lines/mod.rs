@@ -1,4 +1,5 @@
 #![allow(warnings)]
+
 /**
  *
  * NOTE: this module and its submodules are only temporary. It is a copy-paste of the bevy-debug-lines
@@ -26,6 +27,7 @@ use bevy::{
         Extract,
     },
 };
+use std::sync::{Arc, RwLock};
 
 mod render_dim;
 
@@ -67,8 +69,17 @@ pub(crate) const SHADER_FILE: &str = include_str!("debuglines.wgsl");
 pub(crate) const DEBUG_LINES_SHADER_HANDLE: HandleUntyped =
     HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 17477439189930443325);
 
+#[derive(Clone)]
 pub(crate) struct DebugLinesConfig {
-    depth_test: bool,
+    pub always_on_top: Arc<RwLock<bool>>, // Don’t know how to do this properly since this resource lives in a sub-app.
+}
+
+impl DebugLinesConfig {
+    fn always_on_top(on_top: bool) -> Self {
+        Self {
+            always_on_top: Arc::new(RwLock::new(on_top)),
+        }
+    }
 }
 
 /// Bevy plugin, for initializing stuff.
@@ -98,7 +109,7 @@ pub(crate) struct DebugLinesConfig {
 /// ```
 #[derive(Debug, Default, Clone)]
 pub struct DebugLinesPlugin {
-    depth_test: bool,
+    always_on_top: bool,
 }
 
 impl DebugLinesPlugin {
@@ -109,8 +120,8 @@ impl DebugLinesPlugin {
     ///
     /// * `val` - True if lines should intersect with other geometry, or false
     ///   if lines should always draw on top be drawn on top (the default).
-    pub fn with_depth_test(val: bool) -> Self {
-        Self { depth_test: val }
+    pub fn always_on_top(val: bool) -> Self {
+        Self { always_on_top: val }
     }
 }
 
@@ -119,14 +130,14 @@ impl Plugin for DebugLinesPlugin {
         use bevy::render::{render_resource::SpecializedMeshPipelines, RenderApp, RenderStage};
         let mut shaders = app.world.get_resource_mut::<Assets<Shader>>().unwrap();
         shaders.set_untracked(DEBUG_LINES_SHADER_HANDLE, Shader::from_wgsl(SHADER_FILE));
+        let lines_config = DebugLinesConfig::always_on_top(self.always_on_top);
         app.init_resource::<DebugLines>();
         app.add_startup_system(setup)
-            .add_system_to_stage(CoreStage::PostUpdate, update.label("draw_lines"));
+            .add_system_to_stage(CoreStage::PostUpdate, update.label("draw_lines"))
+            .insert_resource(lines_config.clone());
         app.sub_app_mut(RenderApp)
             .add_render_command::<dim::Phase, dim::DrawDebugLines>()
-            .insert_resource(DebugLinesConfig {
-                depth_test: self.depth_test,
-            })
+            .insert_resource(lines_config)
             .init_resource::<dim::DebugLinePipeline>()
             .init_resource::<SpecializedMeshPipelines<dim::DebugLinePipeline>>()
             .add_system_to_stage(RenderStage::Extract, extract)

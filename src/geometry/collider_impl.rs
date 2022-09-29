@@ -279,26 +279,21 @@ impl Collider {
     /// Initializes a collider with a heightfield shape defined by its set of height and a scale
     /// factor along each coordinate axis.
     #[cfg(feature = "dim2")]
-    pub fn heightfield(heights: Vec<Real>, scale: Vector<Real>) -> Self {
-        SharedShape::heightfield(DVector::from_vec(heights), scale).into()
+    pub fn heightfield(heights: Vec<Real>, scale: Vect) -> Self {
+        SharedShape::heightfield(DVector::from_vec(heights), scale.into()).into()
     }
 
     /// Initializes a collider with a heightfield shape defined by its set of height (in
     /// column-major format) and a scale factor along each coordinate axis.
     #[cfg(feature = "dim3")]
-    pub fn heightfield(
-        heights: Vec<Real>,
-        num_rows: usize,
-        num_cols: usize,
-        scale: Vector<Real>,
-    ) -> Self {
+    pub fn heightfield(heights: Vec<Real>, num_rows: usize, num_cols: usize, scale: Vect) -> Self {
         assert_eq!(
             heights.len(),
             num_rows * num_cols,
             "Invalid number of heights provided."
         );
         let heights = rapier::na::DMatrix::from_vec(num_rows, num_cols, heights);
-        SharedShape::heightfield(heights, scale).into()
+        SharedShape::heightfield(heights, scale.into()).into()
     }
 
     /// Takes a strongly typed reference of this collider.

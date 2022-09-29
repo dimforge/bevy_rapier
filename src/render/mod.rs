@@ -35,7 +35,8 @@ impl Default for RapierDebugRenderPlugin {
     #[cfg(feature = "dim2")]
     fn default() -> Self {
         Self {
-            depth_test: cfg!(feature = "dim3"),
+            enabled: false,
+            always_on_top: true,
             style: DebugRenderStyle {
                 rigid_body_axes_length: 20.0,
                 ..Default::default()
@@ -46,7 +47,8 @@ impl Default for RapierDebugRenderPlugin {
     #[cfg(feature = "dim3")]
     fn default() -> Self {
         Self {
-            depth_test: cfg!(feature = "dim3"),
+            enabled: false,
+            always_on_top: false,
             style: DebugRenderStyle::default(),
             mode: DebugRenderMode::default(),
         }
@@ -73,10 +75,11 @@ impl Default for DebugRenderContext {
 
 impl Plugin for RapierDebugRenderPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(lines::DebugLinesPlugin::with_depth_test(self.depth_test))
+        app.add_plugin(lines::DebugLinesPlugin::always_on_top(self.always_on_top))
             .insert_resource(DebugRenderContext {
                 enabled: true,
                 pipeline: DebugRenderPipeline::new(self.style, self.mode),
+                always_on_top: self.always_on_top,
             })
             .add_system_to_stage(
                 CoreStage::PostUpdate,
@@ -151,6 +154,7 @@ impl<'world, 'state, 'a, 'b, 'c> DebugRenderBackend
 fn debug_render_scene(
     rapier_context: Res<RapierContext>,
     mut render_context: ResMut<DebugRenderContext>,
+    lines_config: ResMut<DebugLinesConfig>,
     mut lines: ResMut<DebugLines>,
     custom_colors: Query<&ColliderDebugColor>,
 ) {
@@ -158,6 +162,7 @@ fn debug_render_scene(
         return;
     }
 
+    *lines_config.always_on_top.write().unwrap() = render_context.always_on_top;
     let mut backend = BevyLinesRenderBackend {
         physics_scale: rapier_context.physics_scale,
         custom_colors,
