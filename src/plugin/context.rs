@@ -351,7 +351,8 @@ impl RapierContext {
     /// * `options`: configures the behavior of the automatic sliding and climbing.
     /// * `filter`: indicates what collider or rigid-body needs to be ignored by the obstacle detection.
     /// * `events`: callback run on each obstacle hit by the shape on its path.
-    pub fn move_shape<'a>(
+    #[allow(clippy::too_many_arguments)]
+    pub fn move_shape(
         &mut self,
         movement: Vect,
         shape: &Collider,

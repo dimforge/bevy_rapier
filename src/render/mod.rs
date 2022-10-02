@@ -34,6 +34,7 @@ pub struct RapierDebugRenderPlugin {
     pub mode: DebugRenderMode,
 }
 
+#[allow(clippy::derivable_impls)] // The 3D impl can be derived, but not the 2D impl.
 impl Default for RapierDebugRenderPlugin {
     #[cfg(feature = "dim2")]
     fn default() -> Self {

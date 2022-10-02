@@ -82,9 +82,9 @@ impl From<SharedShape> for Collider {
     }
 }
 
-impl<'a> Into<&'a dyn Shape> for &'a Collider {
-    fn into(self) -> &'a dyn Shape {
-        &*self.raw
+impl<'a> From<&'a Collider> for &'a dyn Shape {
+    fn from(collider: &'a Collider) -> &'a dyn Shape {
+        &*collider.raw
     }
 }
 
