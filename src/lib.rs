@@ -58,6 +58,8 @@ pub mod pipeline;
 /// The physics plugin and systems.
 pub mod plugin;
 
+/// Components related to character control.
+pub mod control;
 /// The debug-renderer.
 #[cfg(feature = "debug-render")]
 pub mod render;
@@ -66,6 +68,7 @@ pub mod utils;
 
 /// Groups the most often used types.
 pub mod prelude {
+    pub use crate::control::*;
     pub use crate::dynamics::*;
     pub use crate::geometry::*;
     pub use crate::math::*;
