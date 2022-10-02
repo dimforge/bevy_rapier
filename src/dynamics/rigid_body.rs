@@ -3,6 +3,7 @@ use bevy::{prelude::*, reflect::FromReflect};
 use rapier::prelude::{
     Isometry, LockedAxes as RapierLockedAxes, RigidBodyActivation, RigidBodyHandle, RigidBodyType,
 };
+use std::ops::{Add, AddAssign, Sub, SubAssign};
 
 /// The Rapier handle of a rigid-body that was inserted to the physics scene.
 #[derive(Copy, Clone, Debug, Component)]
@@ -233,6 +234,61 @@ pub struct ExternalForce {
     pub torque: Vect,
 }
 
+impl ExternalForce {
+    /// A force applied at a specific world-space point of a rigid-body.
+    ///
+    /// # Parameters
+    /// - `force`: the force to apply.
+    /// - `point`: the point (world-space) where the impulse must be applied.
+    /// - `center_of_mass`: the center-of-mass (world-space) of the rigid-body the impulse is being
+    ///   applied to.
+    pub fn at_point(force: Vect, point: Vect, center_of_mass: Vect) -> Self {
+        Self {
+            force,
+            #[cfg(feature = "dim2")]
+            torque: (point - center_of_mass).perp_dot(force),
+            #[cfg(feature = "dim3")]
+            torque: (point - center_of_mass).cross(force),
+        }
+    }
+}
+
+impl Add for ExternalForce {
+    type Output = Self;
+
+    #[inline]
+    fn add(mut self, rhs: Self) -> Self::Output {
+        self += rhs;
+        self
+    }
+}
+
+impl Sub for ExternalForce {
+    type Output = Self;
+
+    #[inline]
+    fn sub(mut self, rhs: Self) -> Self::Output {
+        self -= rhs;
+        self
+    }
+}
+
+impl AddAssign for ExternalForce {
+    #[inline]
+    fn add_assign(&mut self, rhs: Self) {
+        self.force += rhs.force;
+        self.torque += rhs.torque;
+    }
+}
+
+impl SubAssign for ExternalForce {
+    #[inline]
+    fn sub_assign(&mut self, rhs: Self) {
+        self.force -= rhs.force;
+        self.torque -= rhs.torque;
+    }
+}
+
 /// Instantaneous external impulse applied continuously to a rigid-body.
 ///
 /// The impulse is only applied once, and whenever it it modified (based
@@ -248,6 +304,61 @@ pub struct ExternalImpulse {
     /// The angular impulse applied to the rigid-body.
     #[cfg(feature = "dim3")]
     pub torque_impulse: Vect,
+}
+
+impl ExternalImpulse {
+    /// An impulse applied at a specific world-space point of a rigid-body.
+    ///
+    /// # Parameters
+    /// - `impulse`: the impulse to apply.
+    /// - `point`: the point (world-space) where the impulse must be applied.
+    /// - `center_of_mass`: the center-of-mass (world-space) of the rigid-body the impulse is being
+    ///   applied to.
+    pub fn at_point(impulse: Vect, point: Vect, center_of_mass: Vect) -> Self {
+        Self {
+            impulse,
+            #[cfg(feature = "dim2")]
+            torque_impulse: (point - center_of_mass).perp_dot(impulse),
+            #[cfg(feature = "dim3")]
+            torque_impulse: (point - center_of_mass).cross(impulse),
+        }
+    }
+}
+
+impl Add for ExternalImpulse {
+    type Output = Self;
+
+    #[inline]
+    fn add(mut self, rhs: Self) -> Self::Output {
+        self += rhs;
+        self
+    }
+}
+
+impl Sub for ExternalImpulse {
+    type Output = Self;
+
+    #[inline]
+    fn sub(mut self, rhs: Self) -> Self::Output {
+        self -= rhs;
+        self
+    }
+}
+
+impl AddAssign for ExternalImpulse {
+    #[inline]
+    fn add_assign(&mut self, rhs: Self) {
+        self.impulse += rhs.impulse;
+        self.torque_impulse += rhs.torque_impulse;
+    }
+}
+
+impl SubAssign for ExternalImpulse {
+    #[inline]
+    fn sub_assign(&mut self, rhs: Self) {
+        self.impulse -= rhs.impulse;
+        self.torque_impulse -= rhs.torque_impulse;
+    }
 }
 
 /// Gravity is multiplied by this scaling factor before it's
