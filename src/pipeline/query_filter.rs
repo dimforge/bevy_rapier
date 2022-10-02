@@ -1,6 +1,7 @@
 use bevy::prelude::Entity;
-use rapier::geometry::InteractionGroups;
-use rapier::pipeline::QueryFilterFlags;
+
+pub use rapier::geometry::InteractionGroups;
+pub use rapier::pipeline::QueryFilterFlags;
 
 /// A filter tha describes what collider should be included or excluded from a scene query.
 #[derive(Copy, Clone, Default)]
@@ -54,7 +55,7 @@ impl<'a> QueryFilter<'a> {
     }
 
     /// Exclude from the query any collider attached to a kinematic rigid-body.
-    pub fn exclude_dynamic(self) -> Self {
+    pub fn exclude_dynamic() -> Self {
         QueryFilterFlags::EXCLUDE_DYNAMIC.into()
     }
 

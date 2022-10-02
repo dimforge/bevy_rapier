@@ -79,7 +79,7 @@ impl RayIntersection {
 }
 
 /// The result of a time-of-impact (TOI) computation.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Toi {
     /// The time at which the objects touch.
     pub toi: Real,

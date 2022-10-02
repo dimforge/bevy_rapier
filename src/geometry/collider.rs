@@ -7,6 +7,7 @@ use bevy::reflect::FromReflect;
 #[cfg(feature = "dim3")]
 use bevy::utils::HashMap;
 use bevy::utils::HashSet;
+use rapier::geometry::Shape;
 use rapier::prelude::{ColliderHandle, InteractionGroups, SharedShape};
 
 use crate::dynamics::{CoefficientCombineRule, MassProperties};
@@ -80,6 +81,13 @@ impl From<SharedShape> for Collider {
         }
     }
 }
+
+impl<'a> Into<&'a dyn Shape> for &'a Collider {
+    fn into(self) -> &'a dyn Shape {
+        &*self.raw
+    }
+}
+
 impl fmt::Debug for Collider {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.as_typed_shape().fmt(f)
@@ -247,6 +255,90 @@ impl From<ActiveCollisionTypes> for rapier::geometry::ActiveCollisionTypes {
     }
 }
 
+bitflags::bitflags! {
+    /// A bit mask identifying groups for interaction.
+    #[derive(Component, Reflect, FromReflect)]
+    #[reflect(Component, Hash, PartialEq)]
+    #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+    pub struct Group: u32 {
+        /// The group n°1.
+        const GROUP_1 = 1 << 0;
+        /// The group n°2.
+        const GROUP_2 = 1 << 1;
+        /// The group n°3.
+        const GROUP_3 = 1 << 2;
+        /// The group n°4.
+        const GROUP_4 = 1 << 3;
+        /// The group n°5.
+        const GROUP_5 = 1 << 4;
+        /// The group n°6.
+        const GROUP_6 = 1 << 5;
+        /// The group n°7.
+        const GROUP_7 = 1 << 6;
+        /// The group n°8.
+        const GROUP_8 = 1 << 7;
+        /// The group n°9.
+        const GROUP_9 = 1 << 8;
+        /// The group n°10.
+        const GROUP_10 = 1 << 9;
+        /// The group n°11.
+        const GROUP_11 = 1 << 10;
+        /// The group n°12.
+        const GROUP_12 = 1 << 11;
+        /// The group n°13.
+        const GROUP_13 = 1 << 12;
+        /// The group n°14.
+        const GROUP_14 = 1 << 13;
+        /// The group n°15.
+        const GROUP_15 = 1 << 14;
+        /// The group n°16.
+        const GROUP_16 = 1 << 15;
+        /// The group n°17.
+        const GROUP_17 = 1 << 16;
+        /// The group n°18.
+        const GROUP_18 = 1 << 17;
+        /// The group n°19.
+        const GROUP_19 = 1 << 18;
+        /// The group n°20.
+        const GROUP_20 = 1 << 19;
+        /// The group n°21.
+        const GROUP_21 = 1 << 20;
+        /// The group n°22.
+        const GROUP_22 = 1 << 21;
+        /// The group n°23.
+        const GROUP_23 = 1 << 22;
+        /// The group n°24.
+        const GROUP_24 = 1 << 23;
+        /// The group n°25.
+        const GROUP_25 = 1 << 24;
+        /// The group n°26.
+        const GROUP_26 = 1 << 25;
+        /// The group n°27.
+        const GROUP_27 = 1 << 26;
+        /// The group n°28.
+        const GROUP_28 = 1 << 27;
+        /// The group n°29.
+        const GROUP_29 = 1 << 28;
+        /// The group n°30.
+        const GROUP_30 = 1 << 29;
+        /// The group n°31.
+        const GROUP_31 = 1 << 30;
+        /// The group n°32.
+        const GROUP_32 = 1 << 31;
+
+        /// All of the groups.
+        const ALL = u32::MAX;
+        /// None of the groups.
+        const NONE = 0;
+    }
+}
+
+impl Default for Group {
+    fn default() -> Self {
+        Group::ALL
+    }
+}
+
 /// Pairwise collision filtering using bit masks.
 ///
 /// This filtering method is based on two 32-bit values:
@@ -262,27 +354,18 @@ impl From<ActiveCollisionTypes> for rapier::geometry::ActiveCollisionTypes {
 /// ```ignore
 /// (self.memberships & rhs.filter) != 0 && (rhs.memberships & self.filter) != 0
 /// ```
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Component, Reflect, FromReflect)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash, Component, Reflect, FromReflect)]
 #[reflect(Component, Hash, PartialEq)]
 pub struct CollisionGroups {
     /// Groups memberships.
-    pub memberships: u32,
+    pub memberships: Group,
     /// Groups filter.
-    pub filters: u32,
-}
-
-impl Default for CollisionGroups {
-    fn default() -> Self {
-        Self {
-            memberships: u32::MAX,
-            filters: u32::MAX,
-        }
-    }
+    pub filters: Group,
 }
 
 impl CollisionGroups {
     /// Creates a new collision-groups with the given membership masks and filter masks.
-    pub const fn new(memberships: u32, filters: u32) -> Self {
+    pub const fn new(memberships: Group, filters: Group) -> Self {
         Self {
             memberships,
             filters,
@@ -293,8 +376,9 @@ impl CollisionGroups {
 impl From<CollisionGroups> for InteractionGroups {
     fn from(collision_groups: CollisionGroups) -> InteractionGroups {
         InteractionGroups {
-            memberships: collision_groups.memberships,
-            filter: collision_groups.filters,
+            memberships: rapier::geometry::Group::from_bits(collision_groups.memberships.bits())
+                .unwrap(),
+            filter: rapier::geometry::Group::from_bits(collision_groups.filters.bits()).unwrap(),
         }
     }
 }
@@ -302,27 +386,18 @@ impl From<CollisionGroups> for InteractionGroups {
 /// Pairwise constraints resolution filtering using bit masks.
 ///
 /// This follows the same rules as the `CollisionGroups`.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Component, Reflect, FromReflect)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Hash, Component, Reflect, FromReflect)]
 #[reflect(Component, Hash, PartialEq)]
 pub struct SolverGroups {
     /// Groups memberships.
-    pub memberships: u32,
+    pub memberships: Group,
     /// Groups filter.
-    pub filters: u32,
-}
-
-impl Default for SolverGroups {
-    fn default() -> Self {
-        Self {
-            memberships: u32::MAX,
-            filters: u32::MAX,
-        }
-    }
+    pub filters: Group,
 }
 
 impl SolverGroups {
     /// Creates a new collision-groups with the given membership masks and filter masks.
-    pub const fn new(memberships: u32, filters: u32) -> Self {
+    pub const fn new(memberships: Group, filters: Group) -> Self {
         Self {
             memberships,
             filters,
@@ -333,8 +408,9 @@ impl SolverGroups {
 impl From<SolverGroups> for InteractionGroups {
     fn from(solver_groups: SolverGroups) -> InteractionGroups {
         InteractionGroups {
-            memberships: solver_groups.memberships,
-            filter: solver_groups.filters,
+            memberships: rapier::geometry::Group::from_bits(solver_groups.memberships.bits())
+                .unwrap(),
+            filter: rapier::geometry::Group::from_bits(solver_groups.filters.bits()).unwrap(),
         }
     }
 }

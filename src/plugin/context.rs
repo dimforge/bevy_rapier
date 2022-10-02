@@ -16,11 +16,13 @@ use crate::pipeline::{CollisionEvent, ContactForceEvent, EventQueue, QueryFilter
 use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query};
 use bevy::render::primitives::Aabb;
 
+use crate::control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput};
 use crate::dynamics::TransformInterpolation;
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::prelude::RapierRigidBodyHandle;
 #[cfg(feature = "dim2")]
 use bevy::math::Vec3Swizzles;
+use rapier::control::CharacterAutostep;
 
 /// The Rapier context, containing all the state of the physics engine.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -69,6 +71,8 @@ pub struct RapierContext {
     // physics update, to the entity they was attached to.
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub(crate) deleted_colliders: HashMap<ColliderHandle, Entity>,
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
+    pub(crate) character_collisions_collector: Vec<rapier::control::CharacterCollision>,
 }
 
 impl Default for RapierContext {
@@ -93,6 +97,7 @@ impl Default for RapierContext {
             entity2impulse_joint: HashMap::new(),
             entity2multibody_joint: HashMap::new(),
             deleted_colliders: HashMap::new(),
+            character_collisions_collector: vec![],
         }
     }
 }
@@ -110,7 +115,15 @@ impl RapierContext {
 
     /// Retrieve the Bevy entity the given Rapier collider (identified by its handle) is attached.
     pub fn collider_entity(&self, handle: ColliderHandle) -> Option<Entity> {
-        self.colliders
+        Self::collider_entity_with_set(&self.colliders, handle)
+    }
+
+    // Mostly used to avoid borrowing self completely.
+    pub(crate) fn collider_entity_with_set(
+        colliders: &ColliderSet,
+        handle: ColliderHandle,
+    ) -> Option<Entity> {
+        colliders
             .get(handle)
             .map(|c| Entity::from_bits(c.user_data as u64))
     }
@@ -127,21 +140,39 @@ impl RapierContext {
         filter: QueryFilter,
         f: impl FnOnce(RapierQueryFilter) -> T,
     ) -> T {
+        Self::with_query_filter_elts(
+            &self.entity2collider,
+            &self.entity2body,
+            &self.colliders,
+            filter,
+            f,
+        )
+    }
+
+    fn with_query_filter_elts<T>(
+        entity2collider: &HashMap<Entity, ColliderHandle>,
+        entity2body: &HashMap<Entity, RigidBodyHandle>,
+        colliders: &ColliderSet,
+        filter: QueryFilter,
+        f: impl FnOnce(RapierQueryFilter) -> T,
+    ) -> T {
         let mut rapier_filter = RapierQueryFilter {
             flags: filter.flags,
             groups: filter.groups,
             exclude_collider: filter
                 .exclude_collider
-                .and_then(|c| self.entity2collider.get(&c).copied()),
+                .and_then(|c| entity2collider.get(&c).copied()),
             exclude_rigid_body: filter
                 .exclude_rigid_body
-                .and_then(|b| self.entity2body.get(&b).copied()),
+                .and_then(|b| entity2body.get(&b).copied()),
             predicate: None,
         };
 
         if let Some(predicate) = filter.predicate {
             let wrapped_predicate = |h: ColliderHandle, _: &rapier::geometry::Collider| {
-                self.collider_entity(h).map(predicate).unwrap_or(false)
+                Self::collider_entity_with_set(colliders, h)
+                    .map(predicate)
+                    .unwrap_or(false)
             };
             rapier_filter.predicate = Some(&wrapped_predicate);
             f(rapier_filter)
@@ -306,6 +337,117 @@ impl RapierContext {
     /// The map from entities to multibody joint handles.
     pub fn entity2multibody_joint(&self) -> &HashMap<Entity, MultibodyJointHandle> {
         &self.entity2multibody_joint
+    }
+
+    /// Attempts to move shape, optionally sliding or climbing obstacles.
+    ///
+    /// # Parameters
+    /// * `movement`: the translational movement to apply.
+    /// * `shape`: the shape to move.
+    /// * `shape_translation`: the initial position of the shape.
+    /// * `shape_rotation`: the rotation of the shape.
+    /// * `shape_mass`: the mass of the shape to be considered by the impulse calculation if
+    ///                 `MoveShapeOptions::apply_impulse_to_dynamic_bodies` is set to true.
+    /// * `options`: configures the behavior of the automatic sliding and climbing.
+    /// * `filter`: indicates what collider or rigid-body needs to be ignored by the obstacle detection.
+    /// * `events`: callback run on each obstacle hit by the shape on its path.
+    pub fn move_shape<'a>(
+        &mut self,
+        movement: Vect,
+        shape: &Collider,
+        shape_translation: Vect,
+        shape_rotation: Rot,
+        shape_mass: Real,
+        options: &MoveShapeOptions,
+        filter: QueryFilter,
+        mut events: impl FnMut(CharacterCollision),
+    ) -> MoveShapeOutput {
+        let physics_scale = self.physics_scale;
+        let mut scaled_shape = shape.clone();
+        // TODO: how to set a good number of subdivisions, we don’t have access to the
+        //       RapierConfiguration::scaled_shape_subdivision here.
+        scaled_shape.set_scale(shape.scale / physics_scale, 20);
+
+        let up = options
+            .up
+            .try_into()
+            .expect("The up vector must be non-zero.");
+        let autostep = options.autostep.map(|autostep| CharacterAutostep {
+            max_height: autostep.max_height.map_absolute(|x| x / physics_scale),
+            min_width: autostep.min_width.map_absolute(|x| x / physics_scale),
+            include_dynamic_bodies: autostep.include_dynamic_bodies,
+        });
+        let controller = rapier::control::KinematicCharacterController {
+            up,
+            offset: options.offset.map_absolute(|x| x / physics_scale),
+            slide: options.slide,
+            autostep,
+            max_slope_climb_angle: options.max_slope_climb_angle,
+            min_slope_slide_angle: options.min_slope_slide_angle,
+            snap_to_ground: options
+                .snap_to_ground
+                .map(|x| x.map_absolute(|x| x / physics_scale)),
+        };
+
+        self.character_collisions_collector.clear();
+
+        // TODO: having to grab all the references to avoid having self in
+        //       the closure is ugly.
+        let dt = self.integration_parameters.dt;
+        let colliders = &self.colliders;
+        let bodies = &mut self.bodies;
+        let query_pipeline = &self.query_pipeline;
+        let collisions = &mut self.character_collisions_collector;
+        collisions.clear();
+
+        let result = Self::with_query_filter_elts(
+            &self.entity2collider,
+            &self.entity2body,
+            &self.colliders,
+            filter,
+            move |filter| {
+                let result = controller.move_shape(
+                    dt,
+                    bodies,
+                    colliders,
+                    query_pipeline,
+                    (&scaled_shape).into(),
+                    &(shape_translation / physics_scale, shape_rotation).into(),
+                    (movement / physics_scale).into(),
+                    filter,
+                    |c| {
+                        if let Some(collision) =
+                            CharacterCollision::from_raw_with_set(physics_scale, colliders, &c)
+                        {
+                            events(collision);
+                        }
+                        collisions.push(c);
+                    },
+                );
+
+                if options.apply_impulse_to_dynamic_bodies {
+                    for collision in &*collisions {
+                        controller.solve_character_collision_impulses(
+                            dt,
+                            bodies,
+                            colliders,
+                            query_pipeline,
+                            (&scaled_shape).into(),
+                            shape_mass,
+                            collision,
+                            filter,
+                        )
+                    }
+                }
+
+                result
+            },
+        );
+
+        MoveShapeOutput {
+            effective_translation: (result.translation * physics_scale).into(),
+            grounded: result.grounded,
+        }
     }
 
     /// Find the closest intersection between a ray and a set of collider.
@@ -622,6 +764,7 @@ impl RapierContext {
                 &(shape_vel / self.physics_scale).into(),
                 &*scaled_shape.raw,
                 max_toi,
+                true,
                 filter,
             )
         })?;

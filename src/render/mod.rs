@@ -1,4 +1,5 @@
 use crate::plugin::RapierContext;
+use crate::render::lines::DebugLinesConfig;
 use bevy::prelude::*;
 use lines::DebugLines;
 use rapier::math::{Point, Real};
@@ -20,10 +21,12 @@ pub struct ColliderDebugColor(pub Color);
 /// its physics simulation. This is typically useful to check proper
 /// alignment between colliders and your own visual assets.
 pub struct RapierDebugRenderPlugin {
-    /// If set to `false`, depth-testing will be disabled when rendering,
+    /// If set to `true`, depth-testing will be disabled when rendering,
     /// meaning that the debug-render lines will always appear on top
     /// of (won’t be occluded by) your own visual assets.
-    pub depth_test: bool,
+    pub always_on_top: bool,
+    /// Is the debug-rendering enabled?
+    pub enabled: bool,
     /// Control some aspects of the render coloring.
     pub style: DebugRenderStyle,
     /// Flags to select what part of physics scene is rendered (by default
@@ -55,6 +58,20 @@ impl Default for RapierDebugRenderPlugin {
     }
 }
 
+impl RapierDebugRenderPlugin {
+    /// Initialize the render plugin such that its lines are always rendered on top of other objects.
+    pub fn always_on_top(mut self) -> Self {
+        self.always_on_top = true;
+        self
+    }
+
+    /// Initialize the render plugin such that it is initially disabled.
+    pub fn disabled(mut self) -> Self {
+        self.enabled = false;
+        self
+    }
+}
+
 /// Context to control some aspect of the debug-renderer after initialization.
 pub struct DebugRenderContext {
     /// Is the debug-rendering currently enabled?
@@ -62,6 +79,8 @@ pub struct DebugRenderContext {
     /// Pipeline responsible for rendering. Access `pipeline.mode` and `pipeline.style`
     /// to modify the set of rendered elements, and modify the default coloring rules.
     pub pipeline: DebugRenderPipeline,
+    /// Are the debug-lines always rendered on top of other primitives?
+    pub always_on_top: bool,
 }
 
 impl Default for DebugRenderContext {
@@ -69,6 +88,7 @@ impl Default for DebugRenderContext {
         Self {
             enabled: true,
             pipeline: DebugRenderPipeline::default(),
+            always_on_top: true,
         }
     }
 }
