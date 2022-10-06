@@ -103,6 +103,13 @@ impl Default for RapierContext {
 }
 
 impl RapierContext {
+    /// Get the physics scale that was set for this Rapier context.
+    ///
+    /// See [`RapierPhysicsPlugin::with_physics_scale()`][crate::plugin::RapierPhysicsPlugin::with_physics_scale()].
+    pub fn physics_scale(&self) -> Real {
+        self.physics_scale
+    }
+
     /// If the collider attached to `entity` is attached to a rigid-body, this
     /// returns the `Entity` containing that rigid-body.
     pub fn collider_parent(&self, entity: Entity) -> Option<Entity> {
