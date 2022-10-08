@@ -304,8 +304,7 @@ pub fn apply_rigid_body_user_changes(
          last_transform_set: &HashMap<RigidBodyHandle, GlobalTransform>| {
             if config.force_update_from_transform_changes {
                 true
-            }
-            else if let Some(prev) = last_transform_set.get(handle) {
+            } else if let Some(prev) = last_transform_set.get(handle) {
                 *prev != *transform
             } else {
                 true
