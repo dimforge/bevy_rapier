@@ -239,6 +239,7 @@ pub fn apply_collider_user_changes(
 /// System responsible for applying changes the user made to a rigid-body-related component.
 pub fn apply_rigid_body_user_changes(
     mut context: ResMut<RapierContext>,
+    config: Res<RapierConfiguration>,
     changed_rb_types: Query<(&RapierRigidBodyHandle, &RigidBody), Changed<RigidBody>>,
     mut changed_transforms: Query<
         (
@@ -301,7 +302,10 @@ pub fn apply_rigid_body_user_changes(
         |handle: &RigidBodyHandle,
          transform: &GlobalTransform,
          last_transform_set: &HashMap<RigidBodyHandle, GlobalTransform>| {
-            if let Some(prev) = last_transform_set.get(handle) {
+            if config.force_update_from_transform_changes {
+                true
+            }
+            else if let Some(prev) = last_transform_set.get(handle) {
                 *prev != *transform
             } else {
                 true
