@@ -255,7 +255,10 @@ pub fn apply_rigid_body_user_changes(
     >,
     changed_locked_axes: Query<(&RapierRigidBodyHandle, &LockedAxes), Changed<LockedAxes>>,
     changed_forces: Query<(&RapierRigidBodyHandle, &ExternalForce), Changed<ExternalForce>>,
-    changed_impulses: Query<(&RapierRigidBodyHandle, &ExternalImpulse), Changed<ExternalImpulse>>,
+    mut changed_impulses: Query<
+        (&RapierRigidBodyHandle, &mut ExternalImpulse),
+        Changed<ExternalImpulse>,
+    >,
     changed_gravity_scale: Query<(&RapierRigidBodyHandle, &GravityScale), Changed<GravityScale>>,
     changed_ccd: Query<(&RapierRigidBodyHandle, &Ccd), Changed<Ccd>>,
     changed_dominance: Query<(&RapierRigidBodyHandle, &Dominance), Changed<Dominance>>,
@@ -389,11 +392,12 @@ pub fn apply_rigid_body_user_changes(
         }
     }
 
-    for (handle, impulses) in changed_impulses.iter() {
+    for (handle, mut impulses) in changed_impulses.iter_mut() {
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.apply_impulse((impulses.impulse / scale).into(), true);
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             rb.apply_torque_impulse(impulses.torque_impulse.into(), true);
+            impulses.reset();
         }
     }
 
@@ -936,12 +940,12 @@ pub fn apply_initial_rigid_body_impulses(
     mut context: ResMut<RapierContext>,
     // We can’t use RapierRigidBodyHandle yet because its creation command hasn’t been
     // executed yet.
-    init_impulses: Query<(Entity, &ExternalImpulse), Without<RapierRigidBodyHandle>>,
+    mut init_impulses: Query<(Entity, &mut ExternalImpulse), Without<RapierRigidBodyHandle>>,
 ) {
     let context = &mut *context;
     let scale = context.physics_scale;
 
-    for (entity, impulse) in init_impulses.iter() {
+    for (entity, mut impulse) in init_impulses.iter_mut() {
         let bodies = &mut context.bodies;
         if let Some(rb) = context
             .entity2body
@@ -955,6 +959,8 @@ pub fn apply_initial_rigid_body_impulses(
 
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             rb.apply_torque_impulse(impulse.torque_impulse.into(), false);
+
+            impulse.reset();
         }
     }
 }
