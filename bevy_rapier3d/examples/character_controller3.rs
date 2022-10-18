@@ -182,7 +182,7 @@ fn move_player(
             if output.grounded {
                 gravity = Vec3::ZERO;
             } else {
-                gravity = gravity + output.effective_translation.y;
+                gravity += output.effective_translation.y;
             }
         }
         controller.translation = Some((acceleration_direction + gravity) * time.delta_seconds());
