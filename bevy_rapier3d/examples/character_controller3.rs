@@ -26,6 +26,7 @@ fn spawn_player(
             ..default()
         })
         .insert(Collider::cylinder(0.9, 0.5))
+        //.insert(Collider::capsule_y(0.5, 0.5))
         .insert(RigidBody::KinematicVelocityBased)
         .insert(KinematicCharacterController {
             translation: Some(Vec3::ZERO),
@@ -111,12 +112,12 @@ fn setup_level(
         )));
 
     let mut transform = Transform {
-        translation: Vec3::new(-5.0, -0.5, -2.0),
+        translation: Vec3::new(-8.0, -0.5, -2.0),
         rotation: Quat::from_rotation_z(45.0_f32.to_radians()),
         ..default()
     };
-    for _ in 0..=8 {
-        transform.translation += Vec3::new(1.0, 0.0, 0.0);
+    for _ in 0..=6 {
+        transform.translation += Vec3::new(2.0, 0.0, 0.0);
         commands
             .spawn()
             .insert_bundle(PbrBundle {
