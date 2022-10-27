@@ -201,6 +201,7 @@ where
 }
 
 /// Resource containing the user-defined physics hooks.
+#[derive(Resource)]
 pub struct PhysicsHooksWithQueryResource<UserData: WorldQuery>(
     pub Box<dyn PhysicsHooksWithQuery<UserData>>,
 );

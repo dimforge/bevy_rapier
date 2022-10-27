@@ -1,4 +1,4 @@
-use bevy::time::Time;
+use bevy::prelude::*;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
@@ -25,6 +25,7 @@ use rapier::control::CharacterAutostep;
 
 /// The Rapier context, containing all the state of the physics engine.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[derive(Resource)]
 pub struct RapierContext {
     /// The island manager, which detects what object is sleeping
     /// (not moving much) to reduce computations.

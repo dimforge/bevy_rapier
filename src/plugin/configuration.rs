@@ -1,7 +1,9 @@
+use bevy::prelude::Resource;
+
 use crate::math::Vect;
 
 /// Difference between simulation and rendering time
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct SimulationToRenderTime {
     /// Difference between simulation and rendering time
     pub diff: f32,
@@ -47,7 +49,7 @@ pub enum TimestepMode {
     },
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Resource, Copy, Clone, Debug)]
 /// A resource for specifying configuration information for the physics simulation
 pub struct RapierConfiguration {
     /// Specifying the gravity of the physics simulation.
