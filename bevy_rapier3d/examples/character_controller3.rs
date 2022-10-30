@@ -21,29 +21,28 @@ fn spawn_player(
     commands
         .spawn()
         .insert_bundle(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Box::new(0.5, 1.8, 0.5))),
+            mesh: meshes.add(Mesh::from(shape::Capsule::default())),
             material: materials.add(Color::BLUE.into()),
             ..default()
         })
-        .insert(Collider::cylinder(0.9, 0.5))
-        //.insert(Collider::capsule_y(0.5, 0.5))
+        .insert(Collider::capsule_y(0.5, 0.5))
         .insert(RigidBody::KinematicVelocityBased)
         .insert(KinematicCharacterController {
             translation: Some(Vec3::ZERO),
             custom_shape: None,
             custom_mass: None,
             up: Vec3::Y,
-            offset: CharacterLength::Absolute(0.12),
-            slide: false,
+            offset: defaults.offset,
+            slide: defaults.slide,
             autostep: Some(CharacterAutostep {
-                max_height: CharacterLength::Absolute(0.2),
-                min_width: CharacterLength::Absolute(0.1),
-                include_dynamic_bodies: false,
+                max_height: CharacterLength::Relative(0.25),
+                min_width: CharacterLength::Relative(0.5),
+                include_dynamic_bodies: true,
             }),
-            max_slope_climb_angle: 45.0_f32.to_radians(),
-            min_slope_slide_angle: defaults.min_slope_slide_angle,
+            max_slope_climb_angle: 33.0_f32.to_radians(),
+            min_slope_slide_angle: 33.0_f32.to_radians(),
             apply_impulse_to_dynamic_bodies: false,
-            snap_to_ground: Some(CharacterLength::Absolute(0.12)),
+            snap_to_ground: defaults.snap_to_ground,
             filter_flags: QueryFilterFlags::empty(),
             filter_groups: None,
         })
@@ -112,20 +111,20 @@ fn setup_level(
         )));
 
     let mut transform = Transform {
-        translation: Vec3::new(-8.0, -0.5, -2.0),
-        rotation: Quat::from_rotation_z(45.0_f32.to_radians()),
+        translation: Vec3::new(-12.0, -1.5, -3.0),
+        rotation: Quat::from_rotation_z(33.0_f32.to_radians()),
         ..default()
     };
-    for _ in 0..=6 {
-        transform.translation += Vec3::new(2.0, 0.0, 0.0);
+    for _ in 0..=2 {
+        transform.translation += Vec3::new(6.0, 0.0, 0.0);
         commands
             .spawn()
             .insert_bundle(PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Box::new(1.0, 1.0, 3.0))),
+                mesh: meshes.add(Mesh::from(shape::Box::new(3.0, 3.0, 3.0))),
                 material: materials.add(Color::GREEN.into()),
                 ..default()
             })
-            .insert(Collider::cuboid(0.5, 0.5, 1.5))
+            .insert(Collider::cuboid(1.5, 1.5, 1.5))
             .insert(RigidBody::Fixed)
             .insert_bundle(SpatialBundle::from_transform(transform));
     }
