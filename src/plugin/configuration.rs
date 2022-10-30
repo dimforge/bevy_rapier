@@ -66,6 +66,8 @@ pub struct RapierConfiguration {
     /// discretized into a convex polyhedron, using `scaled_shape_subdivision` as the number of subdivisions
     /// along each spherical coordinates angle.
     pub scaled_shape_subdivision: u32,
+    /// Specifies if backend sync should always accept tranform changes, which may be from the writeback stage.
+    pub force_update_from_transform_changes: bool,
 }
 
 impl Default for RapierConfiguration {
@@ -83,6 +85,7 @@ impl Default for RapierConfiguration {
                 substeps: 1,
             },
             scaled_shape_subdivision: 10,
+            force_update_from_transform_changes: false,
         }
     }
 }
