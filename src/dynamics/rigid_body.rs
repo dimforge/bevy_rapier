@@ -323,6 +323,11 @@ impl ExternalImpulse {
             torque_impulse: (point - center_of_mass).cross(impulse),
         }
     }
+
+    /// Reset the external impulses to zero.
+    pub fn reset(&mut self) {
+        *self = Default::default();
+    }
 }
 
 impl Add for ExternalImpulse {
