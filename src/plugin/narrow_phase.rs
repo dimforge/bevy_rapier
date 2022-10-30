@@ -222,12 +222,12 @@ impl<'a> ContactView<'a> {
 
     /// The feature ID of the first shape involved in the contact.
     pub fn fid1(&self) -> u32 {
-        self.raw.fid1
+        self.raw.fid1.0
     }
 
     /// The feature ID of the second shape involved in the contact.
     pub fn fid2(&self) -> u32 {
-        self.raw.fid2
+        self.raw.fid2.0
     }
 
     /// The impulse, along the contact normal, applied by this contact to the first collider's rigid-body.

@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.18.0 (30 Oct. 2022)
+### Added
+- Add the accessor `RapierContext::physics_scale()` to read the physics scale
+  that was set when initializing the plugin.
+- Add `RapierConfiguration::force_update_from_transform_changes` to force the transform
+  updates even if it is equal to the transform that was previously set. Useful for
+  rollback in networked applications described in [#261](https://github.com/dimforge/bevy_rapier/pull/261).
+- Add `Collider::trimesh_with_flags` to create a triangle mesh collider with custom pre-processing
+  flags.
+
+### Fix
+- Reset the `ExternalImpulse` component after each step automatically.
+- Fix `transform_to_iso` to preserve identical rotations instead of 
+  converting to an intermediate axis-angle representation.
+- Fix **internal edges** of 3D triangle meshes or 3D heightfields generating invalid contacts
+  preventing balls from moving straight. Be sure to set the triangle mesh flag
+  `TriMeshFlags::MERGE_DUPLICATE_VERTICES` when creating the collider if your mesh have duplicated
+  vertices.
+
+### Modified
+- Rename `AABB` to `Aabb` to comply with Rust’s style guide.
+
 ## 0.17.0 (02 Oct. 2022)
 ### Added
 - Add a **kinematic character controller** implementation. This feature is accessible in two different ways:
