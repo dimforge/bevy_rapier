@@ -13,7 +13,7 @@ jobs:
   check-fmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Check formatting
         run: cargo fmt -- --check
   test:
@@ -21,7 +21,7 @@ jobs:
     env:
       RUSTFLAGS: -D warnings
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: Swatinem/rust-cache@v1
     - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
     - name: Clippy for bevy_rapier2d
@@ -41,7 +41,7 @@ jobs:
     env:
       RUSTFLAGS: -D warnings
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: rustup target add wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v1
       - name: Clippy bevy_rapier2d
