@@ -3,11 +3,10 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 use rapier::prelude::{
-    BroadPhase, CCDSolver, ColliderHandle, ColliderSet, EventHandler, FeatureId,
-    ImpulseJointHandle, ImpulseJointSet, IntegrationParameters, IslandManager,
+    Aabb as RapierAabb, BroadPhase, CCDSolver, ColliderHandle, ColliderSet, EventHandler,
+    FeatureId, ImpulseJointHandle, ImpulseJointSet, IntegrationParameters, IslandManager,
     MultibodyJointHandle, MultibodyJointSet, NarrowPhase, PhysicsHooks, PhysicsPipeline,
     QueryFilter as RapierQueryFilter, QueryPipeline, Ray, Real, RigidBodyHandle, RigidBodySet,
-    AABB,
 };
 
 use crate::geometry::{Collider, PointProjection, RayIntersection, Toi};
@@ -708,19 +707,19 @@ impl RapierContext {
         })
     }
 
-    /// Finds all entities of all the colliders with an AABB intersecting the given AABB.
+    /// Finds all entities of all the colliders with an Aabb intersecting the given Aabb.
     pub fn colliders_with_aabb_intersecting_aabb(
         &self,
         aabb: Aabb,
         mut callback: impl FnMut(Entity) -> bool,
     ) {
         #[cfg(feature = "dim2")]
-        let scaled_aabb = AABB {
+        let scaled_aabb = RapierAabb {
             mins: (aabb.min().xy() / self.physics_scale).into(),
             maxs: (aabb.max().xy() / self.physics_scale).into(),
         };
         #[cfg(feature = "dim3")]
-        let scaled_aabb = AABB {
+        let scaled_aabb = RapierAabb {
             mins: (aabb.min() / self.physics_scale).into(),
             maxs: (aabb.max() / self.physics_scale).into(),
         };

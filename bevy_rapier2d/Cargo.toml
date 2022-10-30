@@ -1,6 +1,6 @@
 [package]
 name = "bevy_rapier2d"
-version = "0.17.0"
+version = "0.18.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 description = "2-dimensional physics engine in Rust, official Bevy plugin."
 documentation = "http://docs.rs/bevy_rapier2d"
@@ -32,7 +32,7 @@ enhanced-determinism = [ "rapier2d/enhanced-determinism" ]
 bevy = { version = "0.8.0", default-features = false, features = ["bevy_asset", "bevy_scene"] }
 nalgebra = { version = "^0.31.1", features = [ "convert-glam021" ] }
 # Don't enable the default features because we don't need the ColliderSet/RigidBodySet
-rapier2d = "0.15.0"
+rapier2d = "0.16.0"
 bitflags = "1"
 #bevy_prototype_debug_lines = { version = "0.6", optional = true }
 log = "0.4"
