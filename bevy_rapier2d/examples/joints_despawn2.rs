@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct DespawnResource {
     entities: Vec<Entity>,
 }
@@ -13,7 +13,6 @@ fn main() {
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .insert_resource(Msaa::default())
         .insert_resource(DespawnResource::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
@@ -25,7 +24,7 @@ fn main() {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    commands.spawn_bundle(Camera2dBundle {
+    commands.spawn(Camera2dBundle {
         transform: Transform::from_xyz(0.0, -200.0, 0.0),
         ..default()
     });
@@ -52,13 +51,11 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
             };
 
             let child_entity = commands
-                .spawn_bundle(TransformBundle::from(Transform::from_xyz(
-                    fk * shift,
-                    -fi * shift,
-                    0.0,
-                )))
-                .insert(rigid_body)
-                .insert(Collider::cuboid(rad, rad))
+                .spawn((
+                    TransformBundle::from(Transform::from_xyz(fk * shift, -fi * shift, 0.0)),
+                    rigid_body,
+                    Collider::cuboid(rad, rad),
+                ))
                 .id();
 
             // Vertical joint.
@@ -69,10 +66,7 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
                     // NOTE: we want to attach multiple impulse joints to this entity, so
                     //       we need to add the components to children of the entity. Otherwise
                     //       the second joint component would just overwrite the first one.
-                    let entity = cmd
-                        .spawn()
-                        .insert(ImpulseJoint::new(parent_entity, joint))
-                        .id();
+                    let entity = cmd.spawn(ImpulseJoint::new(parent_entity, joint)).id();
                     if i == (numi / 2) || (k % 4 == 0 || k == numk - 1) {
                         despawn.entities.push(entity);
                     }
@@ -88,10 +82,7 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
                     // NOTE: we want to attach multiple impulse joints to this entity, so
                     //       we need to add the components to children of the entity. Otherwise
                     //       the second joint component would just overwrite the first one.
-                    let entity = cmd
-                        .spawn()
-                        .insert(ImpulseJoint::new(parent_entity, joint))
-                        .id();
+                    let entity = cmd.spawn(ImpulseJoint::new(parent_entity, joint)).id();
                     if i == (numi / 2) || (k % 4 == 0 || k == numk - 1) {
                         despawn.entities.push(entity);
                     }
@@ -104,7 +95,7 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
 }
 
 pub fn despawn(mut commands: Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
-    if time.seconds_since_startup() > 4.0 {
+    if time.elapsed_seconds() > 4.0 {
         for entity in &despawn.entities {
             println!("Despawning joint entity");
             commands.entity(*entity).despawn();

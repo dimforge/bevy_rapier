@@ -9,7 +9,6 @@ fn main() {
     App::new()
         .init_resource::<Game>()
         .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
-        .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup_game)
         .add_system(cube_sleep_detection)
@@ -44,6 +43,7 @@ impl Stats {
     }
 }
 
+#[derive(Resource)]
 struct Game {
     n_lanes: usize,
     n_rows: usize,
@@ -88,7 +88,7 @@ fn setup_game(mut commands: Commands, mut game: ResMut<Game>) {
         byte_rgb(255, 0, 0),
     ];
 
-    commands.spawn().insert_bundle(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle::default());
 
     setup_board(&mut commands, &*game);
 
@@ -126,8 +126,8 @@ fn setup_board(commands: &mut Commands, game: &Game) {
     let floor_y = game.floor_y();
 
     // Add floor
-    commands
-        .spawn_bundle(SpriteBundle {
+    commands.spawn((
+        SpriteBundle {
             sprite: Sprite {
                 color: Color::rgb(0.5, 0.5, 0.5),
                 custom_size: Some(Vec2::new(game.n_lanes as f32 * 30.0, 60.0)),
@@ -135,12 +135,10 @@ fn setup_board(commands: &mut Commands, game: &Game) {
             },
             transform: Transform::from_xyz(0.0, floor_y - 30.0 * 0.5, 0.0),
             ..Default::default()
-        })
-        .insert(RigidBody::Fixed)
-        .insert(Collider::cuboid(
-            game.n_lanes as f32 * 30.0 / 2.0,
-            60.0 / 2.0,
-        ));
+        },
+        RigidBody::Fixed,
+        Collider::cuboid(game.n_lanes as f32 * 30.0 / 2.0, 60.0 / 2.0),
+    ));
 }
 
 fn spawn_cube(commands: &mut Commands, game: &mut Game) {
@@ -168,8 +166,7 @@ fn spawn_cube(commands: &mut Commands, game: &mut Game) {
             .entity(block_entities[*j])
             .with_children(|children| {
                 let id = children
-                    .spawn()
-                    .insert(ImpulseJoint::new(
+                    .spawn(ImpulseJoint::new(
                         block_entities[*i],
                         RevoluteJointBuilder::new()
                             .local_anchor1(anchor_1)
@@ -199,22 +196,24 @@ fn spawn_block(
     let linear_damping = 3.0;
 
     commands
-        .spawn_bundle(SpriteBundle {
-            sprite: Sprite {
-                color: game.cube_colors[kind as usize],
-                custom_size: Some(Vec2::new(30.0, 30.0)),
+        .spawn((
+            SpriteBundle {
+                sprite: Sprite {
+                    color: game.cube_colors[kind as usize],
+                    custom_size: Some(Vec2::new(30.0, 30.0)),
+                    ..Default::default()
+                },
+                transform: Transform::from_xyz(x, y, 0.0),
                 ..Default::default()
             },
-            transform: Transform::from_xyz(x, y, 0.0),
-            ..Default::default()
-        })
-        .insert(RigidBody::Dynamic)
-        .insert(Damping {
-            linear_damping,
-            angular_damping: 0.0,
-        })
-        .insert(Collider::cuboid(30.0 / 2.0, 30.0 / 2.0))
-        .insert(Block)
+            RigidBody::Dynamic,
+            Damping {
+                linear_damping,
+                angular_damping: 0.0,
+            },
+            Collider::cuboid(30.0 / 2.0, 30.0 / 2.0),
+            Block,
+        ))
         .id()
 }
 

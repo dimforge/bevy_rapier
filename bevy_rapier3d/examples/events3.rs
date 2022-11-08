@@ -8,7 +8,6 @@ fn main() {
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierDebugRenderPlugin::default())
@@ -19,7 +18,7 @@ fn main() {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    commands.spawn_bundle(Camera3dBundle {
+    commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(0.0, 0.0, 25.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..Default::default()
     });
@@ -42,19 +41,22 @@ pub fn setup_physics(mut commands: Commands) {
     /*
      * Ground
      */
-    commands
-        .spawn_bundle(TransformBundle::from(Transform::from_xyz(0.0, -1.2, 0.0)))
-        .insert(Collider::cuboid(4.0, 1.0, 1.0));
+    commands.spawn((
+        TransformBundle::from(Transform::from_xyz(0.0, -1.2, 0.0)),
+        Collider::cuboid(4.0, 1.0, 1.0),
+    ));
 
-    commands
-        .spawn_bundle(TransformBundle::from(Transform::from_xyz(0.0, 5.0, 0.0)))
-        .insert(Collider::cuboid(4.0, 1.5, 1.0))
-        .insert(Sensor);
+    commands.spawn((
+        TransformBundle::from(Transform::from_xyz(0.0, 5.0, 0.0)),
+        Collider::cuboid(4.0, 1.5, 1.0),
+        Sensor,
+    ));
 
-    commands
-        .spawn_bundle(TransformBundle::from(Transform::from_xyz(0.0, 13.0, 0.0)))
-        .insert(RigidBody::Dynamic)
-        .insert(Collider::cuboid(0.5, 0.5, 0.5))
-        .insert(ActiveEvents::COLLISION_EVENTS)
-        .insert(ContactForceEventThreshold(30.0));
+    commands.spawn((
+        TransformBundle::from(Transform::from_xyz(0.0, 13.0, 0.0)),
+        RigidBody::Dynamic,
+        Collider::cuboid(0.5, 0.5, 0.5),
+        ActiveEvents::COLLISION_EVENTS,
+        ContactForceEventThreshold(30.0),
+    ));
 }

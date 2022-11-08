@@ -10,7 +10,6 @@ fn main() {
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierDebugRenderPlugin::default())
@@ -22,7 +21,7 @@ fn main() {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    commands.spawn_bundle(Camera3dBundle {
+    commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(-15.0, 8.0, 15.0)
             .looking_at(Vec3::new(-5.0, 0.0, 5.0), Vec3::Y),
         ..Default::default()
@@ -53,9 +52,7 @@ pub fn setup_physics(mut commands: Commands) {
         indices.push([2 * i + 2, 2 * i + 1, 2 * i + 3]);
     }
 
-    commands
-        .spawn()
-        .insert(Collider::trimesh(vertices, indices));
+    commands.spawn(Collider::trimesh(vertices, indices));
 
     // Create a bowl with a cosine cross-section,
     // so that we can join the end of the ramp smoothly
@@ -91,15 +88,17 @@ pub fn setup_physics(mut commands: Commands) {
     }
     // Position so ramp connects smoothly
     // to one edge of the lip of the bowl.
-    commands
-        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+    commands.spawn((
+        TransformBundle::from(Transform::from_xyz(
             -bowl_size.x / 2.0,
             -bowl_size.y / 2.0,
             bowl_size.z / 2.0 - ramp_size.z / 2.0,
-        )))
-        .insert(Collider::trimesh(vertices, indices));
+        )),
+        Collider::trimesh(vertices, indices),
+    ));
 }
 
+#[derive(Resource)]
 struct BallState {
     seconds_until_next_spawn: f32,
     seconds_between_spawns: f32,
@@ -139,15 +138,16 @@ fn ball_spawner(
     let ramp_size = ramp_size();
     let rad = 0.3;
 
-    commands
-        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
+    commands.spawn((
+        TransformBundle::from(Transform::from_xyz(
             ramp_size.x * 0.9,
             ramp_size.y / 2.0 + rad * 3.0,
             0.0,
-        )))
-        .insert(RigidBody::Dynamic)
-        .insert(Collider::ball(rad))
-        .insert(Restitution::new(0.5));
+        )),
+        RigidBody::Dynamic,
+        Collider::ball(rad),
+        Restitution::new(0.5),
+    ));
 
     ball_state.balls_spawned += 1;
 }
