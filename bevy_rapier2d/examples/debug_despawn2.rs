@@ -90,7 +90,7 @@ fn setup_game(mut commands: Commands, mut game: ResMut<Game>) {
 
     commands.spawn(Camera2dBundle::default());
 
-    setup_board(&mut commands, &*game);
+    setup_board(&mut commands, &game);
 
     // initial cube
     spawn_cube(&mut commands, &mut game);

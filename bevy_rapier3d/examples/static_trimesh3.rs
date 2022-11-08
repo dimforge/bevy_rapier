@@ -48,7 +48,7 @@ pub fn setup_physics(mut commands: Commands) {
     }
     for i in 0..segments {
         // Two triangles making up a flat quad for each segment of the ramp.
-        indices.push([2 * i + 0, 2 * i + 1, 2 * i + 2]);
+        indices.push([2 * i, 2 * i + 1, 2 * i + 2]);
         indices.push([2 * i + 2, 2 * i + 1, 2 * i + 3]);
     }
 
@@ -82,8 +82,8 @@ pub fn setup_physics(mut commands: Commands) {
             let row0 = ix * (segments + 1);
             let row1 = (ix + 1) * (segments + 1);
             // Two triangles making up a not-very-flat quad for each segment of the bowl.
-            indices.push([row0 + iz + 0, row0 + iz + 1, row1 + iz + 0]);
-            indices.push([row1 + iz + 0, row0 + iz + 1, row1 + iz + 1]);
+            indices.push([row0 + iz, row0 + iz + 1, row1 + iz]);
+            indices.push([row1 + iz, row0 + iz + 1, row1 + iz + 1]);
         }
     }
     // Position so ramp connects smoothly
