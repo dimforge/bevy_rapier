@@ -174,16 +174,11 @@ fn setup(mut cmds: Commands, mut meshes: ResMut<Assets<Mesh>>) {
         // https://github.com/Toqozz/bevy_debug_lines/issues/16
         //mesh.set_indices(Some(Indices::U16(Vec::with_capacity(MAX_POINTS_PER_MESH))));
 
-        cmds.spawn_bundle((
+        cmds.spawn((
             dim::into_handle(meshes.add(mesh)),
             #[cfg(feature = "dim3")]
-            bevy::pbr::NotShadowCaster,
-            #[cfg(feature = "dim3")]
-            bevy::pbr::NotShadowReceiver,
-            Transform::default(),
-            GlobalTransform::default(),
-            Visibility::default(),
-            ComputedVisibility::default(),
+            (bevy::pbr::NotShadowCaster, bevy::pbr::NotShadowReceiver),
+            SpatialBundle::VISIBLE_IDENTITY,
             NoFrustumCulling,
             DebugLinesMesh(i),
         ));
