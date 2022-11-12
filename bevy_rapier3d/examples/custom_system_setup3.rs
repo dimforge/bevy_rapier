@@ -1,4 +1,4 @@
-use bevy::{prelude::*, core::FrameCount};
+use bevy::{core::FrameCount, prelude::*};
 use bevy_rapier3d::prelude::*;
 
 struct SpecialStagingPlugin {
