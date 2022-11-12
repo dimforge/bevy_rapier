@@ -1664,7 +1664,8 @@ mod tests {
             .add_plugin(WindowPlugin::default())
             .add_plugin(AssetPlugin::default())
             .add_plugin(ScenePlugin::default())
-            .add_plugin(RenderPlugin::default());
+            .add_plugin(RenderPlugin::default())
+            .add_plugin(ImagePlugin::default());
         }
     }
 }
