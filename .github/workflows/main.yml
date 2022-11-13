@@ -14,6 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
       - name: Check formatting
         run: cargo fmt -- --check
   test:
@@ -21,28 +24,34 @@ jobs:
     env:
       RUSTFLAGS: -D warnings
     steps:
-    - uses: actions/checkout@v3
-    - uses: Swatinem/rust-cache@v1
-    - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
-    - name: Clippy for bevy_rapier2d
-      run: cargo clippy --verbose -p bevy_rapier2d
-    - name: Clippy for bevy_rapier3d
-      run: cargo clippy --verbose -p bevy_rapier3d
-    - name: Clippy for bevy_rapier2d (debug-render, simd, serde)
-      run: cargo clippy --verbose -p bevy_rapier2d --features debug-render,simd-stable,serde-serialize
-    - name: Clippy for bevy_rapier3d (debug-render, simd, serde)
-      run: cargo clippy --verbose -p bevy_rapier3d --features debug-render,simd-stable,serde-serialize
-    - name: Test for bevy_rapier2d
-      run: cargo test --verbose -p bevy_rapier2d
-    - name: Test for bevy_rapier3d
-      run: cargo test --verbose -p bevy_rapier3d
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v1
+      - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
+      - name: Clippy for bevy_rapier2d
+        run: cargo clippy --verbose -p bevy_rapier2d
+      - name: Clippy for bevy_rapier3d
+        run: cargo clippy --verbose -p bevy_rapier3d
+      - name: Clippy for bevy_rapier2d (debug-render, simd, serde)
+        run: cargo clippy --verbose -p bevy_rapier2d --features debug-render,simd-stable,serde-serialize
+      - name: Clippy for bevy_rapier3d (debug-render, simd, serde)
+        run: cargo clippy --verbose -p bevy_rapier3d --features debug-render,simd-stable,serde-serialize
+      - name: Test for bevy_rapier2d
+        run: cargo test --verbose -p bevy_rapier2d
+      - name: Test for bevy_rapier3d
+        run: cargo test --verbose -p bevy_rapier3d
   test-wasm:
     runs-on: ubuntu-latest
     env:
       RUSTFLAGS: -D warnings
     steps:
       - uses: actions/checkout@v3
-      - run: rustup target add wasm32-unknown-unknown
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+          targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v1
       - name: Clippy bevy_rapier2d
         run: cd bevy_rapier2d && cargo clippy --verbose --features wasm-bindgen --target wasm32-unknown-unknown
