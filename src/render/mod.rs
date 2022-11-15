@@ -14,10 +14,18 @@ use std::fmt::Debug;
 #[derive(Copy, Clone, Component, PartialEq, Debug)]
 pub struct ColliderDebugColor(pub Color);
 
+/// Marker to draw debug lines for colliders if `global` in [`DebugRenderContext`]
+/// is set to false.
+#[derive(Copy, Clone, Component, PartialEq, Debug)]
+pub struct ColliderDebug;
+
 /// Plugin rensponsible for rendering (using lines) what Rapier "sees" when performing
 /// its physics simulation. This is typically useful to check proper
 /// alignment between colliders and your own visual assets.
 pub struct RapierDebugRenderPlugin {
+    /// Is the debug-rendering will be enabled for every entity? Or just for
+    /// collider entities with [`ColliderDebug`] component.
+    pub global: bool,
     /// Is the debug-rendering enabled?
     pub enabled: bool,
     /// Control some aspects of the render coloring.
@@ -33,6 +41,7 @@ impl Default for RapierDebugRenderPlugin {
     fn default() -> Self {
         Self {
             enabled: true,
+            global: true,
             style: DebugRenderStyle {
                 rigid_body_axes_length: 20.0,
                 ..Default::default()
@@ -44,6 +53,7 @@ impl Default for RapierDebugRenderPlugin {
     fn default() -> Self {
         Self {
             enabled: true,
+            global: true,
             style: DebugRenderStyle::default(),
             mode: DebugRenderMode::default(),
         }
@@ -64,6 +74,9 @@ impl RapierDebugRenderPlugin {
 pub struct DebugRenderContext {
     /// Is the debug-rendering currently enabled?
     pub enabled: bool,
+    /// Is the debug-rendering enabled for every entity? Otherwise it will only work
+    /// for collider entities with [`ColliderDebug`] component.
+    pub global: bool,
     /// Pipeline responsible for rendering. Access `pipeline.mode` and `pipeline.style`
     /// to modify the set of rendered elements, and modify the default coloring rules.
     #[reflect(ignore)]
@@ -74,6 +87,7 @@ impl Default for DebugRenderContext {
     fn default() -> Self {
         Self {
             enabled: true,
+            global: true,
             pipeline: DebugRenderPipeline::default(),
         }
     }
@@ -85,6 +99,7 @@ impl Plugin for RapierDebugRenderPlugin {
 
         app.insert_resource(DebugRenderContext {
             enabled: self.enabled,
+            global: self.global,
             pipeline: DebugRenderPipeline::new(self.style, self.mode),
         })
         .add_systems(
@@ -96,6 +111,8 @@ impl Plugin for RapierDebugRenderPlugin {
 
 struct BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
     custom_colors: Query<'world, 'state, &'a ColliderDebugColor>,
+    global: bool,
+    visible: Query<'world, 'state, &'a ColliderDebug>,
     context: &'b RapierContext,
     gizmos: Gizmos<'world, 'state>,
 }
@@ -114,6 +131,21 @@ impl<'world, 'state, 'a, 'b> BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
 
         color.map(|co| co.as_hsla_f32()).unwrap_or(default)
     }
+
+    fn drawing_enabled(&self, object: DebugRenderObject) -> bool {
+        match object {
+            DebugRenderObject::Collider(h, ..) => self
+                .context
+                .colliders
+                .get(h)
+                .map(|co| {
+                    let entity = Entity::from_bits(co.user_data as u64);
+                    self.global || self.visible.contains(entity)
+                })
+                .unwrap_or(false),
+            _ => true,
+        }
+    }
 }
 
 impl<'world, 'state, 'a, 'b> DebugRenderBackend for BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
@@ -125,6 +157,10 @@ impl<'world, 'state, 'a, 'b> DebugRenderBackend for BevyLinesRenderBackend<'worl
         b: Point<Real>,
         color: [f32; 4],
     ) {
+        if !self.drawing_enabled(object) {
+            return;
+        }
+
         let color = self.object_color(object, color);
         self.gizmos.line(
             [a.x, a.y, 0.0].into(),
@@ -141,6 +177,10 @@ impl<'world, 'state, 'a, 'b> DebugRenderBackend for BevyLinesRenderBackend<'worl
         b: Point<Real>,
         color: [f32; 4],
     ) {
+        if !self.drawing_enabled(object) {
+            return;
+        }
+
         let color = self.object_color(object, color);
         self.gizmos.line(
             [a.x, a.y, a.z].into(),
@@ -150,18 +190,21 @@ impl<'world, 'state, 'a, 'b> DebugRenderBackend for BevyLinesRenderBackend<'worl
     }
 }
 
-fn debug_render_scene(
+fn debug_render_scene<'a>(
     rapier_context: Res<RapierContext>,
     mut render_context: ResMut<DebugRenderContext>,
     gizmos: Gizmos,
-    custom_colors: Query<&ColliderDebugColor>,
+    custom_colors: Query<&'a ColliderDebugColor>,
+    visible: Query<&'a ColliderDebug>,
 ) {
     if !render_context.enabled {
         return;
     }
 
     let mut backend = BevyLinesRenderBackend {
+        global: render_context.global,
         custom_colors,
+        visible,
         context: &rapier_context,
         gizmos,
     };
