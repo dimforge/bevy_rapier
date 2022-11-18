@@ -184,9 +184,6 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
             .register_type::<SolverGroups>()
             .register_type::<ContactForceEventThreshold>();
 
-        #[cfg(feature = "dim3")]
-        app.register_type::<AsyncCollider>();
-
         // Insert all of our required resources. Don’t overwrite
         // the `RapierConfiguration` if it already exists.
         if app.world.get_resource::<RapierConfiguration>().is_none() {

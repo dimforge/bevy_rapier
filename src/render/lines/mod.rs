@@ -69,7 +69,7 @@ pub(crate) const SHADER_FILE: &str = include_str!("debuglines.wgsl");
 pub(crate) const DEBUG_LINES_SHADER_HANDLE: HandleUntyped =
     HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 17477439189930443325);
 
-#[derive(Clone)]
+#[derive(Resource, Clone)]
 pub(crate) struct DebugLinesConfig {
     pub always_on_top: Arc<RwLock<bool>>, // Don’t know how to do this properly since this resource lives in a sub-app.
 }
@@ -174,16 +174,11 @@ fn setup(mut cmds: Commands, mut meshes: ResMut<Assets<Mesh>>) {
         // https://github.com/Toqozz/bevy_debug_lines/issues/16
         //mesh.set_indices(Some(Indices::U16(Vec::with_capacity(MAX_POINTS_PER_MESH))));
 
-        cmds.spawn_bundle((
+        cmds.spawn((
             dim::into_handle(meshes.add(mesh)),
             #[cfg(feature = "dim3")]
-            bevy::pbr::NotShadowCaster,
-            #[cfg(feature = "dim3")]
-            bevy::pbr::NotShadowReceiver,
-            Transform::default(),
-            GlobalTransform::default(),
-            Visibility::default(),
-            ComputedVisibility::default(),
+            (bevy::pbr::NotShadowCaster, bevy::pbr::NotShadowReceiver),
+            SpatialBundle::VISIBLE_IDENTITY,
             NoFrustumCulling,
             DebugLinesMesh(i),
         ));
@@ -276,7 +271,7 @@ pub(crate) struct RenderDebugLinesMesh;
 ///     );
 /// }
 /// ```
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct DebugLines {
     pub positions: Vec<[f32; 3]>,
     pub colors: Vec<[f32; 4]>,

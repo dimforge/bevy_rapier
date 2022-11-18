@@ -8,7 +8,6 @@ fn main() {
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierDebugRenderPlugin::default())
@@ -19,7 +18,7 @@ fn main() {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    commands.spawn_bundle(Camera3dBundle {
+    commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(-30.0, 30.0, 100.0)
             .looking_at(Vec3::new(0.0, 10.0, 0.0), Vec3::Y),
         ..Default::default()
@@ -33,13 +32,10 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_size = 200.1;
     let ground_height = 0.1;
 
-    commands
-        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
-            0.0,
-            -ground_height,
-            0.0,
-        )))
-        .insert(Collider::cuboid(ground_size, ground_height, ground_size));
+    commands.spawn((
+        TransformBundle::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
+        Collider::cuboid(ground_size, ground_height, ground_size),
+    ));
 
     /*
      * Create the cubes
@@ -62,10 +58,11 @@ pub fn setup_physics(mut commands: Commands) {
                 let z = k as f32 * shift - centerz + offset;
 
                 // Build the rigid body.
-                commands
-                    .spawn_bundle(TransformBundle::from(Transform::from_xyz(x, y, z)))
-                    .insert(RigidBody::Dynamic)
-                    .insert(Collider::cuboid(rad, rad, rad));
+                commands.spawn((
+                    TransformBundle::from(Transform::from_xyz(x, y, z)),
+                    RigidBody::Dynamic,
+                    Collider::cuboid(rad, rad, rad),
+                ));
             }
         }
 

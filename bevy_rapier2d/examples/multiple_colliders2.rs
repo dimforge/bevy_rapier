@@ -8,7 +8,6 @@ fn main() {
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .insert_resource(Msaa::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_plugin(RapierDebugRenderPlugin::default())
@@ -18,7 +17,7 @@ fn main() {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    commands.spawn_bundle(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle::default());
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -28,13 +27,10 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_size = 500.0;
     let ground_height = 1.0;
 
-    commands
-        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
-            0.0,
-            -ground_height,
-            0.0,
-        )))
-        .insert(Collider::cuboid(ground_size, ground_height));
+    commands.spawn((
+        TransformBundle::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
+        Collider::cuboid(ground_size, ground_height),
+    ));
 
     /*
      * Create the cubes
@@ -54,24 +50,20 @@ pub fn setup_physics(mut commands: Commands) {
             let y = j as f32 * (shift * 5.0) + centery + 3.0;
 
             commands
-                .spawn_bundle(TransformBundle::from(Transform::from_xyz(x, y, 0.0)))
-                .insert(RigidBody::Dynamic)
+                .spawn((
+                    TransformBundle::from(Transform::from_xyz(x, y, 0.0)),
+                    RigidBody::Dynamic,
+                ))
                 .with_children(|children| {
-                    children.spawn().insert(Collider::cuboid(rad * 10.0, rad));
-                    children
-                        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
-                            rad * 10.0,
-                            rad * 10.0,
-                            0.0,
-                        )))
-                        .insert(Collider::cuboid(rad, rad * 10.0));
-                    children
-                        .spawn_bundle(TransformBundle::from(Transform::from_xyz(
-                            -rad * 10.0,
-                            rad * 10.0,
-                            0.0,
-                        )))
-                        .insert(Collider::cuboid(rad, rad * 10.0));
+                    children.spawn(Collider::cuboid(rad * 10.0, rad));
+                    children.spawn((
+                        TransformBundle::from(Transform::from_xyz(rad * 10.0, rad * 10.0, 0.0)),
+                        Collider::cuboid(rad, rad * 10.0),
+                    ));
+                    children.spawn((
+                        TransformBundle::from(Transform::from_xyz(-rad * 10.0, rad * 10.0, 0.0)),
+                        Collider::cuboid(rad, rad * 10.0),
+                    ));
                 });
         }
 
