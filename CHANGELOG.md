@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.19.0 (18 Nov. 2022)
+### Modified
+- Update to Bevy 0.9
+
 ## 0.18.0 (30 Oct. 2022)
 ### Added
 - Add the accessor `RapierContext::physics_scale()` to read the physics scale
