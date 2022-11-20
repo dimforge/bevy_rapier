@@ -524,11 +524,20 @@ pub fn writeback_rigid_bodies(
                                     .affine()
                                     .inverse()
                                     .to_scale_rotation_translation();
-                            transform.rotation =
-                                inverse_parent_rotation * interpolated_pos.rotation;
-                            transform.translation = inverse_parent_rotation
+                            let new_rotation = inverse_parent_rotation * interpolated_pos.rotation;
+                            let new_translation = inverse_parent_rotation
                                 * interpolated_pos.translation
                                 + inverse_parent_translation;
+
+                            if transform.rotation != new_rotation
+                                || transform.translation != new_translation
+                            {
+                                // NOTE: we write the new value only if there was an
+                                //       actual change, in order to not trigger bevy’s
+                                //       change tracking when the values didn’t change.
+                                transform.rotation = new_rotation;
+                                transform.translation = new_translation;
+                            }
 
                             #[cfg(feature = "dim2")]
                             {
@@ -551,8 +560,15 @@ pub fn writeback_rigid_bodies(
                                 interpolated_pos.translation.z = transform.translation.z;
                             }
 
-                            transform.rotation = interpolated_pos.rotation;
-                            transform.translation = interpolated_pos.translation;
+                            if transform.rotation != interpolated_pos.rotation
+                                || transform.translation != interpolated_pos.translation
+                            {
+                                // NOTE: we write the new value only if there was an
+                                //       actual change, in order to not trigger bevy’s
+                                //       change tracking when the values didn’t change.
+                                transform.rotation = interpolated_pos.rotation;
+                                transform.translation = interpolated_pos.translation;
+                            }
 
                             context
                                 .last_body_transform_set
