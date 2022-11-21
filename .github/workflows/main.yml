@@ -28,7 +28,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
       - name: Clippy for bevy_rapier2d
         run: cargo clippy --verbose -p bevy_rapier2d
@@ -52,7 +52,7 @@ jobs:
         with:
           components: clippy
           targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - name: Clippy bevy_rapier2d
         run: cd bevy_rapier2d && cargo clippy --verbose --features wasm-bindgen --target wasm32-unknown-unknown
       - name: Clippy bevy_rapier3d
