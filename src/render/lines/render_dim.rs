@@ -19,7 +19,7 @@ pub mod r3d {
                 StencilFaceState, StencilState, TextureFormat, VertexState,
             },
             texture::BevyDefault,
-            view::{ExtractedView, Msaa},
+            view::{ExtractedView, Msaa, ViewTarget},
         },
     };
 
@@ -73,6 +73,12 @@ pub mod r3d {
                 depth_write_enabled = true;
             }
 
+            let format = if key.contains(MeshPipelineKey::HDR) {
+                ViewTarget::TEXTURE_FORMAT_HDR
+            } else {
+                TextureFormat::bevy_default()
+            };
+
             Ok(RenderPipelineDescriptor {
                 vertex: VertexState {
                     shader: self.shader.clone_weak(),
@@ -85,7 +91,7 @@ pub mod r3d {
                     shader_defs,
                     entry_point: "fragment".into(),
                     targets: vec![Some(ColorTargetState {
-                        format: TextureFormat::bevy_default(),
+                        format,
                         blend,
                         write_mask: ColorWrites::ALL,
                     })],
@@ -142,12 +148,18 @@ pub mod r3d {
             .read()
             .get_id::<DrawDebugLines>()
             .unwrap();
-        let key = MeshPipelineKey::from_msaa_samples(msaa.samples);
+        let msaa_key = MeshPipelineKey::from_msaa_samples(msaa.samples);
         for (view, mut transparent_phase) in views.iter_mut() {
             let view_matrix = view.transform.compute_matrix();
             let view_row_2 = view_matrix.row(2);
+
+            let view_key = msaa_key | MeshPipelineKey::from_hdr(view.hdr);
+
             for (entity, mesh_uniform, mesh_handle) in material_meshes.iter() {
                 if let Some(mesh) = render_meshes.get(mesh_handle) {
+                    let key = view_key
+                        | MeshPipelineKey::from_primitive_topology(mesh.primitive_topology);
+
                     let pipeline = pipelines
                         .specialize(
                             &mut pipeline_cache,
@@ -193,7 +205,7 @@ pub mod r2d {
                 SpecializedMeshPipelineError, SpecializedMeshPipelines, TextureFormat, VertexState,
             },
             texture::BevyDefault,
-            view::{Msaa, VisibleEntities},
+            view::{ExtractedView, Msaa, ViewTarget, VisibleEntities},
         },
         sprite::{
             DrawMesh2d, Mesh2dHandle, Mesh2dPipeline, Mesh2dPipelineKey, Mesh2dUniform,
@@ -234,6 +246,12 @@ pub mod r2d {
                 Mesh::ATTRIBUTE_COLOR.at_shader_location(1),
             ])?;
 
+            let format = if key.contains(Mesh2dPipelineKey::HDR) {
+                ViewTarget::TEXTURE_FORMAT_HDR
+            } else {
+                TextureFormat::bevy_default()
+            };
+
             Ok(RenderPipelineDescriptor {
                 vertex: VertexState {
                     shader: self.shader.clone_weak(),
@@ -246,7 +264,7 @@ pub mod r2d {
                     shader_defs: vec![],
                     entry_point: "fragment".into(),
                     targets: vec![Some(ColorTargetState {
-                        format: TextureFormat::bevy_default(),
+                        format,
                         blend: Some(BlendState::ALPHA_BLENDING),
                         write_mask: ColorWrites::ALL,
                     })],
@@ -281,20 +299,26 @@ pub mod r2d {
         render_meshes: Res<RenderAssets<Mesh>>,
         msaa: Res<Msaa>,
         material_meshes: Query<(&Mesh2dUniform, &Mesh2dHandle), With<RenderDebugLinesMesh>>,
-        mut views: Query<(&VisibleEntities, &mut RenderPhase<Transparent2d>)>,
+        mut views: Query<(
+            &VisibleEntities,
+            &mut RenderPhase<Transparent2d>,
+            &ExtractedView,
+        )>,
     ) {
         let always_on_top = *config.always_on_top.read().unwrap();
-        for (view, mut phase) in views.iter_mut() {
+        for (visible_entities, mut phase, view) in views.iter_mut() {
             let draw_mesh2d = draw2d_functions.read().get_id::<DrawDebugLines>().unwrap();
             let msaa_key = Mesh2dPipelineKey::from_msaa_samples(msaa.samples);
 
-            for visible_entity in &view.entities {
+            for visible_entity in &visible_entities.entities {
                 if let Ok((uniform, mesh_handle)) = material_meshes.get(*visible_entity) {
                     if let Some(mesh) = render_meshes.get(&mesh_handle.0) {
                         let mesh_key = msaa_key
                             | Mesh2dPipelineKey::from_primitive_topology(
                                 PrimitiveTopology::LineList,
-                            );
+                            )
+                            | Mesh2dPipelineKey::from_hdr(view.hdr);
+
                         let mesh_z = if always_on_top {
                             f32::MAX
                         } else {
