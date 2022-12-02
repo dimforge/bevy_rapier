@@ -118,7 +118,6 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<P
                         .before(systems::step_simulation::<PhysicsHooksData>),
                 ),
             PhysicsStages::Writeback => SystemSet::new()
-                .with_system(systems::update_colliding_entities)
                 .with_system(systems::writeback_rigid_bodies),
             PhysicsStages::DetectDespawn => SystemSet::new().with_system(systems::sync_removals),
         }

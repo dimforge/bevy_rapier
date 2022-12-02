@@ -1167,6 +1167,7 @@ pub fn sync_removals(
 
 /// Adds entity to [`CollidingEntities`] on starting collision and removes from it when the
 /// collision ends.
+/// This system will not add by default.
 pub fn update_colliding_entities(
     mut collision_events: EventReader<CollisionEvent>,
     mut colliding_entities: Query<&mut CollidingEntities>,
