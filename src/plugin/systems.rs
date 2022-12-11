@@ -512,10 +512,6 @@ pub fn writeback_rigid_bodies(
                         if let Some(parent_global_transform) =
                             parent.and_then(|p| global_transforms.get(**p).ok())
                         {
-                            // In 2D, preserve the transform `z` component that may have been set by the user
-                            #[cfg(feature = "dim2")]
-                            let prev_z = transform.translation.z;
-
                             // We need to compute the new local transform such that:
                             // curr_parent_global_transform * new_transform = interpolated_pos
                             // new_transform = curr_parent_global_transform.inverse() * interpolated_pos
@@ -525,9 +521,17 @@ pub fn writeback_rigid_bodies(
                                     .inverse()
                                     .to_scale_rotation_translation();
                             let new_rotation = inverse_parent_rotation * interpolated_pos.rotation;
-                            let new_translation = inverse_parent_rotation
+
+                            #[allow(unused_mut)] // mut is needed in 2D but not in 3D.
+                            let mut new_translation = inverse_parent_rotation
                                 * interpolated_pos.translation
                                 + inverse_parent_translation;
+
+                            // In 2D, preserve the transform `z` component that may have been set by the user
+                            #[cfg(feature = "dim2")]
+                            {
+                                new_translation.z = transform.translation.z;
+                            }
 
                             if transform.rotation != new_rotation
                                 || transform.translation != new_translation
@@ -537,11 +541,6 @@ pub fn writeback_rigid_bodies(
                                 //       change tracking when the values didn’t change.
                                 transform.rotation = new_rotation;
                                 transform.translation = new_translation;
-                            }
-
-                            #[cfg(feature = "dim2")]
-                            {
-                                transform.translation.z = prev_z;
                             }
 
                             // NOTE: we need to compute the result of the next transform propagation
