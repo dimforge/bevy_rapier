@@ -3,18 +3,18 @@ use bevy::prelude::Entity;
 pub use rapier::geometry::InteractionGroups;
 pub use rapier::pipeline::QueryFilterFlags;
 
-/// A filter tha describes what collider should be included or excluded from a scene query.
+/// A filter that describes what collider should be included or excluded from a scene query.
 #[derive(Copy, Clone, Default)]
 pub struct QueryFilter<'a> {
-    /// Flags indicating what particular type of colliders should be exclude.
+    /// Flags indicating what particular type of colliders should be excluded.
     pub flags: QueryFilterFlags,
     /// If set, only colliders with collision groups compatible with this one will
     /// be included in the scene query.
     pub groups: Option<InteractionGroups>,
-    /// If set, the collider attached to that entity will be excluded by the query.
+    /// If set, the collider attached to that entity will be excluded from the query.
     pub exclude_collider: Option<Entity>,
     /// If set, any collider attached to the rigid-body attached to that entity
-    /// will be exclude by the query.
+    /// will be excluded from the query.
     pub exclude_rigid_body: Option<Entity>,
     /// If set, any collider for which this closure returns false.
     pub predicate: Option<&'a dyn Fn(Entity) -> bool>,
