@@ -70,33 +70,42 @@ pub struct Velocity {
 
 impl Velocity {
     /// Initialize a velocity set to zero.
-    pub fn zero() -> Self {
-        Self::default()
+    pub const fn zero() -> Self {
+        Self {
+            linvel: Vect::ZERO,
+            #[cfg(feature = "dim2")]
+            angvel: 0.0,
+            #[cfg(feature = "dim3")]
+            angvel: Vect::ZERO,
+        }
     }
 
     /// Initialize a velocity with the given linear velocity, and an angular velocity of zero.
-    pub fn linear(linvel: Vect) -> Self {
+    pub const fn linear(linvel: Vect) -> Self {
         Self {
             linvel,
-            ..Self::default()
+            #[cfg(feature = "dim2")]
+            angvel: 0.0,
+            #[cfg(feature = "dim3")]
+            angvel: Vect::ZERO,
         }
     }
 
     /// Initialize a velocity with the given angular velocity, and a linear velocity of zero.
     #[cfg(feature = "dim2")]
-    pub fn angular(angvel: f32) -> Self {
+    pub const fn angular(angvel: f32) -> Self {
         Self {
+            linvel: Vect::ZERO,
             angvel,
-            ..Self::default()
         }
     }
 
     /// Initialize a velocity with the given angular velocity, and a linear velocity of zero.
     #[cfg(feature = "dim3")]
-    pub fn angular(angvel: Vect) -> Self {
+    pub const fn angular(angvel: Vect) -> Self {
         Self {
+            linvel: Vect::ZERO,
             angvel,
-            ..Self::default()
         }
     }
 }
