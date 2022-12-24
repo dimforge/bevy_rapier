@@ -17,7 +17,8 @@ use crate::pipeline::{
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
-    CollidingEntities, KinematicCharacterController, KinematicCharacterControllerOutput,
+    get_snapped_scale, CollidingEntities, KinematicCharacterController,
+    KinematicCharacterControllerOutput,
 };
 use crate::utils;
 use bevy::ecs::query::WorldQuery;
@@ -108,7 +109,7 @@ pub fn apply_scale(
             None => transform.compute_transform().scale,
         };
 
-        if shape.scale != effective_scale {
+        if shape.scale != get_snapped_scale(effective_scale) {
             shape.set_scale(effective_scale, config.scaled_shape_subdivision);
         }
     }
