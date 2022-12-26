@@ -76,7 +76,7 @@ pub struct MoveShapeOptions {
     /// Should the character apply forces to dynamic bodies in its path?
     pub apply_impulse_to_dynamic_bodies: bool,
     /// Should the character be automatically snapped to the ground if the distance between
-    /// the ground and its feed are smaller than the specified threshold?
+    /// the ground and its feet are smaller than the specified threshold?
     pub snap_to_ground: Option<CharacterLength>,
 }
 
@@ -130,7 +130,7 @@ pub struct KinematicCharacterController {
     /// Should the character apply forces to dynamic bodies in its path?
     pub apply_impulse_to_dynamic_bodies: bool,
     /// Should the character be automatically snapped to the ground if the distance between
-    /// the ground and its feed are smaller than the specified threshold?
+    /// the ground and its feet are smaller than the specified threshold?
     pub snap_to_ground: Option<CharacterLength>,
     /// Flags for filtering-out some categories of entities from the environment seen by the
     /// character controller.
