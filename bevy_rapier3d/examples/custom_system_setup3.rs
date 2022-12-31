@@ -46,7 +46,10 @@ fn main() {
         0xFF as f32 / 255.0,
     )))
     .add_plugins(DefaultPlugins)
-    .add_plugin(RapierDebugRenderPlugin::default())
+    .add_plugin(RapierDebugRenderPlugin {
+        enabled: true,
+        ..Default::default()
+    })
     .add_startup_system(setup_graphics)
     .add_startup_system(setup_physics);
 

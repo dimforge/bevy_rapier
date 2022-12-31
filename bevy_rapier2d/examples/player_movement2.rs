@@ -15,7 +15,10 @@ fn main() {
         .add_startup_system(spawn_player)
         .add_system(player_movement)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-        .add_plugin(RapierDebugRenderPlugin::default())
+        .add_plugin(RapierDebugRenderPlugin {
+            enabled: true,
+            ..Default::default()
+        })
         .run();
 }
 

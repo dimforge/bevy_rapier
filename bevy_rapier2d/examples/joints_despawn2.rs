@@ -16,7 +16,10 @@ fn main() {
         .insert_resource(DespawnResource::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-        .add_plugin(RapierDebugRenderPlugin::default())
+        .add_plugin(RapierDebugRenderPlugin {
+            enabled: true,
+            ..Default::default()
+        })
         .add_startup_system(setup_graphics)
         .add_startup_system(setup_physics)
         .add_system(despawn)

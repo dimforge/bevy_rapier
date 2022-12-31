@@ -13,7 +13,10 @@ fn main() {
         .add_startup_system(setup_game)
         .add_system(cube_sleep_detection)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-        .add_plugin(RapierDebugRenderPlugin::default())
+        .add_plugin(RapierDebugRenderPlugin {
+            enabled: true,
+            ..Default::default()
+        })
         .run();
 }
 
