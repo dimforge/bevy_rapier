@@ -1,9 +1,11 @@
 use std::fmt;
 
+#[cfg(not(feature = "headless"))]
 #[cfg(feature = "dim3")]
 use crate::geometry::VHACDParameters;
 use bevy::prelude::*;
 use bevy::reflect::FromReflect;
+#[cfg(not(feature = "headless"))]
 #[cfg(feature = "dim3")]
 use bevy::utils::HashMap;
 use bevy::utils::HashSet;
@@ -18,6 +20,7 @@ use crate::math::Vect;
 pub struct RapierColliderHandle(pub ColliderHandle);
 
 /// A component which will be replaced by the specified collider type after the referenced mesh become available.
+#[cfg(not(feature = "headless"))]
 #[cfg(feature = "dim3")]
 #[derive(Component, Debug, Clone)]
 pub struct AsyncCollider {
@@ -27,6 +30,7 @@ pub struct AsyncCollider {
     pub shape: ComputedColliderShape,
 }
 
+#[cfg(not(feature = "headless"))]
 #[cfg(feature = "dim3")]
 impl Default for AsyncCollider {
     fn default() -> Self {
@@ -38,6 +42,7 @@ impl Default for AsyncCollider {
 }
 
 /// A component which will be replaced the specified collider types on children with meshes after the referenced scene become available.
+#[cfg(not(feature = "headless"))]
 #[cfg(feature = "dim3")]
 #[derive(Component, Debug, Clone)]
 pub struct AsyncSceneCollider {
@@ -52,6 +57,7 @@ pub struct AsyncSceneCollider {
 }
 
 /// Shape type based on a Bevy mesh asset.
+#[cfg(not(feature = "headless"))]
 #[cfg(feature = "dim3")]
 #[derive(Debug, Clone)]
 pub enum ComputedColliderShape {

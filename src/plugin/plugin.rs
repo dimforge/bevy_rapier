@@ -96,6 +96,8 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<P
                             .after(systems::apply_initial_rigid_body_impulses),
                     );
 
+                    
+                #[cfg(not(feature = "headless"))]
                 #[cfg(feature = "dim3")]
                 {
                     systems.with_system(
@@ -103,6 +105,10 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<P
                     )
                 }
                 #[cfg(not(feature = "dim3"))]
+                {
+                    systems
+                }
+                #[cfg(feature = "headless")]
                 {
                     systems
                 }

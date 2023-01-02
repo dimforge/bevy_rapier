@@ -27,6 +27,7 @@ simd-nightly = [ "rapier2d/simd-nightly" ]
 wasm-bindgen = [ "rapier2d/wasm-bindgen" ]
 serde-serialize = [ "rapier2d/serde-serialize", "serde" ]
 enhanced-determinism = [ "rapier2d/enhanced-determinism" ]
+headless = [ ]
 
 [dependencies]
 bevy = { version = "0.9.0", default-features = false, features = ["bevy_asset", "bevy_scene"] }
