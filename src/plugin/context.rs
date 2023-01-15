@@ -18,7 +18,7 @@ use bevy::render::primitives::Aabb;
 use crate::control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput};
 use crate::dynamics::TransformInterpolation;
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
-use crate::prelude::RapierRigidBodyHandle;
+use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
 #[cfg(feature = "dim2")]
 use bevy::math::Vec3Swizzles;
 use rapier::control::CharacterAutostep;
@@ -165,7 +165,7 @@ impl RapierContext {
     ) -> T {
         let mut rapier_filter = RapierQueryFilter {
             flags: filter.flags,
-            groups: filter.groups,
+            groups: filter.groups.map(CollisionGroups::into),
             exclude_collider: filter
                 .exclude_collider
                 .and_then(|c| entity2collider.get(&c).copied()),

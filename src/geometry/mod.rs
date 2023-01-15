@@ -1,6 +1,5 @@
 pub use self::collider::*;
 pub use self::shape_views::ColliderView;
-pub use rapier::geometry::InteractionGroups;
 pub use rapier::geometry::SolverFlags;
 pub use rapier::parry::query::TOIStatus;
 pub use rapier::parry::shape::TriMeshFlags;

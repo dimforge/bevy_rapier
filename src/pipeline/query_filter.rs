@@ -3,6 +3,8 @@ use bevy::prelude::Entity;
 pub use rapier::geometry::InteractionGroups;
 pub use rapier::pipeline::QueryFilterFlags;
 
+use crate::geometry::CollisionGroups;
+
 /// A filter that describes what collider should be included or excluded from a scene query.
 #[derive(Copy, Clone, Default)]
 pub struct QueryFilter<'a> {
@@ -10,7 +12,7 @@ pub struct QueryFilter<'a> {
     pub flags: QueryFilterFlags,
     /// If set, only colliders with collision groups compatible with this one will
     /// be included in the scene query.
-    pub groups: Option<InteractionGroups>,
+    pub groups: Option<CollisionGroups>,
     /// If set, the collider attached to that entity will be excluded from the query.
     pub exclude_collider: Option<Entity>,
     /// If set, any collider attached to the rigid-body attached to that entity
@@ -29,8 +31,8 @@ impl<'a> From<QueryFilterFlags> for QueryFilter<'a> {
     }
 }
 
-impl<'a> From<InteractionGroups> for QueryFilter<'a> {
-    fn from(groups: InteractionGroups) -> Self {
+impl<'a> From<CollisionGroups> for QueryFilter<'a> {
+    fn from(groups: CollisionGroups) -> Self {
         Self {
             groups: Some(groups),
             ..QueryFilter::default()
@@ -89,7 +91,7 @@ impl<'a> QueryFilter<'a> {
 
     /// Only colliders with collision groups compatible with this one will
     /// be included in the scene query.
-    pub fn groups(mut self, groups: InteractionGroups) -> Self {
+    pub fn groups(mut self, groups: CollisionGroups) -> Self {
         self.groups = Some(groups);
         self
     }

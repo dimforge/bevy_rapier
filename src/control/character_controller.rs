@@ -1,11 +1,11 @@
-use crate::geometry::{Collider, Toi};
+use crate::geometry::{Collider, CollisionGroups, Toi};
 use crate::math::{Real, Rot, Vect};
 use bevy::prelude::*;
 
 use crate::plugin::RapierContext;
 pub use rapier::control::CharacterAutostep;
 pub use rapier::control::CharacterLength;
-use rapier::prelude::{ColliderSet, InteractionGroups, QueryFilterFlags};
+use rapier::prelude::{ColliderSet, QueryFilterFlags};
 
 /// A collision between the character and its environment during its movement.
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -137,7 +137,7 @@ pub struct KinematicCharacterController {
     pub filter_flags: QueryFilterFlags,
     /// Groups for filtering-out some colliders from the environment seen by the character
     /// controller.
-    pub filter_groups: Option<InteractionGroups>,
+    pub filter_groups: Option<CollisionGroups>,
 }
 
 impl KinematicCharacterController {
