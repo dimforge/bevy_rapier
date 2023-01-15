@@ -29,7 +29,6 @@ simd-nightly = [ "rapier3d/simd-nightly" ]
 wasm-bindgen = [ "rapier3d/wasm-bindgen" ]
 serde-serialize = [ "rapier3d/serde-serialize", "bevy/serialize", "serde" ]
 enhanced-determinism = [ "rapier3d/enhanced-determinism" ]
-headless = [ ]
 
 # Enables the AsyncCollider and AsyncSceneCollider components that wait for specific
 # assets to be loaded before creating the actual Collider.
