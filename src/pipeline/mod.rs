@@ -5,7 +5,7 @@ pub use self::physics_hooks::{
     ContactModificationContextView, PairFilterContextView, PhysicsHooksWithQuery,
     PhysicsHooksWithQueryResource,
 };
-pub use query_filter::{InteractionGroups, QueryFilter, QueryFilterFlags};
+pub use query_filter::{QueryFilter, QueryFilterFlags};
 
 mod events;
 mod physics_hooks;

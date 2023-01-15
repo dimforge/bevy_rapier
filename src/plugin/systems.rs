@@ -30,7 +30,6 @@ use std::collections::HashMap;
 use crate::prelude::{AsyncCollider, AsyncSceneCollider};
 
 use crate::control::CharacterCollision;
-use crate::utils::transform_to_iso;
 #[cfg(feature = "dim2")]
 use bevy::math::Vec3Swizzles;
 
@@ -1250,7 +1249,8 @@ pub fn update_character_controls(
                     shape_pos = body.position() * shape_pos
                 } else if let Some(gtransform) = glob_transform {
                     shape_pos =
-                        transform_to_iso(&gtransform.compute_transform(), physics_scale) * shape_pos
+                        utils::transform_to_iso(&gtransform.compute_transform(), physics_scale)
+                            * shape_pos
                 }
 
                 (&*scaled_shape.raw, shape_pos)
@@ -1274,7 +1274,7 @@ pub fn update_character_controls(
 
             let mut filter = QueryFilter {
                 flags: controller.filter_flags,
-                groups: controller.filter_groups,
+                groups: controller.filter_groups.map(|g| g.into()),
                 exclude_collider: None,
                 exclude_rigid_body: None,
                 predicate: None,
