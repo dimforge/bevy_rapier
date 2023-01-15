@@ -826,11 +826,10 @@ pub fn init_colliders(
             body_handle = context.entity2body.get(&body_entity).copied();
         }
 
-        builder = builder.position(utils::transform_to_iso(&child_transform, physics_scale));
         builder = builder.user_data(entity.to_bits() as u128);
 
         let handle = if let Some(body_handle) = body_handle {
-            builder = builder.position(utils::transform_to_iso(&child_transform, scale));
+            builder = builder.position(utils::transform_to_iso(&child_transform, physics_scale));
             let handle =
                 context
                     .colliders
@@ -848,7 +847,7 @@ pub fn init_colliders(
             let global_transform = global_transform.cloned().unwrap_or_default();
             builder = builder.position(utils::transform_to_iso(
                 &global_transform.compute_transform(),
-                scale,
+                physics_scale,
             ));
             context.colliders.insert(builder)
         };
