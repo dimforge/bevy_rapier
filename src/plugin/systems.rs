@@ -669,11 +669,6 @@ pub fn step_simulation<PhysicsHooksData: 'static + WorldQuery + Send + Sync>(
 #[cfg(feature = "dim2")]
 pub fn init_async_colliders() {}
 
-/// NOTE: This does nothing in 3D with headless.
-#[cfg(feature = "headless")]
-#[cfg(feature = "dim3")]
-pub fn init_async_colliders() {}
-
 /// System responsible for creating `Collider` components from `AsyncCollider` components if the
 /// corresponding mesh has become available.
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
