@@ -18,7 +18,7 @@ path = "../src/lib.rs"
 required-features = [ "dim3" ]
 
 [features]
-default = [ "dim3", "debug-render" ]
+default = [ "dim3", "async-collider", "debug-render" ]
 dim3 = ["bevy/bevy_render"]
 debug-render = [ "bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_render", "rapier3d/debug-render" ]
 parallel = [ "rapier3d/parallel" ]
@@ -27,6 +27,13 @@ simd-nightly = [ "rapier3d/simd-nightly" ]
 wasm-bindgen = [ "rapier3d/wasm-bindgen" ]
 serde-serialize = [ "rapier3d/serde-serialize", "serde" ]
 enhanced-determinism = [ "rapier3d/enhanced-determinism" ]
+headless = [ ]
+
+# Enables the AsyncCollider and AsyncSceneCollider components that wait for specific
+# assets to be loaded before creating the actual Collider.
+# See https://github.com/dimforge/bevy_rapier/issues/296 for a workaround on how
+# to use this when using bevy headless.
+async-collider = [ ]
 
 [dependencies]
 bevy = { version = "0.9.0", default-features = false, features = ["bevy_asset", "bevy_scene"] }

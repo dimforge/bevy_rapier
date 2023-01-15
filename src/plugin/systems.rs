@@ -26,7 +26,7 @@ use bevy::prelude::*;
 use rapier::prelude::*;
 use std::collections::HashMap;
 
-#[cfg(feature = "dim3")]
+#[cfg(all(feature = "dim3", feature = "async-collider"))]
 use crate::prelude::{AsyncCollider, AsyncSceneCollider};
 
 use crate::control::CharacterCollision;
@@ -646,12 +646,18 @@ pub fn step_simulation<PhysicsHooksData: 'static + WorldQuery + Send + Sync>(
 }
 
 /// NOTE: This currently does nothing in 2D.
+#[cfg(feature = "async-collider")]
 #[cfg(feature = "dim2")]
+pub fn init_async_colliders() {}
+
+/// NOTE: This does nothing in 3D with headless.
+#[cfg(feature = "headless")]
+#[cfg(feature = "dim3")]
 pub fn init_async_colliders() {}
 
 /// System responsible for creating `Collider` components from `AsyncCollider` components if the
 /// corresponding mesh has become available.
-#[cfg(feature = "dim3")]
+#[cfg(all(feature = "dim3", feature = "async-collider"))]
 pub fn init_async_colliders(
     mut commands: Commands,
     meshes: Res<Assets<Mesh>>,
@@ -674,7 +680,7 @@ pub fn init_async_colliders(
 
 /// System responsible for creating `Collider` components from `AsyncSceneCollider` components if the
 /// corresponding scene has become available.
-#[cfg(feature = "dim3")]
+#[cfg(all(feature = "dim3", feature = "async-collider"))]
 pub fn init_async_scene_colliders(
     mut commands: Commands,
     meshes: Res<Assets<Mesh>>,
@@ -712,7 +718,7 @@ pub fn init_async_scene_colliders(
 }
 
 /// Iterates over all descendants of the `entity` and applies `f`.
-#[cfg(feature = "dim3")]
+#[cfg(all(feature = "dim3", feature = "async-collider"))]
 fn traverse_descendants(entity: Entity, children: &Query<&Children>, f: &mut impl FnMut(Entity)) {
     if let Ok(entity_children) = children.get(entity) {
         for child in entity_children.iter().copied() {
@@ -1355,7 +1361,7 @@ pub fn update_character_controls(
 
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "dim3")]
+    #[cfg(all(feature = "dim3", feature = "async-collider"))]
     use bevy::prelude::shape::{Capsule, Cube};
     use bevy::{
         asset::AssetPlugin,
@@ -1370,7 +1376,7 @@ mod tests {
 
     use super::*;
     use crate::plugin::{NoUserData, RapierPhysicsPlugin};
-    #[cfg(feature = "dim3")]
+    #[cfg(all(feature = "dim3", feature = "async-collider"))]
     use crate::prelude::ComputedColliderShape;
 
     #[test]
@@ -1460,7 +1466,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "dim3")]
+    #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_collider_initializes() {
         let mut app = App::new();
         app.add_plugin(HeadlessRenderPlugin)
@@ -1491,7 +1497,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "dim3")]
+    #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_scene_collider_initializes() {
         let mut app = App::new();
         app.add_plugin(HeadlessRenderPlugin)

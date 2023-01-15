@@ -96,13 +96,17 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<P
                             .after(systems::apply_initial_rigid_body_impulses),
                     );
 
-                #[cfg(feature = "dim3")]
+                #[cfg(all(feature = "dim3", feature = "async-collider"))]
                 {
                     systems.with_system(
                         systems::init_async_scene_colliders.before(systems::init_async_colliders),
                     )
                 }
                 #[cfg(not(feature = "dim3"))]
+                {
+                    systems
+                }
+                #[cfg(feature = "headless")]
                 {
                     systems
                 }
