@@ -3,7 +3,7 @@ use bevy::prelude::Entity;
 pub use rapier::geometry::InteractionGroups;
 pub use rapier::pipeline::QueryFilterFlags;
 
-use crate::prelude::CollisionGroups;
+use crate::geometry::CollisionGroups;
 
 /// A filter that describes what collider should be included or excluded from a scene query.
 #[derive(Copy, Clone, Default)]
