@@ -1,7 +1,6 @@
 #[cfg(feature = "dim2")]
 use na::DVector;
-#[cfg(not(feature = "headless"))]
-#[cfg(feature = "dim3")]
+#[cfg(all(feature = "dim3", feature = "async-collider"))]
 use {
     bevy::prelude::*,
     bevy::render::mesh::{Indices, VertexAttributeValues},
@@ -10,8 +9,7 @@ use {
 use rapier::prelude::{FeatureId, Point, Ray, SharedShape, Vector, DIM};
 
 use super::{get_snapped_scale, shape_views::*};
-#[cfg(not(feature = "headless"))]
-#[cfg(feature = "dim3")]
+#[cfg(all(feature = "dim3", feature = "async-collider"))]
 use crate::geometry::ComputedColliderShape;
 use crate::geometry::{Collider, PointProjection, RayIntersection, TriMeshFlags, VHACDParameters};
 use crate::math::{Real, Rot, Vect};
@@ -172,8 +170,7 @@ impl Collider {
     /// Initializes a collider with a Bevy Mesh.
     ///
     /// Returns `None` if the index buffer or vertex buffer of the mesh are in an incompatible format.
-    #[cfg(not(feature = "headless"))]
-    #[cfg(feature = "dim3")]
+    #[cfg(all(feature = "dim3", feature = "async-collider"))]
     pub fn from_bevy_mesh(mesh: &Mesh, collider_shape: &ComputedColliderShape) -> Option<Self> {
         let vertices_indices = extract_mesh_vertices_indices(mesh);
         match collider_shape {
@@ -729,8 +726,7 @@ impl Default for Collider {
     }
 }
 
-#[cfg(not(feature = "headless"))]
-#[cfg(feature = "dim3")]
+#[cfg(all(feature = "dim3", feature = "async-collider"))]
 #[allow(clippy::type_complexity)]
 fn extract_mesh_vertices_indices(mesh: &Mesh) -> Option<(Vec<na::Point3<Real>>, Vec<[u32; 3]>)> {
     use rapier::na::point;

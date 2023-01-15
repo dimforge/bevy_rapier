@@ -1,13 +1,11 @@
 use std::fmt;
 
-#[cfg(not(feature = "headless"))]
-#[cfg(feature = "dim3")]
-use crate::geometry::VHACDParameters;
+#[cfg(all(feature = "dim3", feature = "async-collider"))]
+use {crate::geometry::VHACDParameters, bevy::utils::HashMap};
+
 use bevy::prelude::*;
 use bevy::reflect::FromReflect;
-#[cfg(not(feature = "headless"))]
-#[cfg(feature = "dim3")]
-use bevy::utils::HashMap;
+
 use bevy::utils::HashSet;
 use rapier::geometry::Shape;
 use rapier::prelude::{ColliderHandle, InteractionGroups, SharedShape};
@@ -20,8 +18,7 @@ use crate::math::Vect;
 pub struct RapierColliderHandle(pub ColliderHandle);
 
 /// A component which will be replaced by the specified collider type after the referenced mesh become available.
-#[cfg(not(feature = "headless"))]
-#[cfg(feature = "dim3")]
+#[cfg(all(feature = "dim3", feature = "async-collider"))]
 #[derive(Component, Debug, Clone)]
 pub struct AsyncCollider {
     /// Mesh handle to use for collider generation.
@@ -30,8 +27,7 @@ pub struct AsyncCollider {
     pub shape: ComputedColliderShape,
 }
 
-#[cfg(not(feature = "headless"))]
-#[cfg(feature = "dim3")]
+#[cfg(all(feature = "dim3", feature = "async-collider"))]
 impl Default for AsyncCollider {
     fn default() -> Self {
         Self {
@@ -42,8 +38,7 @@ impl Default for AsyncCollider {
 }
 
 /// A component which will be replaced the specified collider types on children with meshes after the referenced scene become available.
-#[cfg(not(feature = "headless"))]
-#[cfg(feature = "dim3")]
+#[cfg(all(feature = "dim3", feature = "async-collider"))]
 #[derive(Component, Debug, Clone)]
 pub struct AsyncSceneCollider {
     /// Scene handle to use for colliders generation.
@@ -57,8 +52,7 @@ pub struct AsyncSceneCollider {
 }
 
 /// Shape type based on a Bevy mesh asset.
-#[cfg(not(feature = "headless"))]
-#[cfg(feature = "dim3")]
+#[cfg(all(feature = "dim3", feature = "async-collider"))]
 #[derive(Debug, Clone)]
 pub enum ComputedColliderShape {
     /// Triangle-mesh.
