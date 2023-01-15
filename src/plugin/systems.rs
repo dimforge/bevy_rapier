@@ -859,8 +859,10 @@ pub fn init_colliders(
                 // Inserting the collider changed the rigid-body’s mass properties.
                 // Read them back from the engine.
                 if let Some(parent_body) = context.bodies.get(body_handle) {
-                    mprops.0 =
-                        MassProperties::from_rapier(*parent_body.mass_properties(), physics_scale);
+                    mprops.0 = MassProperties::from_rapier(
+                        parent_body.mass_properties().local_mprops,
+                        physics_scale,
+                    );
                 }
             }
             handle
