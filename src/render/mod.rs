@@ -39,7 +39,7 @@ impl Default for RapierDebugRenderPlugin {
     #[cfg(feature = "dim2")]
     fn default() -> Self {
         Self {
-            enabled: false,
+            enabled: true,
             always_on_top: true,
             style: DebugRenderStyle {
                 rigid_body_axes_length: 20.0,
@@ -51,7 +51,7 @@ impl Default for RapierDebugRenderPlugin {
     #[cfg(feature = "dim3")]
     fn default() -> Self {
         Self {
-            enabled: false,
+            enabled: true,
             always_on_top: false,
             style: DebugRenderStyle::default(),
             mode: DebugRenderMode::default(),
