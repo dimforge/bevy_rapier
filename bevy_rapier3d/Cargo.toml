@@ -27,7 +27,7 @@ parallel = [ "rapier3d/parallel" ]
 simd-stable = [ "rapier3d/simd-stable" ]
 simd-nightly = [ "rapier3d/simd-nightly" ]
 wasm-bindgen = [ "rapier3d/wasm-bindgen" ]
-serde-serialize = [ "rapier3d/serde-serialize", "serde" ]
+serde-serialize = [ "rapier3d/serde-serialize", "bevy/serialize", "serde" ]
 enhanced-determinism = [ "rapier3d/enhanced-determinism" ]
 headless = [ ]
 
@@ -39,9 +39,9 @@ async-collider = [ ]
 
 [dependencies]
 bevy = { version = "0.9.0", default-features = false, features = ["bevy_asset", "bevy_scene"] }
-nalgebra = { version = "^0.31.4", features = [ "convert-glam022" ] }
+nalgebra = { version = "^0.32.0", features = [ "convert-glam022" ] }
 # Don't enable the default features because we don't need the ColliderSet/RigidBodySet
-rapier3d = "0.16.0"
+rapier3d = "0.17.0"
 bitflags = "1"
 #bevy_prototype_debug_lines = { version = "0.6", features = ["3d"], optional = true }
 log = "0.4"

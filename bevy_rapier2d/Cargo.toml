@@ -26,7 +26,7 @@ parallel = [ "rapier2d/parallel" ]
 simd-stable = [ "rapier2d/simd-stable" ]
 simd-nightly = [ "rapier2d/simd-nightly" ]
 wasm-bindgen = [ "rapier2d/wasm-bindgen" ]
-serde-serialize = [ "rapier2d/serde-serialize", "serde" ]
+serde-serialize = [ "rapier2d/serde-serialize", "bevy/serialize", "serde" ]
 enhanced-determinism = [ "rapier2d/enhanced-determinism" ]
 
 # Enables the AsyncCollider and AsyncSceneCollider components that wait for specific
@@ -38,9 +38,9 @@ async-collider = [ ]
 
 [dependencies]
 bevy = { version = "0.9.0", default-features = false, features = ["bevy_asset", "bevy_scene"] }
-nalgebra = { version = "^0.31.4", features = [ "convert-glam022" ] }
+nalgebra = { version = "0.32.0", features = [ "convert-glam022" ] }
 # Don't enable the default features because we don't need the ColliderSet/RigidBodySet
-rapier2d = "0.16.0"
+rapier2d = "0.17.0"
 bitflags = "1"
 #bevy_prototype_debug_lines = { version = "0.6", optional = true }
 log = "0.4"
