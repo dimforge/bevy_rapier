@@ -733,7 +733,7 @@ pub fn init_colliders(
     mut commands: Commands,
     config: Res<RapierConfiguration>,
     mut context: ResMut<RapierContext>,
-    colliders: Query<ColliderComponents, Without<RapierColliderHandle>>,
+    colliders: Query<(ColliderComponents, Option<&GlobalTransform>), Without<RapierColliderHandle>>,
     mut rigid_body_mprops: Query<&mut ReadMassProperties>,
     parent_query: Query<(&Parent, Option<&Transform>)>,
 ) {
@@ -741,18 +741,21 @@ pub fn init_colliders(
     let physics_scale = context.physics_scale;
 
     for (
-        entity,
-        shape,
-        sensor,
-        mprops,
-        active_events,
-        active_hooks,
-        active_collision_types,
-        friction,
-        restitution,
-        collision_groups,
-        solver_groups,
-        contact_force_event_threshold,
+        (
+            entity,
+            shape,
+            sensor,
+            mprops,
+            active_events,
+            active_hooks,
+            active_collision_types,
+            friction,
+            restitution,
+            collision_groups,
+            solver_groups,
+            contact_force_event_threshold,
+        ),
+        global_transform,
     ) in colliders.iter()
     {
         let mut scaled_shape = shape.clone();
@@ -823,10 +826,10 @@ pub fn init_colliders(
             body_handle = context.entity2body.get(&body_entity).copied();
         }
 
-        builder = builder.position(utils::transform_to_iso(&child_transform, physics_scale));
         builder = builder.user_data(entity.to_bits() as u128);
 
         let handle = if let Some(body_handle) = body_handle {
+            builder = builder.position(utils::transform_to_iso(&child_transform, physics_scale));
             let handle =
                 context
                     .colliders
@@ -841,6 +844,11 @@ pub fn init_colliders(
             }
             handle
         } else {
+            let global_transform = global_transform.cloned().unwrap_or_default();
+            builder = builder.position(utils::transform_to_iso(
+                &global_transform.compute_transform(),
+                physics_scale,
+            ));
             context.colliders.insert(builder)
         };
 
