@@ -64,6 +64,7 @@ pub enum ComputedColliderShape {
 /// A geometric entity that can be attached to a body so it can be affected by contacts
 /// and intersection queries.
 #[derive(Component, Clone)] // TODO: Reflect
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct Collider {
     /// The raw shape from Rapier.
     pub raw: SharedShape,
@@ -499,6 +500,11 @@ impl CollidingEntities {
         self.0.iter().copied()
     }
 }
+
+/// Indicates whether or not the collider is disabled explicitly by the user.
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Component, Reflect, FromReflect)]
+#[reflect(Component, PartialEq)]
+pub struct ColliderDisabled;
 
 /// We restrict the scaling increment to 1.0e-4, to avoid numerical jitter
 /// due to the extraction of scaling factor from the GlobalTransform matrix.

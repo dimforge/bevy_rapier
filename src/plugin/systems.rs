@@ -7,9 +7,9 @@ use crate::dynamics::{
     ReadMassProperties, RigidBody, Sleeping, TransformInterpolation, Velocity,
 };
 use crate::geometry::{
-    ActiveCollisionTypes, ActiveEvents, ActiveHooks, Collider, ColliderMassProperties,
-    ColliderScale, CollisionGroups, ContactForceEventThreshold, Friction, RapierColliderHandle,
-    Restitution, Sensor, SolverGroups,
+    ActiveCollisionTypes, ActiveEvents, ActiveHooks, Collider, ColliderDisabled,
+    ColliderMassProperties, ColliderScale, CollisionGroups, ContactForceEventThreshold, Friction,
+    RapierColliderHandle, Restitution, Sensor, SolverGroups,
 };
 use crate::pipeline::{
     CollisionEvent, ContactForceEvent, PhysicsHooksWithQueryInstance, PhysicsHooksWithQueryResource,
@@ -17,8 +17,8 @@ use crate::pipeline::{
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
-    get_snapped_scale, CollidingEntities, KinematicCharacterController,
-    KinematicCharacterControllerOutput,
+    CollidingEntities, KinematicCharacterController, KinematicCharacterControllerOutput,
+    RigidBodyDisabled,
 };
 use crate::utils;
 use bevy::ecs::query::WorldQuery;
@@ -58,6 +58,7 @@ pub type RigidBodyComponents<'a> = (
     Option<&'a Dominance>,
     Option<&'a Sleeping>,
     Option<&'a Damping>,
+    Option<&'a RigidBodyDisabled>,
 );
 
 /// Components related to colliders.
@@ -74,6 +75,7 @@ pub type ColliderComponents<'a> = (
     Option<&'a CollisionGroups>,
     Option<&'a SolverGroups>,
     Option<&'a ContactForceEventThreshold>,
+    Option<&'a ColliderDisabled>,
 );
 
 /// System responsible for applying [`GlobalTransform::scale`] and/or [`ColliderScale`] to
@@ -108,7 +110,7 @@ pub fn apply_scale(
             None => transform.compute_transform().scale,
         };
 
-        if shape.scale != get_snapped_scale(effective_scale) {
+        if shape.scale != crate::geometry::get_snapped_scale(effective_scale) {
             shape.set_scale(effective_scale, config.scaled_shape_subdivision);
         }
     }
@@ -137,6 +139,7 @@ pub fn apply_collider_user_changes(
     >,
     changed_solver_groups: Query<(&RapierColliderHandle, &SolverGroups), Changed<SolverGroups>>,
     changed_sensors: Query<(&RapierColliderHandle, &Sensor), Changed<Sensor>>,
+    changed_disabled: Query<(&RapierColliderHandle, &ColliderDisabled), Changed<ColliderDisabled>>,
     changed_contact_force_threshold: Query<
         (&RapierColliderHandle, &ContactForceEventThreshold),
         Changed<ContactForceEventThreshold>,
@@ -217,6 +220,12 @@ pub fn apply_collider_user_changes(
         }
     }
 
+    for (handle, _) in changed_disabled.iter() {
+        if let Some(co) = context.colliders.get_mut(handle.0) {
+            co.set_enabled(false);
+        }
+    }
+
     for (handle, threshold) in changed_contact_force_threshold.iter() {
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_contact_force_event_threshold(threshold.0);
@@ -265,6 +274,10 @@ pub fn apply_rigid_body_user_changes(
     changed_dominance: Query<(&RapierRigidBodyHandle, &Dominance), Changed<Dominance>>,
     changed_sleeping: Query<(&RapierRigidBodyHandle, &Sleeping), Changed<Sleeping>>,
     changed_damping: Query<(&RapierRigidBodyHandle, &Damping), Changed<Damping>>,
+    changed_disabled: Query<
+        (&RapierRigidBodyHandle, &RigidBodyDisabled),
+        Changed<RigidBodyDisabled>,
+    >,
 ) {
     let context = &mut *context;
     let scale = context.physics_scale;
@@ -293,7 +306,7 @@ pub fn apply_rigid_body_user_changes(
     //       position instead of the current one.
     for (handle, rb_type) in changed_rb_types.iter() {
         if let Some(rb) = context.bodies.get_mut(handle.0) {
-            rb.set_body_type((*rb_type).into());
+            rb.set_body_type((*rb_type).into(), true);
         }
     }
 
@@ -426,6 +439,12 @@ pub fn apply_rigid_body_user_changes(
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_linear_damping(damping.linear_damping);
             rb.set_angular_damping(damping.angular_damping);
+        }
+    }
+
+    for (handle, _) in changed_disabled.iter() {
+        if let Some(co) = context.bodies.get_mut(handle.0) {
+            co.set_enabled(false);
         }
     }
 }
@@ -754,6 +773,7 @@ pub fn init_colliders(
             collision_groups,
             solver_groups,
             contact_force_event_threshold,
+            disabled,
         ),
         global_transform,
     ) in colliders.iter()
@@ -763,6 +783,7 @@ pub fn init_colliders(
         let mut builder = ColliderBuilder::new(scaled_shape.raw.clone());
 
         builder = builder.sensor(sensor.is_some());
+        builder = builder.enabled(disabled.is_none());
 
         if let Some(mprops) = mprops {
             builder = match mprops {
@@ -838,8 +859,10 @@ pub fn init_colliders(
                 // Inserting the collider changed the rigid-body’s mass properties.
                 // Read them back from the engine.
                 if let Some(parent_body) = context.bodies.get(body_handle) {
-                    mprops.0 =
-                        MassProperties::from_rapier(*parent_body.mass_properties(), physics_scale);
+                    mprops.0 = MassProperties::from_rapier(
+                        parent_body.mass_properties().local_mprops,
+                        physics_scale,
+                    );
                 }
             }
             handle
@@ -879,9 +902,12 @@ pub fn init_rigid_bodies(
         dominance,
         sleep,
         damping,
+        disabled,
     ) in rigid_bodies.iter()
     {
         let mut builder = RigidBodyBuilder::new((*rb).into());
+        builder = builder.enabled(disabled.is_none());
+
         if let Some(transform) = transform {
             builder = builder.position(utils::transform_to_iso(
                 &transform.compute_transform(),
@@ -1072,6 +1098,8 @@ pub fn sync_removals(
     >,
 
     removed_sensors: RemovedComponents<Sensor>,
+    removed_rigid_body_disabled: RemovedComponents<RigidBodyDisabled>,
+    removed_colliders_disabled: RemovedComponents<ColliderDisabled>,
 ) {
     /*
      * Rigid-bodies removal detection.
@@ -1164,12 +1192,28 @@ pub fn sync_removals(
     }
 
     /*
-     * Sensor marker component removal detection.
+     * Marker components removal detection.
      */
     for entity in removed_sensors.iter() {
         if let Some(handle) = context.entity2collider.get(&entity) {
             if let Some(co) = context.colliders.get_mut(*handle) {
                 co.set_sensor(false);
+            }
+        }
+    }
+
+    for entity in removed_colliders_disabled.iter() {
+        if let Some(handle) = context.entity2collider.get(&entity) {
+            if let Some(co) = context.colliders.get_mut(*handle) {
+                co.set_enabled(true);
+            }
+        }
+    }
+
+    for entity in removed_rigid_body_disabled.iter() {
+        if let Some(handle) = context.entity2body.get(&entity) {
+            if let Some(rb) = context.bodies.get_mut(*handle) {
+                rb.set_enabled(true);
             }
         }
     }

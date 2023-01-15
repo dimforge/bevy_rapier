@@ -254,6 +254,7 @@ impl RapierContext {
                             &mut self.impulse_joints,
                             &mut self.multibody_joints,
                             &mut self.ccd_solver,
+                            None,
                             hooks,
                             events,
                         );
@@ -283,6 +284,7 @@ impl RapierContext {
                         &mut self.impulse_joints,
                         &mut self.multibody_joints,
                         &mut self.ccd_solver,
+                        None,
                         hooks,
                         events,
                     );
@@ -304,6 +306,7 @@ impl RapierContext {
                         &mut self.impulse_joints,
                         &mut self.multibody_joints,
                         &mut self.ccd_solver,
+                        None,
                         hooks,
                         events,
                     );
@@ -322,8 +325,7 @@ impl RapierContext {
     /// Updates the state of the query pipeline, based on the collider positions known
     /// from the last timestep or the last call to `self.propagate_modified_body_positions_to_colliders()`.
     pub fn update_query_pipeline(&mut self) {
-        self.query_pipeline
-            .update(&self.islands, &self.bodies, &self.colliders);
+        self.query_pipeline.update(&self.bodies, &self.colliders);
     }
 
     /// The map from entities to rigid-body handles.
