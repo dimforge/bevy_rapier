@@ -18,9 +18,10 @@ path = "../src/lib.rs"
 required-features = [ "dim2" ]
 
 [features]
-default = [ "dim2", "async-collider", "debug-render" ]
+default = [ "dim2", "async-collider", "debug-render-2d" ]
 dim2 = ["bevy/bevy_render"]
-debug-render = [ "bevy/bevy_core_pipeline", "bevy/bevy_render", "bevy/bevy_sprite", "rapier2d/debug-render" ]
+debug-render-2d = [ "bevy/bevy_core_pipeline", "bevy/bevy_sprite", "bevy/bevy_render", "rapier2d/debug-render" ]
+debug-render-3d = [ "bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_render", "rapier2d/debug-render" ]
 parallel = [ "rapier2d/parallel" ]
 simd-stable = [ "rapier2d/simd-stable" ]
 simd-nightly = [ "rapier2d/simd-nightly" ]
@@ -53,4 +54,4 @@ glam = { version = "0.22", features = [ "approx" ] }
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
-features = [ "debug-render", "serde-serialize" ]
+features = [ "debug-render-2d", "serde-serialize" ]

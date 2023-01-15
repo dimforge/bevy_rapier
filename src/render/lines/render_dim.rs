@@ -1,4 +1,4 @@
-#[cfg(feature = "dim3")]
+#[cfg(feature = "debug-render-3d")]
 pub mod r3d {
     use bevy::{
         core_pipeline::core_3d::Opaque3d,
@@ -187,7 +187,7 @@ pub mod r3d {
     );
 }
 
-#[cfg(feature = "dim2")]
+#[cfg(feature = "debug-render-2d")]
 pub mod r2d {
     use crate::render::lines::DebugLinesConfig;
     use bevy::{
