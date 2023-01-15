@@ -54,4 +54,4 @@ glam = { version = "0.22", features = [ "approx" ] }
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
-features = [ "debug-render", "serde-serialize" ]
+features = [ "debug-render-3d", "serde-serialize" ]

@@ -110,9 +110,12 @@ impl Plugin for DebugLinesPlugin {
         use bevy::render::{render_resource::SpecializedMeshPipelines, RenderApp, RenderStage};
         let mut shaders = app.world.get_resource_mut::<Assets<Shader>>().unwrap();
         shaders.set_untracked(DEBUG_LINES_SHADER_HANDLE, Shader::from_wgsl(SHADER_FILE));
+
+        let lines_config = DebugLinesConfig::always_on_top(self.always_on_top);
         app.init_resource::<DebugLines>()
             .add_startup_system(setup)
-            .add_system_to_stage(CoreStage::PostUpdate, update.label("draw_lines"));
+            .add_system_to_stage(CoreStage::PostUpdate, update.label("draw_lines"))
+            .insert_resource(lines_config.clone());
 
         #[cfg(feature = "debug-render-3d")]
         app.sub_app_mut(RenderApp)
@@ -129,7 +132,7 @@ impl Plugin for DebugLinesPlugin {
             .add_system_to_stage(RenderStage::Queue, dim2::queue);
 
         app.sub_app_mut(RenderApp)
-            .insert_resource(DebugLinesConfig::always_on_top(self.always_on_top))
+            .insert_resource(lines_config)
             .add_system_to_stage(RenderStage::Extract, extract);
 
         #[cfg(feature = "debug-render-3d")]
