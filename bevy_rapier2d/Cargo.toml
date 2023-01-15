@@ -28,8 +28,8 @@ wasm-bindgen = [ "rapier2d/wasm-bindgen" ]
 serde-serialize = [ "rapier2d/serde-serialize", "serde" ]
 enhanced-determinism = [ "rapier2d/enhanced-determinism" ]
 
-# Enables the AsyncCollider component that creates colliders from an asset that
-# wasn’t loaded yet.
+# Enables the AsyncCollider and AsyncSceneCollider components that wait for specific
+# assets to be loaded before creating the actual Collider.
 # See https://github.com/dimforge/bevy_rapier/issues/296 for a workaround on how
 # to use this when using bevy headless.
 async-collider = [ ]
