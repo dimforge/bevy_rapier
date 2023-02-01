@@ -1,7 +1,11 @@
-use bevy::ecs::query::WorldQuery;
-use bevy::prelude::*;
-use rapier::geometry::SolverFlags;
-use rapier::pipeline::{ContactModificationContext, PairFilterContext, PhysicsHooks};
+use bevy::{
+    ecs::system::{SystemParam, SystemParamFetch, SystemParamItem},
+    prelude::*,
+};
+use rapier::{
+    pipeline::{ContactModificationContext, PairFilterContext},
+    prelude::{PhysicsHooks, SolverFlags},
+};
 
 /// Read-only access to the properties of a collision pair filter context.
 pub struct PairFilterContextView<'a> {
@@ -80,7 +84,7 @@ impl<'a, 'b> ContactModificationContextView<'a, 'b> {
 }
 
 /// User-defined functions called by the physics engines during one timestep in order to customize its behavior.
-pub trait PhysicsHooksWithQuery<UserData: WorldQuery>: Send + Sync {
+pub trait BevyPhysicsHooks: SystemParam + Send + Sync {
     /// Applies the contact pair filter.
     ///
     /// Note that this method will only be called if at least one of the colliders
@@ -105,11 +109,7 @@ pub trait PhysicsHooksWithQuery<UserData: WorldQuery>: Send + Sync {
     /// will be taken into account by the constraints solver. If this returns
     /// `Some(SolverFlags::empty())` then the constraints solver will ignore these
     /// contacts.
-    fn filter_contact_pair(
-        &self,
-        _context: PairFilterContextView,
-        _user_data: &Query<UserData>,
-    ) -> Option<SolverFlags> {
+    fn filter_contact_pair(&self, _context: PairFilterContextView) -> Option<SolverFlags> {
         None
     }
 
@@ -133,11 +133,7 @@ pub trait PhysicsHooksWithQuery<UserData: WorldQuery>: Send + Sync {
     /// not compute any intersection information for it.
     /// If this return `true` then the narrow-phase will compute intersection
     /// information for this pair.
-    fn filter_intersection_pair(
-        &self,
-        _context: PairFilterContextView,
-        _user_data: &Query<UserData>,
-    ) -> bool {
+    fn filter_intersection_pair(&self, _context: PairFilterContextView) -> bool {
         false
     }
 
@@ -166,68 +162,63 @@ pub trait PhysicsHooksWithQuery<UserData: WorldQuery>: Send + Sync {
     /// as 0 and can be modified in `context.user_data`.
     ///
     /// The world-space contact normal can be modified in `context.normal`.
-    fn modify_solver_contacts(
-        &self,
-        _context: ContactModificationContextView,
-        _user_data: &Query<UserData>,
-    ) {
-    }
+    fn modify_solver_contacts(&self, _context: ContactModificationContextView) {}
 }
 
-impl<T, UserData> PhysicsHooksWithQuery<UserData> for T
+impl<T> BevyPhysicsHooks for T
 where
-    T: PhysicsHooks + Send + Sync,
-    UserData: WorldQuery,
+    T: 'static + PhysicsHooks + SystemParam + Send + Sync,
+    for<'w, 's> T::Fetch: SystemParamFetch<'w, 's, Item = T>,
 {
-    fn filter_contact_pair(
-        &self,
-        context: PairFilterContextView,
-        _: &Query<UserData>,
-    ) -> Option<SolverFlags> {
+    fn filter_contact_pair(&self, context: PairFilterContextView) -> Option<SolverFlags> {
         PhysicsHooks::filter_contact_pair(self, context.raw)
     }
 
-    fn filter_intersection_pair(
-        &self,
-        context: PairFilterContextView,
-        _: &Query<UserData>,
-    ) -> bool {
+    fn filter_intersection_pair(&self, context: PairFilterContextView) -> bool {
         PhysicsHooks::filter_intersection_pair(self, context.raw)
     }
 
-    fn modify_solver_contacts(&self, context: ContactModificationContextView, _: &Query<UserData>) {
+    fn modify_solver_contacts(&self, context: ContactModificationContextView) {
         PhysicsHooks::modify_solver_contacts(self, context.raw)
     }
 }
 
-/// Resource containing the user-defined physics hooks.
-#[derive(Resource)]
-pub struct PhysicsHooksWithQueryResource<UserData: WorldQuery>(
-    pub Box<dyn PhysicsHooksWithQuery<UserData>>,
-);
-
-pub(crate) struct PhysicsHooksWithQueryInstance<'world, 'state, 'b, UserData: WorldQuery> {
-    // pub commands: Commands<'world, 'state>,
-    pub user_data: Query<'world, 'state, UserData>,
-    pub hooks: &'b dyn PhysicsHooksWithQuery<UserData>,
+/// Adapts a type implementing `BevyPhysicsHooks` so that it implements `PhysicsHooks`.
+pub(crate) struct BevyPhysicsHooksAdapter<'w, 's, Hooks>
+where
+    Hooks: 'static + BevyPhysicsHooks,
+    for<'w1, 's1> SystemParamItem<'w1, 's1, Hooks>: BevyPhysicsHooks,
+{
+    hooks: SystemParamItem<'w, 's, Hooks>,
 }
 
-impl<UserData: WorldQuery> PhysicsHooks for PhysicsHooksWithQueryInstance<'_, '_, '_, UserData> {
+impl<'w, 's, Hooks> BevyPhysicsHooksAdapter<'w, 's, Hooks>
+where
+    Hooks: 'static + BevyPhysicsHooks,
+    for<'w1, 's1> SystemParamItem<'w1, 's1, Hooks>: BevyPhysicsHooks,
+{
+    pub(crate) fn new(hooks: SystemParamItem<'w, 's, Hooks>) -> Self {
+        Self { hooks }
+    }
+}
+
+impl<'w, 's, Hooks> PhysicsHooks for BevyPhysicsHooksAdapter<'w, 's, Hooks>
+where
+    Hooks: 'static + BevyPhysicsHooks,
+    for<'w1, 's1> SystemParamItem<'w1, 's1, Hooks>: BevyPhysicsHooks,
+{
     fn filter_contact_pair(&self, context: &PairFilterContext) -> Option<SolverFlags> {
         let context_view = PairFilterContextView { raw: context };
-        self.hooks
-            .filter_contact_pair(context_view, &self.user_data)
+        self.hooks.filter_contact_pair(context_view)
     }
 
     fn filter_intersection_pair(&self, context: &PairFilterContext) -> bool {
         let context_view = PairFilterContextView { raw: context };
-        self.hooks
-            .filter_intersection_pair(context_view, &self.user_data)
+        self.hooks.filter_intersection_pair(context_view)
     }
 
     fn modify_solver_contacts(&self, context: &mut ContactModificationContext) {
         let context_view = ContactModificationContextView { raw: context };
-        self.hooks
-            .modify_solver_contacts(context_view, &self.user_data)
+        self.hooks.modify_solver_contacts(context_view)
     }
 }

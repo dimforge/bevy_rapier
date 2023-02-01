@@ -1,8 +1,9 @@
-use crate::pipeline::{CollisionEvent, ContactForceEvent, PhysicsHooksWithQueryResource};
+use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::configuration::SimulationToRenderTime;
 use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
-use bevy::ecs::{event::Events, query::WorldQuery};
+use bevy::ecs::event::Events;
+use bevy::ecs::system::SystemParamItem;
 use bevy::prelude::*;
 use std::marker::PhantomData;
 
@@ -13,13 +14,17 @@ pub type NoUserData = ();
 //
 // This will automatically setup all the resources needed to run a physics simulation with the
 // Rapier physics engine.
-pub struct RapierPhysicsPlugin<PhysicsHooksData = ()> {
+pub struct RapierPhysicsPlugin<PhysicsHooks = ()> {
     physics_scale: f32,
     default_system_setup: bool,
-    _phantom: PhantomData<PhysicsHooksData>,
+    _phantom: PhantomData<PhysicsHooks>,
 }
 
-impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<PhysicsHooksData> {
+impl<PhysicsHooks> RapierPhysicsPlugin<PhysicsHooks>
+where
+    PhysicsHooks: 'static + BevyPhysicsHooks,
+    for<'w, 's> SystemParamItem<'w, 's, PhysicsHooks>: BevyPhysicsHooks,
+{
     /// Specifies a scale ratio between the physics world and the bevy transforms.
     ///
     /// This affects the size of every elements in the physics engine, by multiplying
@@ -112,14 +117,14 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<P
                 }
             }
             PhysicsStages::StepSimulation => SystemSet::new()
-                .with_system(systems::step_simulation::<PhysicsHooksData>)
+                .with_system(systems::step_simulation::<PhysicsHooks>)
                 .with_system(
                     Events::<CollisionEvent>::update_system
-                        .before(systems::step_simulation::<PhysicsHooksData>),
+                        .before(systems::step_simulation::<PhysicsHooks>),
                 )
                 .with_system(
                     Events::<ContactForceEvent>::update_system
-                        .before(systems::step_simulation::<PhysicsHooksData>),
+                        .before(systems::step_simulation::<PhysicsHooks>),
                 ),
             PhysicsStages::Writeback => SystemSet::new()
                 .with_system(systems::update_colliding_entities)
@@ -129,7 +134,7 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<P
     }
 }
 
-impl<PhysicsHooksData> Default for RapierPhysicsPlugin<PhysicsHooksData> {
+impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystemParam> {
     fn default() -> Self {
         Self {
             physics_scale: 1.0,
@@ -163,8 +168,38 @@ pub enum PhysicsStages {
     DetectDespawn,
 }
 
-impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
-    for RapierPhysicsPlugin<PhysicsHooksData>
+// mod foo {
+//     use std::marker::PhantomData;
+
+//     use bevy::{
+//         ecs::system::{SystemParam, SystemParamItem},
+//         prelude::*,
+//     };
+
+//     struct MyPlugin<T: SystemParam>(PhantomData<T>);
+
+//     impl<T> Plugin for MyPlugin<T>
+//     where
+//         T: 'static + SystemParam + Send + Sync,
+//         for<'w, 's> SystemParamItem<'w, 's, T>: 'static,
+//     {
+//         fn build(&self, app: &mut App) {}
+//     }
+
+//     #[derive(SystemParam)]
+//     struct MySystemParam<'w, 's> {
+//         tags: Query<'w, 's, Entity>,
+//     }
+
+//     fn main() {
+//         App::new().add_plugin(MyPlugin::<MySystemParam>(PhantomData));
+//     }
+// }
+
+impl<PhysicsHooks> Plugin for RapierPhysicsPlugin<PhysicsHooks>
+where
+    PhysicsHooks: 'static + BevyPhysicsHooks,
+    for<'w, 's> SystemParamItem<'w, 's, PhysicsHooks>: BevyPhysicsHooks,
 {
     fn build(&self, app: &mut App) {
         // Register components as reflectable.
@@ -231,16 +266,6 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
                 SystemStage::parallel()
                     .with_system_set(Self::get_systems(PhysicsStages::DetectDespawn)),
             );
-        }
-
-        if app
-            .world
-            .get_resource::<PhysicsHooksWithQueryResource<PhysicsHooksData>>()
-            .is_none()
-        {
-            app.insert_resource(PhysicsHooksWithQueryResource::<PhysicsHooksData>(Box::new(
-                (),
-            )));
         }
     }
 }
