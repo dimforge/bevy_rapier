@@ -11,17 +11,15 @@ use crate::geometry::{
     ColliderMassProperties, ColliderScale, CollisionGroups, ContactForceEventThreshold, Friction,
     RapierColliderHandle, Restitution, Sensor, SolverGroups,
 };
-use crate::pipeline::{
-    CollisionEvent, ContactForceEvent, PhysicsHooksWithQueryInstance, PhysicsHooksWithQueryResource,
-};
+use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
-    CollidingEntities, KinematicCharacterController, KinematicCharacterControllerOutput,
-    RigidBodyDisabled,
+    BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities, KinematicCharacterController,
+    KinematicCharacterControllerOutput, RigidBodyDisabled,
 };
 use crate::utils;
-use bevy::ecs::query::WorldQuery;
+use bevy::ecs::system::SystemParamItem;
 use bevy::prelude::*;
 use rapier::prelude::*;
 use std::collections::HashMap;
@@ -630,29 +628,27 @@ pub fn writeback_rigid_bodies(
 
 /// System responsible for advancing the physics simulation, and updating the internal state
 /// for scene queries.
-pub fn step_simulation<PhysicsHooksData: 'static + WorldQuery + Send + Sync>(
+pub fn step_simulation<PhysicsHooks>(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
-    hooks: Res<PhysicsHooksWithQueryResource<PhysicsHooksData>>,
+    hooks: SystemParamItem<PhysicsHooks>,
     (time, mut sim_to_render_time): (Res<Time>, ResMut<SimulationToRenderTime>),
     collision_events: EventWriter<CollisionEvent>,
     contact_force_events: EventWriter<ContactForceEvent>,
-    hooks_data: Query<PhysicsHooksData>,
     interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
-) {
+) where
+    PhysicsHooks: 'static + BevyPhysicsHooks,
+    for<'w, 's> SystemParamItem<'w, 's, PhysicsHooks>: BevyPhysicsHooks,
+{
     let context = &mut *context;
+    let hooks_adapter = BevyPhysicsHooksAdapter::<PhysicsHooks>::new(hooks);
 
     if config.physics_pipeline_active {
-        let hooks_instance = PhysicsHooksWithQueryInstance {
-            user_data: hooks_data,
-            hooks: &*hooks.0,
-        };
-
         context.step_simulation(
             config.gravity,
             config.timestep_mode,
             Some((collision_events, contact_force_events)),
-            &hooks_instance,
+            &hooks_adapter,
             &time,
             &mut sim_to_render_time,
             Some(interpolation_query),
