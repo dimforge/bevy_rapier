@@ -168,34 +168,6 @@ pub enum PhysicsStages {
     DetectDespawn,
 }
 
-// mod foo {
-//     use std::marker::PhantomData;
-
-//     use bevy::{
-//         ecs::system::{SystemParam, SystemParamItem},
-//         prelude::*,
-//     };
-
-//     struct MyPlugin<T: SystemParam>(PhantomData<T>);
-
-//     impl<T> Plugin for MyPlugin<T>
-//     where
-//         T: 'static + SystemParam + Send + Sync,
-//         for<'w, 's> SystemParamItem<'w, 's, T>: 'static,
-//     {
-//         fn build(&self, app: &mut App) {}
-//     }
-
-//     #[derive(SystemParam)]
-//     struct MySystemParam<'w, 's> {
-//         tags: Query<'w, 's, Entity>,
-//     }
-
-//     fn main() {
-//         App::new().add_plugin(MyPlugin::<MySystemParam>(PhantomData));
-//     }
-// }
-
 impl<PhysicsHooks> Plugin for RapierPhysicsPlugin<PhysicsHooks>
 where
     PhysicsHooks: 'static + BevyPhysicsHooks,
