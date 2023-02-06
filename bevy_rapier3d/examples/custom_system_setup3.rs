@@ -55,38 +55,29 @@ fn main() {
     SpecialStagingPlugin::new(
         Schedule::default()
             .with_stage(
-                PhysicsStages::SyncBackend,
+                PhysicsSet::SyncBackend,
                 SystemStage::parallel().with_system_set(
-                    RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsStages::SyncBackend),
+                    RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsSet::SyncBackend),
                 ),
             )
             .with_stage_after(
-                PhysicsStages::SyncBackend,
-                PhysicsStages::StepSimulation,
+                PhysicsSet::SyncBackend,
+                PhysicsSet::StepSimulation,
                 SystemStage::parallel()
                     .with_system(despawn_one_box) // We can add a special despawn to determine cleanup later
                     .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
-                        PhysicsStages::StepSimulation,
+                        PhysicsSet::StepSimulation,
                     )),
             )
             .with_stage_after(
-                PhysicsStages::StepSimulation,
-                PhysicsStages::Writeback,
+                PhysicsSet::StepSimulation,
+                PhysicsSet::Writeback,
                 SystemStage::parallel().with_system_set(
-                    RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsStages::Writeback),
+                    RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsSet::Writeback),
                 ),
             ),
     )
     .build(&mut app);
-
-    // Be sure to setup all four stages
-    app.add_stage_before(
-        CoreStage::Last,
-        PhysicsStages::DetectDespawn,
-        SystemStage::parallel().with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
-            PhysicsStages::DetectDespawn,
-        )),
-    );
 
     app.add_plugin(RapierPhysicsPlugin::<NoUserData>::default().with_default_system_setup(false));
 

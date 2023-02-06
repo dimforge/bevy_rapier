@@ -1,5 +1,5 @@
 use bevy::{
-    ecs::system::{SystemParam, SystemParamFetch, SystemParamItem},
+    ecs::system::{SystemParam, SystemParamItem},
     prelude::*,
 };
 use rapier::{
@@ -168,7 +168,7 @@ pub trait BevyPhysicsHooks: SystemParam + Send + Sync {
 impl<T> BevyPhysicsHooks for T
 where
     T: 'static + PhysicsHooks + SystemParam + Send + Sync,
-    for<'w, 's> T::Fetch: SystemParamFetch<'w, 's, Item = T>,
+    for<'w, 's> T: SystemParam<Item<'w, 's> = T>,
 {
     fn filter_contact_pair(&self, context: PairFilterContextView) -> Option<SolverFlags> {
         PhysicsHooks::filter_contact_pair(self, context.raw)

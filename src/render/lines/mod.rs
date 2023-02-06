@@ -15,7 +15,7 @@
  *
  */
 use bevy::{
-    asset::{Assets, HandleUntyped},
+    asset::{load_internal_asset, Assets, HandleUntyped},
     prelude::*,
     reflect::TypeUuid,
     render::{
@@ -105,16 +105,23 @@ impl DebugLinesPlugin {
     }
 }
 
+#[derive(SystemSet, Hash, Debug, PartialEq, Eq, Clone)]
+pub struct DrawLinesLabel;
+
 impl Plugin for DebugLinesPlugin {
     fn build(&self, app: &mut App) {
-        use bevy::render::{render_resource::SpecializedMeshPipelines, RenderApp, RenderStage};
+        use bevy::render::{render_resource::SpecializedMeshPipelines, RenderApp, RenderSet};
         let mut shaders = app.world.get_resource_mut::<Assets<Shader>>().unwrap();
         shaders.set_untracked(DEBUG_LINES_SHADER_HANDLE, Shader::from_wgsl(SHADER_FILE));
 
         let lines_config = DebugLinesConfig::always_on_top(self.always_on_top);
         app.init_resource::<DebugLines>()
             .add_startup_system(setup)
-            .add_system_to_stage(CoreStage::PostUpdate, update.label("draw_lines"))
+            .add_system(
+                update
+                    .in_base_set(CoreSet::PostUpdate)
+                    .in_set(DrawLinesLabel),
+            )
             .insert_resource(lines_config.clone());
 
         #[cfg(feature = "debug-render-3d")]
@@ -122,18 +129,18 @@ impl Plugin for DebugLinesPlugin {
             .add_render_command::<dim3::Phase, dim3::DrawDebugLines>()
             .init_resource::<dim3::DebugLinePipeline>()
             .init_resource::<SpecializedMeshPipelines<dim3::DebugLinePipeline>>()
-            .add_system_to_stage(RenderStage::Queue, dim3::queue);
+            .add_system(dim3::queue.in_set(RenderSet::Queue));
 
         #[cfg(feature = "debug-render-2d")]
         app.sub_app_mut(RenderApp)
             .add_render_command::<dim2::Phase, dim2::DrawDebugLines>()
             .init_resource::<dim2::DebugLinePipeline>()
             .init_resource::<SpecializedMeshPipelines<dim2::DebugLinePipeline>>()
-            .add_system_to_stage(RenderStage::Queue, dim2::queue);
+            .add_system(dim2::queue.in_set(RenderSet::Queue));
 
         app.sub_app_mut(RenderApp)
             .insert_resource(lines_config)
-            .add_system_to_stage(RenderStage::Extract, extract);
+            .add_system_to_schedule(ExtractSchedule, extract);
 
         #[cfg(feature = "debug-render-3d")]
         info!("Loaded 3d debug lines plugin.");
@@ -169,26 +176,21 @@ fn setup(mut cmds: Commands, mut meshes: ResMut<Assets<Mesh>>) {
         // https://github.com/Toqozz/bevy_debug_lines/issues/16
         //mesh.set_indices(Some(Indices::U16(Vec::with_capacity(MAX_POINTS_PER_MESH))));
 
-        let mut entity_cmd = cmds.spawn_bundle((
-            Transform::default(),
-            GlobalTransform::default(),
-            Visibility::default(),
-            ComputedVisibility::default(),
-            NoFrustumCulling,
-            DebugLinesMesh(i),
-        ));
-
         let mesh_handle = meshes.add(mesh);
 
-        #[cfg(feature = "debug-render-3d")]
-        entity_cmd.insert_bundle((
-            mesh_handle.clone(),
-            bevy::pbr::NotShadowCaster,
-            bevy::pbr::NotShadowReceiver,
+        cmds.spawn((
+            SpatialBundle::INHERITED_IDENTITY,
+            NoFrustumCulling,
+            DebugLinesMesh(i),
+            #[cfg(feature = "debug-render-3d")]
+            (
+                mesh_handle.clone(),
+                bevy::pbr::NotShadowCaster,
+                bevy::pbr::NotShadowReceiver,
+            ),
+            #[cfg(feature = "debug-render-2d")]
+            bevy::sprite::Mesh2dHandle(mesh_handle),
         ));
-
-        #[cfg(feature = "debug-render-2d")]
-        entity_cmd.insert(bevy::sprite::Mesh2dHandle(mesh_handle));
     }
 }
 

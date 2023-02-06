@@ -19,7 +19,7 @@ use crate::prelude::{
     KinematicCharacterControllerOutput, RigidBodyDisabled,
 };
 use crate::utils;
-use bevy::ecs::system::SystemParamItem;
+use bevy::ecs::system::{SystemParam, SystemParamItem};
 use bevy::prelude::*;
 use rapier::prelude::*;
 use std::collections::HashMap;
@@ -632,13 +632,14 @@ pub fn step_simulation<PhysicsHooks>(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
     hooks: SystemParamItem<PhysicsHooks>,
-    (time, mut sim_to_render_time): (Res<Time>, ResMut<SimulationToRenderTime>),
+    time: Res<Time>,
+    mut sim_to_render_time: ResMut<SimulationToRenderTime>,
     collision_events: EventWriter<CollisionEvent>,
     contact_force_events: EventWriter<ContactForceEvent>,
     interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
 ) where
     PhysicsHooks: 'static + BevyPhysicsHooks,
-    for<'w, 's> SystemParamItem<'w, 's, PhysicsHooks>: BevyPhysicsHooks,
+    for<'w, 's> PhysicsHooks: SystemParam<Item<'w, 's> = PhysicsHooks>,
 {
     let context = &mut *context;
     let hooks_adapter = BevyPhysicsHooksAdapter::<PhysicsHooks>::new(hooks);
@@ -1073,10 +1074,10 @@ pub fn init_joints(
 pub fn sync_removals(
     mut commands: Commands,
     mut context: ResMut<RapierContext>,
-    removed_bodies: RemovedComponents<RapierRigidBodyHandle>,
-    removed_colliders: RemovedComponents<RapierColliderHandle>,
-    removed_impulse_joints: RemovedComponents<RapierImpulseJointHandle>,
-    removed_multibody_joints: RemovedComponents<RapierMultibodyJointHandle>,
+    mut removed_bodies: RemovedComponents<RapierRigidBodyHandle>,
+    mut removed_colliders: RemovedComponents<RapierColliderHandle>,
+    mut removed_impulse_joints: RemovedComponents<RapierImpulseJointHandle>,
+    mut removed_multibody_joints: RemovedComponents<RapierMultibodyJointHandle>,
     orphan_bodies: Query<Entity, (With<RapierRigidBodyHandle>, Without<RigidBody>)>,
     orphan_colliders: Query<Entity, (With<RapierColliderHandle>, Without<Collider>)>,
     orphan_impulse_joints: Query<Entity, (With<RapierImpulseJointHandle>, Without<ImpulseJoint>)>,
@@ -1085,9 +1086,9 @@ pub fn sync_removals(
         (With<RapierMultibodyJointHandle>, Without<MultibodyJoint>),
     >,
 
-    removed_sensors: RemovedComponents<Sensor>,
-    removed_rigid_body_disabled: RemovedComponents<RigidBodyDisabled>,
-    removed_colliders_disabled: RemovedComponents<ColliderDisabled>,
+    mut removed_sensors: RemovedComponents<Sensor>,
+    mut removed_rigid_body_disabled: RemovedComponents<RigidBodyDisabled>,
+    mut removed_colliders_disabled: RemovedComponents<ColliderDisabled>,
 ) {
     /*
      * Rigid-bodies removal detection.
@@ -1405,7 +1406,7 @@ mod tests {
     use bevy::prelude::shape::{Capsule, Cube};
     use bevy::{
         asset::AssetPlugin,
-        core::CorePlugin,
+        // core::CorePlugin,
         ecs::event::Events,
         render::{settings::WgpuSettings, RenderPlugin},
         scene::ScenePlugin,
@@ -1712,16 +1713,16 @@ mod tests {
 
     impl Plugin for HeadlessRenderPlugin {
         fn build(&self, app: &mut App) {
-            app.insert_resource(WgpuSettings {
-                backends: None,
-                ..WgpuSettings::default()
-            })
-            .add_plugin(CorePlugin::default())
-            .add_plugin(WindowPlugin::default())
-            .add_plugin(AssetPlugin::default())
-            .add_plugin(ScenePlugin::default())
-            .add_plugin(RenderPlugin::default())
-            .add_plugin(ImagePlugin::default());
+            app.add_plugin(WindowPlugin::default())
+                .add_plugin(AssetPlugin::default())
+                .add_plugin(ScenePlugin::default())
+                .add_plugin(RenderPlugin {
+                    wgpu_settings: WgpuSettings {
+                        backends: None,
+                        ..Default::default()
+                    },
+                })
+                .add_plugin(ImagePlugin::default());
         }
     }
 }
