@@ -7,7 +7,7 @@ pub use self::plugin::{NoUserData, PhysicsStages, RapierPhysicsPlugin};
 pub mod systems;
 
 mod configuration;
-mod context;
+pub(crate) mod context;
 mod narrow_phase;
 #[allow(clippy::module_inception)]
-mod plugin;
+pub(crate) mod plugin;

@@ -7,6 +7,8 @@ use bevy::ecs::system::SystemParamItem;
 use bevy::prelude::*;
 use std::marker::PhantomData;
 
+use super::context::RapierWorld;
+
 /// No specific user-data is associated to the hooks.
 pub type NoUserData = ();
 
@@ -203,10 +205,10 @@ where
         }
 
         app.insert_resource(SimulationToRenderTime::default())
-            .insert_resource(RapierContext {
+            .insert_resource(RapierContext::new(RapierWorld {
                 physics_scale: self.physics_scale,
                 ..Default::default()
-            })
+            }))
             .insert_resource(Events::<CollisionEvent>::default())
             .insert_resource(Events::<ContactForceEvent>::default());
 

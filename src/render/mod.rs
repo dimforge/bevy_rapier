@@ -1,3 +1,4 @@
+use crate::plugin::context::RapierWorld;
 use crate::plugin::RapierContext;
 use crate::render::lines::DebugLinesConfig;
 use bevy::prelude::*;
@@ -114,13 +115,14 @@ struct BevyLinesRenderBackend<'world, 'state, 'a, 'b, 'c> {
     physics_scale: f32,
     custom_colors: Query<'world, 'state, &'a ColliderDebugColor>,
     context: &'b RapierContext,
+    world: &'b RapierWorld,
     lines: &'c mut DebugLines,
 }
 
 impl<'world, 'state, 'a, 'b, 'c> BevyLinesRenderBackend<'world, 'state, 'a, 'b, 'c> {
     fn object_color(&self, object: DebugRenderObject, default: [f32; 4]) -> [f32; 4] {
         let color = match object {
-            DebugRenderObject::Collider(h, ..) => self.context.colliders.get(h).and_then(|co| {
+            DebugRenderObject::Collider(h, ..) => self.world.colliders.get(h).and_then(|co| {
                 self.custom_colors
                     .get(Entity::from_bits(co.user_data as u64))
                     .map(|co| co.0)
@@ -180,27 +182,30 @@ fn debug_render_scene(
     mut lines: ResMut<DebugLines>,
     custom_colors: Query<&ColliderDebugColor>,
 ) {
-    if !render_context.enabled {
-        return;
+    for (_, world) in rapier_context.worlds {
+        if !render_context.enabled {
+            return;
+        }
+
+        *lines_config.always_on_top.write().unwrap() = render_context.always_on_top;
+        let mut backend = BevyLinesRenderBackend {
+            physics_scale: world.physics_scale,
+            world: &world,
+            custom_colors,
+            context: &rapier_context,
+            lines: &mut lines,
+        };
+
+        let unscaled_style = render_context.pipeline.style;
+        render_context.pipeline.style.rigid_body_axes_length /= world.physics_scale;
+        render_context.pipeline.render(
+            &mut backend,
+            &world.bodies,
+            &world.colliders,
+            &world.impulse_joints,
+            &world.multibody_joints,
+            &world.narrow_phase,
+        );
+        render_context.pipeline.style = unscaled_style;
     }
-
-    *lines_config.always_on_top.write().unwrap() = render_context.always_on_top;
-    let mut backend = BevyLinesRenderBackend {
-        physics_scale: rapier_context.physics_scale,
-        custom_colors,
-        context: &rapier_context,
-        lines: &mut lines,
-    };
-
-    let unscaled_style = render_context.pipeline.style;
-    render_context.pipeline.style.rigid_body_axes_length /= rapier_context.physics_scale;
-    render_context.pipeline.render(
-        &mut backend,
-        &rapier_context.bodies,
-        &rapier_context.colliders,
-        &rapier_context.impulse_joints,
-        &rapier_context.multibody_joints,
-        &rapier_context.narrow_phase,
-    );
-    render_context.pipeline.style = unscaled_style;
 }

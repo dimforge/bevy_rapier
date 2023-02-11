@@ -126,6 +126,12 @@ impl RapierWorld {
         }
     }
 
+    pub fn rigid_body_entity(&self, handle: RigidBodyHandle) -> Option<Entity> {
+        self.bodies
+            .get(handle)
+            .map(|c| Entity::from_bits(c.user_data as u64))
+    }
+
     fn step_simulation(
         &mut self,
         gravity: Vect,
@@ -134,7 +140,7 @@ impl RapierWorld {
         hooks: &dyn PhysicsHooks,
         time: &Time,
         sim_to_render_time: &mut SimulationToRenderTime,
-        mut interpolation_query: Option<
+        interpolation_query: &mut Option<
             Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
         >,
     ) {
@@ -270,7 +276,7 @@ impl RapierWorld {
         shape_mass: Real,
         options: &MoveShapeOptions,
         filter: QueryFilter,
-        mut events: impl FnMut(CharacterCollision),
+        events: &mut impl FnMut(CharacterCollision),
     ) -> MoveShapeOutput {
         let physics_scale = self.physics_scale;
         let mut scaled_shape = shape.clone();
@@ -789,6 +795,33 @@ impl RapierWorld {
     }
 }
 
+impl Default for RapierWorld {
+    fn default() -> Self {
+        Self {
+            islands: IslandManager::new(),
+            broad_phase: BroadPhase::new(),
+            narrow_phase: NarrowPhase::new(),
+            bodies: RigidBodySet::new(),
+            colliders: ColliderSet::new(),
+            impulse_joints: ImpulseJointSet::new(),
+            multibody_joints: MultibodyJointSet::new(),
+            ccd_solver: CCDSolver::new(),
+            pipeline: PhysicsPipeline::new(),
+            query_pipeline: QueryPipeline::new(),
+            integration_parameters: IntegrationParameters::default(),
+            physics_scale: 1.0,
+            event_handler: None,
+            last_body_transform_set: HashMap::new(),
+            entity2body: HashMap::new(),
+            entity2collider: HashMap::new(),
+            entity2impulse_joint: HashMap::new(),
+            entity2multibody_joint: HashMap::new(),
+            deleted_colliders: HashMap::new(),
+            character_collisions_collector: vec![],
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum WorldError {
     WorldNotFound { world_id: WorldId },
@@ -808,45 +841,31 @@ impl std::error::Error for WorldError {}
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Resource)]
 pub struct RapierContext {
-    worlds: HashMap<WorldId, RapierWorld>,
+    pub worlds: HashMap<WorldId, RapierWorld>,
 }
+
+impl RapierContext {}
 
 impl Default for RapierContext {
     fn default() -> Self {
-        // By default, there will be one world
-
-        let mut worlds = HashMap::new();
-        worlds.insert(
-            0,
-            RapierWorld {
-                islands: IslandManager::new(),
-                broad_phase: BroadPhase::new(),
-                narrow_phase: NarrowPhase::new(),
-                bodies: RigidBodySet::new(),
-                colliders: ColliderSet::new(),
-                impulse_joints: ImpulseJointSet::new(),
-                multibody_joints: MultibodyJointSet::new(),
-                ccd_solver: CCDSolver::new(),
-                pipeline: PhysicsPipeline::new(),
-                query_pipeline: QueryPipeline::new(),
-                integration_parameters: IntegrationParameters::default(),
-                physics_scale: 1.0,
-                event_handler: None,
-                last_body_transform_set: HashMap::new(),
-                entity2body: HashMap::new(),
-                entity2collider: HashMap::new(),
-                entity2impulse_joint: HashMap::new(),
-                entity2multibody_joint: HashMap::new(),
-                deleted_colliders: HashMap::new(),
-                character_collisions_collector: vec![],
-            },
-        );
-
-        Self { worlds }
+        Self::new(RapierWorld::default())
     }
 }
 
 impl RapierContext {
+    pub fn new(world: RapierWorld) -> Self {
+        let mut worlds = HashMap::new();
+        worlds.insert(DEFAULT_WORLD_ID, world);
+
+        Self { worlds }
+    }
+
+    pub fn get_world(&self, world_id: WorldId) -> Result<&RapierWorld, WorldError> {
+        self.worlds
+            .get(&world_id)
+            .ok_or(WorldError::WorldNotFound { world_id })
+    }
+
     pub fn physics_scale(&self, world_id: WorldId) -> Option<Real> {
         self.worlds.get(&world_id).map(|x| x.physics_scale)
     }
@@ -909,21 +928,10 @@ impl RapierContext {
         None
     }
 
-    fn get_rigid_body_entity_for_world(
-        &self,
-        handle: RigidBodyHandle,
-        world: &RapierWorld,
-    ) -> Option<Entity> {
-        world
-            .bodies
-            .get(handle)
-            .map(|c| Entity::from_bits(c.user_data as u64))
-    }
-
     /// Retrieve the Bevy entity the given Rapier rigid-body (identified by its handle) is attached.
     pub fn rigid_body_entity(&self, handle: RigidBodyHandle) -> Option<Entity> {
         for (_, world) in self.worlds.iter() {
-            let entity = self.get_rigid_body_entity_for_world(handle, world);
+            let entity = world.rigid_body_entity(handle);
             if entity.is_some() {
                 return entity;
             }
@@ -942,7 +950,7 @@ impl RapierContext {
     ) -> Option<Entity> {
         self.worlds
             .get(&world_id)
-            .map(|world| self.get_rigid_body_entity_for_world(handle, world))
+            .map(|world| world.rigid_body_entity(handle))
             .unwrap_or(None)
     }
 
@@ -968,7 +976,7 @@ impl RapierContext {
                 hooks,
                 time,
                 sim_to_render_time,
-                interpolation_query,
+                &mut interpolation_query,
             );
         }
     }
@@ -976,7 +984,7 @@ impl RapierContext {
     /// This method makes sure that the rigid-body positions have been propagated to
     /// their attached colliders, without having to perform a srimulation step.
     pub fn propagate_modified_body_positions_to_colliders(&mut self) {
-        for (_, world) in self.worlds {
+        for (_, world) in self.worlds.iter_mut() {
             world.propagate_modified_body_positions_to_colliders();
         }
     }
@@ -989,7 +997,7 @@ impl RapierContext {
         &mut self,
         world_id: WorldId,
     ) -> Result<(), WorldError> {
-        match self.worlds.get(&world_id) {
+        match self.worlds.get_mut(&world_id) {
             Some(world) => {
                 world.propagate_modified_body_positions_to_colliders();
 
@@ -1080,11 +1088,11 @@ impl RapierContext {
         shape_mass: Real,
         options: &MoveShapeOptions,
         filter: QueryFilter,
-        mut events: impl FnMut(CharacterCollision),
+        events: &mut impl FnMut(CharacterCollision),
     ) -> Result<MoveShapeOutput, WorldError> {
-        self.worlds
-            .get(&world_id)
-            .map_or(Err(WorldError::WorldNotFound { world_id }), |world| {
+        self.worlds.get_mut(&world_id).map_or(
+            Err(WorldError::WorldNotFound { world_id }),
+            |world| {
                 Ok(world.move_shape(
                     movement,
                     shape,
@@ -1095,7 +1103,8 @@ impl RapierContext {
                     filter,
                     events,
                 ))
-            })
+            },
+        )
     }
 
     /// Find the closest intersection between a ray and a set of collider.

@@ -1,9 +1,10 @@
 use crate::math::{Real, Vect};
-use crate::plugin::RapierContext;
 use bevy::prelude::*;
 use rapier::geometry::{Contact, ContactManifold, ContactPair, SolverContact, SolverFlags};
 
-impl RapierContext {
+use super::context::RapierWorld;
+
+impl RapierWorld {
     /// All the contacts involving the non-sensor collider attached to the given entity.
     pub fn contacts_with(&self, collider: Entity) -> impl Iterator<Item = ContactPairView> {
         self.entity2collider
@@ -86,7 +87,7 @@ impl RapierContext {
 
 /// Read-only access to the properties of a contact manifold.
 pub struct ContactManifoldView<'a> {
-    context: &'a RapierContext,
+    context: &'a RapierWorld,
     /// The raw contact manifold from Rapier.
     pub raw: &'a ContactManifold,
 }
@@ -291,7 +292,7 @@ impl<'a> SolverContactView<'a> {
 
 /// Read-only access to the properties of a contact pair.
 pub struct ContactPairView<'a> {
-    context: &'a RapierContext,
+    context: &'a RapierWorld,
     /// The raw contact pair from Rapier.
     pub raw: &'a ContactPair,
 }
