@@ -189,7 +189,7 @@ fn debug_render_scene(
         *lines_config.always_on_top.write().unwrap() = render_context.always_on_top;
         let mut backend = BevyLinesRenderBackend {
             physics_scale: world.physics_scale,
-            world: &world,
+            world,
             custom_colors: &custom_colors,
             lines: &mut lines,
         };

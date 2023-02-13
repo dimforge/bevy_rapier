@@ -13,8 +13,10 @@ pub struct RapierRigidBodyHandle(pub RigidBodyHandle);
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Component, Reflect, FromReflect)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[reflect(Component, PartialEq)]
+#[derive(Default)]
 pub enum RigidBody {
     /// A `RigidBody::Dynamic` body can be affected by all external forces.
+    #[default]
     Dynamic,
     /// A `RigidBody::Fixed` body cannot be affected by external forces.
     Fixed,
@@ -34,11 +36,7 @@ pub enum RigidBody {
     KinematicVelocityBased,
 }
 
-impl Default for RigidBody {
-    fn default() -> Self {
-        RigidBody::Dynamic
-    }
-}
+
 
 impl From<RigidBody> for RigidBodyType {
     fn from(rigid_body: RigidBody) -> RigidBodyType {

@@ -1079,7 +1079,7 @@ impl RapierContext {
 
                 Ok(())
             }
-            None => Err(WorldError::WorldNotFound { world_id: world_id }),
+            None => Err(WorldError::WorldNotFound { world_id }),
         }
     }
 
@@ -1268,8 +1268,9 @@ impl RapierContext {
         self.worlds
             .get(&world_id)
             .map_or(Err(WorldError::WorldNotFound { world_id }), |world| {
-                Ok(world
-                    .intersections_with_ray(ray_origin, ray_dir, max_toi, solid, filter, callback))
+                world
+                .intersections_with_ray(ray_origin, ray_dir, max_toi, solid, filter, callback);
+                Ok(())
             })
     }
 
@@ -1336,7 +1337,8 @@ impl RapierContext {
         self.worlds
             .get(&world_id)
             .map_or(Err(WorldError::WorldNotFound { world_id }), |world| {
-                Ok(world.intersections_with_point(point, filter, callback))
+                world.intersections_with_point(point, filter, callback);
+                Ok(())
             })
     }
 
@@ -1375,7 +1377,8 @@ impl RapierContext {
         self.worlds
             .get(&world_id)
             .map_or(Err(WorldError::WorldNotFound { world_id }), |world| {
-                Ok(world.colliders_with_aabb_intersecting_aabb(aabb, callback))
+                world.colliders_with_aabb_intersecting_aabb(aabb, callback);
+                Ok(())
             })
     }
 
@@ -1468,7 +1471,8 @@ impl RapierContext {
         self.worlds
             .get(&world_id)
             .map_or(Err(WorldError::WorldNotFound { world_id }), |world| {
-                Ok(world.intersections_with_shape(shape_pos, shape_rot, shape, filter, callback))
+                world.intersections_with_shape(shape_pos, shape_rot, shape, filter, callback);
+                Ok(())
             })
     }
 }

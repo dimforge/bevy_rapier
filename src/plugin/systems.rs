@@ -1499,7 +1499,7 @@ pub fn update_character_controls(
             });
             let entity_to_move = parent_rigid_body
                 .as_ref()
-                .and_then(|rb| world.rigid_body_entity(rb.clone()))
+                .and_then(|rb| world.rigid_body_entity(*rb))
                 .unwrap_or(entity);
 
             let (character_shape, character_pos) = if let Some((scaled_shape, tra, rot)) =

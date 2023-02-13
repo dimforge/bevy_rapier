@@ -112,8 +112,8 @@ fn ray_from_mouse_position(
 ) -> (Vec3, Vec3) {
     let mouse_position = window.cursor_position().unwrap_or(Vec2::new(0.0, 0.0));
 
-    let x = 2.0 * (mouse_position.x / window.width() as f32) - 1.0;
-    let y = 2.0 * (mouse_position.y / window.height() as f32) - 1.0;
+    let x = 2.0 * (mouse_position.x / window.width()) - 1.0;
+    let y = 2.0 * (mouse_position.y / window.height()) - 1.0;
 
     let camera_inverse_matrix =
         camera_transform.compute_matrix() * camera.projection_matrix().inverse();
