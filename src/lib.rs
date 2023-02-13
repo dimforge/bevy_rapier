@@ -76,4 +76,6 @@ pub mod prelude {
     pub use crate::plugin::*;
     #[cfg(any(feature = "debug-render-3d", feature = "debug-render-2d"))]
     pub use crate::render::*;
+
+    pub use crate::prelude::context::DEFAULT_WORLD_ID;
 }

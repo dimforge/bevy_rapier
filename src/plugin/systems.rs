@@ -15,8 +15,8 @@ use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
-    BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities, KinematicCharacterController,
-    KinematicCharacterControllerOutput, RigidBodyDisabled,
+    BevyPhysicsHooks, BevyPhysicsHooksAdapter, BodyWorld, CollidingEntities,
+    KinematicCharacterController, KinematicCharacterControllerOutput, RigidBodyDisabled,
 };
 use crate::utils;
 use bevy::ecs::system::SystemParamItem;
@@ -33,6 +33,8 @@ use {
 use crate::control::CharacterCollision;
 #[cfg(feature = "dim2")]
 use bevy::math::Vec3Swizzles;
+
+use super::context::{RapierWorld, DEFAULT_WORLD_ID};
 
 /// Components that will be updated after a physics step.
 pub type RigidBodyWritebackComponents<'a> = (
@@ -122,126 +124,236 @@ pub fn apply_collider_user_changes(
     config: Res<RapierConfiguration>,
     mut context: ResMut<RapierContext>,
     changed_collider_transforms: Query<
-        (&RapierColliderHandle, &GlobalTransform),
+        (&RapierColliderHandle, &GlobalTransform, Option<&BodyWorld>),
         (Without<RapierRigidBodyHandle>, Changed<GlobalTransform>),
     >,
-    changed_shapes: Query<(&RapierColliderHandle, &Collider), Changed<Collider>>,
-    changed_active_events: Query<(&RapierColliderHandle, &ActiveEvents), Changed<ActiveEvents>>,
-    changed_active_hooks: Query<(&RapierColliderHandle, &ActiveHooks), Changed<ActiveHooks>>,
+    changed_shapes: Query<
+        (&RapierColliderHandle, &Collider, Option<&BodyWorld>),
+        Changed<Collider>,
+    >,
+    changed_active_events: Query<
+        (&RapierColliderHandle, &ActiveEvents, Option<&BodyWorld>),
+        Changed<ActiveEvents>,
+    >,
+    changed_active_hooks: Query<
+        (&RapierColliderHandle, &ActiveHooks, Option<&BodyWorld>),
+        Changed<ActiveHooks>,
+    >,
     changed_active_collision_types: Query<
-        (&RapierColliderHandle, &ActiveCollisionTypes),
+        (
+            &RapierColliderHandle,
+            &ActiveCollisionTypes,
+            Option<&BodyWorld>,
+        ),
         Changed<ActiveCollisionTypes>,
     >,
-    changed_friction: Query<(&RapierColliderHandle, &Friction), Changed<Friction>>,
-    changed_restitution: Query<(&RapierColliderHandle, &Restitution), Changed<Restitution>>,
+    changed_friction: Query<
+        (&RapierColliderHandle, &Friction, Option<&BodyWorld>),
+        Changed<Friction>,
+    >,
+    changed_restitution: Query<
+        (&RapierColliderHandle, &Restitution, Option<&BodyWorld>),
+        Changed<Restitution>,
+    >,
     changed_collision_groups: Query<
-        (&RapierColliderHandle, &CollisionGroups),
+        (&RapierColliderHandle, &CollisionGroups, Option<&BodyWorld>),
         Changed<CollisionGroups>,
     >,
-    changed_solver_groups: Query<(&RapierColliderHandle, &SolverGroups), Changed<SolverGroups>>,
-    changed_sensors: Query<(&RapierColliderHandle, &Sensor), Changed<Sensor>>,
-    changed_disabled: Query<(&RapierColliderHandle, &ColliderDisabled), Changed<ColliderDisabled>>,
+    changed_solver_groups: Query<
+        (&RapierColliderHandle, &SolverGroups, Option<&BodyWorld>),
+        Changed<SolverGroups>,
+    >,
+    changed_sensors: Query<(&RapierColliderHandle, &Sensor, Option<&BodyWorld>), Changed<Sensor>>,
+    changed_disabled: Query<
+        (&RapierColliderHandle, &ColliderDisabled, Option<&BodyWorld>),
+        Changed<ColliderDisabled>,
+    >,
     changed_contact_force_threshold: Query<
-        (&RapierColliderHandle, &ContactForceEventThreshold),
+        (
+            &RapierColliderHandle,
+            &ContactForceEventThreshold,
+            Option<&BodyWorld>,
+        ),
         Changed<ContactForceEventThreshold>,
     >,
     changed_collider_mass_props: Query<
-        (&RapierColliderHandle, &ColliderMassProperties),
+        (
+            &RapierColliderHandle,
+            &ColliderMassProperties,
+            Option<&BodyWorld>,
+        ),
         Changed<ColliderMassProperties>,
     >,
 ) {
-    for (_, world) in context.worlds.iter_mut() {
-        let scale = world.physics_scale;
+    for (handle, transform, world_within) in changed_collider_transforms.iter() {
+        let world_id = world_within.map(|x| x.world_id).unwrap_or(DEFAULT_WORLD_ID);
 
-        for (handle, transform) in changed_collider_transforms.iter() {
-            if let Some(co) = world.colliders.get_mut(handle.0) {
-                if co.parent().is_none() {
-                    co.set_position(utils::transform_to_iso(
-                        &transform.compute_transform(),
-                        scale,
-                    ))
-                }
+        let world = context
+            .get_world_mut(world_id)
+            .expect("World {world_id} does not exist");
+
+        if let Some(co) = world.colliders.get_mut(handle.0) {
+            if co.parent().is_none() {
+                co.set_position(utils::transform_to_iso(
+                    &transform.compute_transform(),
+                    world.physics_scale,
+                ))
             }
         }
+    }
 
-        for (handle, shape) in changed_shapes.iter() {
-            if let Some(co) = world.colliders.get_mut(handle.0) {
-                let mut scaled_shape = shape.clone();
-                scaled_shape.set_scale(shape.scale / scale, config.scaled_shape_subdivision);
-                co.set_shape(scaled_shape.raw.clone())
-            }
+    for (handle, shape, world_within) in changed_shapes.iter() {
+        let world_id = world_within.map(|x| x.world_id).unwrap_or(DEFAULT_WORLD_ID);
+
+        let world = context
+            .get_world_mut(world_id)
+            .expect("World {world_id} does not exist");
+
+        if let Some(co) = world.colliders.get_mut(handle.0) {
+            let mut scaled_shape = shape.clone();
+            scaled_shape.set_scale(
+                shape.scale / world.physics_scale,
+                config.scaled_shape_subdivision,
+            );
+            co.set_shape(scaled_shape.raw.clone())
         }
+    }
 
-        for (handle, active_events) in changed_active_events.iter() {
-            if let Some(co) = world.colliders.get_mut(handle.0) {
-                co.set_active_events((*active_events).into())
-            }
+    for (handle, active_events, world_within) in changed_active_events.iter() {
+        let world_id = world_within.map(|x| x.world_id).unwrap_or(DEFAULT_WORLD_ID);
+
+        let world = context
+            .get_world_mut(world_id)
+            .expect("World {world_id} does not exist");
+
+        if let Some(co) = world.colliders.get_mut(handle.0) {
+            co.set_active_events((*active_events).into())
         }
+    }
 
-        for (handle, active_hooks) in changed_active_hooks.iter() {
-            if let Some(co) = world.colliders.get_mut(handle.0) {
-                co.set_active_hooks((*active_hooks).into())
-            }
+    for (handle, active_hooks, world_within) in changed_active_hooks.iter() {
+        let world_id = world_within.map(|x| x.world_id).unwrap_or(DEFAULT_WORLD_ID);
+
+        let world = context
+            .get_world_mut(world_id)
+            .expect("World {world_id} does not exist");
+
+        if let Some(co) = world.colliders.get_mut(handle.0) {
+            co.set_active_hooks((*active_hooks).into())
         }
+    }
 
-        for (handle, active_collision_types) in changed_active_collision_types.iter() {
-            if let Some(co) = world.colliders.get_mut(handle.0) {
-                co.set_active_collision_types((*active_collision_types).into())
-            }
+    for (handle, active_collision_types, world_within) in changed_active_collision_types.iter() {
+        let world_id = world_within.map(|x| x.world_id).unwrap_or(DEFAULT_WORLD_ID);
+
+        let world = context
+            .get_world_mut(world_id)
+            .expect("World {world_id} does not exist");
+
+        if let Some(co) = world.colliders.get_mut(handle.0) {
+            co.set_active_collision_types((*active_collision_types).into())
         }
+    }
 
-        for (handle, friction) in changed_friction.iter() {
-            if let Some(co) = world.colliders.get_mut(handle.0) {
-                co.set_friction(friction.coefficient);
-                co.set_friction_combine_rule(friction.combine_rule.into());
-            }
+    for (handle, friction, world_within) in changed_friction.iter() {
+        let world_id = world_within.map(|x| x.world_id).unwrap_or(DEFAULT_WORLD_ID);
+
+        let world = context
+            .get_world_mut(world_id)
+            .expect("World {world_id} does not exist");
+
+        if let Some(co) = world.colliders.get_mut(handle.0) {
+            co.set_friction(friction.coefficient);
+            co.set_friction_combine_rule(friction.combine_rule.into());
         }
+    }
 
-        for (handle, restitution) in changed_restitution.iter() {
-            if let Some(co) = world.colliders.get_mut(handle.0) {
-                co.set_restitution(restitution.coefficient);
-                co.set_restitution_combine_rule(restitution.combine_rule.into());
-            }
+    for (handle, restitution, world_within) in changed_restitution.iter() {
+        let world_id = world_within.map(|x| x.world_id).unwrap_or(DEFAULT_WORLD_ID);
+
+        let world = context
+            .get_world_mut(world_id)
+            .expect("World {world_id} does not exist");
+
+        if let Some(co) = world.colliders.get_mut(handle.0) {
+            co.set_restitution(restitution.coefficient);
+            co.set_restitution_combine_rule(restitution.combine_rule.into());
         }
+    }
 
-        for (handle, collision_groups) in changed_collision_groups.iter() {
-            if let Some(co) = world.colliders.get_mut(handle.0) {
-                co.set_collision_groups((*collision_groups).into());
-            }
+    for (handle, collision_groups, world_within) in changed_collision_groups.iter() {
+        let world_id = world_within.map(|x| x.world_id).unwrap_or(DEFAULT_WORLD_ID);
+
+        let world = context
+            .get_world_mut(world_id)
+            .expect("World {world_id} does not exist");
+
+        if let Some(co) = world.colliders.get_mut(handle.0) {
+            co.set_collision_groups((*collision_groups).into());
         }
+    }
 
-        for (handle, solver_groups) in changed_solver_groups.iter() {
-            if let Some(co) = world.colliders.get_mut(handle.0) {
-                co.set_solver_groups((*solver_groups).into());
-            }
+    for (handle, solver_groups, world_within) in changed_solver_groups.iter() {
+        let world_id = world_within.map(|x| x.world_id).unwrap_or(DEFAULT_WORLD_ID);
+
+        let world = context
+            .get_world_mut(world_id)
+            .expect("World {world_id} does not exist");
+
+        if let Some(co) = world.colliders.get_mut(handle.0) {
+            co.set_solver_groups((*solver_groups).into());
         }
+    }
 
-        for (handle, _) in changed_sensors.iter() {
-            if let Some(co) = world.colliders.get_mut(handle.0) {
-                co.set_sensor(true);
-            }
+    for (handle, _, world_within) in changed_sensors.iter() {
+        let world_id = world_within.map(|x| x.world_id).unwrap_or(DEFAULT_WORLD_ID);
+
+        let world = context
+            .get_world_mut(world_id)
+            .expect("World {world_id} does not exist");
+
+        if let Some(co) = world.colliders.get_mut(handle.0) {
+            co.set_sensor(true);
         }
+    }
 
-        for (handle, _) in changed_disabled.iter() {
-            if let Some(co) = world.colliders.get_mut(handle.0) {
-                co.set_enabled(false);
-            }
+    for (handle, _, world_within) in changed_disabled.iter() {
+        let world_id = world_within.map(|x| x.world_id).unwrap_or(DEFAULT_WORLD_ID);
+
+        let world = context
+            .get_world_mut(world_id)
+            .expect("World {world_id} does not exist");
+
+        if let Some(co) = world.colliders.get_mut(handle.0) {
+            co.set_enabled(false);
         }
+    }
 
-        for (handle, threshold) in changed_contact_force_threshold.iter() {
-            if let Some(co) = world.colliders.get_mut(handle.0) {
-                co.set_contact_force_event_threshold(threshold.0);
-            }
+    for (handle, threshold, world_within) in changed_contact_force_threshold.iter() {
+        let world_id = world_within.map(|x| x.world_id).unwrap_or(DEFAULT_WORLD_ID);
+
+        let world = context
+            .get_world_mut(world_id)
+            .expect("World {world_id} does not exist");
+
+        if let Some(co) = world.colliders.get_mut(handle.0) {
+            co.set_contact_force_event_threshold(threshold.0);
         }
+    }
 
-        for (handle, mprops) in changed_collider_mass_props.iter() {
-            if let Some(co) = world.colliders.get_mut(handle.0) {
-                match mprops {
-                    ColliderMassProperties::Density(density) => co.set_density(*density),
-                    ColliderMassProperties::Mass(mass) => co.set_mass(*mass),
-                    ColliderMassProperties::MassProperties(mprops) => {
-                        co.set_mass_properties(mprops.into_rapier(scale))
-                    }
+    for (handle, mprops, world_within) in changed_collider_mass_props.iter() {
+        let world_id = world_within.map(|x| x.world_id).unwrap_or(DEFAULT_WORLD_ID);
+
+        let world = context
+            .get_world_mut(world_id)
+            .expect("World {world_id} does not exist");
+
+        if let Some(co) = world.colliders.get_mut(handle.0) {
+            match mprops {
+                ColliderMassProperties::Density(density) => co.set_density(*density),
+                ColliderMassProperties::Mass(mass) => co.set_mass(*mass),
+                ColliderMassProperties::MassProperties(mprops) => {
+                    co.set_mass_properties(mprops.into_rapier(world.physics_scale))
                 }
             }
         }
@@ -283,7 +395,6 @@ pub fn apply_rigid_body_user_changes(
     >,
 ) {
     for (_, world) in context.worlds.iter_mut() {
-        let context = &mut *context;
         let scale = world.physics_scale;
 
         // Deal with sleeping first, because other changes may then wake-up the
@@ -501,7 +612,6 @@ pub fn writeback_rigid_bodies(
     mut writeback: Query<RigidBodyWritebackComponents>,
 ) {
     for (_, world) in context.worlds.iter_mut() {
-        let context = &mut *context;
         let scale = world.physics_scale;
 
         if config.physics_pipeline_active {
@@ -646,34 +756,34 @@ pub fn step_simulation<PhysicsHooks>(
     config: Res<RapierConfiguration>,
     hooks: SystemParamItem<PhysicsHooks>,
     (time, mut sim_to_render_time): (Res<Time>, ResMut<SimulationToRenderTime>),
-    collision_events: EventWriter<CollisionEvent>,
-    contact_force_events: EventWriter<ContactForceEvent>,
-    interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
+    mut collision_events: EventWriter<CollisionEvent>,
+    mut contact_force_events: EventWriter<ContactForceEvent>,
+    mut interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
 ) where
     PhysicsHooks: 'static + BevyPhysicsHooks,
     for<'w, 's> SystemParamItem<'w, 's, PhysicsHooks>: BevyPhysicsHooks,
 {
-    for (_, world) in context.worlds.iter_mut() {
-        let context = &mut *context;
-        let hooks_adapter = BevyPhysicsHooksAdapter::<PhysicsHooks>::new(hooks);
+    let hooks_adapter = BevyPhysicsHooksAdapter::<PhysicsHooks>::new(hooks);
 
+    for (_, world) in context.worlds.iter_mut() {
         if config.physics_pipeline_active {
-            context.step_simulation(
+            world.step_simulation(
                 config.gravity,
                 config.timestep_mode,
-                Some((collision_events, contact_force_events)),
+                // &mut Some((&mut collision_events, &mut contact_force_events)),
                 &hooks_adapter,
                 &time,
                 &mut sim_to_render_time,
-                Some(interpolation_query),
+                &mut Some(&mut interpolation_query),
             );
+
             world.deleted_colliders.clear();
         } else {
-            context.propagate_modified_body_positions_to_colliders();
+            world.propagate_modified_body_positions_to_colliders();
         }
 
         if config.query_pipeline_active {
-            context.update_query_pipeline();
+            world.update_query_pipeline();
         }
     }
 }
@@ -760,7 +870,6 @@ pub fn init_colliders(
     parent_query: Query<(&Parent, Option<&Transform>)>,
 ) {
     for (_, world) in context.worlds.iter_mut() {
-        let context = &mut *context;
         let physics_scale = world.physics_scale;
 
         for (
@@ -1009,7 +1118,6 @@ pub fn apply_initial_rigid_body_impulses(
     mut init_impulses: Query<(Entity, &mut ExternalImpulse), Without<RapierRigidBodyHandle>>,
 ) {
     for (_, world) in context.worlds.iter_mut() {
-        let context = &mut *context;
         let scale = world.physics_scale;
 
         for (entity, mut impulse) in init_impulses.iter_mut() {
@@ -1042,7 +1150,6 @@ pub fn init_joints(
     parent_query: Query<&Parent>,
 ) {
     for (_, world) in context.worlds.iter_mut() {
-        let context = &mut *context;
         let scale = world.physics_scale;
 
         for (entity, joint) in impulse_joints.iter() {
@@ -1119,7 +1226,6 @@ pub fn sync_removals(
         /*
          * Rigid-bodies removal detection.
          */
-        let context = &mut *context;
         for entity in removed_bodies.iter() {
             if let Some(handle) = world.entity2body.remove(&entity) {
                 let _ = world.last_body_transform_set.remove(&handle);
@@ -1134,7 +1240,6 @@ pub fn sync_removals(
             }
         }
 
-        let context = &mut *context;
         for entity in orphan_bodies.iter() {
             if let Some(handle) = world.entity2body.remove(&entity) {
                 let _ = world.last_body_transform_set.remove(&handle);
@@ -1284,7 +1389,6 @@ pub fn update_character_controls(
 ) {
     for (_, world) in context.worlds.iter_mut() {
         let physics_scale = world.physics_scale;
-        let context = &mut *context;
         for (entity, mut controller, output, collider_handle, body_handle, glob_transform) in
             character_controllers.iter_mut()
         {
@@ -1312,7 +1416,8 @@ pub fn update_character_controls(
                         .and_then(|c| c.parent())
                 });
                 let entity_to_move = parent_rigid_body
-                    .and_then(|rb| context.rigid_body_entity(rb))
+                    .as_ref()
+                    .and_then(|rb| world.rigid_body_entity(rb.clone()))
                     .unwrap_or(entity);
 
                 let (character_shape, character_pos) = if let Some((scaled_shape, tra, rot)) =

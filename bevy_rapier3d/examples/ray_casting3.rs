@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::*;
+use bevy_rapier3d::prelude::{DEFAULT_WORLD_ID, *};
 
 fn main() {
     App::new()
@@ -83,13 +83,16 @@ fn cast_ray(
             ray_from_mouse_position(windows.get_primary().unwrap(), camera, camera_transform);
 
         // Then cast the ray.
-        let hit = rapier_context.cast_ray(
-            ray_pos,
-            ray_dir,
-            f32::MAX,
-            true,
-            QueryFilter::only_dynamic(),
-        );
+        let hit = rapier_context
+            .cast_ray(
+                DEFAULT_WORLD_ID,
+                ray_pos,
+                ray_dir,
+                f32::MAX,
+                true,
+                QueryFilter::only_dynamic(),
+            )
+            .expect("Default world should exist.");
 
         if let Some((entity, _toi)) = hit {
             // Color in blue the entity we just hit.

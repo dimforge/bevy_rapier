@@ -111,15 +111,15 @@ impl Plugin for RapierDebugRenderPlugin {
     }
 }
 
-struct BevyLinesRenderBackend<'world, 'state, 'a, 'b, 'c> {
+struct BevyLinesRenderBackend<'world, 'state, 'a, 'b, 'c, 'd> {
     physics_scale: f32,
-    custom_colors: Query<'world, 'state, &'a ColliderDebugColor>,
+    custom_colors: &'d Query<'world, 'state, &'a ColliderDebugColor>,
     context: &'b RapierContext,
     world: &'b RapierWorld,
     lines: &'c mut DebugLines,
 }
 
-impl<'world, 'state, 'a, 'b, 'c> BevyLinesRenderBackend<'world, 'state, 'a, 'b, 'c> {
+impl<'world, 'state, 'a, 'b, 'c, 'd> BevyLinesRenderBackend<'world, 'state, 'a, 'b, 'c, 'd> {
     fn object_color(&self, object: DebugRenderObject, default: [f32; 4]) -> [f32; 4] {
         let color = match object {
             DebugRenderObject::Collider(h, ..) => self.world.colliders.get(h).and_then(|co| {
@@ -135,8 +135,8 @@ impl<'world, 'state, 'a, 'b, 'c> BevyLinesRenderBackend<'world, 'state, 'a, 'b, 
     }
 }
 
-impl<'world, 'state, 'a, 'b, 'c> DebugRenderBackend
-    for BevyLinesRenderBackend<'world, 'state, 'a, 'b, 'c>
+impl<'world, 'state, 'a, 'b, 'c, 'd> DebugRenderBackend
+    for BevyLinesRenderBackend<'world, 'state, 'a, 'b, 'c, 'd>
 {
     #[cfg(feature = "dim2")]
     fn draw_line(
@@ -182,7 +182,7 @@ fn debug_render_scene(
     mut lines: ResMut<DebugLines>,
     custom_colors: Query<&ColliderDebugColor>,
 ) {
-    for (_, world) in rapier_context.worlds {
+    for (_, world) in rapier_context.worlds.iter() {
         if !render_context.enabled {
             return;
         }
@@ -191,7 +191,7 @@ fn debug_render_scene(
         let mut backend = BevyLinesRenderBackend {
             physics_scale: world.physics_scale,
             world: &world,
-            custom_colors,
+            custom_colors: &custom_colors,
             context: &rapier_context,
             lines: &mut lines,
         };

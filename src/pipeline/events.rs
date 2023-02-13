@@ -45,15 +45,15 @@ pub struct ContactForceEvent {
 // investigated how to reproduce this exactly to open an
 // issue).
 /// A set of queues collecting events emitted by the physics engine.
-pub(crate) struct EventQueue<'a> {
+pub(crate) struct EventQueue<'a, 'b> {
     // Used ot retrieve the entity of colliders that have been removed from the simulation
     // since the last physics step.
     pub deleted_colliders: &'a HashMap<ColliderHandle, Entity>,
-    pub collision_events: RwLock<EventWriter<'a, 'a, CollisionEvent>>,
-    pub contact_force_events: RwLock<EventWriter<'a, 'a, ContactForceEvent>>,
+    pub collision_events: RwLock<&'b mut EventWriter<'b, 'b, CollisionEvent>>,
+    pub contact_force_events: RwLock<&'b mut EventWriter<'b, 'b, ContactForceEvent>>,
 }
 
-impl<'a> EventQueue<'a> {
+impl<'a, 'b> EventQueue<'a, 'b> {
     fn collider2entity(&self, colliders: &ColliderSet, handle: ColliderHandle) -> Entity {
         colliders
             .get(handle)
@@ -63,7 +63,7 @@ impl<'a> EventQueue<'a> {
     }
 }
 
-impl<'a> EventHandler for EventQueue<'a> {
+impl<'a, 'b> EventHandler for EventQueue<'a, 'b> {
     fn handle_collision_event(
         &self,
         _bodies: &RigidBodySet,

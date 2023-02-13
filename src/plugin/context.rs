@@ -24,8 +24,9 @@ use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
 use bevy::math::Vec3Swizzles;
 use rapier::control::CharacterAutostep;
 
-type WorldId = usize;
+pub type WorldId = usize;
 
+/// This world id is the default world that is created. This world cannot be removed.
 pub const DEFAULT_WORLD_ID: WorldId = 0;
 
 /// The Rapier context, containing all the state of the physics engine.
@@ -132,28 +133,40 @@ impl RapierWorld {
             .map(|c| Entity::from_bits(c.user_data as u64))
     }
 
-    fn step_simulation(
+    pub fn step_simulation<'a>(
         &mut self,
         gravity: Vect,
         timestep_mode: TimestepMode,
-        events: Option<(EventWriter<CollisionEvent>, EventWriter<ContactForceEvent>)>,
+        // events: &'a mut Option<(
+        //     &'a mut EventWriter<CollisionEvent>,
+        //     &'a mut EventWriter<ContactForceEvent>,
+        // )>,
         hooks: &dyn PhysicsHooks,
         time: &Time,
         sim_to_render_time: &mut SimulationToRenderTime,
         interpolation_query: &mut Option<
-            Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
+            &mut Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
         >,
     ) {
-        let event_queue = events.map(|(ce, fe)| EventQueue {
-            deleted_colliders: &self.deleted_colliders,
-            collision_events: RwLock::new(ce),
-            contact_force_events: RwLock::new(fe),
-        });
+        // let event_queue = match events {
+        //     Some((ce, fe)) => Some(EventQueue {
+        //         deleted_colliders: &self.deleted_colliders,
+        //         collision_events: RwLock::new(*ce),
+        //         contact_force_events: RwLock::new(*fe),
+        //     }),
+        //     None => None,
+        // };
+
+        //events.map(|(ce, fe)| EventQueue {
+        // deleted_colliders: &self.deleted_colliders,
+        // collision_events: RwLock::new(ce),
+        // contact_force_events: RwLock::new(fe),
+        // });
 
         let events = self
             .event_handler
             .as_deref()
-            .or_else(|| event_queue.as_ref().map(|q| q as &dyn EventHandler))
+            // .or_else(|| event_queue.as_ref().map(|q| q as &dyn EventHandler))
             .unwrap_or(&() as &dyn EventHandler);
 
         match timestep_mode {
@@ -866,6 +879,12 @@ impl RapierContext {
             .ok_or(WorldError::WorldNotFound { world_id })
     }
 
+    pub fn get_world_mut(&mut self, world_id: WorldId) -> Result<&mut RapierWorld, WorldError> {
+        self.worlds
+            .get_mut(&world_id)
+            .ok_or(WorldError::WorldNotFound { world_id })
+    }
+
     pub fn physics_scale(&self, world_id: WorldId) -> Option<Real> {
         self.worlds.get(&world_id).map(|x| x.physics_scale)
     }
@@ -957,7 +976,7 @@ impl RapierContext {
     /// Advance the simulation, based on the given timestep mode.
     #[allow(clippy::too_many_arguments)]
     pub fn step_simulation(
-        &mut self,
+        mut self,
         gravity: Vect,
         timestep_mode: TimestepMode,
         events: Option<(EventWriter<CollisionEvent>, EventWriter<ContactForceEvent>)>,
@@ -965,14 +984,14 @@ impl RapierContext {
         time: &Time,
         sim_to_render_time: &mut SimulationToRenderTime,
         mut interpolation_query: Option<
-            Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
+            &mut Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
         >,
     ) {
         for (_, world) in self.worlds.iter_mut() {
             world.step_simulation(
                 gravity,
                 timestep_mode,
-                events,
+                // &mut events.as_mut().map(|(ce, fe)| (ce, fe)),
                 hooks,
                 time,
                 sim_to_render_time,

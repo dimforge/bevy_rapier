@@ -1,4 +1,4 @@
-use crate::math::Vect;
+use crate::{math::Vect, plugin::context::WorldId};
 use bevy::{prelude::*, reflect::FromReflect};
 use rapier::prelude::{
     Isometry, LockedAxes as RapierLockedAxes, RigidBodyActivation, RigidBodyHandle, RigidBodyType,
@@ -398,6 +398,14 @@ impl Default for GravityScale {
     fn default() -> Self {
         Self(1.0)
     }
+}
+
+/// Denotes which world this body is a part of. If omitted, the default world is assumed.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Component, Reflect, FromReflect)]
+#[reflect(Component, PartialEq)]
+pub struct BodyWorld {
+    /// The world which this body is in
+    pub world_id: WorldId,
 }
 
 /// Information used for Continuous-Collision-Detection.

@@ -128,7 +128,11 @@ fn ball_spawner(
 
     // NOTE: The timing here only works properly with `time_dependent_number_of_timesteps`
     // disabled, as it is for examples.
-    ball_state.seconds_until_next_spawn -= rapier_context.integration_parameters.dt;
+    ball_state.seconds_until_next_spawn -= rapier_context
+        .get_world(DEFAULT_WORLD_ID)
+        .expect("Default world should exist.")
+        .integration_parameters
+        .dt;
     if ball_state.seconds_until_next_spawn > 0.0 {
         return;
     }
