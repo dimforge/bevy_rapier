@@ -13,6 +13,7 @@ fn main() {
         .add_plugin(RapierDebugRenderPlugin::default())
         .add_startup_system(setup_graphics)
         .add_startup_system(setup_physics)
+        .add_system(move_middle_world)
         .run();
 }
 
@@ -24,31 +25,43 @@ fn setup_graphics(mut commands: Commands) {
     });
 }
 
-const N_WORLDS: usize = 2;
+fn move_middle_world(time: Res<Time>, mut query: Query<(&mut Transform, &BodyWorld)>) {
+    for (mut transform, world) in query.iter_mut() {
+        if world.world_id == N_WORLDS / 2 {
+            transform.translation.y = -time.elapsed_seconds().sin();
+        }
+    }
+}
+
+const N_WORLDS: usize = 6;
 
 pub fn setup_physics(mut context: ResMut<RapierContext>, mut commands: Commands) {
     for _ in 1..N_WORLDS {
         context.add_world(RapierWorld::default());
     }
 
-    for i in 0..N_WORLDS {
-        let color = [Color::hsl(220.0, 1.0, 0.3), Color::hsl(180.0, 1.0, 0.3)][i % 2];
+    for world_id in 0..N_WORLDS {
+        let color = [
+            Color::hsl(220.0, 1.0, 0.3),
+            Color::hsl(180.0, 1.0, 0.3),
+            Color::hsl(260.0, 1.0, 0.7),
+        ][world_id % 3];
 
         /*
          * Ground
          */
-        let ground_size = 20.1;
+        let ground_size = 5.1;
         let ground_height = 0.1;
 
         commands.spawn((
             TransformBundle::from(Transform::from_xyz(
                 0.0,
-                (i as f32) * 0.2 - ground_height,
+                (world_id as f32) * -0.5 - ground_height,
                 0.0,
             )),
             Collider::cuboid(ground_size, ground_height, ground_size),
             ColliderDebugColor(color),
-            BodyWorld { world_id: i },
+            BodyWorld { world_id },
         ));
 
         /*
@@ -61,11 +74,15 @@ pub fn setup_physics(mut context: ResMut<RapierContext>, mut commands: Commands)
             )))
             .with_children(|child| {
                 child.spawn((
-                    TransformBundle::from(Transform::from_xyz(0.0, 1.0 + i as f32 * 2.0, 0.0)),
+                    TransformBundle::from(Transform::from_xyz(
+                        0.0,
+                        1.0 + world_id as f32 * 5.0,
+                        0.0,
+                    )),
                     RigidBody::Dynamic,
                     Collider::cuboid(0.5, 0.5, 0.5),
                     ColliderDebugColor(color),
-                    BodyWorld { world_id: i },
+                    BodyWorld { world_id },
                 ));
             });
     }
