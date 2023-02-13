@@ -126,13 +126,15 @@ impl RapierWorld {
         }
     }
 
+    /// Retrieve the Bevy entity the given Rapier rigid-body (identified by its handle) is attached.
     pub fn rigid_body_entity(&self, handle: RigidBodyHandle) -> Option<Entity> {
         self.bodies
             .get(handle)
             .map(|c| Entity::from_bits(c.user_data as u64))
     }
 
-    pub fn step_simulation<'a>(
+    /// Advance the simulation, based on the given timestep mode.
+    pub fn step_simulation(
         &mut self,
         gravity: Vect,
         timestep_mode: TimestepMode,
@@ -269,15 +271,31 @@ impl RapierWorld {
         }
     }
 
+    /// This method makes sure that the rigid-body positions have been propagated to
+    /// their attached colliders, without having to perform a srimulation step.
     pub fn propagate_modified_body_positions_to_colliders(&mut self) {
         self.bodies
             .propagate_modified_body_positions_to_colliders(&mut self.colliders);
     }
 
+    /// Updates the state of the query pipeline, based on the collider positions known
+    /// from the last timestep or the last call to `self.propagate_modified_body_positions_to_colliders()`.
     pub fn update_query_pipeline(&mut self) {
         self.query_pipeline.update(&self.bodies, &self.colliders);
     }
 
+    /// Attempts to move shape, optionally sliding or climbing obstacles.
+    ///
+    /// # Parameters
+    /// * `movement`: the translational movement to apply.
+    /// * `shape`: the shape to move.
+    /// * `shape_translation`: the initial position of the shape.
+    /// * `shape_rotation`: the rotation of the shape.
+    /// * `shape_mass`: the mass of the shape to be considered by the impulse calculation if
+    ///                 `MoveShapeOptions::apply_impulse_to_dynamic_bodies` is set to true.
+    /// * `options`: configures the behavior of the automatic sliding and climbing.
+    /// * `filter`: indicates what collider or rigid-body needs to be ignored by the obstacle detection.
+    /// * `events`: callback run on each obstacle hit by the shape on its path.
     #[allow(clippy::too_many_arguments)]
     pub fn move_shape(
         &mut self,
