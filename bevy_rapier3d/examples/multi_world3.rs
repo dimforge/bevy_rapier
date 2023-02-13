@@ -26,7 +26,11 @@ fn setup_graphics(mut commands: Commands) {
 
 const N_WORLDS: usize = 2;
 
-pub fn setup_physics(mut commands: Commands) {
+pub fn setup_physics(mut context: ResMut<RapierContext>, mut commands: Commands) {
+    for _ in 1..N_WORLDS {
+        context.add_world(RapierWorld::default());
+    }
+
     for i in 0..N_WORLDS {
         let color = [Color::hsl(220.0, 1.0, 0.3), Color::hsl(180.0, 1.0, 0.3)][i % 2];
 
@@ -39,11 +43,12 @@ pub fn setup_physics(mut commands: Commands) {
         commands.spawn((
             TransformBundle::from(Transform::from_xyz(
                 0.0,
-                (i as f32) * -2.0 - ground_height,
+                (i as f32) * 0.2 - ground_height,
                 0.0,
             )),
             Collider::cuboid(ground_size, ground_height, ground_size),
             ColliderDebugColor(color),
+            BodyWorld { world_id: i },
         ));
 
         /*
@@ -56,10 +61,11 @@ pub fn setup_physics(mut commands: Commands) {
             )))
             .with_children(|child| {
                 child.spawn((
-                    TransformBundle::from(Transform::from_xyz(0.0, ((1 + i) * 5) as f32, 0.0)),
+                    TransformBundle::from(Transform::from_xyz(0.0, 1.0 + i as f32 * 2.0, 0.0)),
                     RigidBody::Dynamic,
                     Collider::cuboid(0.5, 0.5, 0.5),
                     ColliderDebugColor(color),
+                    BodyWorld { world_id: i },
                 ));
             });
     }

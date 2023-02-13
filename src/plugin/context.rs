@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use core::fmt;
 use std::collections::HashMap;
-use std::sync::RwLock;
 
 use rapier::prelude::{
     Aabb as RapierAabb, BroadPhase, CCDSolver, ColliderHandle, ColliderSet, EventHandler,
@@ -12,8 +11,8 @@ use rapier::prelude::{
 
 use crate::geometry::{Collider, PointProjection, RayIntersection, Toi};
 use crate::math::{Rot, Vect};
-use crate::pipeline::{CollisionEvent, ContactForceEvent, EventQueue, QueryFilter};
-use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query};
+use crate::pipeline::QueryFilter;
+use bevy::prelude::{Entity, GlobalTransform, Query};
 use bevy::render::primitives::Aabb;
 
 use crate::control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput};
@@ -838,12 +837,17 @@ impl Default for RapierWorld {
 #[derive(Debug)]
 pub enum WorldError {
     WorldNotFound { world_id: WorldId },
+    TriedToRemoveDefaultWorld,
 }
 
 impl fmt::Display for WorldError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Self::WorldNotFound { world_id } => write!(f, "World with id {world_id} not found."),
+            Self::TriedToRemoveDefaultWorld => write!(
+                f,
+                "Tried to remove default world. This world cannot be removed."
+            ),
         }
     }
 }
@@ -854,7 +858,10 @@ impl std::error::Error for WorldError {}
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Resource)]
 pub struct RapierContext {
+    /// Stores all the worlds in the simulation.
     pub worlds: HashMap<WorldId, RapierWorld>,
+
+    next_world_id: WorldId,
 }
 
 impl RapierContext {}
@@ -866,27 +873,56 @@ impl Default for RapierContext {
 }
 
 impl RapierContext {
+    /// Creates a new RapierContext with a custom starting world
     pub fn new(world: RapierWorld) -> Self {
         let mut worlds = HashMap::new();
         worlds.insert(DEFAULT_WORLD_ID, world);
 
-        Self { worlds }
+        Self {
+            worlds,
+            next_world_id: 1,
+        }
     }
 
+    /// Adds a world to the simulation
+    ///
+    /// Returns that world's id
+    pub fn add_world(&mut self, world: RapierWorld) -> WorldId {
+        let world_id = self.next_world_id;
+
+        self.worlds.insert(world_id, world);
+
+        self.next_world_id += 1;
+
+        world_id
+    }
+
+    /// Removes a world from the simulation. This does NOT despawn entities within that world.
+    /// Make sure all entities within that world are despawned or moved to a seperate world.
+    ///
+    /// Returns the removed world or an err if that world wasn't found or you tried to remove the default world.
+    pub fn remove_world(&mut self, world_id: WorldId) -> Result<RapierWorld, WorldError> {
+        if world_id == DEFAULT_WORLD_ID {
+            Err(WorldError::TriedToRemoveDefaultWorld)
+        } else {
+            self.worlds
+                .remove(&world_id)
+                .ok_or(WorldError::WorldNotFound { world_id })
+        }
+    }
+
+    /// Gets the world at the given id. If the world does not exist, an Err result will be returned
     pub fn get_world(&self, world_id: WorldId) -> Result<&RapierWorld, WorldError> {
         self.worlds
             .get(&world_id)
             .ok_or(WorldError::WorldNotFound { world_id })
     }
 
+    /// Gets the mutable world at the given id. If the world does not exist, an Err result will be returned
     pub fn get_world_mut(&mut self, world_id: WorldId) -> Result<&mut RapierWorld, WorldError> {
         self.worlds
             .get_mut(&world_id)
             .ok_or(WorldError::WorldNotFound { world_id })
-    }
-
-    pub fn physics_scale(&self, world_id: WorldId) -> Option<Real> {
-        self.worlds.get(&world_id).map(|x| x.physics_scale)
     }
 
     /// Get the physics scale that was set for this Rapier context.
@@ -894,8 +930,11 @@ impl RapierContext {
     /// Returns None if no world was found with that id.
     ///
     /// See [`RapierPhysicsPlugin::with_physics_scale()`][crate::plugin::RapierPhysicsPlugin::with_physics_scale()].
-    pub fn physics_scale_for_world(&self, world_id: WorldId) -> Option<Real> {
-        self.worlds.get(&world_id).map(|world| world.physics_scale)
+    pub fn physics_scale_for_world(&self, world_id: WorldId) -> Result<Real, WorldError> {
+        self.worlds
+            .get(&world_id)
+            .map(|x| x.physics_scale)
+            .ok_or(WorldError::WorldNotFound { world_id })
     }
 
     fn get_collider_parent_from_world(
@@ -979,7 +1018,7 @@ impl RapierContext {
         mut self,
         gravity: Vect,
         timestep_mode: TimestepMode,
-        events: Option<(EventWriter<CollisionEvent>, EventWriter<ContactForceEvent>)>,
+        // events: Option<(EventWriter<CollisionEvent>, EventWriter<ContactForceEvent>)>,
         hooks: &dyn PhysicsHooks,
         time: &Time,
         sim_to_render_time: &mut SimulationToRenderTime,
@@ -1206,7 +1245,7 @@ impl RapierContext {
         max_toi: Real,
         solid: bool,
         filter: QueryFilter,
-        mut callback: impl FnMut(Entity, RayIntersection) -> bool,
+        callback: impl FnMut(Entity, RayIntersection) -> bool,
     ) -> Result<(), WorldError> {
         self.worlds
             .get(&world_id)
@@ -1274,7 +1313,7 @@ impl RapierContext {
         world_id: WorldId,
         point: Vect,
         filter: QueryFilter,
-        mut callback: impl FnMut(Entity) -> bool,
+        callback: impl FnMut(Entity) -> bool,
     ) -> Result<(), WorldError> {
         self.worlds
             .get(&world_id)
@@ -1313,7 +1352,7 @@ impl RapierContext {
         &self,
         world_id: WorldId,
         aabb: Aabb,
-        mut callback: impl FnMut(Entity) -> bool,
+        callback: impl FnMut(Entity) -> bool,
     ) -> Result<(), WorldError> {
         self.worlds
             .get(&world_id)
@@ -1406,7 +1445,7 @@ impl RapierContext {
         shape_rot: Rot,
         shape: &Collider,
         filter: QueryFilter,
-        mut callback: impl FnMut(Entity) -> bool,
+        callback: impl FnMut(Entity) -> bool,
     ) -> Result<(), WorldError> {
         self.worlds
             .get(&world_id)

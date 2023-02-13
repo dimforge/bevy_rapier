@@ -1,4 +1,4 @@
-pub(crate) use self::events::EventQueue;
+// pub(crate) use self::events::EventQueue;
 pub use self::events::{CollisionEvent, ContactForceEvent};
 pub(crate) use self::physics_hooks::BevyPhysicsHooksAdapter;
 pub use self::physics_hooks::{

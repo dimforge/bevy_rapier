@@ -114,7 +114,6 @@ impl Plugin for RapierDebugRenderPlugin {
 struct BevyLinesRenderBackend<'world, 'state, 'a, 'b, 'c, 'd> {
     physics_scale: f32,
     custom_colors: &'d Query<'world, 'state, &'a ColliderDebugColor>,
-    context: &'b RapierContext,
     world: &'b RapierWorld,
     lines: &'c mut DebugLines,
 }
@@ -192,7 +191,6 @@ fn debug_render_scene(
             physics_scale: world.physics_scale,
             world: &world,
             custom_colors: &custom_colors,
-            context: &rapier_context,
             lines: &mut lines,
         };
 
