@@ -78,8 +78,11 @@ where
                     .with_system(systems::apply_scale.after(systems::init_async_colliders))
                     .with_system(systems::apply_collider_user_changes.after(systems::apply_scale))
                     .with_system(
+                        systems::apply_changing_worlds.after(systems::apply_collider_user_changes),
+                    )
+                    .with_system(
                         systems::apply_rigid_body_user_changes
-                            .after(systems::apply_collider_user_changes),
+                            .after(systems::apply_changing_worlds),
                     )
                     .with_system(
                         systems::apply_joint_user_changes

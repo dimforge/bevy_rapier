@@ -36,8 +36,6 @@ pub enum RigidBody {
     KinematicVelocityBased,
 }
 
-
-
 impl From<RigidBody> for RigidBodyType {
     fn from(rigid_body: RigidBody) -> RigidBodyType {
         match rigid_body {
@@ -402,7 +400,7 @@ impl Default for GravityScale {
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Component, Reflect, FromReflect)]
 #[reflect(Component, PartialEq)]
 pub struct BodyWorld {
-    /// The world which this body is in
+    /// The world which this body is in. Use DEFAULT_WORLD_ID for the default world.
     pub world_id: WorldId,
 }
 

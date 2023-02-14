@@ -321,6 +321,42 @@ pub fn apply_collider_user_changes(
     }
 }
 
+/// Whenever an entity has its BodyWorld component changed, this
+/// system places it in the new world & removes it from the old.
+pub fn apply_changing_worlds(
+    mut commands: Commands,
+    changed_world: Query<(Entity, &BodyWorld), Changed<BodyWorld>>,
+    mut context: ResMut<RapierContext>,
+) {
+    for (entity, bw) in changed_world.iter() {
+        // This currently loops through every world to find it, which
+        // isn't the most efficient but gets the job done.
+        for (world_id, world) in context.worlds.iter_mut() {
+            if *world_id == bw.world_id && world.entity2body.contains_key(&entity) {
+                return; // The value of the component did not change.
+            }
+
+            if let Some(handle) = world.entity2body.remove(&entity) {
+                let _ = world.last_body_transform_set.remove(&handle);
+                world.bodies.remove(
+                    handle,
+                    &mut world.islands,
+                    &mut world.colliders,
+                    &mut world.impulse_joints,
+                    &mut world.multibody_joints,
+                    false,
+                );
+
+                break;
+            }
+        }
+
+        // This entity will be picked up by the "init_colliders" systems and added
+        // to the correct world if it is missing this component.
+        commands.entity(entity).remove::<RapierColliderHandle>();
+    }
+}
+
 /// System responsible for applying changes the user made to a rigid-body-related component.
 pub fn apply_rigid_body_user_changes(
     mut context: ResMut<RapierContext>,

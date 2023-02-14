@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
+const N_WORLDS: usize = 5;
+
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(
@@ -14,6 +16,8 @@ fn main() {
         .add_startup_system(setup_graphics)
         .add_startup_system(setup_physics)
         .add_system(move_middle_world)
+        // .add_system(change_world)
+        // .add_system(despawn_last)
         .run();
 }
 
@@ -33,7 +37,23 @@ fn move_middle_world(time: Res<Time>, mut query: Query<(&mut Transform, &BodyWor
     }
 }
 
-const N_WORLDS: usize = 6;
+// Demonstrates despawning an entity removing it from its world
+// fn despawn_last(query: Query<(&BodyWorld, Entity)>, mut commands: Commands) {
+//     for (bw, entity) in query.iter() {
+//         if bw.world_id == N_WORLDS - 1 {
+//             commands.entity(entity).despawn_recursive();
+//         }
+//     }
+// }
+
+// Demonstrates how easy it is to move one entity to another world.
+// fn change_world(mut query: Query<&mut BodyWorld>) {
+//     for mut bw in query.iter_mut() {
+//         if bw.world_id == 1 {
+//             bw.world_id = 0;
+//         }
+//     }
+// }
 
 pub fn setup_physics(mut context: ResMut<RapierContext>, mut commands: Commands) {
     for _ in 1..N_WORLDS {
@@ -68,22 +88,12 @@ pub fn setup_physics(mut context: ResMut<RapierContext>, mut commands: Commands)
          * Create the cube
          */
 
-        commands
-            .spawn(TransformBundle::from(Transform::from_rotation(
-                Quat::from_rotation_x(0.2),
-            )))
-            .with_children(|child| {
-                child.spawn((
-                    TransformBundle::from(Transform::from_xyz(
-                        0.0,
-                        1.0 + world_id as f32 * 5.0,
-                        0.0,
-                    )),
-                    RigidBody::Dynamic,
-                    Collider::cuboid(0.5, 0.5, 0.5),
-                    ColliderDebugColor(color),
-                    BodyWorld { world_id },
-                ));
-            });
+        commands.spawn((
+            TransformBundle::from(Transform::from_xyz(0.0, 1.0 + world_id as f32 * 5.0, 0.0)),
+            RigidBody::Dynamic,
+            Collider::cuboid(0.5, 0.5, 0.5),
+            ColliderDebugColor(color),
+            BodyWorld { world_id },
+        ));
     }
 }

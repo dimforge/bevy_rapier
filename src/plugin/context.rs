@@ -23,6 +23,7 @@ use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
 use bevy::math::Vec3Swizzles;
 use rapier::control::CharacterAutostep;
 
+/// Represents the world in the rapier context
 pub type WorldId = usize;
 
 /// This world id is the default world that is created. This world cannot be removed.
@@ -1268,8 +1269,7 @@ impl RapierContext {
         self.worlds
             .get(&world_id)
             .map_or(Err(WorldError::WorldNotFound { world_id }), |world| {
-                world
-                .intersections_with_ray(ray_origin, ray_dir, max_toi, solid, filter, callback);
+                world.intersections_with_ray(ray_origin, ray_dir, max_toi, solid, filter, callback);
                 Ok(())
             })
     }
