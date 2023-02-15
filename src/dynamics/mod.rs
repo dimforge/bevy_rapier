@@ -45,8 +45,6 @@ pub enum CoefficientCombineRule {
     Max,
 }
 
-
-
 impl From<CoefficientCombineRule> for RapierCoefficientCombineRule {
     fn from(combine_rule: CoefficientCombineRule) -> RapierCoefficientCombineRule {
         match combine_rule {

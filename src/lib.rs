@@ -77,5 +77,5 @@ pub mod prelude {
     #[cfg(any(feature = "debug-render-3d", feature = "debug-render-2d"))]
     pub use crate::render::*;
 
-    pub use crate::prelude::context::{RapierWorld, DEFAULT_WORLD_ID};
+    pub use crate::prelude::context::{RapierWorld, WorldId, DEFAULT_WORLD_ID};
 }
