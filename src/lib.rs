@@ -66,6 +66,8 @@ pub mod render;
 /// Miscellaneous helper functions.
 pub mod utils;
 
+// pub use crate::plugin::context::{RapierWorld, WorldId, DEFAULT_WORLD_ID};
+
 /// Groups the most often used types.
 pub mod prelude {
     pub use crate::control::*;
@@ -76,6 +78,4 @@ pub mod prelude {
     pub use crate::plugin::*;
     #[cfg(any(feature = "debug-render-3d", feature = "debug-render-2d"))]
     pub use crate::render::*;
-
-    pub use crate::prelude::context::{RapierWorld, WorldId, DEFAULT_WORLD_ID};
 }

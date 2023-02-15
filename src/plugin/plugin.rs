@@ -7,7 +7,9 @@ use bevy::ecs::system::SystemParamItem;
 use bevy::prelude::*;
 use std::marker::PhantomData;
 
-use super::context::RapierWorld;
+pub use super::context::RapierWorld;
+pub use super::context::WorldId;
+pub use super::context::DEFAULT_WORLD_ID;
 
 /// No specific user-data is associated to the hooks.
 pub type NoUserData = ();
