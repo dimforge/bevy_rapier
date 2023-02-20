@@ -26,7 +26,8 @@ use rapier::control::CharacterAutostep;
 /// Represents the world in the rapier context
 pub type WorldId = usize;
 
-/// This world id is the default world that is created. This world cannot be removed.
+/// This world id is the default world that is created.
+/// This world CAN be removed manually, but will be there by default.
 pub const DEFAULT_WORLD_ID: WorldId = 0;
 
 /// The Rapier context, containing all the state of the physics engine.
@@ -856,17 +857,12 @@ impl Default for RapierWorld {
 #[derive(Debug)]
 pub enum WorldError {
     WorldNotFound { world_id: WorldId },
-    TriedToRemoveDefaultWorld,
 }
 
 impl fmt::Display for WorldError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Self::WorldNotFound { world_id } => write!(f, "World with id {world_id} not found."),
-            Self::TriedToRemoveDefaultWorld => write!(
-                f,
-                "Tried to remove default world. This world cannot be removed."
-            ),
         }
     }
 }
@@ -921,13 +917,9 @@ impl RapierContext {
     ///
     /// Returns the removed world or an err if that world wasn't found or you tried to remove the default world.
     pub fn remove_world(&mut self, world_id: WorldId) -> Result<RapierWorld, WorldError> {
-        if world_id == DEFAULT_WORLD_ID {
-            Err(WorldError::TriedToRemoveDefaultWorld)
-        } else {
-            self.worlds
-                .remove(&world_id)
-                .ok_or(WorldError::WorldNotFound { world_id })
-        }
+        self.worlds
+            .remove(&world_id)
+            .ok_or(WorldError::WorldNotFound { world_id })
     }
 
     /// Gets the world at the given id. If the world does not exist, an Err result will be returned
