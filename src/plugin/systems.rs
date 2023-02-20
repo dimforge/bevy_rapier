@@ -338,13 +338,14 @@ pub fn apply_changing_worlds(
 
             if let Some(handle) = world.entity2body.remove(&entity) {
                 let _ = world.last_body_transform_set.remove(&handle);
+
                 world.bodies.remove(
                     handle,
                     &mut world.islands,
                     &mut world.colliders,
                     &mut world.impulse_joints,
                     &mut world.multibody_joints,
-                    false,
+                    true,
                 );
 
                 break;
@@ -353,7 +354,14 @@ pub fn apply_changing_worlds(
 
         // This entity will be picked up by the "init_colliders" systems and added
         // to the correct world if it is missing this component.
-        commands.entity(entity).remove::<RapierColliderHandle>();
+        commands
+            .entity(entity)
+            .remove::<RapierColliderHandle>()
+            .remove::<RapierColliderHandle>()
+            .remove::<RapierRigidBodyHandle>()
+            .remove::<RapierColliderHandle>()
+            .remove::<RapierMultibodyJointHandle>()
+            .remove::<RapierImpulseJointHandle>();
     }
 }
 
@@ -1066,6 +1074,7 @@ pub fn init_colliders(
         };
 
         commands.entity(entity).insert(RapierColliderHandle(handle));
+
         world.entity2collider.insert(entity, handle);
     }
 }

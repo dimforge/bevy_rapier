@@ -68,7 +68,10 @@ where
         match stage {
             PhysicsStages::SyncBackend => {
                 let systems = SystemSet::new()
-                    .with_system(systems::update_character_controls) // Run the character controller befor ethe manual transform propagation.
+                    .with_system(systems::apply_changing_worlds)
+                    .with_system(
+                        systems::update_character_controls.after(systems::apply_changing_worlds),
+                    ) // Run the character controller befor ethe manual transform propagation.
                     .with_system(
                         bevy::transform::transform_propagate_system
                             .after(systems::update_character_controls),
@@ -79,9 +82,6 @@ where
                     )
                     .with_system(systems::apply_scale.after(systems::init_async_colliders))
                     .with_system(systems::apply_collider_user_changes.after(systems::apply_scale))
-                    .with_system(
-                        systems::apply_changing_worlds.after(systems::apply_collider_user_changes),
-                    )
                     .with_system(
                         systems::apply_rigid_body_user_changes
                             .after(systems::apply_changing_worlds),
