@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+### Modified
+- The `PhysicsHooksWithQuery` trait has been renamed to by the `BevyPhysicsHooks`.
+- Bevy resources and queries accessed by the physics hook are now specified by the implementor of `BevyPhysicsHooks`
+  which must derive Bevy’s `SystemParam` trait. This implies that the physics hook’s `filter_contact_pair` (and
+  all its other methods) no longer take the Bevy `Query` as argument. Queries and resources are accessed through
+  `self`.
+
 ## 0.20.0 (15 Jan. 2023)
 ### Added
 - Add the `RigidBodyDisabled` and `ColliderDisabled` component that can be inserted to disable a rigid-body

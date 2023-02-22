@@ -11,23 +11,24 @@ use crate::geometry::{
     ColliderMassProperties, ColliderScale, CollisionGroups, ContactForceEventThreshold, Friction,
     RapierColliderHandle, Restitution, Sensor, SolverGroups,
 };
-use crate::pipeline::{
-    CollisionEvent, ContactForceEvent, PhysicsHooksWithQueryInstance, PhysicsHooksWithQueryResource,
-};
+use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
-    CollidingEntities, KinematicCharacterController, KinematicCharacterControllerOutput,
-    RigidBodyDisabled,
+    BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities, KinematicCharacterController,
+    KinematicCharacterControllerOutput, RigidBodyDisabled,
 };
 use crate::utils;
-use bevy::ecs::query::WorldQuery;
+use bevy::ecs::system::SystemParamItem;
 use bevy::prelude::*;
 use rapier::prelude::*;
 use std::collections::HashMap;
 
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
-use crate::prelude::{AsyncCollider, AsyncSceneCollider};
+use {
+    crate::prelude::{AsyncCollider, AsyncSceneCollider},
+    bevy::scene::SceneInstance,
+};
 
 use crate::control::CharacterCollision;
 #[cfg(feature = "dim2")]
@@ -627,29 +628,27 @@ pub fn writeback_rigid_bodies(
 
 /// System responsible for advancing the physics simulation, and updating the internal state
 /// for scene queries.
-pub fn step_simulation<PhysicsHooksData: 'static + WorldQuery + Send + Sync>(
+pub fn step_simulation<PhysicsHooks>(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
-    hooks: Res<PhysicsHooksWithQueryResource<PhysicsHooksData>>,
+    hooks: SystemParamItem<PhysicsHooks>,
     (time, mut sim_to_render_time): (Res<Time>, ResMut<SimulationToRenderTime>),
     collision_events: EventWriter<CollisionEvent>,
     contact_force_events: EventWriter<ContactForceEvent>,
-    hooks_data: Query<PhysicsHooksData>,
     interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
-) {
+) where
+    PhysicsHooks: 'static + BevyPhysicsHooks,
+    for<'w, 's> SystemParamItem<'w, 's, PhysicsHooks>: BevyPhysicsHooks,
+{
     let context = &mut *context;
+    let hooks_adapter = BevyPhysicsHooksAdapter::<PhysicsHooks>::new(hooks);
 
     if config.physics_pipeline_active {
-        let hooks_instance = PhysicsHooksWithQueryInstance {
-            user_data: hooks_data,
-            hooks: &*hooks.0,
-        };
-
         context.step_simulation(
             config.gravity,
             config.timestep_mode,
             Some((collision_events, contact_force_events)),
-            &hooks_instance,
+            &hooks_adapter,
             &time,
             &mut sim_to_render_time,
             Some(interpolation_query),
@@ -680,11 +679,11 @@ pub fn init_async_colliders() {}
 pub fn init_async_colliders(
     mut commands: Commands,
     meshes: Res<Assets<Mesh>>,
-    async_colliders: Query<(Entity, &AsyncCollider)>,
+    async_colliders: Query<(Entity, &Handle<Mesh>, &AsyncCollider)>,
 ) {
-    for (entity, async_collider) in async_colliders.iter() {
-        if let Some(mesh) = meshes.get(&async_collider.handle) {
-            match Collider::from_bevy_mesh(mesh, &async_collider.shape) {
+    for (entity, mesh_handle, async_collider) in async_colliders.iter() {
+        if let Some(mesh) = meshes.get(mesh_handle) {
+            match Collider::from_bevy_mesh(mesh, &async_collider.0) {
                 Some(collider) => {
                     commands
                         .entity(entity)
@@ -703,15 +702,15 @@ pub fn init_async_colliders(
 pub fn init_async_scene_colliders(
     mut commands: Commands,
     meshes: Res<Assets<Mesh>>,
-    scenes: Res<Assets<Scene>>,
-    async_colliders: Query<(Entity, &AsyncSceneCollider)>,
+    scene_spawner: Res<SceneSpawner>,
+    async_colliders: Query<(Entity, &SceneInstance, &AsyncSceneCollider)>,
     children: Query<&Children>,
     mesh_handles: Query<(&Name, &Handle<Mesh>)>,
 ) {
-    for (entity, async_collider) in async_colliders.iter() {
-        if scenes.get(&async_collider.handle).is_some() {
-            traverse_descendants(entity, &children, &mut |child| {
-                if let Ok((name, handle)) = mesh_handles.get(child) {
+    for (scene_entity, scene_instance, async_collider) in async_colliders.iter() {
+        if scene_spawner.instance_is_ready(**scene_instance) {
+            for child_entity in children.iter_descendants(scene_entity) {
+                if let Ok((name, handle)) = mesh_handles.get(child_entity) {
                     let shape = async_collider
                         .named_shapes
                         .get(name.as_str())
@@ -720,7 +719,7 @@ pub fn init_async_scene_colliders(
                         let mesh = meshes.get(handle).unwrap(); // NOTE: Mesh is already loaded
                         match Collider::from_bevy_mesh(mesh, shape) {
                             Some(collider) => {
-                                commands.entity(child).insert(collider);
+                                commands.entity(child_entity).insert(collider);
                             }
                             None => error!(
                                 "Unable to generate collider from mesh {:?} with name {}",
@@ -729,20 +728,9 @@ pub fn init_async_scene_colliders(
                         }
                     }
                 }
-            });
+            }
 
-            commands.entity(entity).remove::<AsyncSceneCollider>();
-        }
-    }
-}
-
-/// Iterates over all descendants of the `entity` and applies `f`.
-#[cfg(all(feature = "dim3", feature = "async-collider"))]
-fn traverse_descendants(entity: Entity, children: &Query<&Children>, f: &mut impl FnMut(Entity)) {
-    if let Ok(entity_children) = children.get(entity) {
-        for child in entity_children.iter().copied() {
-            f(child);
-            traverse_descendants(child, children, f);
+            commands.entity(scene_entity).remove::<AsyncSceneCollider>();
         }
     }
 }
@@ -1428,8 +1416,6 @@ mod tests {
 
     use super::*;
     use crate::plugin::{NoUserData, RapierPhysicsPlugin};
-    #[cfg(all(feature = "dim3", feature = "async-collider"))]
-    use crate::prelude::ComputedColliderShape;
 
     #[test]
     fn colliding_entities_updates() {
@@ -1527,13 +1513,7 @@ mod tests {
         let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
         let cube = meshes.add(Cube::default().into());
 
-        let entity = app
-            .world
-            .spawn(AsyncCollider {
-                handle: cube,
-                shape: ComputedColliderShape::TriMesh,
-            })
-            .id();
+        let entity = app.world.spawn((cube, AsyncCollider::default())).id();
 
         app.update();
 
@@ -1568,11 +1548,13 @@ mod tests {
         named_shapes.insert("Capsule".to_string(), None);
         let parent = app
             .world
-            .spawn(AsyncSceneCollider {
-                handle: scene,
-                shape: Some(ComputedColliderShape::TriMesh),
-                named_shapes,
-            })
+            .spawn((
+                scene,
+                AsyncSceneCollider {
+                    named_shapes,
+                    ..Default::default()
+                },
+            ))
             .push_children(&[cube, capsule])
             .id();
 
