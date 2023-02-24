@@ -74,7 +74,7 @@ pub mod r3d {
                 TextureFormat::bevy_default()
             };
 
-            let mut bind_group_layout = match key.msaa_samples() {
+            let bind_group_layout = match key.msaa_samples() {
                 1 => vec![self.mesh_pipeline.view_layout.clone()],
                 _ => {
                     shader_defs.push("MULTISAMPLED".into());
@@ -99,7 +99,7 @@ pub mod r3d {
                         write_mask: ColorWrites::ALL,
                     })],
                 }),
-                layout: Some(bind_group_layout),
+                layout: bind_group_layout,
                 primitive: PrimitiveState {
                     topology: PrimitiveTopology::LineList,
                     ..default()
@@ -116,7 +116,8 @@ pub mod r3d {
                     mask: !0,
                     alpha_to_coverage_enabled: false,
                 },
-                label: Some("debug_line_pipeline".into()),
+                label: Some("debug_line_pipeline_3d".into()),
+                push_constant_ranges: default(),
             })
         }
     }
@@ -258,7 +259,7 @@ pub mod r2d {
                         write_mask: ColorWrites::ALL,
                     })],
                 }),
-                layout: Some(vec![self.mesh_pipeline.view_layout.clone()]),
+                layout: vec![self.mesh_pipeline.view_layout.clone()],
                 primitive: PrimitiveState {
                     front_face: FrontFace::Ccw,
                     cull_mode: None,
@@ -274,7 +275,8 @@ pub mod r2d {
                     mask: !0,
                     alpha_to_coverage_enabled: false,
                 },
-                label: None,
+                label: Some("debug_line_pipeline_2d".into()),
+                push_constant_ranges: default(),
             })
         }
     }

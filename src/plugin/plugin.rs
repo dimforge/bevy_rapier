@@ -2,7 +2,7 @@ use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::configuration::SimulationToRenderTime;
 use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
-use bevy::ecs::{event::Events, schedule_v3::SystemConfigs, system::SystemParam};
+use bevy::ecs::{event::Events, schedule::SystemConfigs, system::SystemParam};
 use bevy::prelude::*;
 use std::marker::PhantomData;
 
