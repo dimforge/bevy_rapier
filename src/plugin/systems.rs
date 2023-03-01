@@ -35,6 +35,7 @@ use crate::control::CharacterCollision;
 use bevy::math::Vec3Swizzles;
 
 use super::context::{RapierWorld, DEFAULT_WORLD_ID};
+use super::WorldId;
 
 /// Components that will be updated after a physics step.
 pub type RigidBodyWritebackComponents<'a> = (
@@ -321,19 +322,31 @@ pub fn apply_collider_user_changes(
     }
 }
 
-/// Whenever an entity has its BodyWorld component changed, this
-/// system places it in the new world & removes it from the old.
-pub fn apply_changing_worlds(
-    mut commands: Commands,
-    changed_world: Query<(Entity, &BodyWorld), Changed<BodyWorld>>,
-    mut context: ResMut<RapierContext>,
+// Changes the world something is in.
+// This will also change the children of that entity to reflect the new world.
+fn apply_world_update(
+    children_query: &Query<&Children>,
+    body_world_query: &Query<(Entity, &BodyWorld, ChangeTrackers<BodyWorld>)>,
+    context: &mut RapierContext,
+    entity: Entity,
+    commands: &mut Commands,
+    new_world: WorldId,
 ) {
-    for (entity, bw) in changed_world.iter() {
+    if let Ok((_, bw, _)) = body_world_query.get(entity) {
+        if bw.world_id != new_world {
+            // Needs to insert instead of changing a mut bw because
+            // the ChangeTrackers<BodyWorld> requires bw to not be mut.
+            commands.entity(entity).insert(BodyWorld {
+                world_id: new_world,
+            });
+        }
+
         // This currently loops through every world to find it, which
         // isn't the most efficient but gets the job done.
         for (world_id, world) in context.worlds.iter_mut() {
-            if *world_id == bw.world_id && world.entity2body.contains_key(&entity) {
-                return; // The value of the component did not change.
+            if *world_id == new_world && world.entity2body.contains_key(&entity) {
+                // The value of the component did not change, no need to bubble it down or remove it from the world
+                return;
             }
 
             if let Some(handle) = world.entity2body.remove(&entity) {
@@ -357,11 +370,51 @@ pub fn apply_changing_worlds(
         commands
             .entity(entity)
             .remove::<RapierColliderHandle>()
-            .remove::<RapierColliderHandle>()
             .remove::<RapierRigidBodyHandle>()
-            .remove::<RapierColliderHandle>()
             .remove::<RapierMultibodyJointHandle>()
             .remove::<RapierImpulseJointHandle>();
+    } else {
+        commands.entity(entity).insert(BodyWorld {
+            world_id: new_world,
+        });
+    }
+
+    // Carries down world changes to children
+    if let Ok(children) = children_query.get(entity) {
+        for child in children.iter() {
+            apply_world_update(
+                children_query,
+                body_world_query,
+                context,
+                *child,
+                commands,
+                new_world,
+            );
+        }
+    }
+}
+
+/// Whenever an entity has its BodyWorld component changed, this
+/// system places it in the new world & removes it from the old.
+///
+/// This system will carry this change down to the children of that entity.
+pub fn apply_changing_worlds(
+    mut commands: Commands,
+    body_world_query: Query<(Entity, &BodyWorld, ChangeTrackers<BodyWorld>)>,
+    children_query: Query<&Children>,
+    mut context: ResMut<RapierContext>,
+) {
+    for (entity, bw, trackers) in body_world_query.iter() {
+        if trackers.is_added() || trackers.is_changed() {
+            apply_world_update(
+                &children_query,
+                &body_world_query,
+                &mut context,
+                entity,
+                &mut commands,
+                bw.world_id,
+            );
+        }
     }
 }
 
