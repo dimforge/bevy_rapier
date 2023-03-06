@@ -60,19 +60,22 @@ where
     /// [`with_system_setup(false)`](Self::with_system_setup).
     /// See [`PhysicsSet`] for a description of these systems.
     pub fn get_systems(set: PhysicsSet) -> SystemConfigs {
-        #[derive(SystemSet, Hash, Debug, PartialEq, Eq, Clone)]
-        struct Label<const N: usize>;
+        // A set for `propagate_transforms` to mark it as ambiguous with `sync_simple_transforms`.
+        // Used instead of the `SystemTypeSet` as that would not allow multiple instances of the system.
+        #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+        struct PropagateTransformsSet;
+
         match set {
             PhysicsSet::SyncBackend => (
                 systems::update_character_controls,
                 bevy::transform::systems::sync_simple_transforms
-                    .in_set(Label::<1>)
+                    .in_set(RapierTransformPropagateSet)
                     .after(systems::update_character_controls),
                 bevy::transform::systems::propagate_transforms
                     .after(systems::update_character_controls)
-                    .after(Label::<1>)
-                    .in_set(Label::<2>),
-                systems::init_async_colliders.after(Label::<2>),
+                    .in_set(PropagateTransformsSet)
+                    .in_set(RapierTransformPropagateSet),
+                systems::init_async_colliders.after(RapierTransformPropagateSet),
                 systems::apply_scale.after(systems::init_async_colliders),
                 systems::apply_collider_user_changes.after(systems::apply_scale),
                 systems::apply_rigid_body_user_changes.after(systems::apply_collider_user_changes),
@@ -107,6 +110,12 @@ where
         }
     }
 }
+
+/// A set for rapier's copy of Bevy's transform propagation systems.
+///
+/// See [`TransformSystem`](bevy::transform::TransformSystem::TransformPropagate).
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+pub struct RapierTransformPropagateSet;
 
 impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystemParam> {
     fn default() -> Self {
