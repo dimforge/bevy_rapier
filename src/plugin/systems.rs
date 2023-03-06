@@ -1712,7 +1712,8 @@ mod tests {
 
     impl Plugin for HeadlessRenderPlugin {
         fn build(&self, app: &mut App) {
-            app.add_plugin(WindowPlugin::default())
+            app.add_plugin(TaskPoolPlugin::default())
+                .add_plugin(WindowPlugin::default())
                 .add_plugin(AssetPlugin::default())
                 .add_plugin(ScenePlugin::default())
                 .add_plugin(RenderPlugin {
