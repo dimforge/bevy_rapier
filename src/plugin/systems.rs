@@ -1121,10 +1121,12 @@ pub fn init_colliders(
             }
 
             // Bubbles ReadMassProperties changes up through the parent heirarchy
-            let mut entity = body_entity;
-            if let Ok((parent, _)) = parent_query.get(entity) {
-                entity = parent.get();
+            let mut entity = entity;
+            println!("Starting Entity: {}", entity.index());
+            while let Ok((parent, _)) = parent_query.get(entity) {
                 println!("I have a parent");
+                entity = parent.get();
+                println!("Entity: {}", entity.index());
 
                 if let Ok(mut mprops) = rigid_body_mprops.get_mut(entity) {
                     println!("I have read mass");
