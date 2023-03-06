@@ -51,7 +51,7 @@ serde = { version = "1", features = [ "derive" ], optional = true}
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "release-0.10.0", default-features = false, features = ["x11"]}
 oorandom = "11"
 approx = "0.5.1"
-glam = { version = "0.22", features = [ "approx" ] }
+glam = { version = "0.23", features = [ "approx" ] }
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
