@@ -1109,16 +1109,16 @@ pub fn init_colliders(
                 world
                     .colliders
                     .insert_with_parent(builder, body_handle, &mut world.bodies);
-            if let Ok(mut mprops) = rigid_body_mprops.get_mut(body_entity) {
-                // Inserting the collider changed the rigid-body’s mass properties.
-                // Read them back from the engine.
-                if let Some(parent_body) = world.bodies.get(body_handle) {
-                    mprops.0 = MassProperties::from_rapier(
-                        parent_body.mass_properties().local_mprops,
-                        physics_scale,
-                    );
-                }
-            }
+            // if let Ok(mut mprops) = rigid_body_mprops.get_mut(body_entity) {
+            //     // Inserting the collider changed the rigid-body’s mass properties.
+            //     // Read them back from the engine.
+            //     if let Some(parent_body) = world.bodies.get(body_handle) {
+            //         mprops.0 = MassProperties::from_rapier(
+            //             parent_body.mass_properties().local_mprops,
+            //             physics_scale,
+            //         );
+            //     }
+            // }
 
             // Bubbles ReadMassProperties changes up through the parent heirarchy
             let mut entity = entity;
