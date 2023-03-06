@@ -140,7 +140,7 @@ impl Plugin for DebugLinesPlugin {
 
         app.sub_app_mut(RenderApp)
             .insert_resource(lines_config)
-            .add_system_to_schedule(ExtractSchedule, extract);
+            .add_system(extract.in_schedule(ExtractSchedule));
 
         #[cfg(feature = "debug-render-3d")]
         info!("Loaded 3d debug lines plugin.");
