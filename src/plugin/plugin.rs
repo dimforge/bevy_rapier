@@ -90,7 +90,9 @@ where
                     .after(systems::init_joints)
                     .after(systems::apply_initial_rigid_body_impulses),
                 #[cfg(all(feature = "dim3", feature = "async-collider"))]
-                systems::init_async_scene_colliders.before(systems::init_async_colliders),
+                systems::init_async_scene_colliders
+                    .after(bevy::scene::scene_spawner_system)
+                    .before(systems::init_async_colliders),
             )
                 .into_configs(),
             PhysicsSet::SyncBackendFlush => (apply_system_buffers,).into_configs(),

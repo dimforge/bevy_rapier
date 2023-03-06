@@ -1531,9 +1531,11 @@ mod tests {
     #[test]
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_scene_collider_initializes() {
+        use bevy::scene::scene_spawner_system;
+
         let mut app = App::new();
         app.add_plugin(HeadlessRenderPlugin)
-            .add_system(init_async_scene_colliders);
+            .add_system(init_async_scene_colliders.after(scene_spawner_system));
 
         let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
         let cube_handle = meshes.add(Cube::default().into());
@@ -1712,8 +1714,7 @@ mod tests {
 
     impl Plugin for HeadlessRenderPlugin {
         fn build(&self, app: &mut App) {
-            app.add_plugin(TaskPoolPlugin::default())
-                .add_plugin(WindowPlugin::default())
+            app.add_plugin(WindowPlugin::default())
                 .add_plugin(AssetPlugin::default())
                 .add_plugin(ScenePlugin::default())
                 .add_plugin(RenderPlugin {
