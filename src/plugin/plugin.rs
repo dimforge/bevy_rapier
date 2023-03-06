@@ -197,7 +197,10 @@ where
             app.add_systems(
                 Self::get_systems(PhysicsSet::SyncBackend).in_base_set(PhysicsSet::SyncBackend),
             );
-            app.add_system(apply_system_buffers.in_base_set(PhysicsSet::SyncBackendFlush));
+            app.add_systems(
+                Self::get_systems(PhysicsSet::SyncBackendFlush)
+                    .in_base_set(PhysicsSet::SyncBackendFlush),
+            );
             app.add_systems(
                 Self::get_systems(PhysicsSet::StepSimulation)
                     .in_base_set(PhysicsSet::StepSimulation),
