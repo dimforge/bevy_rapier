@@ -60,11 +60,7 @@ fn main() {
     );
 
     app.insert_resource(SpecialSchedule { schedule })
-        .add_plugin(
-            RapierPhysicsPlugin::<NoUserData>::default()
-                .with_physics_scale(100.)
-                .with_default_system_setup(false),
-        )
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default().with_default_system_setup(false))
         .run();
 }
 
