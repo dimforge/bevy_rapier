@@ -29,11 +29,11 @@ fn display_events(
     mut contact_force_events: EventReader<ContactForceEvent>,
 ) {
     for collision_event in collision_events.iter() {
-        println!("Received collision event: {:?}", collision_event);
+        println!("Received collision event: {collision_event:?}");
     }
 
     for contact_force_event in contact_force_events.iter() {
-        println!("Received contact force event: {:?}", contact_force_event);
+        println!("Received contact force event: {contact_force_event:?}");
     }
 }
 

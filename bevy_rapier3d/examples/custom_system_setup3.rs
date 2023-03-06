@@ -82,11 +82,8 @@ fn despawn_one_box(
     // Delete a box every 5 frames
     if frame_count.0 % 5 == 0 && !query.is_empty() {
         let len = query.iter().len();
-        if let Some(entity) = query
-            .iter()
-            .skip(frame_count.0 as usize % len) // Get a "random" box to make sim interesting
-            .next()
-        {
+        // Get a "random" box to make sim interesting
+        if let Some(entity) = query.iter().nth(frame_count.0 as usize % len) {
             commands.entity(entity).despawn();
         }
     }
