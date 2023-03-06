@@ -1,10 +1,8 @@
-use bevy::{core::FrameCount, prelude::*};
+use bevy::{core::FrameCount, ecs::schedule::ScheduleLabel, prelude::*};
 use bevy_rapier3d::prelude::*;
 
-#[derive(Resource)]
-struct SpecialSchedule {
-    schedule: Schedule,
-}
+#[derive(ScheduleLabel, Hash, Debug, PartialEq, Eq, Clone)]
+struct SpecialSchedule;
 
 fn main() {
     let mut app = App::new();
@@ -19,10 +17,10 @@ fn main() {
     .add_startup_system(setup_graphics)
     .add_startup_system(setup_physics)
     .add_system(
-        run_schedule
-            .no_default_base_set()
-            .after(CoreSet::Update)
-            .before(CoreSet::PostUpdate),
+        (|world: &mut World| {
+            world.run_schedule(SpecialSchedule);
+        })
+        .in_base_set(CoreSet::PostUpdate),
     );
 
     // Do the setup however we want, maybe in its very own schedule
@@ -59,15 +57,9 @@ fn main() {
             .in_base_set(PhysicsSet::Writeback),
     );
 
-    app.insert_resource(SpecialSchedule { schedule })
+    app.add_schedule(SpecialSchedule, schedule)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default().with_default_system_setup(false))
         .run();
-}
-
-fn run_schedule(world: &mut World) {
-    world.resource_scope(|world, mut special: Mut<SpecialSchedule>| {
-        special.schedule.run(world);
-    })
 }
 
 fn despawn_one_box(
