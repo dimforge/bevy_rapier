@@ -37,7 +37,7 @@ async-collider = [ ]
 
 
 [dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy", branch = "release-0.10.0", default-features = false, features = ["bevy_asset", "bevy_scene"] }
+bevy = { version = "0.10", default-features = false, features = ["bevy_asset", "bevy_scene"] }
 # bevy = { version = "0.9.0", default-features = false, features = ["bevy_asset", "bevy_scene"] }
 nalgebra = { version = "0.32.0", features = [ "convert-glam023" ] }
 # Don't enable the default features because we don't need the ColliderSet/RigidBodySet
@@ -48,7 +48,7 @@ log = "0.4"
 serde = { version = "1", features = [ "derive" ], optional = true}
 
 [dev-dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy", branch = "release-0.10.0", default-features = false, features = ["x11"]}
+bevy = { version = "0.10", default-features = false, features = ["x11"]}
 oorandom = "11"
 approx = "0.5.1"
 glam = { version = "0.23", features = [ "approx" ] }
