@@ -1115,6 +1115,23 @@ pub fn init_colliders(
                         physics_scale,
                     );
                 }
+
+                // Bubbles ReadMassProperties changes up through the parent heirarchy
+                let mut entity = body_entity;
+                if let Ok((parent, _)) = parent_query.get(entity) {
+                    entity = parent.get();
+
+                    if let Ok(mut mprops) = rigid_body_mprops.get_mut(entity) {
+                        if let Some(body_handle) = world.entity2body.get(&entity).copied() {
+                            if let Some(parent_body) = world.bodies.get(body_handle) {
+                                mprops.0 = MassProperties::from_rapier(
+                                    parent_body.mass_properties().local_mprops,
+                                    physics_scale,
+                                );
+                            }
+                        }
+                    }
+                }
             }
             handle
         } else {
