@@ -1,7 +1,4 @@
-use bevy::{
-    ecs::system::{SystemParam, SystemParamItem},
-    prelude::*,
-};
+use bevy::{ecs::system::SystemParam, prelude::*};
 use rapier::{
     pipeline::{ContactModificationContext, PairFilterContext},
     prelude::{PhysicsHooks, SolverFlags},
@@ -184,28 +181,25 @@ where
 }
 
 /// Adapts a type implementing `BevyPhysicsHooks` so that it implements `PhysicsHooks`.
-pub(crate) struct BevyPhysicsHooksAdapter<'w, 's, Hooks>
+pub(crate) struct BevyPhysicsHooksAdapter<Hooks>
 where
-    Hooks: 'static + BevyPhysicsHooks,
-    for<'w1, 's1> SystemParamItem<'w1, 's1, Hooks>: BevyPhysicsHooks,
+    Hooks: BevyPhysicsHooks,
 {
-    hooks: SystemParamItem<'w, 's, Hooks>,
+    hooks: Hooks,
 }
 
-impl<'w, 's, Hooks> BevyPhysicsHooksAdapter<'w, 's, Hooks>
+impl<Hooks> BevyPhysicsHooksAdapter<Hooks>
 where
-    Hooks: 'static + BevyPhysicsHooks,
-    for<'w1, 's1> SystemParamItem<'w1, 's1, Hooks>: BevyPhysicsHooks,
+    Hooks: BevyPhysicsHooks,
 {
-    pub(crate) fn new(hooks: SystemParamItem<'w, 's, Hooks>) -> Self {
+    pub(crate) fn new(hooks: Hooks) -> Self {
         Self { hooks }
     }
 }
 
-impl<'w, 's, Hooks> PhysicsHooks for BevyPhysicsHooksAdapter<'w, 's, Hooks>
+impl<Hooks> PhysicsHooks for BevyPhysicsHooksAdapter<Hooks>
 where
-    Hooks: 'static + BevyPhysicsHooks,
-    for<'w1, 's1> SystemParamItem<'w1, 's1, Hooks>: BevyPhysicsHooks,
+    Hooks: BevyPhysicsHooks,
 {
     fn filter_contact_pair(&self, context: &PairFilterContext) -> Option<SolverFlags> {
         let context_view = PairFilterContextView { raw: context };

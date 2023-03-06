@@ -2,7 +2,7 @@ use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::configuration::SimulationToRenderTime;
 use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
-use bevy::ecs::{event::Events, schedule::SystemConfigs, system::SystemParam};
+use bevy::ecs::{event::Events, schedule::SystemConfigs, system::SystemParamItem};
 use bevy::prelude::*;
 use std::marker::PhantomData;
 
@@ -22,7 +22,7 @@ pub struct RapierPhysicsPlugin<PhysicsHooks = ()> {
 impl<PhysicsHooks> RapierPhysicsPlugin<PhysicsHooks>
 where
     PhysicsHooks: 'static + BevyPhysicsHooks,
-    for<'w, 's> PhysicsHooks: SystemParam<Item<'w, 's> = PhysicsHooks>,
+    for<'w, 's> SystemParamItem<'w, 's, PhysicsHooks>: BevyPhysicsHooks,
 {
     /// Specifies a scale ratio between the physics world and the bevy transforms.
     ///
@@ -143,7 +143,7 @@ pub enum PhysicsSet {
 impl<PhysicsHooks> Plugin for RapierPhysicsPlugin<PhysicsHooks>
 where
     PhysicsHooks: 'static + BevyPhysicsHooks,
-    for<'w, 's> PhysicsHooks: SystemParam<Item<'w, 's> = PhysicsHooks>,
+    for<'w, 's> SystemParamItem<'w, 's, PhysicsHooks>: BevyPhysicsHooks,
 {
     fn build(&self, app: &mut App) {
         // Register components as reflectable.

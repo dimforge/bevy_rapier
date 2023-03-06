@@ -19,7 +19,7 @@ use crate::prelude::{
     KinematicCharacterControllerOutput, RigidBodyDisabled,
 };
 use crate::utils;
-use bevy::ecs::system::{SystemParam, SystemParamItem};
+use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
 use bevy::prelude::*;
 use rapier::prelude::*;
 use std::collections::HashMap;
@@ -628,21 +628,21 @@ pub fn writeback_rigid_bodies(
 
 /// System responsible for advancing the physics simulation, and updating the internal state
 /// for scene queries.
-pub fn step_simulation<PhysicsHooks>(
+pub fn step_simulation<Hooks>(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
-    hooks: SystemParamItem<PhysicsHooks>,
+    hooks: StaticSystemParam<Hooks>,
     time: Res<Time>,
     mut sim_to_render_time: ResMut<SimulationToRenderTime>,
     collision_events: EventWriter<CollisionEvent>,
     contact_force_events: EventWriter<ContactForceEvent>,
     interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
 ) where
-    PhysicsHooks: 'static + BevyPhysicsHooks,
-    for<'w, 's> PhysicsHooks: SystemParam<Item<'w, 's> = PhysicsHooks>,
+    Hooks: 'static + BevyPhysicsHooks,
+    for<'w, 's> SystemParamItem<'w, 's, Hooks>: BevyPhysicsHooks,
 {
     let context = &mut *context;
-    let hooks_adapter = BevyPhysicsHooksAdapter::<PhysicsHooks>::new(hooks);
+    let hooks_adapter = BevyPhysicsHooksAdapter::new(hooks.into_inner());
 
     if config.physics_pipeline_active {
         context.step_simulation(
@@ -1406,7 +1406,6 @@ mod tests {
     use bevy::prelude::shape::{Capsule, Cube};
     use bevy::{
         asset::AssetPlugin,
-        // core::CorePlugin,
         ecs::event::Events,
         render::{settings::WgpuSettings, RenderPlugin},
         scene::ScenePlugin,
