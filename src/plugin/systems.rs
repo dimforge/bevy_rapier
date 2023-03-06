@@ -1100,55 +1100,30 @@ pub fn init_colliders(
 
         builder = builder.user_data(entity.to_bits() as u128);
 
-        println!("Checking handle!");
+        println!("Getting handle");
         let handle = if let Some(body_handle) = body_handle {
             println!("Had handle!");
-
             builder = builder.position(utils::transform_to_iso(&child_transform, physics_scale));
             let handle =
                 world
                     .colliders
                     .insert_with_parent(builder, body_handle, &mut world.bodies);
-            // if let Ok(mut mprops) = rigid_body_mprops.get_mut(body_entity) {
-            //     // Inserting the collider changed the rigid-body’s mass properties.
-            //     // Read them back from the engine.
-            //     if let Some(parent_body) = world.bodies.get(body_handle) {
-            //         mprops.0 = MassProperties::from_rapier(
-            //             parent_body.mass_properties().local_mprops,
-            //             physics_scale,
-            //         );
-            //     }
-            // }
+            if let Ok(mut mprops) = rigid_body_mprops.get_mut(body_entity) {
+                println!("Had props!");
+                // Inserting the collider changed the rigid-body’s mass properties.
+                // Read them back from the engine.
+                if let Some(parent_body) = world.bodies.get(body_handle) {
+                    println!("Had parent body!");
+                    mprops.0 = MassProperties::from_rapier(
+                        parent_body.mass_properties().local_mprops,
+                        physics_scale,
+                    );
 
-            // Bubbles ReadMassProperties changes up through the parent heirarchy
-            let mut entity = entity;
-            println!("Starting Entity: {}", entity.index());
-            while let Ok((parent, _)) = parent_query.get(entity) {
-                println!("I have a parent");
-                entity = parent.get();
-                println!("Entity: {}", entity.index());
-
-                if let Ok(mut mprops) = rigid_body_mprops.get_mut(entity) {
-                    println!("I have read mass");
-
-                    if let Some(body_handle) = world.entity2body.get(&entity).copied() {
-                        println!("I have a body handle");
-
-                        if let Some(parent_body) = world.bodies.get(body_handle) {
-                            println!("I have a rigid body");
-
-                            mprops.0 = MassProperties::from_rapier(
-                                parent_body.mass_properties().local_mprops,
-                                physics_scale,
-                            );
-                        }
-                    }
+                    println!("Set props to {:?}", mprops.0);
                 }
             }
-
             handle
         } else {
-            println!("no handle!");
             let global_transform = global_transform.cloned().unwrap_or_default();
             builder = builder.position(utils::transform_to_iso(
                 &global_transform.compute_transform(),
