@@ -1100,7 +1100,10 @@ pub fn init_colliders(
 
         builder = builder.user_data(entity.to_bits() as u128);
 
+        println!("Checking handle!");
         let handle = if let Some(body_handle) = body_handle {
+            println!("Had handle!");
+
             builder = builder.position(utils::transform_to_iso(&child_transform, physics_scale));
             let handle =
                 world
@@ -1143,6 +1146,7 @@ pub fn init_colliders(
 
             handle
         } else {
+            println!("no handle!");
             let global_transform = global_transform.cloned().unwrap_or_default();
             builder = builder.position(utils::transform_to_iso(
                 &global_transform.compute_transform(),
