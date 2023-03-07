@@ -13,7 +13,7 @@ fn main() {
         .add_plugin(RapierDebugRenderPlugin::default())
         .add_startup_system(setup_graphics)
         .add_startup_system(setup_physics)
-        .add_system_to_stage(CoreStage::PostUpdate, display_events)
+        .add_system(display_events.in_base_set(CoreSet::PostUpdate))
         .run();
 }
 

@@ -1,12 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.21.0  (07 March 2023)
 ### Modified
+- Update to Bevy 0.10.
 - The `PhysicsHooksWithQuery` trait has been renamed to by the `BevyPhysicsHooks`.
 - Bevy resources and queries accessed by the physics hook are now specified by the implementor of `BevyPhysicsHooks`
   which must derive Bevy’s `SystemParam` trait. This implies that the physics hook’s `filter_contact_pair` (and
   all its other methods) no longer take the Bevy `Query` as argument. Queries and resources are accessed through
   `self`.
+- Rename `PhysicsStages` to `PhysicsSet`.
 
 ## 0.20.0 (15 Jan. 2023)
 ### Added
@@ -24,7 +26,7 @@
   with 3D graphics).
 - In order to facilitate the use of `bevy_rapier` in headless mode, the `AsyncCollider` and `AsyncSceneCollider`
   components were moved behind the `async-collider` feature (enabled by default). Disabling that feature will
-  make `bevy_rapier` work even with the `MinimalPlugins` inserted insetad of the `DefaultPlugins`.
+  make `bevy_rapier` work even with the `MinimalPlugins` inserted instead of the `DefaultPlugins`.
 - Corrected an API inconsistency where `bevy_rapier` components would sometimes require an `InteracitonGroup` type defined in
   `rapier`. It has been replaced by the `CollisionGroup` type (defined in `bevy_rapier`).
 - `Velocity::zero,linear,angular` are now const-fn.

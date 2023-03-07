@@ -1,15 +1,14 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, window::WindowResolution};
 use bevy_rapier2d::prelude::*;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
-            window: WindowDescriptor {
+            primary_window: Some(Window {
+                resolution: WindowResolution::new(1000., 1000.),
                 title: "Player Movement Example".to_string(),
-                width: 1000.0,
-                height: 1000.0,
-                ..Default::default()
-            },
+                ..default()
+            }),
             ..default()
         }))
         .add_startup_system(spawn_player)
