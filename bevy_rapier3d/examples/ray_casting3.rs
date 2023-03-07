@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 use bevy_rapier3d::prelude::*;
 
 fn main() {
@@ -72,7 +73,7 @@ pub fn setup_physics(mut commands: Commands) {
 
 fn cast_ray(
     mut commands: Commands,
-    windows: Query<&Window>,
+    windows: Query<&Window, With<PrimaryWindow>>,
     rapier_context: Res<RapierContext>,
     cameras: Query<(&Camera, &GlobalTransform)>,
 ) {
