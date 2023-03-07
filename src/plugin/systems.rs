@@ -19,7 +19,7 @@ use crate::prelude::{
     KinematicCharacterController, KinematicCharacterControllerOutput, RigidBodyDisabled,
 };
 use crate::utils;
-use bevy::ecs::system::SystemParamItem;
+use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
 use bevy::prelude::*;
 use rapier::prelude::*;
 use std::collections::HashMap;
@@ -326,7 +326,7 @@ pub fn apply_collider_user_changes(
 // This will also change the children of that entity to reflect the new world.
 fn apply_world_update(
     children_query: &Query<&Children>,
-    body_world_query: &Query<(Entity, &BodyWorld, ChangeTrackers<BodyWorld>)>,
+    body_world_query: &Query<(Entity, &BodyWorld, Ref<BodyWorld>)>,
     context: &mut RapierContext,
     entity: Entity,
     commands: &mut Commands,
@@ -400,7 +400,7 @@ fn apply_world_update(
 /// This system will carry this change down to the children of that entity.
 pub fn apply_changing_worlds(
     mut commands: Commands,
-    body_world_query: Query<(Entity, &BodyWorld, ChangeTrackers<BodyWorld>)>,
+    body_world_query: Query<(Entity, &BodyWorld, Ref<BodyWorld>)>,
     children_query: Query<&Children>,
     mut context: ResMut<RapierContext>,
 ) {
@@ -881,19 +881,20 @@ pub fn writeback_rigid_bodies(
 
 /// System responsible for advancing the physics simulation, and updating the internal state
 /// for scene queries.
-pub fn step_simulation<PhysicsHooks>(
+pub fn step_simulation<Hooks>(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
-    hooks: SystemParamItem<PhysicsHooks>,
-    (time, mut sim_to_render_time): (Res<Time>, ResMut<SimulationToRenderTime>),
-    // mut collision_events: EventWriter<CollisionEvent>,
-    // mut contact_force_events: EventWriter<ContactForceEvent>,
+    hooks: StaticSystemParam<Hooks>,
+    time: Res<Time>,
+    mut sim_to_render_time: ResMut<SimulationToRenderTime>,
+    // collision_events: EventWriter<CollisionEvent>,
+    // contact_force_events: EventWriter<ContactForceEvent>,
     mut interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
 ) where
-    PhysicsHooks: 'static + BevyPhysicsHooks,
-    for<'w, 's> SystemParamItem<'w, 's, PhysicsHooks>: BevyPhysicsHooks,
+    Hooks: 'static + BevyPhysicsHooks,
+    for<'w, 's> SystemParamItem<'w, 's, Hooks>: BevyPhysicsHooks,
 {
-    let hooks_adapter = BevyPhysicsHooksAdapter::<PhysicsHooks>::new(hooks);
+    let hooks_adapter = BevyPhysicsHooksAdapter::new(hooks.into_inner());
 
     for (_, world) in context.worlds.iter_mut() {
         if config.physics_pipeline_active {
@@ -1352,10 +1353,10 @@ pub fn sync_removals(
     mut commands: Commands,
     mut context: ResMut<RapierContext>,
     world_within_query: Query<&BodyWorld>,
-    removed_bodies: RemovedComponents<RapierRigidBodyHandle>,
-    removed_colliders: RemovedComponents<RapierColliderHandle>,
-    removed_impulse_joints: RemovedComponents<RapierImpulseJointHandle>,
-    removed_multibody_joints: RemovedComponents<RapierMultibodyJointHandle>,
+    mut removed_bodies: RemovedComponents<RapierRigidBodyHandle>,
+    mut removed_colliders: RemovedComponents<RapierColliderHandle>,
+    mut removed_impulse_joints: RemovedComponents<RapierImpulseJointHandle>,
+    mut removed_multibody_joints: RemovedComponents<RapierMultibodyJointHandle>,
     orphan_bodies: Query<Entity, (With<RapierRigidBodyHandle>, Without<RigidBody>)>,
     orphan_colliders: Query<Entity, (With<RapierColliderHandle>, Without<Collider>)>,
     orphan_impulse_joints: Query<Entity, (With<RapierImpulseJointHandle>, Without<ImpulseJoint>)>,
@@ -1368,9 +1369,9 @@ pub fn sync_removals(
         ),
     >,
 
-    removed_sensors: RemovedComponents<Sensor>,
-    removed_rigid_body_disabled: RemovedComponents<RigidBodyDisabled>,
-    removed_colliders_disabled: RemovedComponents<ColliderDisabled>,
+    mut removed_sensors: RemovedComponents<Sensor>,
+    mut removed_rigid_body_disabled: RemovedComponents<RigidBodyDisabled>,
+    mut removed_colliders_disabled: RemovedComponents<ColliderDisabled>,
 ) {
     /*
      * Rigid-bodies removal detection.
@@ -1718,7 +1719,6 @@ mod tests {
     use bevy::prelude::shape::{Capsule, Cube};
     use bevy::{
         asset::AssetPlugin,
-        core::CorePlugin,
         ecs::event::Events,
         render::{settings::WgpuSettings, RenderPlugin},
         scene::ScenePlugin,
@@ -1844,9 +1844,11 @@ mod tests {
     #[test]
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_scene_collider_initializes() {
+        use bevy::scene::scene_spawner_system;
+
         let mut app = App::new();
         app.add_plugin(HeadlessRenderPlugin)
-            .add_system(init_async_scene_colliders);
+            .add_system(init_async_scene_colliders.after(scene_spawner_system));
 
         let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
         let cube_handle = meshes.add(Cube::default().into());
@@ -2033,16 +2035,16 @@ mod tests {
 
     impl Plugin for HeadlessRenderPlugin {
         fn build(&self, app: &mut App) {
-            app.insert_resource(WgpuSettings {
-                backends: None,
-                ..WgpuSettings::default()
-            })
-            .add_plugin(CorePlugin::default())
-            .add_plugin(WindowPlugin::default())
-            .add_plugin(AssetPlugin::default())
-            .add_plugin(ScenePlugin::default())
-            .add_plugin(RenderPlugin::default())
-            .add_plugin(ImagePlugin::default());
+            app.add_plugin(WindowPlugin::default())
+                .add_plugin(AssetPlugin::default())
+                .add_plugin(ScenePlugin::default())
+                .add_plugin(RenderPlugin {
+                    wgpu_settings: WgpuSettings {
+                        backends: None,
+                        ..Default::default()
+                    },
+                })
+                .add_plugin(ImagePlugin::default());
         }
     }
 }

@@ -1,41 +1,8 @@
-use bevy::{core::FrameCount, prelude::*};
+use bevy::{core::FrameCount, ecs::schedule::ScheduleLabel, prelude::*};
 use bevy_rapier3d::prelude::*;
 
-struct SpecialStagingPlugin {
-    schedule: Schedule,
-}
-
-impl SpecialStagingPlugin {
-    pub fn new(schedule: Schedule) -> Self {
-        Self { schedule }
-    }
-}
-
-impl SpecialStagingPlugin {
-    fn build(self, app: &mut App) {
-        app.add_stage_after(
-            CoreStage::Update,
-            "special_staging_plugin_stage",
-            SpecialStage::new(self.schedule),
-        );
-    }
-}
-
-struct SpecialStage {
-    schedule: Schedule,
-}
-
-impl SpecialStage {
-    pub fn new(schedule: Schedule) -> Self {
-        Self { schedule }
-    }
-}
-
-impl Stage for SpecialStage {
-    fn run(&mut self, world: &mut World) {
-        self.schedule.run_once(world);
-    }
-}
+#[derive(ScheduleLabel, Hash, Debug, PartialEq, Eq, Clone)]
+struct SpecialSchedule;
 
 fn main() {
     let mut app = App::new();
@@ -48,67 +15,63 @@ fn main() {
     .add_plugins(DefaultPlugins)
     .add_plugin(RapierDebugRenderPlugin::default())
     .add_startup_system(setup_graphics)
-    .add_startup_system(setup_physics);
-
-    // Do the stage setup however we want, maybe in a special plugin that has
-    // its very own schedule
-    SpecialStagingPlugin::new(
-        Schedule::default()
-            .with_stage(
-                PhysicsStages::SyncBackend,
-                SystemStage::parallel().with_system_set(
-                    RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsStages::SyncBackend),
-                ),
-            )
-            .with_stage_after(
-                PhysicsStages::SyncBackend,
-                PhysicsStages::StepSimulation,
-                SystemStage::parallel()
-                    .with_system(despawn_one_box) // We can add a special despawn to determine cleanup later
-                    .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
-                        PhysicsStages::StepSimulation,
-                    )),
-            )
-            .with_stage_after(
-                PhysicsStages::StepSimulation,
-                PhysicsStages::Writeback,
-                SystemStage::parallel().with_system_set(
-                    RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsStages::Writeback),
-                ),
-            ),
-    )
-    .build(&mut app);
-
-    // Be sure to setup all four stages
-    app.add_stage_before(
-        CoreStage::Last,
-        PhysicsStages::DetectDespawn,
-        SystemStage::parallel().with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
-            PhysicsStages::DetectDespawn,
-        )),
+    .add_startup_system(setup_physics)
+    .add_system(
+        (|world: &mut World| {
+            world.run_schedule(SpecialSchedule);
+        })
+        .in_base_set(CoreSet::PostUpdate),
     );
 
-    app.add_plugin(RapierPhysicsPlugin::<NoUserData>::default().with_default_system_setup(false));
+    // Do the setup however we want, maybe in its very own schedule
+    let mut schedule = Schedule::new();
 
-    app.run();
+    schedule.configure_sets(
+        (
+            PhysicsSet::SyncBackend,
+            PhysicsSet::SyncBackendFlush,
+            PhysicsSet::StepSimulation,
+            PhysicsSet::Writeback,
+        )
+            .chain(),
+    );
+
+    schedule.add_systems(
+        RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsSet::SyncBackend)
+            .in_base_set(PhysicsSet::SyncBackend),
+    );
+
+    schedule.add_systems(
+        RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsSet::SyncBackendFlush)
+            .in_base_set(PhysicsSet::SyncBackendFlush),
+    );
+
+    schedule.add_systems(
+        RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsSet::StepSimulation)
+            .in_base_set(PhysicsSet::StepSimulation),
+    );
+    schedule.add_system(despawn_one_box.in_base_set(PhysicsSet::StepSimulation));
+
+    schedule.add_systems(
+        RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsSet::Writeback)
+            .in_base_set(PhysicsSet::Writeback),
+    );
+
+    app.add_schedule(SpecialSchedule, schedule)
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default().with_default_system_setup(false))
+        .run();
 }
 
 fn despawn_one_box(
     mut commands: Commands,
-    mut frame_count: ResMut<FrameCount>,
+    frame_count: ResMut<FrameCount>,
     query: Query<Entity, (With<Collider>, With<RigidBody>)>,
 ) {
-    frame_count.0 += 1;
-
-    // Delete a box every 10 frames
-    if frame_count.0 % 10 == 0 && !query.is_empty() {
-        let count = query.iter().count();
-        if let Some(entity) = query
-            .iter()
-            .skip(frame_count.0 as usize % count) // Get a "random" box to make sim interesting
-            .take(1)
-            .next()
-        {
+    // Delete a box every 5 frames
+    if frame_count.0 % 5 == 0 && !query.is_empty() {
+        let len = query.iter().len();
+        // Get a "random" box to make sim interesting
+        if let Some(entity) = query.iter().nth(frame_count.0 as usize % len) {
             commands.entity(entity).despawn();
         }
     }
