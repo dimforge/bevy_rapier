@@ -64,7 +64,7 @@ where
         match stage {
             PhysicsStages::SyncBackend => {
                 let systems = SystemSet::new()
-                    .with_system(systems::update_character_controls) // Run the character controller befor ethe manual transform propagation.
+                    .with_system(systems::update_character_controls) // Run the character controller before the manual transform propagation.
                     .with_system(
                         bevy::transform::transform_propagate_system
                             .after(systems::update_character_controls),
