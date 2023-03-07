@@ -10,9 +10,9 @@ use std::marker::PhantomData;
 pub type NoUserData = ();
 
 /// A plugin responsible for setting up a full Rapier physics simulation pipeline and resources.
-//
-// This will automatically setup all the resources needed to run a physics simulation with the
-// Rapier physics engine.
+///
+/// This will automatically setup all the resources needed to run a physics simulation with the
+/// Rapier physics engine.
 pub struct RapierPhysicsPlugin<PhysicsHooks = ()> {
     physics_scale: f32,
     default_system_setup: bool,
@@ -67,7 +67,9 @@ where
 
         match set {
             PhysicsSet::SyncBackend => (
+                // Run the character controller before the manual transform propagation.
                 systems::update_character_controls,
+                // Run Bevy transform propagation additionally to sync [`GlobalTransform`]
                 bevy::transform::systems::sync_simple_transforms
                     .in_set(RapierTransformPropagateSet)
                     .after(systems::update_character_controls),
