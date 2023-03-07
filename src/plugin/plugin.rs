@@ -11,9 +11,9 @@ use std::marker::PhantomData;
 pub type NoUserData = ();
 
 /// A plugin responsible for setting up a full Rapier physics simulation pipeline and resources.
-//
-// This will automatically setup all the resources needed to run a physics simulation with the
-// Rapier physics engine.
+///
+/// This will automatically setup all the resources needed to run a physics simulation with the
+/// Rapier physics engine.
 pub struct RapierPhysicsPlugin<PhysicsHooks = ()> {
     physics_scale: f32,
     default_system_setup: bool,
