@@ -6,7 +6,6 @@ resolver = "2"
 codegen-units = 1
 
 [patch.crates-io]
-nalgebra = { git = "https://github.com/MarijnS95/nalgebra", branch = "glam-0.23"}
 #nalgebra = { path = "../nalgebra" }
 #parry2d = { path = "../parry/crates/parry2d" }
 #parry3d = { path = "../parry/crates/parry3d" }
