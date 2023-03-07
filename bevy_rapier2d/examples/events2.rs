@@ -13,7 +13,7 @@ fn main() {
         .add_plugin(RapierDebugRenderPlugin::default())
         .add_startup_system(setup_graphics)
         .add_startup_system(setup_physics)
-        .add_system_to_stage(CoreStage::PostUpdate, display_events)
+        .add_system(display_events.in_base_set(CoreSet::PostUpdate))
         .run();
 }
 
@@ -26,11 +26,11 @@ fn display_events(
     mut contact_force_events: EventReader<ContactForceEvent>,
 ) {
     for collision_event in collision_events.iter() {
-        println!("Received collision event: {:?}", collision_event);
+        println!("Received collision event: {collision_event:?}");
     }
 
     for contact_force_event in contact_force_events.iter() {
-        println!("Received contact force event: {:?}", contact_force_event);
+        println!("Received contact force event: {contact_force_event:?}");
     }
 }
 

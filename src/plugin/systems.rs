@@ -19,7 +19,7 @@ use crate::prelude::{
     KinematicCharacterControllerOutput, RigidBodyDisabled,
 };
 use crate::utils;
-use bevy::ecs::system::SystemParamItem;
+use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
 use bevy::prelude::*;
 use rapier::prelude::*;
 use std::collections::HashMap;
@@ -628,20 +628,21 @@ pub fn writeback_rigid_bodies(
 
 /// System responsible for advancing the physics simulation, and updating the internal state
 /// for scene queries.
-pub fn step_simulation<PhysicsHooks>(
+pub fn step_simulation<Hooks>(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
-    hooks: SystemParamItem<PhysicsHooks>,
-    (time, mut sim_to_render_time): (Res<Time>, ResMut<SimulationToRenderTime>),
+    hooks: StaticSystemParam<Hooks>,
+    time: Res<Time>,
+    mut sim_to_render_time: ResMut<SimulationToRenderTime>,
     collision_events: EventWriter<CollisionEvent>,
     contact_force_events: EventWriter<ContactForceEvent>,
     interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
 ) where
-    PhysicsHooks: 'static + BevyPhysicsHooks,
-    for<'w, 's> SystemParamItem<'w, 's, PhysicsHooks>: BevyPhysicsHooks,
+    Hooks: 'static + BevyPhysicsHooks,
+    for<'w, 's> SystemParamItem<'w, 's, Hooks>: BevyPhysicsHooks,
 {
     let context = &mut *context;
-    let hooks_adapter = BevyPhysicsHooksAdapter::<PhysicsHooks>::new(hooks);
+    let hooks_adapter = BevyPhysicsHooksAdapter::new(hooks.into_inner());
 
     if config.physics_pipeline_active {
         context.step_simulation(
@@ -1073,10 +1074,10 @@ pub fn init_joints(
 pub fn sync_removals(
     mut commands: Commands,
     mut context: ResMut<RapierContext>,
-    removed_bodies: RemovedComponents<RapierRigidBodyHandle>,
-    removed_colliders: RemovedComponents<RapierColliderHandle>,
-    removed_impulse_joints: RemovedComponents<RapierImpulseJointHandle>,
-    removed_multibody_joints: RemovedComponents<RapierMultibodyJointHandle>,
+    mut removed_bodies: RemovedComponents<RapierRigidBodyHandle>,
+    mut removed_colliders: RemovedComponents<RapierColliderHandle>,
+    mut removed_impulse_joints: RemovedComponents<RapierImpulseJointHandle>,
+    mut removed_multibody_joints: RemovedComponents<RapierMultibodyJointHandle>,
     orphan_bodies: Query<Entity, (With<RapierRigidBodyHandle>, Without<RigidBody>)>,
     orphan_colliders: Query<Entity, (With<RapierColliderHandle>, Without<Collider>)>,
     orphan_impulse_joints: Query<Entity, (With<RapierImpulseJointHandle>, Without<ImpulseJoint>)>,
@@ -1085,9 +1086,9 @@ pub fn sync_removals(
         (With<RapierMultibodyJointHandle>, Without<MultibodyJoint>),
     >,
 
-    removed_sensors: RemovedComponents<Sensor>,
-    removed_rigid_body_disabled: RemovedComponents<RigidBodyDisabled>,
-    removed_colliders_disabled: RemovedComponents<ColliderDisabled>,
+    mut removed_sensors: RemovedComponents<Sensor>,
+    mut removed_rigid_body_disabled: RemovedComponents<RigidBodyDisabled>,
+    mut removed_colliders_disabled: RemovedComponents<ColliderDisabled>,
 ) {
     /*
      * Rigid-bodies removal detection.
@@ -1405,7 +1406,6 @@ mod tests {
     use bevy::prelude::shape::{Capsule, Cube};
     use bevy::{
         asset::AssetPlugin,
-        core::CorePlugin,
         ecs::event::Events,
         render::{settings::WgpuSettings, RenderPlugin},
         scene::ScenePlugin,
@@ -1531,9 +1531,11 @@ mod tests {
     #[test]
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_scene_collider_initializes() {
+        use bevy::scene::scene_spawner_system;
+
         let mut app = App::new();
         app.add_plugin(HeadlessRenderPlugin)
-            .add_system(init_async_scene_colliders);
+            .add_system(init_async_scene_colliders.after(scene_spawner_system));
 
         let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
         let cube_handle = meshes.add(Cube::default().into());
@@ -1712,16 +1714,16 @@ mod tests {
 
     impl Plugin for HeadlessRenderPlugin {
         fn build(&self, app: &mut App) {
-            app.insert_resource(WgpuSettings {
-                backends: None,
-                ..WgpuSettings::default()
-            })
-            .add_plugin(CorePlugin::default())
-            .add_plugin(WindowPlugin::default())
-            .add_plugin(AssetPlugin::default())
-            .add_plugin(ScenePlugin::default())
-            .add_plugin(RenderPlugin::default())
-            .add_plugin(ImagePlugin::default());
+            app.add_plugin(WindowPlugin::default())
+                .add_plugin(AssetPlugin::default())
+                .add_plugin(ScenePlugin::default())
+                .add_plugin(RenderPlugin {
+                    wgpu_settings: WgpuSettings {
+                        backends: None,
+                        ..Default::default()
+                    },
+                })
+                .add_plugin(ImagePlugin::default());
         }
     }
 }

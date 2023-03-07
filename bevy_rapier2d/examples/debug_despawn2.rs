@@ -258,7 +258,7 @@ fn clear_filled_rows(
     }
 
     for row_blocks in blocks_per_row {
-        if row_blocks.len() == game.n_lanes as usize {
+        if row_blocks.len() == game.n_lanes {
             game.stats.cleared_blocks += game.n_lanes as i32;
 
             for block_entity in row_blocks {
