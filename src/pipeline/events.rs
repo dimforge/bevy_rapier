@@ -1,5 +1,5 @@
 use crate::math::{Real, Vect};
-use bevy::prelude::{Entity, EventWriter};
+use bevy::prelude::Entity;
 use rapier::dynamics::RigidBodySet;
 use rapier::geometry::{
     ColliderHandle, ColliderSet, CollisionEvent as RapierCollisionEvent, CollisionEventFlags,
@@ -46,11 +46,11 @@ pub struct ContactForceEvent {
 // issue).
 /// A set of queues collecting events emitted by the physics engine.
 pub(crate) struct EventQueue<'a> {
-    // Used ot retrieve the entity of colliders that have been removed from the simulation
+    // Used to retrieve the entity of colliders that have been removed from the simulation
     // since the last physics step.
     pub deleted_colliders: &'a HashMap<ColliderHandle, Entity>,
-    pub collision_events: RwLock<EventWriter<'a, CollisionEvent>>,
-    pub contact_force_events: RwLock<EventWriter<'a, ContactForceEvent>>,
+    pub collision_events: &'a mut RwLock<Vec<CollisionEvent>>,
+    pub contact_force_events: &'a mut RwLock<Vec<ContactForceEvent>>,
 }
 
 impl<'a> EventQueue<'a> {
@@ -85,7 +85,7 @@ impl<'a> EventHandler for EventQueue<'a> {
         };
 
         if let Ok(mut events) = self.collision_events.write() {
-            events.send(event)
+            events.push(event)
         }
     }
 
@@ -109,7 +109,7 @@ impl<'a> EventHandler for EventQueue<'a> {
         };
 
         if let Ok(mut events) = self.contact_force_events.write() {
-            events.send(event);
+            events.push(event);
         }
     }
 }

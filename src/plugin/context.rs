@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use core::fmt;
 use std::collections::HashMap;
+use std::sync::RwLock;
 
 use rapier::prelude::{
     Aabb as RapierAabb, BroadPhase, CCDSolver, ColliderHandle, ColliderSet, EventHandler,
@@ -12,13 +13,14 @@ use rapier::prelude::{
 use crate::geometry::{Collider, PointProjection, RayIntersection, Toi};
 use crate::math::{Rot, Vect};
 use crate::pipeline::QueryFilter;
+use crate::prelude::events::EventQueue;
 use bevy::prelude::{Entity, GlobalTransform, Query};
 use bevy::render::primitives::Aabb;
 
 use crate::control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput};
 use crate::dynamics::TransformInterpolation;
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
-use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
+use crate::prelude::{CollisionEvent, CollisionGroups, ContactForceEvent, RapierRigidBodyHandle};
 #[cfg(feature = "dim2")]
 use bevy::math::Vec3Swizzles;
 use rapier::control::CharacterAutostep;
@@ -78,10 +80,38 @@ pub struct RapierWorld {
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub(crate) deleted_colliders: HashMap<ColliderHandle, Entity>,
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
+    pub(crate) collision_events_to_send: RwLock<Vec<CollisionEvent>>,
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
+    pub(crate) contact_force_events_to_send: RwLock<Vec<ContactForceEvent>>,
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub(crate) character_collisions_collector: Vec<rapier::control::CharacterCollision>,
 }
 
 impl RapierWorld {
+    /// Generates bevy events for any physics interactions that have happened
+    /// that are stored in the events list
+    pub fn send_bevy_events(
+        &mut self,
+        collision_event_writer: &mut EventWriter<CollisionEvent>,
+        contact_force_event_writer: &mut EventWriter<ContactForceEvent>,
+    ) {
+        if let Ok(mut collision_events_to_send) = self.collision_events_to_send.write() {
+            for collision_event in collision_events_to_send.iter() {
+                collision_event_writer.send(*collision_event);
+            }
+
+            collision_events_to_send.clear();
+        }
+
+        if let Ok(mut contact_force_events_to_send) = self.contact_force_events_to_send.write() {
+            for contact_force_event in contact_force_events_to_send.iter() {
+                contact_force_event_writer.send(*contact_force_event);
+            }
+
+            contact_force_events_to_send.clear();
+        }
+    }
+
     fn with_query_filter<T>(
         &self,
         filter: QueryFilter,
@@ -140,10 +170,7 @@ impl RapierWorld {
         &mut self,
         gravity: Vect,
         timestep_mode: TimestepMode,
-        // events: &'a mut Option<(
-        //     &'a mut EventWriter<CollisionEvent>,
-        //     &'a mut EventWriter<ContactForceEvent>,
-        // )>,
+        create_bevy_events: bool,
         hooks: &dyn PhysicsHooks,
         time: &Time,
         sim_to_render_time: &mut SimulationToRenderTime,
@@ -151,25 +178,20 @@ impl RapierWorld {
             &mut Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
         >,
     ) {
-        // let event_queue = match events {
-        //     Some((ce, fe)) => Some(EventQueue {
-        //         deleted_colliders: &self.deleted_colliders,
-        //         collision_events: RwLock::new(*ce),
-        //         contact_force_events: RwLock::new(*fe),
-        //     }),
-        //     None => None,
-        // };
-
-        //events.map(|(ce, fe)| EventQueue {
-        // deleted_colliders: &self.deleted_colliders,
-        // collision_events: RwLock::new(ce),
-        // contact_force_events: RwLock::new(fe),
-        // });
+        let event_queue = if create_bevy_events {
+            Some(EventQueue {
+                deleted_colliders: &self.deleted_colliders,
+                collision_events: &mut self.collision_events_to_send,
+                contact_force_events: &mut self.contact_force_events_to_send,
+            })
+        } else {
+            None
+        };
 
         let events = self
             .event_handler
             .as_deref()
-            // .or_else(|| event_queue.as_ref().map(|q| q as &dyn EventHandler))
+            .or_else(|| event_queue.as_ref().map(|q| q as &dyn EventHandler))
             .unwrap_or(&() as &dyn EventHandler);
 
         match timestep_mode {
@@ -850,6 +872,8 @@ impl Default for RapierWorld {
             entity2multibody_joint: HashMap::new(),
             deleted_colliders: HashMap::new(),
             character_collisions_collector: vec![],
+            collision_events_to_send: RwLock::new(Vec::new()),
+            contact_force_events_to_send: RwLock::new(Vec::new()),
         }
     }
 }
@@ -1029,7 +1053,7 @@ impl RapierContext {
         mut self,
         gravity: Vect,
         timestep_mode: TimestepMode,
-        // events: Option<(EventWriter<CollisionEvent>, EventWriter<ContactForceEvent>)>,
+        mut events: Option<(EventWriter<CollisionEvent>, EventWriter<ContactForceEvent>)>,
         hooks: &dyn PhysicsHooks,
         time: &Time,
         sim_to_render_time: &mut SimulationToRenderTime,
@@ -1041,12 +1065,16 @@ impl RapierContext {
             world.step_simulation(
                 gravity,
                 timestep_mode,
-                // &mut events.as_mut().map(|(ce, fe)| (ce, fe)),
+                events.is_some(),
                 hooks,
                 time,
                 sim_to_render_time,
                 &mut interpolation_query,
             );
+
+            if let Some((collision_event_writer, contact_force_event_writer)) = &mut events {
+                world.send_bevy_events(collision_event_writer, contact_force_event_writer);
+            }
         }
     }
 

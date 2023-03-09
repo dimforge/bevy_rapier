@@ -15,13 +15,15 @@ use crate::pipeline::CollisionEvent;
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
-    BevyPhysicsHooks, BevyPhysicsHooksAdapter, BodyWorld, CollidingEntities,
-    KinematicCharacterController, KinematicCharacterControllerOutput, RigidBodyDisabled,
+    BevyPhysicsHooks, BevyPhysicsHooksAdapter, BodyWorld, CollidingEntities, ContactForceEvent,
+    KinematicCharacterController, KinematicCharacterControllerOutput, Real, RigidBodyDisabled,
 };
 use crate::utils;
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
 use bevy::prelude::*;
-use rapier::prelude::*;
+use rapier::prelude::{
+    ColliderBuilder, Isometry, QueryFilter, RigidBodyBuilder, RigidBodyHandle, RigidBodyType,
+};
 use std::collections::HashMap;
 
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
@@ -887,8 +889,8 @@ pub fn step_simulation<Hooks>(
     hooks: StaticSystemParam<Hooks>,
     time: Res<Time>,
     mut sim_to_render_time: ResMut<SimulationToRenderTime>,
-    // collision_events: EventWriter<CollisionEvent>,
-    // contact_force_events: EventWriter<ContactForceEvent>,
+    mut collision_event_writer: EventWriter<CollisionEvent>,
+    mut contact_force_event_writer: EventWriter<ContactForceEvent>,
     mut interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
 ) where
     Hooks: 'static + BevyPhysicsHooks,
@@ -901,7 +903,7 @@ pub fn step_simulation<Hooks>(
             world.step_simulation(
                 config.gravity,
                 config.timestep_mode,
-                // &mut Some((&mut collision_events, &mut contact_force_events)),
+                true,
                 &hooks_adapter,
                 &time,
                 &mut sim_to_render_time,
@@ -909,6 +911,8 @@ pub fn step_simulation<Hooks>(
             );
 
             world.deleted_colliders.clear();
+
+            world.send_bevy_events(&mut collision_event_writer, &mut contact_force_event_writer);
         } else {
             world.propagate_modified_body_positions_to_colliders();
         }
@@ -1101,26 +1105,20 @@ pub fn init_colliders(
 
         builder = builder.user_data(entity.to_bits() as u128);
 
-        println!("Getting handle");
         let handle = if let Some(body_handle) = body_handle {
-            println!("Had handle!");
             builder = builder.position(utils::transform_to_iso(&child_transform, physics_scale));
             let handle =
                 world
                     .colliders
                     .insert_with_parent(builder, body_handle, &mut world.bodies);
             if let Ok(mut mprops) = rigid_body_mprops.get_mut(body_entity) {
-                println!("Had props!");
                 // Inserting the collider changed the rigid-body’s mass properties.
                 // Read them back from the engine.
                 if let Some(parent_body) = world.bodies.get(body_handle) {
-                    println!("Had parent body!");
                     mprops.0 = MassProperties::from_rapier(
                         parent_body.mass_properties().local_mprops,
                         physics_scale,
                     );
-
-                    println!("Set props to {:?}", mprops.0);
                 }
             }
             handle
@@ -1731,6 +1729,7 @@ mod tests {
         time::TimePlugin,
         window::WindowPlugin,
     };
+    use rapier::prelude::CollisionEventFlags;
     use std::f32::consts::PI;
 
     use super::*;
