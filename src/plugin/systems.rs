@@ -883,6 +883,7 @@ pub fn writeback_rigid_bodies(
 
 /// System responsible for advancing the physics simulation, and updating the internal state
 /// for scene queries.
+#[allow(clippy::too_many_arguments)]
 pub fn step_simulation<Hooks>(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,

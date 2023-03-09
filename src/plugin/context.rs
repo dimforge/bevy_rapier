@@ -166,6 +166,7 @@ impl RapierWorld {
     }
 
     /// Advance the simulation, based on the given timestep mode.
+    #[allow(clippy::too_many_arguments)]
     pub fn step_simulation(
         &mut self,
         gravity: Vect,
