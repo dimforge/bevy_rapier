@@ -10,11 +10,12 @@ use std::ops::{Add, AddAssign, Sub, SubAssign};
 pub struct RapierRigidBodyHandle(pub RigidBodyHandle);
 
 /// A rigid-body.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Component, Reflect, FromReflect)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Component, Reflect, FromReflect, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[reflect(Component, PartialEq)]
 pub enum RigidBody {
     /// A `RigidBody::Dynamic` body can be affected by all external forces.
+    #[default]
     Dynamic,
     /// A `RigidBody::Fixed` body cannot be affected by external forces.
     Fixed,
@@ -32,12 +33,6 @@ pub enum RigidBody {
     /// cannot be pushed by anything. In other words, the trajectory of a kinematic body can only be
     /// modified by the user and is independent from any contact or joint it is involved in.
     KinematicVelocityBased,
-}
-
-impl Default for RigidBody {
-    fn default() -> Self {
-        RigidBody::Dynamic
-    }
 }
 
 impl From<RigidBody> for RigidBodyType {
