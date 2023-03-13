@@ -32,11 +32,9 @@ mod spherical_joint;
 /// actually used is given by `max(first_combine_rule as usize, second_combine_rule as usize)`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Reflect, FromReflect, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-#[derive(Default)]
 pub enum CoefficientCombineRule {
     #[default]
     /// The two coefficients are averaged.
-    #[default]
     Average = 0,
     /// The smallest coefficient is chosen.
     Min,

@@ -13,7 +13,6 @@ pub struct RapierRigidBodyHandle(pub RigidBodyHandle);
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Component, Reflect, FromReflect, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[reflect(Component, PartialEq)]
-#[derive(Default)]
 pub enum RigidBody {
     /// A `RigidBody::Dynamic` body can be affected by all external forces.
     #[default]
