@@ -10,7 +10,7 @@ use std::ops::{Add, AddAssign, Sub, SubAssign};
 pub struct RapierRigidBodyHandle(pub RigidBodyHandle);
 
 /// A rigid-body.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Component, Reflect, FromReflect)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Component, Reflect, FromReflect, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[reflect(Component, PartialEq)]
 #[derive(Default)]

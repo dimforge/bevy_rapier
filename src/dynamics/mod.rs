@@ -30,10 +30,11 @@ mod spherical_joint;
 /// Each collider has its combination rule of type
 /// `CoefficientCombineRule`. And the rule
 /// actually used is given by `max(first_combine_rule as usize, second_combine_rule as usize)`.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Reflect, FromReflect)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Reflect, FromReflect, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Default)]
 pub enum CoefficientCombineRule {
+    #[default]
     /// The two coefficients are averaged.
     #[default]
     Average = 0,
