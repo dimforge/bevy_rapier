@@ -40,8 +40,7 @@ fn main() {
             100.0,
         ))
         .add_plugin(RapierDebugRenderPlugin::default())
-        .add_startup_system(setup_graphics)
-        .add_startup_system(setup_physics)
+        .add_systems(Startup, (setup_graphics, setup_physics))
         .run();
 }
 

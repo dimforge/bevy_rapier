@@ -23,10 +23,8 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_plugin(RapierDebugRenderPlugin::default())
-        .add_startup_system(setup_graphics)
-        .add_startup_system(setup_physics)
-        .add_system(despawn)
-        .add_system(resize)
+        .add_systems(Startup, (setup_graphics, setup_physics))
+        .add_systems(Update, (despawn, resize))
         .run();
 }
 
