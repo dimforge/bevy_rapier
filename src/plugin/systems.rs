@@ -399,6 +399,10 @@ fn apply_world_update(
 /// Whenever an entity has its BodyWorld component changed, this
 /// system places it in the new world & removes it from the old.
 ///
+/// This does NOT add the entity to the new world, only signals that
+/// it needs changed. Later down the line, systems will pick up this
+/// entity that needs added & do everything necessary to add it.
+///
 /// This system will carry this change down to the children of that entity.
 pub fn apply_changing_worlds(
     mut commands: Commands,
@@ -1033,6 +1037,7 @@ pub fn init_colliders(
     ) in colliders.iter()
     {
         let world = get_world(world_within, &mut context);
+
         let physics_scale = world.physics_scale;
 
         let mut scaled_shape = shape.clone();
@@ -1242,6 +1247,7 @@ pub fn init_rigid_bodies(
         commands
             .entity(entity)
             .insert(RapierRigidBodyHandle(handle));
+
         world.entity2body.insert(entity, handle);
 
         if let Some(transform) = transform {

@@ -73,8 +73,11 @@ where
             PhysicsSet::SyncBackend => (
                 // Change any worlds needed before doing any calculations
                 systems::apply_changing_worlds,
+                // Make sure to remove any dead bodies after changing_worlds but before everything else
+                // to avoid it deleting something right after adding it
+                systems::sync_removals.after(systems::apply_changing_worlds),
                 // Run the character controller before the manual transform propagation.
-                systems::update_character_controls.after(systems::apply_changing_worlds),
+                systems::update_character_controls.after(systems::sync_removals),
                 // Run Bevy transform propagation additionally to sync [`GlobalTransform`]
                 bevy::transform::systems::sync_simple_transforms
                     .in_set(RapierTransformPropagateSet)
@@ -94,9 +97,6 @@ where
                     .after(systems::init_async_colliders),
                 systems::init_joints.after(systems::init_colliders),
                 systems::apply_initial_rigid_body_impulses.after(systems::init_colliders),
-                systems::sync_removals
-                    .after(systems::init_joints)
-                    .after(systems::apply_initial_rigid_body_impulses),
                 #[cfg(all(feature = "dim3", feature = "async-collider"))]
                 systems::init_async_scene_colliders
                     .after(bevy::scene::scene_spawner_system)

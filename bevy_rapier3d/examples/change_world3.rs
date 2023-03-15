@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
 const N_WORLDS: WorldId = 5;
+const WORLD_CHANGE_DELAY_SEC: f32 = 3.0;
 
 #[derive(Component)]
 /*
@@ -27,9 +28,13 @@ fn main() {
 
 fn change_world(mut query: Query<&mut BodyWorld, With<ChangeWorld>>, time: Res<Time>) {
     for mut bw in query.iter_mut() {
-        if time.elapsed_seconds() > (bw.world_id as f32 + 1.0) * 3.0 {
-            // Changing the world_id to itself will not cause issues
-            bw.world_id = (bw.world_id + 1).min(N_WORLDS - 1);
+        if time.elapsed_seconds() > (bw.world_id as f32 + 1.0) * WORLD_CHANGE_DELAY_SEC {
+            let new_world_id = bw.world_id + 1;
+
+            if new_world_id != N_WORLDS {
+                println!("Changing world to {new_world_id}.");
+                bw.world_id = new_world_id;
+            }
         }
     }
 }
@@ -68,6 +73,7 @@ pub fn setup_physics(mut context: ResMut<RapierContext>, mut commands: Commands)
             )),
             Collider::cuboid(ground_size, ground_height, ground_size),
             ColliderDebugColor(color),
+            RigidBody::Fixed,
             BodyWorld { world_id },
         ));
     }
