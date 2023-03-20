@@ -1384,6 +1384,7 @@ pub fn update_character_controls(
                 output.grounded = movement.grounded;
                 output.collisions.clear();
                 output.collisions.extend(converted_collisions);
+                output.is_sliding_down_slope = movement.is_sliding_down_slope;
             } else {
                 commands
                     .entity(entity)
@@ -1392,6 +1393,7 @@ pub fn update_character_controls(
                         effective_translation: (movement.translation * physics_scale).into(),
                         grounded: movement.grounded,
                         collisions: converted_collisions.collect(),
+                        is_sliding_down_slope: movement.is_sliding_down_slope,
                     });
             }
 
