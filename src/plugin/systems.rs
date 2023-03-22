@@ -15,8 +15,9 @@ use crate::pipeline::CollisionEvent;
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
-    BevyPhysicsHooks, BevyPhysicsHooksAdapter, BodyWorld, CollidingEntities, ContactForceEvent,
-    KinematicCharacterController, KinematicCharacterControllerOutput, Real, RigidBodyDisabled,
+    BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities, ContactForceEvent,
+    KinematicCharacterController, KinematicCharacterControllerOutput, PhysicsWorld, Real,
+    RigidBodyDisabled,
 };
 use crate::utils;
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
@@ -47,7 +48,7 @@ pub type RigidBodyWritebackComponents<'a> = (
     Option<&'a mut TransformInterpolation>,
     Option<&'a mut Velocity>,
     Option<&'a mut Sleeping>,
-    Option<&'a BodyWorld>,
+    Option<&'a PhysicsWorld>,
 );
 
 /// Components related to rigid-bodies.
@@ -66,7 +67,7 @@ pub type RigidBodyComponents<'a> = (
     Option<&'a Sleeping>,
     Option<&'a Damping>,
     Option<&'a RigidBodyDisabled>,
-    Option<&'a BodyWorld>,
+    Option<&'a PhysicsWorld>,
 );
 
 /// Components related to colliders.
@@ -87,7 +88,7 @@ pub type ColliderComponents<'a> = (
 );
 
 fn get_world<'a>(
-    world_within: Option<&'a BodyWorld>,
+    world_within: Option<&'a PhysicsWorld>,
     context: &'a mut RapierContext,
 ) -> &'a mut RapierWorld {
     let world_id = world_within.map(|x| x.world_id).unwrap_or(DEFAULT_WORLD_ID);
@@ -140,55 +141,70 @@ pub fn apply_collider_user_changes(
     config: Res<RapierConfiguration>,
     mut context: ResMut<RapierContext>,
     changed_collider_transforms: Query<
-        (&RapierColliderHandle, &GlobalTransform, Option<&BodyWorld>),
+        (
+            &RapierColliderHandle,
+            &GlobalTransform,
+            Option<&PhysicsWorld>,
+        ),
         (Without<RapierRigidBodyHandle>, Changed<GlobalTransform>),
     >,
     changed_shapes: Query<
-        (&RapierColliderHandle, &Collider, Option<&BodyWorld>),
+        (&RapierColliderHandle, &Collider, Option<&PhysicsWorld>),
         Changed<Collider>,
     >,
     changed_active_events: Query<
-        (&RapierColliderHandle, &ActiveEvents, Option<&BodyWorld>),
+        (&RapierColliderHandle, &ActiveEvents, Option<&PhysicsWorld>),
         Changed<ActiveEvents>,
     >,
     changed_active_hooks: Query<
-        (&RapierColliderHandle, &ActiveHooks, Option<&BodyWorld>),
+        (&RapierColliderHandle, &ActiveHooks, Option<&PhysicsWorld>),
         Changed<ActiveHooks>,
     >,
     changed_active_collision_types: Query<
         (
             &RapierColliderHandle,
             &ActiveCollisionTypes,
-            Option<&BodyWorld>,
+            Option<&PhysicsWorld>,
         ),
         Changed<ActiveCollisionTypes>,
     >,
     changed_friction: Query<
-        (&RapierColliderHandle, &Friction, Option<&BodyWorld>),
+        (&RapierColliderHandle, &Friction, Option<&PhysicsWorld>),
         Changed<Friction>,
     >,
     changed_restitution: Query<
-        (&RapierColliderHandle, &Restitution, Option<&BodyWorld>),
+        (&RapierColliderHandle, &Restitution, Option<&PhysicsWorld>),
         Changed<Restitution>,
     >,
     changed_collision_groups: Query<
-        (&RapierColliderHandle, &CollisionGroups, Option<&BodyWorld>),
+        (
+            &RapierColliderHandle,
+            &CollisionGroups,
+            Option<&PhysicsWorld>,
+        ),
         Changed<CollisionGroups>,
     >,
     changed_solver_groups: Query<
-        (&RapierColliderHandle, &SolverGroups, Option<&BodyWorld>),
+        (&RapierColliderHandle, &SolverGroups, Option<&PhysicsWorld>),
         Changed<SolverGroups>,
     >,
-    changed_sensors: Query<(&RapierColliderHandle, &Sensor, Option<&BodyWorld>), Changed<Sensor>>,
+    changed_sensors: Query<
+        (&RapierColliderHandle, &Sensor, Option<&PhysicsWorld>),
+        Changed<Sensor>,
+    >,
     changed_disabled: Query<
-        (&RapierColliderHandle, &ColliderDisabled, Option<&BodyWorld>),
+        (
+            &RapierColliderHandle,
+            &ColliderDisabled,
+            Option<&PhysicsWorld>,
+        ),
         Changed<ColliderDisabled>,
     >,
     changed_contact_force_threshold: Query<
         (
             &RapierColliderHandle,
             &ContactForceEventThreshold,
-            Option<&BodyWorld>,
+            Option<&PhysicsWorld>,
         ),
         Changed<ContactForceEventThreshold>,
     >,
@@ -196,7 +212,7 @@ pub fn apply_collider_user_changes(
         (
             &RapierColliderHandle,
             &ColliderMassProperties,
-            Option<&BodyWorld>,
+            Option<&PhysicsWorld>,
         ),
         Changed<ColliderMassProperties>,
     >,
@@ -328,7 +344,7 @@ pub fn apply_collider_user_changes(
 // This will also change the children of that entity to reflect the new world.
 fn apply_world_update(
     children_query: &Query<&Children>,
-    body_world_query: &Query<(Entity, &BodyWorld, Ref<BodyWorld>)>,
+    body_world_query: &Query<(Entity, &PhysicsWorld, Ref<PhysicsWorld>)>,
     context: &mut RapierContext,
     entity: Entity,
     commands: &mut Commands,
@@ -337,8 +353,8 @@ fn apply_world_update(
     if let Ok((_, bw, _)) = body_world_query.get(entity) {
         if bw.world_id != new_world {
             // Needs to insert instead of changing a mut bw because
-            // the ChangeTrackers<BodyWorld> requires bw to not be mut.
-            commands.entity(entity).insert(BodyWorld {
+            // the ChangeTrackers<PhysicsWorld> requires bw to not be mut.
+            commands.entity(entity).insert(PhysicsWorld {
                 world_id: new_world,
             });
         }
@@ -376,7 +392,7 @@ fn apply_world_update(
             .remove::<RapierMultibodyJointHandle>()
             .remove::<RapierImpulseJointHandle>();
     } else {
-        commands.entity(entity).insert(BodyWorld {
+        commands.entity(entity).insert(PhysicsWorld {
             world_id: new_world,
         });
     }
@@ -396,7 +412,7 @@ fn apply_world_update(
     }
 }
 
-/// Whenever an entity has its BodyWorld component changed, this
+/// Whenever an entity has its PhysicsWorld component changed, this
 /// system places it in the new world & removes it from the old.
 ///
 /// This does NOT add the entity to the new world, only signals that
@@ -406,7 +422,7 @@ fn apply_world_update(
 /// This system will carry this change down to the children of that entity.
 pub fn apply_changing_worlds(
     mut commands: Commands,
-    body_world_query: Query<(Entity, &BodyWorld, Ref<BodyWorld>)>,
+    body_world_query: Query<(Entity, &PhysicsWorld, Ref<PhysicsWorld>)>,
     children_query: Query<&Children>,
     mut context: ResMut<RapierContext>,
 ) {
@@ -429,7 +445,7 @@ pub fn apply_rigid_body_user_changes(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
     changed_rb_types: Query<
-        (&RapierRigidBodyHandle, &RigidBody, Option<&BodyWorld>),
+        (&RapierRigidBodyHandle, &RigidBody, Option<&PhysicsWorld>),
         Changed<RigidBody>,
     >,
     mut changed_transforms: Query<
@@ -437,60 +453,64 @@ pub fn apply_rigid_body_user_changes(
             &RapierRigidBodyHandle,
             &GlobalTransform,
             Option<&mut TransformInterpolation>,
-            Option<&BodyWorld>,
+            Option<&PhysicsWorld>,
         ),
         Changed<GlobalTransform>,
     >,
     changed_velocities: Query<
-        (&RapierRigidBodyHandle, &Velocity, Option<&BodyWorld>),
+        (&RapierRigidBodyHandle, &Velocity, Option<&PhysicsWorld>),
         Changed<Velocity>,
     >,
     changed_additional_mass_props: Query<
         (
             &RapierRigidBodyHandle,
             &AdditionalMassProperties,
-            Option<&BodyWorld>,
+            Option<&PhysicsWorld>,
         ),
         Changed<AdditionalMassProperties>,
     >,
     changed_locked_axes: Query<
-        (&RapierRigidBodyHandle, &LockedAxes, Option<&BodyWorld>),
+        (&RapierRigidBodyHandle, &LockedAxes, Option<&PhysicsWorld>),
         Changed<LockedAxes>,
     >,
     changed_forces: Query<
-        (&RapierRigidBodyHandle, &ExternalForce, Option<&BodyWorld>),
+        (
+            &RapierRigidBodyHandle,
+            &ExternalForce,
+            Option<&PhysicsWorld>,
+        ),
         Changed<ExternalForce>,
     >,
     mut changed_impulses: Query<
         (
             &RapierRigidBodyHandle,
             &mut ExternalImpulse,
-            Option<&BodyWorld>,
+            Option<&PhysicsWorld>,
         ),
         Changed<ExternalImpulse>,
     >,
     changed_gravity_scale: Query<
-        (&RapierRigidBodyHandle, &GravityScale, Option<&BodyWorld>),
+        (&RapierRigidBodyHandle, &GravityScale, Option<&PhysicsWorld>),
         Changed<GravityScale>,
     >,
-    changed_ccd: Query<(&RapierRigidBodyHandle, &Ccd, Option<&BodyWorld>), Changed<Ccd>>,
+    changed_ccd: Query<(&RapierRigidBodyHandle, &Ccd, Option<&PhysicsWorld>), Changed<Ccd>>,
     changed_dominance: Query<
-        (&RapierRigidBodyHandle, &Dominance, Option<&BodyWorld>),
+        (&RapierRigidBodyHandle, &Dominance, Option<&PhysicsWorld>),
         Changed<Dominance>,
     >,
     changed_sleeping: Query<
-        (&RapierRigidBodyHandle, &Sleeping, Option<&BodyWorld>),
+        (&RapierRigidBodyHandle, &Sleeping, Option<&PhysicsWorld>),
         Changed<Sleeping>,
     >,
     changed_damping: Query<
-        (&RapierRigidBodyHandle, &Damping, Option<&BodyWorld>),
+        (&RapierRigidBodyHandle, &Damping, Option<&PhysicsWorld>),
         Changed<Damping>,
     >,
     changed_disabled: Query<
         (
             &RapierRigidBodyHandle,
             &RigidBodyDisabled,
-            Option<&BodyWorld>,
+            Option<&PhysicsWorld>,
         ),
         Changed<RigidBodyDisabled>,
     >,
@@ -699,14 +719,18 @@ pub fn apply_rigid_body_user_changes(
 pub fn apply_joint_user_changes(
     mut context: ResMut<RapierContext>,
     changed_impulse_joints: Query<
-        (&RapierImpulseJointHandle, &ImpulseJoint, Option<&BodyWorld>),
+        (
+            &RapierImpulseJointHandle,
+            &ImpulseJoint,
+            Option<&PhysicsWorld>,
+        ),
         Changed<ImpulseJoint>,
     >,
     changed_multibody_joints: Query<
         (
             &RapierMultibodyJointHandle,
             &MultibodyJoint,
-            Option<&BodyWorld>,
+            Option<&PhysicsWorld>,
         ),
         Changed<MultibodyJoint>,
     >,
@@ -1009,7 +1033,7 @@ pub fn init_colliders(
         (
             ColliderComponents,
             Option<&GlobalTransform>,
-            Option<&BodyWorld>,
+            Option<&PhysicsWorld>,
         ),
         Without<RapierColliderHandle>,
     >,
@@ -1266,7 +1290,7 @@ pub fn apply_initial_rigid_body_impulses(
     // We can’t use RapierRigidBodyHandle yet because its creation command hasn’t been
     // executed yet.
     mut init_impulses: Query<
-        (Entity, &mut ExternalImpulse, Option<&BodyWorld>),
+        (Entity, &mut ExternalImpulse, Option<&PhysicsWorld>),
         Without<RapierRigidBodyHandle>,
     >,
 ) {
@@ -1297,11 +1321,11 @@ pub fn init_joints(
     mut commands: Commands,
     mut context: ResMut<RapierContext>,
     impulse_joints: Query<
-        (Entity, &ImpulseJoint, Option<&BodyWorld>),
+        (Entity, &ImpulseJoint, Option<&PhysicsWorld>),
         Without<RapierImpulseJointHandle>,
     >,
     multibody_joints: Query<
-        (Entity, &MultibodyJoint, Option<&BodyWorld>),
+        (Entity, &MultibodyJoint, Option<&PhysicsWorld>),
         Without<RapierMultibodyJointHandle>,
     >,
     parent_query: Query<&Parent>,
@@ -1363,7 +1387,7 @@ pub fn init_joints(
 pub fn sync_removals(
     mut commands: Commands,
     mut context: ResMut<RapierContext>,
-    world_within_query: Query<&BodyWorld>,
+    world_within_query: Query<&PhysicsWorld>,
     mut removed_bodies: RemovedComponents<RapierRigidBodyHandle>,
     mut removed_colliders: RemovedComponents<RapierColliderHandle>,
     mut removed_impulse_joints: RemovedComponents<RapierImpulseJointHandle>,
@@ -1376,7 +1400,7 @@ pub fn sync_removals(
         (
             With<RapierMultibodyJointHandle>,
             Without<MultibodyJoint>,
-            Option<&BodyWorld>,
+            Option<&PhysicsWorld>,
         ),
     >,
 
@@ -1566,7 +1590,7 @@ pub fn update_character_controls(
         Option<&RapierColliderHandle>,
         Option<&RapierRigidBodyHandle>,
         Option<&GlobalTransform>,
-        Option<&BodyWorld>,
+        Option<&PhysicsWorld>,
     )>,
     mut transforms: Query<&mut Transform>,
 ) {

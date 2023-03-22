@@ -26,7 +26,7 @@ fn main() {
         .run();
 }
 
-fn change_world(mut query: Query<&mut BodyWorld, With<ChangeWorld>>, time: Res<Time>) {
+fn change_world(mut query: Query<&mut PhysicsWorld, With<ChangeWorld>>, time: Res<Time>) {
     for mut bw in query.iter_mut() {
         if time.elapsed_seconds() > (bw.world_id as f32 + 1.0) * WORLD_CHANGE_DELAY_SEC {
             let new_world_id = bw.world_id + 1;
@@ -74,7 +74,7 @@ pub fn setup_physics(mut context: ResMut<RapierContext>, mut commands: Commands)
             Collider::cuboid(ground_size, ground_height, ground_size),
             ColliderDebugColor(color),
             RigidBody::Fixed,
-            BodyWorld { world_id },
+            PhysicsWorld { world_id },
         ));
     }
 
@@ -86,7 +86,7 @@ pub fn setup_physics(mut context: ResMut<RapierContext>, mut commands: Commands)
         RigidBody::Dynamic,
         Collider::cuboid(0.5, 0.5, 0.5),
         ColliderDebugColor(Color::hsl(260.0, 1.0, 0.7)),
-        BodyWorld {
+        PhysicsWorld {
             world_id: DEFAULT_WORLD_ID,
         },
         ChangeWorld,

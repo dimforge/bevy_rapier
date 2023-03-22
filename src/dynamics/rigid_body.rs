@@ -398,7 +398,7 @@ impl Default for GravityScale {
 /// Denotes which world this body is a part of. If omitted, the default world is assumed.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Component, Reflect, FromReflect)]
 #[reflect(Component, PartialEq)]
-pub struct BodyWorld {
+pub struct PhysicsWorld {
     /// The world which this body is in. Use DEFAULT_WORLD_ID for the default world.
     pub world_id: WorldId,
 }
