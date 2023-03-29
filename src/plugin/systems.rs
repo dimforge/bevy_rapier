@@ -905,6 +905,8 @@ pub fn step_simulation<Hooks>(
 
     for (_, world) in context.worlds.iter_mut() {
         if config.physics_pipeline_active {
+            println!("{:?}", world.deleted_colliders);
+
             world.step_simulation(
                 config.gravity,
                 config.timestep_mode,
