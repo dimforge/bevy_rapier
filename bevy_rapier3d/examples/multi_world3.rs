@@ -29,7 +29,7 @@ fn setup_graphics(mut commands: Commands) {
     });
 }
 
-fn move_middle_world(time: Res<Time>, mut query: Query<(&mut Transform, &BodyWorld)>) {
+fn move_middle_world(time: Res<Time>, mut query: Query<(&mut Transform, &PhysicsWorld)>) {
     for (mut transform, world) in query.iter_mut() {
         if world.world_id == N_WORLDS / 2 {
             transform.translation.y = -time.elapsed_seconds().sin();
@@ -38,7 +38,7 @@ fn move_middle_world(time: Res<Time>, mut query: Query<(&mut Transform, &BodyWor
 }
 
 // Demonstrates despawning an entity removing it from its world
-// fn despawn_last(query: Query<(&BodyWorld, Entity)>, mut commands: Commands) {
+// fn despawn_last(query: Query<(&PhysicsWorld, Entity)>, mut commands: Commands) {
 //     for (bw, entity) in query.iter() {
 //         if bw.world_id == N_WORLDS - 1 {
 //             commands.entity(entity).despawn_recursive();
@@ -47,7 +47,7 @@ fn move_middle_world(time: Res<Time>, mut query: Query<(&mut Transform, &BodyWor
 // }
 
 // Demonstrates how easy it is to move one entity to another world.
-// fn change_world(mut query: Query<&mut BodyWorld>) {
+// fn change_world(mut query: Query<&mut PhysicsWorld>) {
 //     for mut bw in query.iter_mut() {
 //         if bw.world_id == 1 {
 //             bw.world_id = 0;
@@ -81,7 +81,7 @@ pub fn setup_physics(mut context: ResMut<RapierContext>, mut commands: Commands)
             )),
             Collider::cuboid(ground_size, ground_height, ground_size),
             ColliderDebugColor(color),
-            BodyWorld { world_id },
+            PhysicsWorld { world_id },
         ));
 
         /*
@@ -93,7 +93,7 @@ pub fn setup_physics(mut context: ResMut<RapierContext>, mut commands: Commands)
             RigidBody::Dynamic,
             Collider::cuboid(0.5, 0.5, 0.5),
             ColliderDebugColor(color),
-            BodyWorld { world_id },
+            PhysicsWorld { world_id },
         ));
     }
 }

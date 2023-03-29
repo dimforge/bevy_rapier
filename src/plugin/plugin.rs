@@ -186,7 +186,7 @@ where
             .register_type::<SolverGroups>()
             .register_type::<ContactForceEventThreshold>()
             .register_type::<Group>()
-            .register_type::<BodyWorld>();
+            .register_type::<PhysicsWorld>();
 
         // Insert all of our required resources. Don’t overwrite
         // the `RapierConfiguration` if it already exists.
