@@ -116,6 +116,19 @@ impl Velocity {
             angvel,
         }
     }
+
+    /// Get linear velocity of specific world-space point of a rigid-body.
+    ///
+    /// # Parameters
+    /// - `point`: the point (world-space) to compute the velocity for.
+    /// - `center_of_mass`: the center-of-mass (world-space) of the rigid-body the velocity belongs to.
+    pub fn linear_velocity_at_point(&self, point: Vect, center_of_mass: Vect) -> Vect {
+        #[cfg(feature = "dim2")]
+        return self.linvel + Vect::from_angle(self.angvel).perp_dot(point - center_of_mass);
+
+        #[cfg(feature = "dim3")]
+        return self.linvel + self.angvel.cross(point - center_of_mass);
+    }
 }
 
 /// Mass-properties of a rigid-body, added to the contributions of its attached colliders.
