@@ -124,7 +124,7 @@ impl Velocity {
     /// - `center_of_mass`: the center-of-mass (world-space) of the rigid-body the velocity belongs to.
     pub fn linear_velocity_at_point(&self, point: Vect, center_of_mass: Vect) -> Vect {
         #[cfg(feature = "dim2")]
-        return self.linvel + Vect::from_angle(self.angvel).perp_dot(point - center_of_mass);
+        return self.linvel + self.angvel * (point - center_of_mass).perp();
 
         #[cfg(feature = "dim3")]
         return self.linvel + self.angvel.cross(point - center_of_mass);
