@@ -161,37 +161,45 @@ pub const MAX_POINTS: usize = MAX_POINTS_PER_MESH * MESH_COUNT;
 pub const MAX_LINES: usize = MAX_POINTS / 2;
 
 fn setup(mut cmds: Commands, mut meshes: ResMut<Assets<Mesh>>) {
-    // Spawn a bunch of meshes to use for lines.
-    for i in 0..MESH_COUNT {
-        // Create a new mesh with the number of vertices we need.
-        let mut mesh = Mesh::new(PrimitiveTopology::LineList);
-        mesh.insert_attribute(
-            Mesh::ATTRIBUTE_POSITION,
-            VertexAttributeValues::Float32x3(Vec::with_capacity(MAX_POINTS_PER_MESH)),
-        );
-        mesh.insert_attribute(
-            Mesh::ATTRIBUTE_COLOR,
-            VertexAttributeValues::Float32x4(Vec::with_capacity(MAX_POINTS_PER_MESH)),
-        );
-        // https://github.com/Toqozz/bevy_debug_lines/issues/16
-        //mesh.set_indices(Some(Indices::U16(Vec::with_capacity(MAX_POINTS_PER_MESH))));
+    cmds.spawn((
+        Name::new("Rapier Debug"),
+        TransformBundle::default(),
+        VisibilityBundle::default(),
+    ))
+    .with_children(|parent| {
+        // Spawn a bunch of meshes to use for lines.
+        for i in 0..MESH_COUNT {
+            // Create a new mesh with the number of vertices we need.
+            let mut mesh = Mesh::new(PrimitiveTopology::LineList);
+            mesh.insert_attribute(
+                Mesh::ATTRIBUTE_POSITION,
+                VertexAttributeValues::Float32x3(Vec::with_capacity(MAX_POINTS_PER_MESH)),
+            );
+            mesh.insert_attribute(
+                Mesh::ATTRIBUTE_COLOR,
+                VertexAttributeValues::Float32x4(Vec::with_capacity(MAX_POINTS_PER_MESH)),
+            );
+            // https://github.com/Toqozz/bevy_debug_lines/issues/16
+            //mesh.set_indices(Some(Indices::U16(Vec::with_capacity(MAX_POINTS_PER_MESH))));
 
-        let mesh_handle = meshes.add(mesh);
+            let mesh_handle = meshes.add(mesh);
 
-        cmds.spawn((
-            SpatialBundle::INHERITED_IDENTITY,
-            NoFrustumCulling,
-            DebugLinesMesh(i),
-            #[cfg(feature = "debug-render-3d")]
-            (
-                mesh_handle.clone(),
-                bevy::pbr::NotShadowCaster,
-                bevy::pbr::NotShadowReceiver,
-            ),
-            #[cfg(feature = "debug-render-2d")]
-            bevy::sprite::Mesh2dHandle(mesh_handle),
-        ));
-    }
+            parent.spawn((
+                Name::new(format!("Debug Mesh {i}")),
+                SpatialBundle::INHERITED_IDENTITY,
+                NoFrustumCulling,
+                DebugLinesMesh(i),
+                #[cfg(feature = "debug-render-3d")]
+                (
+                    mesh_handle.clone(),
+                    bevy::pbr::NotShadowCaster,
+                    bevy::pbr::NotShadowReceiver,
+                ),
+                #[cfg(feature = "debug-render-2d")]
+                bevy::sprite::Mesh2dHandle(mesh_handle),
+            ));
+        }
+    });
 }
 
 fn update(
