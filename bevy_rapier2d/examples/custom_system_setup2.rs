@@ -1,4 +1,8 @@
-use bevy::{core::FrameCount, ecs::schedule::ScheduleLabel, prelude::*};
+use bevy::{
+    core::FrameCount,
+    ecs::schedule::{LogLevel, ScheduleBuildSettings, ScheduleLabel},
+    prelude::*,
+};
 use bevy_rapier2d::prelude::*;
 
 #[derive(ScheduleLabel, Hash, Debug, PartialEq, Eq, Clone)]
@@ -25,6 +29,12 @@ fn main() {
 
     // Do the setup however we want, maybe in its very own schedule
     let mut schedule = Schedule::new();
+
+    // Show errors in ambiguous systems
+    schedule.set_build_settings(ScheduleBuildSettings {
+        ambiguity_detection: LogLevel::Error,
+        ..default()
+    });
 
     schedule.configure_sets(
         (
