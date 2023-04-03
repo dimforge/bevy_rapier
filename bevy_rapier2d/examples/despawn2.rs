@@ -63,7 +63,7 @@ pub fn setup_physics(
     /*
      * Create the cubes
      */
-    let num = 20;
+    let num = 10;
     let rad = 5.0;
 
     let shift = rad * 2.0;
