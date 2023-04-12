@@ -54,100 +54,59 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<P
 
     /// Provided for use when staging systems outside of this plugin using
     /// [`with_system_setup(false)`](Self::with_system_setup).
-    /// See [`PhysicsStages`] for a description of these systems.
-    pub fn get_systems(stage: PhysicsStages) -> SystemSet {
-        match stage {
-            PhysicsStages::SyncBackend => {
-                let mut systems = SystemSet::new()
-                    .with_system(systems::update_character_controls) // Run the character controller befor ethe manual transform propagation.
-                    .with_system(
-                        bevy::transform::transform_propagate_system
-                            .after(systems::update_character_controls),
-                    ); // Run Bevy transform propagation additionally to sync [`GlobalTransform`]
+    /// See [`PhysicsSet`] for a description of these systems.
+    pub fn get_systems(set: PhysicsSet) -> SystemConfigs {
+        // A set for `propagate_transforms` to mark it as ambiguous with `sync_simple_transforms`.
+        // Used instead of the `SystemTypeSet` as that would not allow multiple instances of the system.
+        #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+        struct PropagateTransformsSet;
 
-                #[cfg(feature = "async-collider")]
-                {
-                    systems = systems
-                        .with_system(
-                            systems::init_async_colliders
-                                .after(bevy::transform::transform_propagate_system),
-                        )
-                        .with_system(systems::apply_scale.after(systems::init_async_colliders))
-                }
-
-                #[cfg(not(feature = "async-collider"))]
-                {
-                    systems = systems.with_system(
-                        systems::apply_scale.after(bevy::transform::transform_propagate_system),
-                    )
-                }
-
-                systems = systems
-                    .with_system(systems::apply_collider_user_changes.after(systems::apply_scale))
-                    .with_system(
-                        systems::apply_rigid_body_user_changes
-                            .after(systems::apply_collider_user_changes),
-                    )
-                    .with_system(
-                        systems::apply_joint_user_changes
-                            .after(systems::apply_rigid_body_user_changes),
-                    )
-                    .with_system(
-                        systems::init_rigid_bodies.after(systems::apply_joint_user_changes),
-                    );
-
-                #[cfg(feature = "async-collider")]
-                {
-                    systems = systems.with_system(
-                        systems::init_colliders
-                            .after(systems::init_rigid_bodies)
-                            .after(systems::init_async_colliders),
-                    );
-                }
-
-                #[cfg(not(feature = "async-collider"))]
-                {
-                    systems = systems.with_system(
-                        systems::init_colliders
-                            .after(systems::init_rigid_bodies)
-                            .after(bevy::transform::transform_propagate_system),
-                    );
-                }
-
-                systems = systems
-                    .with_system(systems::init_joints.after(systems::init_colliders))
-                    .with_system(
-                        systems::apply_initial_rigid_body_impulses.after(systems::init_colliders),
-                    )
-                    .with_system(
-                        systems::sync_removals
-                            .after(systems::init_joints)
-                            .after(systems::apply_initial_rigid_body_impulses),
-                    );
-
+        match set {
+            PhysicsSet::SyncBackend => (
+                // Run the character controller before the manual transform propagation.
+                systems::update_character_controls,
+                // Run Bevy transform propagation additionally to sync [`GlobalTransform`]
+                bevy::transform::systems::sync_simple_transforms
+                    .in_set(RapierTransformPropagateSet)
+                    .after(systems::update_character_controls),
+                bevy::transform::systems::propagate_transforms
+                    .after(systems::update_character_controls)
+                    .in_set(PropagateTransformsSet)
+                    .in_set(RapierTransformPropagateSet),
+                systems::init_async_colliders.after(RapierTransformPropagateSet),
+                systems::apply_scale.after(systems::init_async_colliders),
+                systems::apply_collider_user_changes.after(systems::apply_scale),
+                systems::apply_rigid_body_user_changes.after(systems::apply_collider_user_changes),
+                systems::apply_joint_user_changes.after(systems::apply_rigid_body_user_changes),
+                systems::init_rigid_bodies.after(systems::apply_joint_user_changes),
+                systems::init_colliders
+                    .after(systems::init_rigid_bodies)
+                    .after(systems::init_async_colliders),
+                systems::init_joints.after(systems::init_colliders),
+                systems::apply_initial_rigid_body_impulses.after(systems::init_colliders),
+                systems::sync_removals
+                    .after(systems::init_joints)
+                    .after(systems::apply_initial_rigid_body_impulses),
                 #[cfg(all(feature = "dim3", feature = "async-collider"))]
-                {
-                    systems = systems.with_system(
-                        systems::init_async_scene_colliders.before(systems::init_async_colliders),
-                    );
-                }
-
-                systems
-            }
-            PhysicsStages::StepSimulation => SystemSet::new()
-                .with_system(systems::step_simulation::<PhysicsHooksData>)
-                .with_system(
-                    Events::<CollisionEvent>::update_system
-                        .before(systems::step_simulation::<PhysicsHooksData>),
-                )
-                .with_system(
-                    Events::<ContactForceEvent>::update_system
-                        .before(systems::step_simulation::<PhysicsHooksData>),
-                ),
-            PhysicsStages::Writeback => SystemSet::new()
-                .with_system(systems::update_colliding_entities)
-                .with_system(systems::writeback_rigid_bodies),
-            PhysicsStages::DetectDespawn => SystemSet::new().with_system(systems::sync_removals),
+                systems::init_async_scene_colliders
+                    .after(bevy::scene::scene_spawner_system)
+                    .before(systems::init_async_colliders),
+            )
+                .into_configs(),
+            PhysicsSet::SyncBackendFlush => (apply_system_buffers,).into_configs(),
+            PhysicsSet::StepSimulation => (
+                systems::step_simulation::<PhysicsHooks>,
+                Events::<CollisionEvent>::update_system
+                    .before(systems::step_simulation::<PhysicsHooks>),
+                Events::<ContactForceEvent>::update_system
+                    .before(systems::step_simulation::<PhysicsHooks>),
+            )
+                .into_configs(),
+            PhysicsSet::Writeback => (
+                systems::update_colliding_entities,
+                systems::writeback_rigid_bodies,
+            )
+                .into_configs(),
         }
     }
 }
