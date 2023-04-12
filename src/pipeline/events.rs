@@ -49,8 +49,8 @@ pub(crate) struct EventQueue<'a> {
     // Used ot retrieve the entity of colliders that have been removed from the simulation
     // since the last physics step.
     pub deleted_colliders: &'a HashMap<ColliderHandle, Entity>,
-    pub collision_events: RwLock<EventWriter<'a, 'a, CollisionEvent>>,
-    pub contact_force_events: RwLock<EventWriter<'a, 'a, ContactForceEvent>>,
+    pub collision_events: RwLock<EventWriter<'a, CollisionEvent>>,
+    pub contact_force_events: RwLock<EventWriter<'a, ContactForceEvent>>,
 }
 
 impl<'a> EventQueue<'a> {

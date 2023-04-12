@@ -1,5 +1,5 @@
-use crate::plugin::RapierContext;
 use crate::render::lines::DebugLinesConfig;
+use crate::{plugin::RapierContext, render::lines::DrawLinesLabel};
 use bevy::prelude::*;
 use lines::DebugLines;
 use rapier::math::{Point, Real};
@@ -103,9 +103,10 @@ impl Plugin for RapierDebugRenderPlugin {
                 pipeline: DebugRenderPipeline::new(self.style, self.mode),
                 always_on_top: self.always_on_top,
             })
-            .add_system_to_stage(
-                CoreStage::PostUpdate,
-                debug_render_scene.before("draw_lines"),
+            .add_system(
+                debug_render_scene
+                    .in_base_set(CoreSet::PostUpdate)
+                    .before(DrawLinesLabel),
             );
     }
 }

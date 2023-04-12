@@ -1,9 +1,8 @@
 pub(crate) use self::events::EventQueue;
 pub use self::events::{CollisionEvent, ContactForceEvent};
-pub(crate) use self::physics_hooks::PhysicsHooksWithQueryInstance;
+pub(crate) use self::physics_hooks::BevyPhysicsHooksAdapter;
 pub use self::physics_hooks::{
-    ContactModificationContextView, PairFilterContextView, PhysicsHooksWithQuery,
-    PhysicsHooksWithQueryResource,
+    BevyPhysicsHooks, ContactModificationContextView, PairFilterContextView,
 };
 pub use query_filter::{QueryFilter, QueryFilterFlags};
 

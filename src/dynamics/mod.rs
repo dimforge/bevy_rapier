@@ -30,9 +30,10 @@ mod spherical_joint;
 /// Each collider has its combination rule of type
 /// `CoefficientCombineRule`. And the rule
 /// actually used is given by `max(first_combine_rule as usize, second_combine_rule as usize)`.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Reflect, FromReflect)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Reflect, FromReflect, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub enum CoefficientCombineRule {
+    #[default]
     /// The two coefficients are averaged.
     Average = 0,
     /// The smallest coefficient is chosen.
@@ -41,12 +42,6 @@ pub enum CoefficientCombineRule {
     Multiply,
     /// The greatest coefficient is chosen.
     Max,
-}
-
-impl Default for CoefficientCombineRule {
-    fn default() -> Self {
-        CoefficientCombineRule::Average
-    }
 }
 
 impl From<CoefficientCombineRule> for RapierCoefficientCombineRule {

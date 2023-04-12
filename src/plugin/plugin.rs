@@ -1,8 +1,8 @@
-use crate::pipeline::{CollisionEvent, ContactForceEvent, PhysicsHooksWithQueryResource};
+use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::configuration::SimulationToRenderTime;
 use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
-use bevy::ecs::{event::Events, query::WorldQuery};
+use bevy::ecs::{event::Events, schedule::SystemConfigs, system::SystemParamItem};
 use bevy::prelude::*;
 use std::marker::PhantomData;
 
@@ -10,16 +10,20 @@ use std::marker::PhantomData;
 pub type NoUserData = ();
 
 /// A plugin responsible for setting up a full Rapier physics simulation pipeline and resources.
-//
-// This will automatically setup all the resources needed to run a physics simulation with the
-// Rapier physics engine.
-pub struct RapierPhysicsPlugin<PhysicsHooksData = ()> {
+///
+/// This will automatically setup all the resources needed to run a physics simulation with the
+/// Rapier physics engine.
+pub struct RapierPhysicsPlugin<PhysicsHooks = ()> {
     physics_scale: f32,
     default_system_setup: bool,
-    _phantom: PhantomData<PhysicsHooksData>,
+    _phantom: PhantomData<PhysicsHooks>,
 }
 
-impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<PhysicsHooksData> {
+impl<PhysicsHooks> RapierPhysicsPlugin<PhysicsHooks>
+where
+    PhysicsHooks: 'static + BevyPhysicsHooks,
+    for<'w, 's> SystemParamItem<'w, 's, PhysicsHooks>: BevyPhysicsHooks,
+{
     /// Specifies a scale ratio between the physics world and the bevy transforms.
     ///
     /// This affects the size of every elements in the physics engine, by multiplying
@@ -111,7 +115,13 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> RapierPhysicsPlugin<P
     }
 }
 
-impl<PhysicsHooksData> Default for RapierPhysicsPlugin<PhysicsHooksData> {
+/// A set for rapier's copy of Bevy's transform propagation systems.
+///
+/// See [`TransformSystem`](bevy::transform::TransformSystem::TransformPropagate).
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+pub struct RapierTransformPropagateSet;
+
+impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystemParam> {
     fn default() -> Self {
         Self {
             physics_scale: 1.0,
@@ -121,32 +131,32 @@ impl<PhysicsHooksData> Default for RapierPhysicsPlugin<PhysicsHooksData> {
     }
 }
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
 /// [`StageLabel`] for each phase of the plugin.
-pub enum PhysicsStages {
-    /// This stage runs the systems responsible for synchronizing (and
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+#[system_set(base)]
+pub enum PhysicsSet {
+    /// This set runs the systems responsible for synchronizing (and
     /// initializing) backend data structures with current component state.
-    /// These systems typically run at the after [`CoreStage::Update`].
+    /// These systems typically run at the after [`CoreSet::Update`].
     SyncBackend,
+    /// The copy of [`apply_system_buffers`] that runs immediately after [`PhysicsSet::SyncBackend`].
+    SyncBackendFlush,
     /// The systems responsible for advancing the physics simulation, and
     /// updating the internal state for scene queries.
-    /// These systems typically run immediately after [`PhysicsStages::SyncBackend`].
+    /// These systems typically run immediately after [`PhysicsSet::SyncBackend`].
     StepSimulation,
     /// The systems responsible for updating
     /// [`crate::geometry::collider::CollidingEntities`] and writing
     /// the result of the last simulation step into our `bevy_rapier`
     /// components and the [`GlobalTransform`] component.
-    /// These systems typically run immediately after [`PhysicsStages::StepSimulation`].
+    /// These systems typically run immediately after [`PhysicsSet::StepSimulation`].
     Writeback,
-    /// The systems responsible for removing from Rapier the
-    /// rigid-bodies/colliders/joints which had their related `bevy_rapier`
-    /// components removed by the user (through component removal or despawn).
-    /// These systems typically run at the start of [`CoreStage::Last`].
-    DetectDespawn,
 }
 
-impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
-    for RapierPhysicsPlugin<PhysicsHooksData>
+impl<PhysicsHooks> Plugin for RapierPhysicsPlugin<PhysicsHooks>
+where
+    PhysicsHooks: 'static + BevyPhysicsHooks,
+    for<'w, 's> SystemParamItem<'w, 's, PhysicsHooks>: BevyPhysicsHooks,
 {
     fn build(&self, app: &mut App) {
         // Register components as reflectable.
@@ -173,9 +183,7 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
 
         // Insert all of our required resources. Don’t overwrite
         // the `RapierConfiguration` if it already exists.
-        if app.world.get_resource::<RapierConfiguration>().is_none() {
-            app.insert_resource(RapierConfiguration::default());
-        }
+        app.init_resource::<RapierConfiguration>();
 
         app.insert_resource(SimulationToRenderTime::default())
             .insert_resource(RapierContext {
@@ -185,44 +193,34 @@ impl<PhysicsHooksData: 'static + WorldQuery + Send + Sync> Plugin
             .insert_resource(Events::<CollisionEvent>::default())
             .insert_resource(Events::<ContactForceEvent>::default());
 
-        // Add each stage as necessary
+        // Add each set as necessary
         if self.default_system_setup {
-            app.add_stage_after(
-                CoreStage::Update,
-                PhysicsStages::SyncBackend,
-                SystemStage::parallel()
-                    .with_system_set(Self::get_systems(PhysicsStages::SyncBackend)),
-            );
-            app.add_stage_after(
-                PhysicsStages::SyncBackend,
-                PhysicsStages::StepSimulation,
-                SystemStage::parallel()
-                    .with_system_set(Self::get_systems(PhysicsStages::StepSimulation)),
-            );
-            app.add_stage_after(
-                PhysicsStages::StepSimulation,
-                PhysicsStages::Writeback,
-                SystemStage::parallel()
-                    .with_system_set(Self::get_systems(PhysicsStages::Writeback)),
+            app.configure_sets(
+                (
+                    PhysicsSet::SyncBackend,
+                    PhysicsSet::SyncBackendFlush,
+                    PhysicsSet::StepSimulation,
+                    PhysicsSet::Writeback,
+                )
+                    .chain()
+                    .after(CoreSet::UpdateFlush)
+                    .before(CoreSet::PostUpdate),
             );
 
-            // NOTE: we run sync_removals at the end of the frame, too, in order to make sure we don’t miss any `RemovedComponents`.
-            app.add_stage_before(
-                CoreStage::Last,
-                PhysicsStages::DetectDespawn,
-                SystemStage::parallel()
-                    .with_system_set(Self::get_systems(PhysicsStages::DetectDespawn)),
+            app.add_systems(
+                Self::get_systems(PhysicsSet::SyncBackend).in_base_set(PhysicsSet::SyncBackend),
             );
-        }
-
-        if app
-            .world
-            .get_resource::<PhysicsHooksWithQueryResource<PhysicsHooksData>>()
-            .is_none()
-        {
-            app.insert_resource(PhysicsHooksWithQueryResource::<PhysicsHooksData>(Box::new(
-                (),
-            )));
+            app.add_systems(
+                Self::get_systems(PhysicsSet::SyncBackendFlush)
+                    .in_base_set(PhysicsSet::SyncBackendFlush),
+            );
+            app.add_systems(
+                Self::get_systems(PhysicsSet::StepSimulation)
+                    .in_base_set(PhysicsSet::StepSimulation),
+            );
+            app.add_systems(
+                Self::get_systems(PhysicsSet::Writeback).in_base_set(PhysicsSet::Writeback),
+            );
         }
     }
 }

@@ -19,30 +19,13 @@ pub struct RapierColliderHandle(pub ColliderHandle);
 
 /// A component which will be replaced by the specified collider type after the referenced mesh become available.
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
-#[derive(Component, Debug, Clone)]
-pub struct AsyncCollider {
-    /// Mesh handle to use for collider generation.
-    pub handle: Handle<Mesh>,
-    /// Collider type that will be generated.
-    pub shape: ComputedColliderShape,
-}
-
-#[cfg(all(feature = "dim3", feature = "async-collider"))]
-impl Default for AsyncCollider {
-    fn default() -> Self {
-        Self {
-            handle: Default::default(),
-            shape: ComputedColliderShape::TriMesh,
-        }
-    }
-}
+#[derive(Component, Debug, Clone, Default)]
+pub struct AsyncCollider(pub ComputedColliderShape);
 
 /// A component which will be replaced the specified collider types on children with meshes after the referenced scene become available.
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 #[derive(Component, Debug, Clone)]
 pub struct AsyncSceneCollider {
-    /// Scene handle to use for colliders generation.
-    pub handle: Handle<Scene>,
     /// Collider type for each scene mesh not included in [`named_shapes`]. If [`None`], then all
     /// shapes will be skipped for processing except [`named_shapes`].
     pub shape: Option<ComputedColliderShape>,
@@ -51,11 +34,22 @@ pub struct AsyncSceneCollider {
     pub named_shapes: HashMap<String, Option<ComputedColliderShape>>,
 }
 
+#[cfg(all(feature = "dim3", feature = "async-collider"))]
+impl Default for AsyncSceneCollider {
+    fn default() -> Self {
+        Self {
+            shape: Some(ComputedColliderShape::TriMesh),
+            named_shapes: Default::default(),
+        }
+    }
+}
+
 /// Shape type based on a Bevy mesh asset.
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum ComputedColliderShape {
     /// Triangle-mesh.
+    #[default]
     TriMesh,
     /// Convex decomposition.
     ConvexDecomposition(VHACDParameters),
