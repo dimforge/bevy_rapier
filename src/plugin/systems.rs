@@ -764,7 +764,7 @@ pub fn writeback_rigid_bodies(
     config: Res<RapierConfiguration>,
     sim_to_render_time: Res<SimulationToRenderTime>,
     global_transforms: Query<&GlobalTransform>,
-    mut writeback: Query<RigidBodyWritebackComponents>,
+    mut writeback: Query<RigidBodyWritebackComponents, Without<RigidBodyDisabled>>,
 ) {
     if config.physics_pipeline_active {
         for (
