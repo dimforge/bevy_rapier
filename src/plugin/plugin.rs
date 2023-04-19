@@ -112,6 +112,7 @@ where
             )
                 .into_configs(),
         }
+        .in_set(set)
     }
 }
 
@@ -133,7 +134,6 @@ impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystem
 
 /// [`StageLabel`] for each phase of the plugin.
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
-#[system_set(base)]
 pub enum PhysicsSet {
     /// This set runs the systems responsible for synchronizing (and
     /// initializing) backend data structures with current component state.
@@ -196,31 +196,21 @@ where
         // Add each set as necessary
         if self.default_system_setup {
             app.configure_sets(
+                Update,
                 (
                     PhysicsSet::SyncBackend,
                     PhysicsSet::SyncBackendFlush,
                     PhysicsSet::StepSimulation,
                     PhysicsSet::Writeback,
                 )
-                    .chain()
-                    .after(CoreSet::UpdateFlush)
-                    .before(CoreSet::PostUpdate),
+                    .chain(), // .after(Update)
+                              // .before(CoreSet::PostUpdate),
             );
 
-            app.add_systems(
-                Self::get_systems(PhysicsSet::SyncBackend).in_base_set(PhysicsSet::SyncBackend),
-            );
-            app.add_systems(
-                Self::get_systems(PhysicsSet::SyncBackendFlush)
-                    .in_base_set(PhysicsSet::SyncBackendFlush),
-            );
-            app.add_systems(
-                Self::get_systems(PhysicsSet::StepSimulation)
-                    .in_base_set(PhysicsSet::StepSimulation),
-            );
-            app.add_systems(
-                Self::get_systems(PhysicsSet::Writeback).in_base_set(PhysicsSet::Writeback),
-            );
+            app.add_systems(Update, Self::get_systems(PhysicsSet::SyncBackend));
+            app.add_systems(Update, Self::get_systems(PhysicsSet::SyncBackendFlush));
+            app.add_systems(Update, Self::get_systems(PhysicsSet::StepSimulation));
+            app.add_systems(Update, Self::get_systems(PhysicsSet::Writeback));
         }
     }
 }

@@ -117,11 +117,7 @@ impl Plugin for DebugLinesPlugin {
         let lines_config = DebugLinesConfig::always_on_top(self.always_on_top);
         app.init_resource::<DebugLines>()
             .add_startup_system(setup)
-            .add_system(
-                update
-                    .in_base_set(CoreSet::PostUpdate)
-                    .in_set(DrawLinesLabel),
-            )
+            .add_systems(PostUpdate, update.in_set(DrawLinesLabel))
             .insert_resource(lines_config.clone());
 
         #[cfg(feature = "debug-render-3d")]
@@ -129,18 +125,18 @@ impl Plugin for DebugLinesPlugin {
             .add_render_command::<dim3::Phase, dim3::DrawDebugLines>()
             .init_resource::<dim3::DebugLinePipeline>()
             .init_resource::<SpecializedMeshPipelines<dim3::DebugLinePipeline>>()
-            .add_system(dim3::queue.in_set(RenderSet::Queue));
+            .add_systems(Update, dim3::queue.in_set(RenderSet::Queue));
 
         #[cfg(feature = "debug-render-2d")]
         app.sub_app_mut(RenderApp)
             .add_render_command::<dim2::Phase, dim2::DrawDebugLines>()
             .init_resource::<dim2::DebugLinePipeline>()
             .init_resource::<SpecializedMeshPipelines<dim2::DebugLinePipeline>>()
-            .add_system(dim2::queue.in_set(RenderSet::Queue));
+            .add_systems(Update, dim2::queue.in_set(RenderSet::Queue));
 
         app.sub_app_mut(RenderApp)
             .insert_resource(lines_config)
-            .add_system(extract.in_schedule(ExtractSchedule));
+            .add_systems(ExtractSchedule, extract);
 
         #[cfg(feature = "debug-render-3d")]
         info!("Loaded 3d debug lines plugin.");

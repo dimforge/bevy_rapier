@@ -13,10 +13,9 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierDebugRenderPlugin::default())
-        .add_startup_system(setup_graphics)
-        .add_startup_system(setup_physics)
+        .add_systems(Startup, (setup_graphics, setup_physics))
         .insert_resource(BallState::default())
-        .add_system(ball_spawner)
+        .add_systems(Update, ball_spawner)
         .run();
 }
 
