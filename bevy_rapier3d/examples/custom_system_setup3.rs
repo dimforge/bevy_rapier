@@ -14,14 +14,10 @@ fn main() {
     )))
     .add_plugins(DefaultPlugins)
     .add_plugin(RapierDebugRenderPlugin::default())
-    .add_startup_system(setup_graphics)
-    .add_startup_system(setup_physics)
-    .add_system(
-        (|world: &mut World| {
-            world.run_schedule(SpecialSchedule);
-        })
-        .in_base_set(CoreSet::PostUpdate),
-    );
+    .add_systems(Startup, (setup_graphics, setup_physics))
+    .add_systems(PostUpdate, |world: &mut World| {
+        world.run_schedule(SpecialSchedule);
+    });
 
     // Do the setup however we want, maybe in its very own schedule
     let mut schedule = Schedule::new();
@@ -38,23 +34,23 @@ fn main() {
 
     schedule.add_systems(
         RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsSet::SyncBackend)
-            .in_base_set(PhysicsSet::SyncBackend),
+            .in_set(PhysicsSet::SyncBackend),
     );
 
     schedule.add_systems(
         RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsSet::SyncBackendFlush)
-            .in_base_set(PhysicsSet::SyncBackendFlush),
+            .in_set(PhysicsSet::SyncBackendFlush),
     );
 
     schedule.add_systems(
         RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsSet::StepSimulation)
-            .in_base_set(PhysicsSet::StepSimulation),
+            .in_set(PhysicsSet::StepSimulation),
     );
-    schedule.add_system(despawn_one_box.in_base_set(PhysicsSet::StepSimulation));
+    schedule.add_systems(despawn_one_box.in_set(PhysicsSet::StepSimulation));
 
     schedule.add_systems(
         RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsSet::Writeback)
-            .in_base_set(PhysicsSet::Writeback),
+            .in_set(PhysicsSet::Writeback),
     );
 
     app.add_schedule(SpecialSchedule, schedule)

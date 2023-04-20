@@ -10,8 +10,8 @@ fn main() {
         .init_resource::<Game>()
         .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
         .add_plugins(DefaultPlugins)
-        .add_startup_system(setup_game)
-        .add_system(cube_sleep_detection)
+        .add_systems(Startup, setup_game)
+        .add_systems(Update, cube_sleep_detection)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_plugin(RapierDebugRenderPlugin::default())
         .run();
