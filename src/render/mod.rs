@@ -1,7 +1,7 @@
+use crate::plugin::PhysicsSet;
 use crate::render::lines::DebugLinesConfig;
 use crate::{plugin::RapierContext, render::lines::DrawLinesLabel};
 use bevy::prelude::*;
-use bevy::render::Render;
 use lines::DebugLines;
 use rapier::math::{Point, Real};
 use rapier::pipeline::{DebugRenderBackend, DebugRenderObject, DebugRenderPipeline};
@@ -104,7 +104,12 @@ impl Plugin for RapierDebugRenderPlugin {
                 pipeline: DebugRenderPipeline::new(self.style, self.mode),
                 always_on_top: self.always_on_top,
             })
-            .add_systems(PostUpdate, debug_render_scene.before(DrawLinesLabel));
+            .add_systems(
+                PostUpdate,
+                debug_render_scene
+                    .before(DrawLinesLabel)
+                    .after(PhysicsSet::Writeback),
+            );
     }
 }
 
