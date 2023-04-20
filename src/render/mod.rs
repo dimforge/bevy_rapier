@@ -1,6 +1,7 @@
 use crate::render::lines::DebugLinesConfig;
 use crate::{plugin::RapierContext, render::lines::DrawLinesLabel};
 use bevy::prelude::*;
+use bevy::render::Render;
 use lines::DebugLines;
 use rapier::math::{Point, Real};
 use rapier::pipeline::{DebugRenderBackend, DebugRenderObject, DebugRenderPipeline};

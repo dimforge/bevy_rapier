@@ -24,10 +24,12 @@ use bevy::{
         render_resource::PrimitiveTopology,
         render_resource::Shader,
         view::NoFrustumCulling,
-        Extract,
+        Extract, Render,
     },
 };
 use std::sync::{Arc, RwLock};
+
+use crate::plugin::PhysicsSet;
 
 mod render_dim;
 
@@ -116,7 +118,7 @@ impl Plugin for DebugLinesPlugin {
 
         let lines_config = DebugLinesConfig::always_on_top(self.always_on_top);
         app.init_resource::<DebugLines>()
-            .add_startup_system(setup)
+            .add_systems(Startup, setup)
             .add_systems(PostUpdate, update.in_set(DrawLinesLabel))
             .insert_resource(lines_config.clone());
 
@@ -125,14 +127,14 @@ impl Plugin for DebugLinesPlugin {
             .add_render_command::<dim3::Phase, dim3::DrawDebugLines>()
             .init_resource::<dim3::DebugLinePipeline>()
             .init_resource::<SpecializedMeshPipelines<dim3::DebugLinePipeline>>()
-            .add_systems(Update, dim3::queue.in_set(RenderSet::Queue));
+            .add_systems(Render, dim3::queue.in_set(RenderSet::Queue));
 
         #[cfg(feature = "debug-render-2d")]
         app.sub_app_mut(RenderApp)
             .add_render_command::<dim2::Phase, dim2::DrawDebugLines>()
             .init_resource::<dim2::DebugLinePipeline>()
             .init_resource::<SpecializedMeshPipelines<dim2::DebugLinePipeline>>()
-            .add_systems(Update, dim2::queue.in_set(RenderSet::Queue));
+            .add_systems(Render, dim2::queue.in_set(RenderSet::Queue));
 
         app.sub_app_mut(RenderApp)
             .insert_resource(lines_config)
@@ -157,6 +159,7 @@ pub const MAX_POINTS: usize = MAX_POINTS_PER_MESH * MESH_COUNT;
 pub const MAX_LINES: usize = MAX_POINTS / 2;
 
 fn setup(mut cmds: Commands, mut meshes: ResMut<Assets<Mesh>>) {
+    info!("Spawing Debug Meshes!");
     // Spawn a bunch of meshes to use for lines.
     for i in 0..MESH_COUNT {
         // Create a new mesh with the number of vertices we need.
