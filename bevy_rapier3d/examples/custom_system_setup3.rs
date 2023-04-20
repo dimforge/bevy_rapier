@@ -32,22 +32,26 @@ fn main() {
             .chain(),
     );
 
-    schedule.add_systems(RapierPhysicsPlugin::<NoUserData>::get_systems(
-        PhysicsSet::SyncBackend,
-    ));
+    schedule.add_systems(
+        RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsSet::SyncBackend)
+            .in_set(PhysicsSet::SyncBackend),
+    );
 
-    schedule.add_systems(RapierPhysicsPlugin::<NoUserData>::get_systems(
-        PhysicsSet::SyncBackendFlush,
-    ));
+    schedule.add_systems(
+        RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsSet::SyncBackendFlush)
+            .in_set(PhysicsSet::SyncBackendFlush),
+    );
 
-    schedule.add_systems(RapierPhysicsPlugin::<NoUserData>::get_systems(
-        PhysicsSet::StepSimulation,
-    ));
+    schedule.add_systems(
+        RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsSet::StepSimulation)
+            .in_set(PhysicsSet::StepSimulation),
+    );
     schedule.add_systems(despawn_one_box.in_set(PhysicsSet::StepSimulation));
 
-    schedule.add_systems(RapierPhysicsPlugin::<NoUserData>::get_systems(
-        PhysicsSet::Writeback,
-    ));
+    schedule.add_systems(
+        RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsSet::Writeback)
+            .in_set(PhysicsSet::Writeback),
+    );
 
     app.add_schedule(SpecialSchedule, schedule)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default().with_default_system_setup(false))
