@@ -159,7 +159,6 @@ pub const MAX_POINTS: usize = MAX_POINTS_PER_MESH * MESH_COUNT;
 pub const MAX_LINES: usize = MAX_POINTS / 2;
 
 fn setup(mut cmds: Commands, mut meshes: ResMut<Assets<Mesh>>) {
-    info!("Spawing Debug Meshes!");
     // Spawn a bunch of meshes to use for lines.
     for i in 0..MESH_COUNT {
         // Create a new mesh with the number of vertices we need.
