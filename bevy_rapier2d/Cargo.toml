@@ -50,7 +50,7 @@ serde = { version = "1", features = [ "derive" ], optional = true}
 bevy = { version = "0.10", default-features = false, features = ["x11"]}
 oorandom = "11"
 approx = "0.5.1"
-glam = { version = "0.23", features = [ "approx" ] }
+glam = { version = "0.24", features = [ "approx" ] }
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
