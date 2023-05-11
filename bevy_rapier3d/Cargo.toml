@@ -19,10 +19,10 @@ required-features = [ "dim3" ]
 
 [features]
 default = [ "dim3", "async-collider", "debug-render-3d" ]
-dim3 = ["bevy/bevy_render"]
+dim3 = []
 debug-render = [ "debug-render-3d" ]
-debug-render-2d = [ "bevy/bevy_core_pipeline", "bevy/bevy_sprite", "bevy/bevy_render", "rapier3d/debug-render" ]
-debug-render-3d = [ "bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_render", "rapier3d/debug-render" ]
+debug-render-2d = [ "bevy/bevy_core_pipeline", "bevy/bevy_sprite", "bevy/bevy_render", "rapier3d/debug-render", "bevy/bevy_asset" ]
+debug-render-3d = [ "bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_render", "rapier3d/debug-render", "bevy/bevy_asset" ]
 parallel = [ "rapier3d/parallel" ]
 simd-stable = [ "rapier3d/simd-stable" ]
 simd-nightly = [ "rapier3d/simd-nightly" ]
@@ -35,10 +35,10 @@ headless = [ ]
 # assets to be loaded before creating the actual Collider.
 # See https://github.com/dimforge/bevy_rapier/issues/296 for a workaround on how
 # to use this when using bevy headless.
-async-collider = [ ]
+async-collider = [ "bevy/bevy_asset", "bevy/bevy_scene" ]
 
 [dependencies]
-bevy = { version = "0.10", default-features = false, features = ["bevy_asset", "bevy_scene"] }
+bevy = { version = "0.10", default-features = false }
 nalgebra = { version = "0.32.2", features = [ "convert-glam023" ] }
 # Don't enable the default features because we don't need the ColliderSet/RigidBodySet
 rapier3d = "0.17.0"

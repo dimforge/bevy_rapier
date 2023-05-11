@@ -19,25 +19,25 @@ required-features = [ "dim2" ]
 
 [features]
 default = [ "dim2", "async-collider", "debug-render-2d" ]
-dim2 = ["bevy/bevy_render"]
-debug-render-2d = [ "bevy/bevy_core_pipeline", "bevy/bevy_sprite", "bevy/bevy_render", "rapier2d/debug-render" ]
-debug-render-3d = [ "bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_render", "rapier2d/debug-render" ]
+dim2 = []
+debug-render-2d = [ "bevy/bevy_core_pipeline", "bevy/bevy_sprite", "bevy/bevy_render", "rapier2d/debug-render", "bevy/bevy_asset" ]
+debug-render-3d = [ "bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_render", "rapier2d/debug-render", "bevy/bevy_asset" ]
 parallel = [ "rapier2d/parallel" ]
 simd-stable = [ "rapier2d/simd-stable" ]
 simd-nightly = [ "rapier2d/simd-nightly" ]
 wasm-bindgen = [ "rapier2d/wasm-bindgen" ]
 serde-serialize = [ "rapier2d/serde-serialize", "bevy/serialize", "serde" ]
 enhanced-determinism = [ "rapier2d/enhanced-determinism" ]
+headless = []
 
 # Enables the AsyncCollider and AsyncSceneCollider components that wait for specific
 # assets to be loaded before creating the actual Collider.
 # See https://github.com/dimforge/bevy_rapier/issues/296 for a workaround on how
 # to use this when using bevy headless.
-async-collider = [ ]
-
+async-collider = [ "bevy/bevy_asset", "bevy/bevy_scene" ]
 
 [dependencies]
-bevy = { version = "0.10", default-features = false, features = ["bevy_asset", "bevy_scene"] }
+bevy = { version = "0.10", default-features = false }
 nalgebra = { version = "0.32.2", features = [ "convert-glam023" ] }
 # Don't enable the default features because we don't need the ColliderSet/RigidBodySet
 rapier2d = "0.17.0"
