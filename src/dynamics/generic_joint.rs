@@ -180,7 +180,7 @@ impl GenericJoint {
         self
     }
 
-    /// Sets the joint limits along the specified axis.
+    /// Sets the coupled degrees of freedom for this joint’s limits and motor.
     pub fn set_coupled_axes(&mut self, axes: JointAxesMask) -> &mut Self {
         self.raw.coupled_axes = axes;
         self
