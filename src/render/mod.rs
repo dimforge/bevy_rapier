@@ -17,10 +17,6 @@ pub struct ColliderDebugColor(pub Color);
 /// its physics simulation. This is typically useful to check proper
 /// alignment between colliders and your own visual assets.
 pub struct RapierDebugRenderPlugin {
-    /// If set to `true`, depth-testing will be disabled when rendering,
-    /// meaning that the debug-render lines will always appear on top
-    /// of (won’t be occluded by) your own visual assets.
-    pub always_on_top: bool,
     /// Is the debug-rendering enabled?
     pub enabled: bool,
     /// Control some aspects of the render coloring.
@@ -48,7 +44,6 @@ impl Default for RapierDebugRenderPlugin {
     fn default() -> Self {
         Self {
             enabled: true,
-            always_on_top: false,
             style: DebugRenderStyle::default(),
             mode: DebugRenderMode::default(),
         }
@@ -56,12 +51,6 @@ impl Default for RapierDebugRenderPlugin {
 }
 
 impl RapierDebugRenderPlugin {
-    /// Initialize the render plugin such that its lines are always rendered on top of other objects.
-    pub fn always_on_top(mut self) -> Self {
-        self.always_on_top = true;
-        self
-    }
-
     /// Initialize the render plugin such that it is initially disabled.
     pub fn disabled(mut self) -> Self {
         self.enabled = false;
