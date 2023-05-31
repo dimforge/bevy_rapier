@@ -1381,10 +1381,10 @@ pub fn init_joints(
     }
 }
 
-fn find_item_and_world<'a, T>(
-    context: &'a mut RapierContext,
+fn find_item_and_world<T>(
+    context: &mut RapierContext,
     item_finder: impl Fn(&mut RapierWorld) -> Option<T>,
-) -> Option<(&'a mut RapierWorld, T)> {
+) -> Option<(&mut RapierWorld, T)> {
     for (_, world) in context.worlds.iter_mut() {
         if let Some(handle) = item_finder(world) {
             return Some((world, handle));
@@ -2085,7 +2085,7 @@ mod tests {
         fn build(&self, app: &mut App) {
             app.add_plugin(WindowPlugin::default())
                 .add_plugin(AssetPlugin::default())
-                .add_plugin(ScenePlugin::default())
+                .add_plugin(ScenePlugin)
                 .add_plugin(RenderPlugin {
                     wgpu_settings: WgpuSettings {
                         backends: None,
