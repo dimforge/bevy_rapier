@@ -32,7 +32,6 @@ impl Default for RapierDebugRenderPlugin {
     fn default() -> Self {
         Self {
             enabled: true,
-            always_on_top: true,
             style: DebugRenderStyle {
                 rigid_body_axes_length: 20.0,
                 ..Default::default()

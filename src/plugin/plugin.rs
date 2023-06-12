@@ -92,7 +92,7 @@ where
                     .before(systems::init_async_colliders),
             )
                 .into_configs(),
-            PhysicsSet::SyncBackendFlush => (apply_system_buffers,).into_configs(),
+            PhysicsSet::SyncBackendFlush => (apply_deferred,).into_configs(),
             PhysicsSet::StepSimulation => (
                 systems::step_simulation::<PhysicsHooks>,
                 Events::<CollisionEvent>::update_system
