@@ -85,11 +85,3 @@ fn setup_simulation(mut commands: Commands) {
         GravityScale(0.0),
     ));
 }
-
-fn update_cam_pos(
-    follow_me: Query<&GlobalTransform, (Without<Camera>, With<FollowMe>)>,
-    mut cam_trans: Query<&mut Transform, With<Camera>>,
-) {
-    let trans = follow_me.get_single().unwrap().translation();
-    cam_trans.get_single_mut().unwrap().translation = Vec3::new(0.0, trans.y + 10.0, 10.0);
-}
