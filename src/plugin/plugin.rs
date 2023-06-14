@@ -86,14 +86,18 @@ where
                     .after(systems::update_character_controls)
                     .in_set(PropagateTransformsSet)
                     .in_set(RapierTransformPropagateSet),
+            )
+                .into_configs(),
+            PhysicsSet::SyncBackend2 => (
                 systems::init_async_colliders.after(RapierTransformPropagateSet),
                 systems::apply_scale.after(systems::init_async_colliders),
                 systems::apply_collider_user_changes.after(systems::apply_scale),
                 systems::apply_rigid_body_user_changes.after(systems::apply_collider_user_changes),
                 systems::apply_joint_user_changes.after(systems::apply_rigid_body_user_changes),
                 systems::init_rigid_bodies.after(systems::apply_joint_user_changes),
+                systems::sync_velocity.after(systems::init_rigid_bodies),
                 systems::init_colliders
-                    .after(systems::init_rigid_bodies)
+                    .after(systems::sync_velocity)
                     .after(systems::init_async_colliders),
                 systems::init_joints.after(systems::init_colliders),
                 systems::apply_initial_rigid_body_impulses.after(systems::init_colliders),
@@ -145,7 +149,11 @@ pub enum PhysicsSet {
     /// initializing) backend data structures with current component state.
     /// These systems typically run at the after [`CoreSet::Update`].
     SyncBackend,
-    /// The copy of [`apply_system_buffers`] that runs immediately after [`PhysicsSet::SyncBackend`].
+    /// This set runs the systems responsible for synchronizing (and
+    /// initializing) backend data structures with current component state.
+    /// These systems typically run immediately after [`PhysicsSet::SyncBackend`].
+    SyncBackend2,
+    /// The copy of [`apply_system_buffers`] that runs immediately after [`PhysicsSet::SyncBackend2`].
     SyncBackendFlush,
     /// The systems responsible for advancing the physics simulation, and
     /// updating the internal state for scene queries.
@@ -205,6 +213,7 @@ where
             app.configure_sets(
                 (
                     PhysicsSet::SyncBackend,
+                    PhysicsSet::SyncBackend2,
                     PhysicsSet::SyncBackendFlush,
                     PhysicsSet::StepSimulation,
                     PhysicsSet::Writeback,
@@ -217,6 +226,11 @@ where
             app.add_systems(
                 Self::get_systems(PhysicsSet::SyncBackend).in_base_set(PhysicsSet::SyncBackend),
             );
+
+            app.add_systems(
+                Self::get_systems(PhysicsSet::SyncBackend2).in_base_set(PhysicsSet::SyncBackend2),
+            );
+
             app.add_systems(
                 Self::get_systems(PhysicsSet::SyncBackendFlush)
                     .in_base_set(PhysicsSet::SyncBackendFlush),
