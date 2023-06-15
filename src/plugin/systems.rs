@@ -1038,8 +1038,11 @@ fn recurse(
                         #[cfg(feature = "dim3")]
                         let new_translation;
 
-                        new_translation = inverse_parent_rotation * interpolated_pos.translation
-                            + inverse_parent_translation;
+                        new_translation = parent_delta.rotation.mul_vec3(
+                            // parent_delta.rotation.mul_vec3(
+                            inverse_parent_rotation * interpolated_pos.translation
+                                + inverse_parent_translation, // )
+                        );
 
                         // In 2D, preserve the transform `z` component that may have been set by the user
                         #[cfg(feature = "dim2")]
