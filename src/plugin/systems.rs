@@ -1036,13 +1036,12 @@ fn recurse(
                         #[cfg(feature = "dim2")]
                         let mut new_translation;
                         #[cfg(feature = "dim3")]
-                        let new_translation;
+                        let mut new_translation;
 
-                        new_translation = parent_delta.rotation.mul_vec3(
-                            // parent_delta.rotation.mul_vec3(
-                            inverse_parent_rotation * interpolated_pos.translation
-                                + inverse_parent_translation, // )
-                        );
+                        new_translation = inverse_parent_rotation * interpolated_pos.translation
+                            + inverse_parent_translation;
+
+                        new_translation = parent_delta.rotation.mul_vec3(new_translation);
 
                         // In 2D, preserve the transform `z` component that may have been set by the user
                         #[cfg(feature = "dim2")]
@@ -1202,6 +1201,7 @@ pub fn init_async_colliders(
     meshes: Res<Assets<Mesh>>,
     async_colliders: Query<(Entity, &Handle<Mesh>, &AsyncCollider)>,
 ) {
+    println!("Initing async colliders!");
     for (entity, mesh_handle, async_collider) in async_colliders.iter() {
         if let Some(mesh) = meshes.get(mesh_handle) {
             match Collider::from_bevy_mesh(mesh, &async_collider.0) {
@@ -1838,6 +1838,8 @@ pub fn update_character_controls(
     )>,
     mut transforms: Query<&mut Transform>,
 ) {
+    println!("Doing character controls!");
+
     for (
         entity,
         mut controller,
