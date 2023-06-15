@@ -1201,7 +1201,6 @@ pub fn init_async_colliders(
     meshes: Res<Assets<Mesh>>,
     async_colliders: Query<(Entity, &Handle<Mesh>, &AsyncCollider)>,
 ) {
-    println!("Initing async colliders!");
     for (entity, mesh_handle, async_collider) in async_colliders.iter() {
         if let Some(mesh) = meshes.get(mesh_handle) {
             match Collider::from_bevy_mesh(mesh, &async_collider.0) {
@@ -1838,8 +1837,6 @@ pub fn update_character_controls(
     )>,
     mut transforms: Query<&mut Transform>,
 ) {
-    println!("Doing character controls!");
-
     for (
         entity,
         mut controller,
