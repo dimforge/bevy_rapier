@@ -29,7 +29,6 @@ fn main() {
     schedule.configure_sets(
         (
             PhysicsSet::SyncBackend,
-            PhysicsSet::SyncBackend2,
             PhysicsSet::SyncBackendFlush,
             PhysicsSet::StepSimulation,
             PhysicsSet::Writeback,
@@ -40,11 +39,6 @@ fn main() {
     schedule.add_systems(
         RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsSet::SyncBackend)
             .in_base_set(PhysicsSet::SyncBackend),
-    );
-
-    schedule.add_systems(
-        RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsSet::SyncBackend2)
-            .in_base_set(PhysicsSet::SyncBackend2),
     );
 
     schedule.add_systems(
