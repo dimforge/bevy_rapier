@@ -22,8 +22,10 @@ use crate::prelude::{
 use crate::utils;
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
 use bevy::prelude::*;
+use nalgebra::{Quaternion, UnitQuaternion};
 use rapier::prelude::{
     ColliderBuilder, Isometry, QueryFilter, RigidBodyBuilder, RigidBodyHandle, RigidBodyType,
+    Rotation,
 };
 use std::collections::HashMap;
 
@@ -43,7 +45,6 @@ use super::WorldId;
 /// Components that will be updated after a physics step.
 pub type RigidBodyWritebackComponents<'a> = (
     Entity,
-    Option<&'a Parent>,
     Option<&'a mut Transform>,
     Option<&'a mut TransformInterpolation>,
     Option<&'a mut Velocity>,
@@ -763,20 +764,23 @@ pub fn writeback_rigid_bodies(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
     sim_to_render_time: Res<SimulationToRenderTime>,
-    global_transforms: Query<&GlobalTransform>,
+    top_entities: Query<Entity, Without<Parent>>,
     mut writeback: Query<RigidBodyWritebackComponents, Without<RigidBodyDisabled>>,
+    children_query: Query<&Children>,
 ) {
-    if config.physics_pipeline_active {
-        for (
+    for entity in top_entities.iter() {
+        let (transform, delta_transform) = if let Ok((
             entity,
-            parent,
             transform,
             mut interpolation,
             mut velocity,
             mut sleeping,
             world_within,
-        ) in writeback.iter_mut()
+        )) = writeback.get_mut(entity)
         {
+            let mut my_new_global_transform = Transform::IDENTITY;
+            let mut parent_delta = Transform::IDENTITY;
+
             let world = get_world(world_within, &mut context);
 
             // TODO: do this the other way round: iterate through Rapier’s RigidBodySet on the active bodies,
@@ -803,79 +807,38 @@ pub fn writeback_rigid_bodies(
                     }
 
                     if let Some(mut transform) = transform {
-                        // NOTE: we query the parent’s global transform here, which is a bit
-                        //       unfortunate (performance-wise). An alternative would be to
-                        //       deduce the parent’s global transform from the current entity’s
-                        //       global transform. However, this makes it nearly impossible
-                        //       (because of rounding errors) to predict the exact next value this
-                        //       entity’s global transform will get after the next transform
-                        //       propagation, which breaks our transform modification detection
-                        //       that we do to detect if the user’s transform has to be written
-                        //       into the rigid-body.
-                        if let Some(parent_global_transform) =
-                            parent.and_then(|p| global_transforms.get(**p).ok())
+                        // In 2D, preserve the transform `z` component that may have been set by the user
+                        #[cfg(feature = "dim2")]
                         {
-                            // We need to compute the new local transform such that:
-                            // curr_parent_global_transform * new_transform = interpolated_pos
-                            // new_transform = curr_parent_global_transform.inverse() * interpolated_pos
-                            let (_, inverse_parent_rotation, inverse_parent_translation) =
-                                parent_global_transform
-                                    .affine()
-                                    .inverse()
-                                    .to_scale_rotation_translation();
-                            let new_rotation = inverse_parent_rotation * interpolated_pos.rotation;
-
-                            #[allow(unused_mut)] // mut is needed in 2D but not in 3D.
-                            let mut new_translation = inverse_parent_rotation
-                                * interpolated_pos.translation
-                                + inverse_parent_translation;
-
-                            // In 2D, preserve the transform `z` component that may have been set by the user
-                            #[cfg(feature = "dim2")]
-                            {
-                                new_translation.z = transform.translation.z;
-                            }
-
-                            if transform.rotation != new_rotation
-                                || transform.translation != new_translation
-                            {
-                                // NOTE: we write the new value only if there was an
-                                //       actual change, in order to not trigger bevy’s
-                                //       change tracking when the values didn’t change.
-                                transform.rotation = new_rotation;
-                                transform.translation = new_translation;
-                            }
-
-                            // NOTE: we need to compute the result of the next transform propagation
-                            //       to make sure that our change detection for transforms is exact
-                            //       despite rounding errors.
-                            let new_global_transform =
-                                parent_global_transform.mul_transform(*transform);
-
-                            world
-                                .last_body_transform_set
-                                .insert(handle, new_global_transform);
-                        } else {
-                            // In 2D, preserve the transform `z` component that may have been set by the user
-                            #[cfg(feature = "dim2")]
-                            {
-                                interpolated_pos.translation.z = transform.translation.z;
-                            }
-
-                            if transform.rotation != interpolated_pos.rotation
-                                || transform.translation != interpolated_pos.translation
-                            {
-                                // NOTE: we write the new value only if there was an
-                                //       actual change, in order to not trigger bevy’s
-                                //       change tracking when the values didn’t change.
-                                transform.rotation = interpolated_pos.rotation;
-                                transform.translation = interpolated_pos.translation;
-                            }
-
-                            world
-                                .last_body_transform_set
-                                .insert(handle, GlobalTransform::from(interpolated_pos));
+                            interpolated_pos.translation.z = transform.translation.z;
                         }
+
+                        let (cur_inv_scale, cur_inv_rotation, cur_inv_translation) = transform
+                            .compute_affine()
+                            .inverse()
+                            .to_scale_rotation_translation();
+
+                        parent_delta = interpolated_pos.mul_transform(Transform {
+                            translation: cur_inv_translation,
+                            rotation: cur_inv_rotation,
+                            scale: cur_inv_scale,
+                        });
+
+                        if transform.rotation != interpolated_pos.rotation
+                            || transform.translation != interpolated_pos.translation
+                        {
+                            // NOTE: we write the new value only if there was an
+                            //       actual change, in order to not trigger bevy’s
+                            //       change tracking when the values didn’t change.
+                            transform.rotation = interpolated_pos.rotation;
+                            transform.translation = interpolated_pos.translation;
+                        }
+
+                        my_new_global_transform = interpolated_pos;
+
+                        world
+                            .last_body_transform_set
+                            .insert(handle, GlobalTransform::from(interpolated_pos));
                     }
 
                     if let Some(velocity) = &mut velocity {
@@ -905,9 +868,366 @@ pub fn writeback_rigid_bodies(
                     }
                 }
             }
-        }
+
+            (my_new_global_transform, parent_delta)
+        } else {
+            (Transform::IDENTITY, Transform::IDENTITY)
+        };
+
+        recurse(
+            context.as_mut(),
+            &config,
+            &sim_to_render_time,
+            &mut writeback,
+            transform,
+            delta_transform,
+            &children_query,
+            entity,
+        );
     }
 }
+
+fn recurse(
+    mut context: &mut RapierContext,
+    config: &RapierConfiguration,
+    sim_to_render_time: &SimulationToRenderTime,
+    writeback: &mut Query<RigidBodyWritebackComponents, Without<RigidBodyDisabled>>,
+    parent_global_transform: Transform,
+    parent_delta: Transform,
+    children_query: &Query<&Children>,
+    parent_entity: Entity,
+) {
+    let Ok(children) = children_query.get(parent_entity) else {
+        return;
+    };
+
+    for child in children.iter().copied() {
+        let (transform, delta_transform) = if let Ok((
+            entity,
+            transform,
+            mut interpolation,
+            mut velocity,
+            mut sleeping,
+            world_within,
+        )) = writeback.get_mut(child)
+        {
+            let mut my_new_global_transform = parent_global_transform;
+            let mut delta_transform = parent_delta;
+
+            let world = get_world(world_within, &mut context);
+
+            // TODO: do this the other way round: iterate through Rapier’s RigidBodySet on the active bodies,
+            // and update the components accordingly. That way, we don’t have to iterate through the entities that weren’t changed
+            // by physics (for example because they are sleeping).
+            if let Some(handle) = world.entity2body.get(&entity).copied() {
+                if let Some(rb) = world.bodies.get_mut(handle) {
+                    let mut interpolated_pos =
+                        utils::iso_to_transform(rb.position(), world.physics_scale);
+
+                    if let TimestepMode::Interpolated { dt, .. } = config.timestep_mode {
+                        if let Some(interpolation) = interpolation.as_deref_mut() {
+                            if interpolation.end.is_none() {
+                                interpolation.end = Some(*rb.position());
+                            }
+
+                            if let Some(interpolated) =
+                                interpolation.lerp_slerp((dt + sim_to_render_time.diff) / dt)
+                            {
+                                interpolated_pos =
+                                    utils::iso_to_transform(&interpolated, world.physics_scale);
+                            }
+                        }
+                    }
+
+                    if let Some(mut transform) = transform {
+                        // We need to compute the new local transform such that:
+                        // curr_parent_global_transform * new_transform * parent_delta_pos = interpolated_pos
+                        // new_transform = curr_parent_global_transform.inverse() * interpolated_pos
+
+                        let (inverse_parent_rotation, inverse_parent_translation) = (
+                            parent_global_transform.rotation.inverse(),
+                            -parent_global_transform.translation,
+                        );
+
+                        let new_rotation = Quat::IDENTITY; //inverse_parent_rotation * interpolated_pos.rotation;
+
+                        #[cfg(feature = "dim2")]
+                        let mut new_translation;
+                        #[cfg(feature = "dim3")]
+                        let mut new_translation;
+
+                        let rotated_interpolation = inverse_parent_rotation
+                            * (parent_delta.rotation * interpolated_pos.translation);
+
+                        println!("Rotated interpolation: {rotated_interpolation}",);
+
+                        new_translation = rotated_interpolation; // + inverse_parent_translation;
+
+                        // new_translation = parent_delta.rotation.mul_vec3(new_translation);
+
+                        println!("Interpolated pos: {}", interpolated_pos.translation);
+                        println!("I think your new trans should be: {new_translation}");
+
+                        // In 2D, preserve the transform `z` component that may have been set by the user
+                        #[cfg(feature = "dim2")]
+                        {
+                            new_translation.z = transform.translation.z;
+                        }
+
+                        // new_translation = Vec3::new(0.0, 10.0, 0.0);
+
+                        let old_transform = *transform;
+
+                        if transform.rotation != new_rotation
+                            || transform.translation != new_translation
+                        {
+                            // NOTE: we write the new value only if there was an
+                            //       actual change, in order to not trigger bevy’s
+                            //       change tracking when the values didn’t change.
+                            transform.rotation = new_rotation;
+                            transform.translation = new_translation;
+                        }
+
+                        let inv_old_transform = {
+                            let (scale, rotation, translation) = old_transform
+                                .compute_affine()
+                                .inverse()
+                                .to_scale_rotation_translation();
+
+                            Transform {
+                                scale,
+                                rotation,
+                                translation,
+                            }
+                        };
+
+                        delta_transform = transform.mul_transform(inv_old_transform);
+                        // .mul_transform(parent_delta);
+
+                        // NOTE: we need to compute the result of the next transform propagation
+                        //       to make sure that our change detection for transforms is exact
+                        //       despite rounding errors.
+                        my_new_global_transform = parent_global_transform.mul_transform(*transform);
+
+                        world
+                            .last_body_transform_set
+                            .insert(handle, GlobalTransform::from(my_new_global_transform));
+
+                        rb.set_position(
+                            utils::transform_to_iso(&my_new_global_transform, world.physics_scale),
+                            false,
+                        );
+
+                        println!("My new global: {}", my_new_global_transform.translation);
+
+                        // rb.set_rotation(
+                        //     Rotation::from_quaternion(Quaternion::new(
+                        //         my_new_global_transform.rotation.w,
+                        //         my_new_global_transform.rotation.x,
+                        //         my_new_global_transform.rotation.y,
+                        //         my_new_global_transform.rotation.z,
+                        //     )),
+                        //     false,
+                        // );
+                    }
+
+                    if let Some(velocity) = &mut velocity {
+                        let new_vel = Velocity {
+                            linvel: (rb.linvel() * world.physics_scale).into(),
+                            #[cfg(feature = "dim3")]
+                            angvel: (*rb.angvel()).into(),
+                            #[cfg(feature = "dim2")]
+                            angvel: rb.angvel(),
+                        };
+
+                        // NOTE: we write the new value only if there was an
+                        //       actual change, in order to not trigger bevy’s
+                        //       change tracking when the values didn’t change.
+                        if **velocity != new_vel {
+                            **velocity = new_vel;
+                        }
+                    }
+
+                    if let Some(sleeping) = &mut sleeping {
+                        // NOTE: we write the new value only if there was an
+                        //       actual change, in order to not trigger bevy’s
+                        //       change tracking when the values didn’t change.
+                        if sleeping.sleeping != rb.is_sleeping() {
+                            sleeping.sleeping = rb.is_sleeping();
+                        }
+                    }
+                }
+            }
+
+            (my_new_global_transform, delta_transform)
+        } else {
+            (parent_global_transform, parent_delta)
+        };
+
+        recurse(
+            context,
+            config,
+            sim_to_render_time,
+            writeback,
+            transform,
+            delta_transform,
+            children_query,
+            child,
+        );
+    }
+}
+
+/// System responsible for writing the result of the last simulation step into our `bevy_rapier`
+/// components and the [`GlobalTransform`] component.
+// pub fn writeback_rigid_bodies2(
+//     mut context: ResMut<RapierContext>,
+//     config: Res<RapierConfiguration>,
+//     sim_to_render_time: Res<SimulationToRenderTime>,
+//     global_transforms: Query<&GlobalTransform>,
+//     mut writeback: Query<RigidBodyWritebackComponents, Without<RigidBodyDisabled>>,
+// ) {
+//     if config.physics_pipeline_active {
+//         for (
+//             entity,
+//             parent,
+//             transform,
+//             mut interpolation,
+//             mut velocity,
+//             mut sleeping,
+//             world_within,
+//         ) in writeback.iter_mut()
+//         {
+//             let world = get_world(world_within, &mut context);
+
+//             // TODO: do this the other way round: iterate through Rapier’s RigidBodySet on the active bodies,
+//             // and update the components accordingly. That way, we don’t have to iterate through the entities that weren’t changed
+//             // by physics (for example because they are sleeping).
+//             if let Some(handle) = world.entity2body.get(&entity).copied() {
+//                 if let Some(rb) = world.bodies.get(handle) {
+//                     let mut interpolated_pos =
+//                         utils::iso_to_transform(rb.position(), world.physics_scale);
+
+//                     if let TimestepMode::Interpolated { dt, .. } = config.timestep_mode {
+//                         if let Some(interpolation) = interpolation.as_deref_mut() {
+//                             if interpolation.end.is_none() {
+//                                 interpolation.end = Some(*rb.position());
+//                             }
+
+//                             if let Some(interpolated) =
+//                                 interpolation.lerp_slerp((dt + sim_to_render_time.diff) / dt)
+//                             {
+//                                 interpolated_pos =
+//                                     utils::iso_to_transform(&interpolated, world.physics_scale);
+//                             }
+//                         }
+//                     }
+
+//                     if let Some(mut transform) = transform {
+//                         // NOTE: we query the parent’s global transform here, which is a bit
+//                         //       unfortunate (performance-wise). An alternative would be to
+//                         //       deduce the parent’s global transform from the current entity’s
+//                         //       global transform. However, this makes it nearly impossible
+//                         //       (because of rounding errors) to predict the exact next value this
+//                         //       entity’s global transform will get after the next transform
+//                         //       propagation, which breaks our transform modification detection
+//                         //       that we do to detect if the user’s transform has to be written
+//                         //       into the rigid-body.
+//                         if let Some(parent_global_transform) =
+//                             parent.and_then(|p| global_transforms.get(**p).ok())
+//                         {
+//                             // We need to compute the new local transform such that:
+//                             // curr_parent_global_transform * new_transform = interpolated_pos
+//                             // new_transform = curr_parent_global_transform.inverse() * interpolated_pos
+//                             let (_, inverse_parent_rotation, inverse_parent_translation) =
+//                                 parent_global_transform
+//                                     .affine()
+//                                     .inverse()
+//                                     .to_scale_rotation_translation();
+//                             let new_rotation = inverse_parent_rotation * interpolated_pos.rotation;
+
+//                             #[allow(unused_mut)] // mut is needed in 2D but not in 3D.
+//                             let mut new_translation = inverse_parent_rotation
+//                                 * interpolated_pos.translation
+//                                 + inverse_parent_translation;
+
+//                             // In 2D, preserve the transform `z` component that may have been set by the user
+//                             #[cfg(feature = "dim2")]
+//                             {
+//                                 new_translation.z = transform.translation.z;
+//                             }
+
+//                             if transform.rotation != new_rotation
+//                                 || transform.translation != new_translation
+//                             {
+//                                 // NOTE: we write the new value only if there was an
+//                                 //       actual change, in order to not trigger bevy’s
+//                                 //       change tracking when the values didn’t change.
+//                                 transform.rotation = new_rotation;
+//                                 transform.translation = new_translation;
+//                             }
+
+//                             // NOTE: we need to compute the result of the next transform propagation
+//                             //       to make sure that our change detection for transforms is exact
+//                             //       despite rounding errors.
+//                             let new_global_transform =
+//                                 parent_global_transform.mul_transform(*transform);
+
+//                             world
+//                                 .last_body_transform_set
+//                                 .insert(handle, new_global_transform);
+//                         } else {
+//                             // In 2D, preserve the transform `z` component that may have been set by the user
+//                             #[cfg(feature = "dim2")]
+//                             {
+//                                 interpolated_pos.translation.z = transform.translation.z;
+//                             }
+
+//                             if transform.rotation != interpolated_pos.rotation
+//                                 || transform.translation != interpolated_pos.translation
+//                             {
+//                                 // NOTE: we write the new value only if there was an
+//                                 //       actual change, in order to not trigger bevy’s
+//                                 //       change tracking when the values didn’t change.
+//                                 transform.rotation = interpolated_pos.rotation;
+//                                 transform.translation = interpolated_pos.translation;
+//                             }
+
+//                             world
+//                                 .last_body_transform_set
+//                                 .insert(handle, GlobalTransform::from(interpolated_pos));
+//                         }
+//                     }
+
+//                     if let Some(velocity) = &mut velocity {
+//                         let new_vel = Velocity {
+//                             linvel: (rb.linvel() * world.physics_scale).into(),
+//                             #[cfg(feature = "dim3")]
+//                             angvel: (*rb.angvel()).into(),
+//                             #[cfg(feature = "dim2")]
+//                             angvel: rb.angvel(),
+//                         };
+
+//                         // NOTE: we write the new value only if there was an
+//                         //       actual change, in order to not trigger bevy’s
+//                         //       change tracking when the values didn’t change.
+//                         if **velocity != new_vel {
+//                             **velocity = new_vel;
+//                         }
+//                     }
+
+//                     if let Some(sleeping) = &mut sleeping {
+//                         // NOTE: we write the new value only if there was an
+//                         //       actual change, in order to not trigger bevy’s
+//                         //       change tracking when the values didn’t change.
+//                         if sleeping.sleeping != rb.is_sleeping() {
+//                             sleeping.sleeping = rb.is_sleeping();
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// }
 
 /// System responsible for advancing the physics simulation, and updating the internal state
 /// for scene queries.
