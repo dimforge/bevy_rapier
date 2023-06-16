@@ -50,6 +50,7 @@ pub type RigidBodyWritebackComponents<'a> = (
     Option<&'a mut Velocity>,
     Option<&'a mut Sleeping>,
     Option<&'a PhysicsWorld>,
+    Option<&'a RigidBody>,
 );
 
 /// Components related to rigid-bodies.
@@ -769,17 +770,19 @@ pub fn writeback_rigid_bodies(
     children_query: Query<&Children>,
 ) {
     for entity in top_entities.iter() {
-        let (transform, delta_transform) = if let Ok((
+        let (transform, delta_transform, velocity) = if let Ok((
             entity,
             transform,
             mut interpolation,
             mut velocity,
             mut sleeping,
             world_within,
+            _,
         )) = writeback.get_mut(entity)
         {
             let mut my_new_global_transform = Transform::IDENTITY;
             let mut parent_delta = Transform::IDENTITY;
+            let mut my_velocity = Velocity::default();
 
             let world = get_world(world_within, &mut context);
 
@@ -842,6 +845,8 @@ pub fn writeback_rigid_bodies(
                     }
 
                     if let Some(velocity) = &mut velocity {
+                        my_velocity = **velocity;
+
                         let new_vel = Velocity {
                             linvel: (rb.linvel() * world.physics_scale).into(),
                             #[cfg(feature = "dim3")]
@@ -869,9 +874,13 @@ pub fn writeback_rigid_bodies(
                 }
             }
 
-            (my_new_global_transform, parent_delta)
+            (my_new_global_transform, parent_delta, my_velocity)
         } else {
-            (Transform::IDENTITY, Transform::IDENTITY)
+            (
+                Transform::IDENTITY,
+                Transform::IDENTITY,
+                Velocity::default(),
+            )
         };
 
         recurse(
@@ -881,6 +890,7 @@ pub fn writeback_rigid_bodies(
             &mut writeback,
             transform,
             delta_transform,
+            velocity,
             &children_query,
             entity,
         );
@@ -894,6 +904,7 @@ fn recurse(
     writeback: &mut Query<RigidBodyWritebackComponents, Without<RigidBodyDisabled>>,
     parent_global_transform: Transform,
     parent_delta: Transform,
+    parent_velocity: Velocity,
     children_query: &Query<&Children>,
     parent_entity: Entity,
 ) {
@@ -902,17 +913,19 @@ fn recurse(
     };
 
     for child in children.iter().copied() {
-        let (transform, delta_transform) = if let Ok((
+        let (transform, delta_transform, velocity) = if let Ok((
             entity,
             transform,
             mut interpolation,
             mut velocity,
             mut sleeping,
             world_within,
+            rb_type,
         )) = writeback.get_mut(child)
         {
             let mut my_new_global_transform = parent_global_transform;
             let mut delta_transform = parent_delta;
+            let mut my_velocity = parent_velocity;
 
             let world = get_world(world_within, &mut context);
 
@@ -956,8 +969,17 @@ fn recurse(
                         #[cfg(feature = "dim3")]
                         let mut new_translation;
 
+                        let translation_offset =
+                            if rb_type.copied().unwrap_or(RigidBody::Fixed) == RigidBody::Dynamic {
+                                // The parent's velocity will have already moved them
+                                parent_delta.translation
+                            } else {
+                                Vec3::ZERO
+                            };
+
                         let rotated_interpolation = inverse_parent_rotation
-                            * (parent_delta.rotation * interpolated_pos.translation);
+                            * (parent_delta.rotation
+                                * (interpolated_pos.translation - translation_offset));
 
                         println!("Rotated interpolation: {rotated_interpolation}",);
 
@@ -1032,6 +1054,13 @@ fn recurse(
                     }
 
                     if let Some(velocity) = &mut velocity {
+                        let old_linvel = *rb.linvel();
+
+                        my_velocity.linvel = (old_linvel * world.physics_scale).into();
+
+                        rb.set_linvel((parent_velocity.linvel / world.physics_scale).into(), false);
+                        rb.set_linvel(old_linvel - rb.linvel(), false);
+
                         let new_vel = Velocity {
                             linvel: (rb.linvel() * world.physics_scale).into(),
                             #[cfg(feature = "dim3")]
@@ -1059,9 +1088,9 @@ fn recurse(
                 }
             }
 
-            (my_new_global_transform, delta_transform)
+            (my_new_global_transform, delta_transform, my_velocity)
         } else {
-            (parent_global_transform, parent_delta)
+            (parent_global_transform, parent_delta, parent_velocity)
         };
 
         recurse(
@@ -1071,6 +1100,7 @@ fn recurse(
             writeback,
             transform,
             delta_transform,
+            velocity,
             children_query,
             child,
         );
@@ -1228,6 +1258,64 @@ fn recurse(
 //         }
 //     }
 // }
+
+pub fn sync_vel(
+    top_ents: Query<Entity, Without<Parent>>,
+    vel_query: Query<&Velocity>,
+    query: Query<(&RapierRigidBodyHandle, Option<&PhysicsWorld>)>,
+    children_query: Query<&Children>,
+    mut context: ResMut<RapierContext>,
+) {
+    for ent in top_ents.iter() {
+        let vel = if let Ok(velocity) = vel_query.get(ent) {
+            *velocity
+        } else {
+            Velocity::default()
+        };
+
+        if let Ok(children) = children_query.get(ent) {
+            for child in children.iter().copied() {
+                tp_and_sync_recurse(child, &query, &children_query, vel, &mut context);
+            }
+        }
+    }
+}
+
+fn tp_and_sync_recurse(
+    ent: Entity,
+    query: &Query<(&RapierRigidBodyHandle, Option<&PhysicsWorld>)>,
+    children_query: &Query<&Children>,
+    parent_vel: Velocity,
+    context: &mut RapierContext,
+) {
+    let vel = if let Ok((handle, world_within)) = query.get(ent) {
+        let world = get_world(world_within, context);
+        if let Some(rb) = world.bodies.get_mut(handle.0) {
+            let old_linvel = *rb.linvel();
+            rb.set_linvel((parent_vel.linvel / world.physics_scale).into(), false);
+            rb.set_linvel(old_linvel + rb.linvel(), false);
+            // rb.set_angvel(rb.angvel() + velocity.angvel.into(), false);
+
+            Velocity {
+                linvel: (rb.linvel() * world.physics_scale).into(),
+                #[cfg(feature = "dim3")]
+                angvel: (*rb.angvel()).into(),
+                #[cfg(feature = "dim2")]
+                angvel: rb.angvel(),
+            }
+        } else {
+            parent_vel
+        }
+    } else {
+        parent_vel
+    };
+
+    if let Ok(children) = children_query.get(ent) {
+        for child in children.iter().copied() {
+            tp_and_sync_recurse(child, query, children_query, vel, context);
+        }
+    }
+}
 
 /// System responsible for advancing the physics simulation, and updating the internal state
 /// for scene queries.

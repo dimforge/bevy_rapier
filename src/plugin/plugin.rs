@@ -97,10 +97,12 @@ where
                     .after(systems::init_async_colliders),
                 systems::init_joints.after(systems::init_colliders),
                 systems::apply_initial_rigid_body_impulses.after(systems::init_colliders),
-                #[cfg(all(feature = "dim3", feature = "async-collider"))]
-                systems::init_async_scene_colliders
-                    .after(bevy::scene::scene_spawner_system)
-                    .before(systems::init_async_colliders),
+                // Step 1 - Teleport entities whose parents have moved &
+                systems::sync_vel.after(systems::init_rigid_bodies),
+                // #[cfg(all(feature = "dim3", feature = "async-collider"))]
+                // systems::init_async_scene_colliders
+                //     .after(bevy::scene::scene_spawner_system)
+                //     .before(systems::init_async_colliders),
             )
                 .into_configs(),
             PhysicsSet::SyncBackendFlush => (apply_system_buffers,).into_configs(),
