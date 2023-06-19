@@ -14,6 +14,7 @@ pub type NoUserData = ();
 /// This will automatically setup all the resources needed to run a physics simulation with the
 /// Rapier physics engine.
 pub struct RapierPhysicsPlugin<PhysicsHooks = ()> {
+    schedule: Box<dyn ScheduleLabel>,
     physics_scale: f32,
     default_system_setup: bool,
     _phantom: PhantomData<PhysicsHooks>,
@@ -52,8 +53,14 @@ where
         Self {
             physics_scale: pixels_per_meter,
             default_system_setup: true,
-            _phantom: PhantomData,
+            ..default()
         }
+    }
+
+    /// Adds the physics systems to the `FixedUpdate` schedule rather than main.
+    pub fn fixed(mut self) -> Self {
+        self.schedule = Box::new(CoreSchedule::FixedUpdate);
+        self
     }
 
     /// Provided for use when staging systems outside of this plugin using
@@ -121,6 +128,7 @@ pub struct RapierTransformPropagateSet;
 impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystemParam> {
     fn default() -> Self {
         Self {
+            schedule: Box::new(CoreSchedule::Main),
             physics_scale: 1.0,
             default_system_setup: true,
             _phantom: PhantomData,
@@ -191,6 +199,7 @@ where
 
         // Add each set as necessary
         if self.default_system_setup {
+<<<<<<< HEAD
             app.configure_sets(
                 PostUpdate,
                 (
@@ -213,6 +222,45 @@ where
                         .in_set(PhysicsSet::StepSimulation),
                     Self::get_systems(PhysicsSet::Writeback).in_set(PhysicsSet::Writeback),
                 ),
+=======
+            app.world
+                .resource_mut::<Schedules>()
+                .get_mut(&self.schedule.clone())
+                .expect("Expected schedule to exist")
+                .configure_sets(
+                    (
+                        PhysicsSet::SyncBackend,
+                        PhysicsSet::SyncBackendFlush,
+                        PhysicsSet::StepSimulation,
+                        PhysicsSet::Writeback,
+                    )
+                        .chain()
+                        .after(CoreSet::UpdateFlush)
+                        .before(CoreSet::PostUpdate),
+                );
+
+            app.add_system(systems::sync_removals.in_base_set(CoreSet::PostUpdate));
+
+            app.add_systems(
+                Self::get_systems(PhysicsSet::SyncBackend)
+                    .in_base_set(PhysicsSet::SyncBackend)
+                    .in_schedule(self.schedule.clone()),
+            );
+            app.add_systems(
+                Self::get_systems(PhysicsSet::SyncBackendFlush)
+                    .in_base_set(PhysicsSet::SyncBackendFlush)
+                    .in_schedule(self.schedule.clone()),
+            );
+            app.add_systems(
+                Self::get_systems(PhysicsSet::StepSimulation)
+                    .in_base_set(PhysicsSet::StepSimulation)
+                    .in_schedule(self.schedule.clone()),
+            );
+            app.add_systems(
+                Self::get_systems(PhysicsSet::Writeback)
+                    .in_base_set(PhysicsSet::Writeback)
+                    .in_schedule(self.schedule.clone()),
+>>>>>>> 7c99ef2... Allow customizing the schedule with FixedUpdate
             );
         }
     }
