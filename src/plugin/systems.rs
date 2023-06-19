@@ -827,6 +827,26 @@ pub fn writeback_rigid_bodies(
                             scale: cur_inv_scale,
                         });
 
+                        let com = rb.center_of_mass();
+
+                        #[cfg(feature = "dim3")]
+                        let com = Vec3::new(
+                            com.x - rb.translation().x,
+                            com.y - rb.translation().y,
+                            com.z - rb.translation().z,
+                        ) / world.physics_scale;
+                        #[cfg(feature = "dim2")]
+                        let com =
+                            Vec3::new(com.x - rb.translation().x, com.y - rb.translation().y, 0.0)
+                                / world.physics_scale;
+
+                        println!("Center of mass: {com}");
+
+                        let com_diff = com - parent_delta.rotation.mul_vec3(com);
+                        println!("Diff: {}", com_diff);
+
+                        parent_delta.translation -= com_diff;
+
                         if transform.rotation != interpolated_pos.rotation
                             || transform.translation != interpolated_pos.translation
                         {
@@ -977,17 +997,17 @@ fn recurse(
                                 Vec3::ZERO
                             };
 
+                        println!("Offset: {}", translation_offset);
+
                         let rotated_interpolation = inverse_parent_rotation
                             * (parent_delta.rotation
                                 * (interpolated_pos.translation - translation_offset));
-
-                        println!("Rotated interpolation: {rotated_interpolation}",);
 
                         new_translation = rotated_interpolation; // + inverse_parent_translation;
 
                         // new_translation = parent_delta.rotation.mul_vec3(new_translation);
 
-                        println!("Interpolated pos: {}", interpolated_pos.translation);
+                        println!("Was: {}", transform.translation);
                         println!("I think your new trans should be: {new_translation}");
 
                         // In 2D, preserve the transform `z` component that may have been set by the user
