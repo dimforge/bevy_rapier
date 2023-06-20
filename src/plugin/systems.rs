@@ -22,10 +22,8 @@ use crate::prelude::{
 use crate::utils;
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
 use bevy::prelude::*;
-use nalgebra::{Quaternion, UnitQuaternion};
 use rapier::prelude::{
     ColliderBuilder, Isometry, QueryFilter, RigidBodyBuilder, RigidBodyHandle, RigidBodyType,
-    Rotation,
 };
 use std::collections::HashMap;
 
