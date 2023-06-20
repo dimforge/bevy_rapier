@@ -840,11 +840,7 @@ pub fn writeback_rigid_bodies(
                             Vec3::new(com.x - rb.translation().x, com.y - rb.translation().y, 0.0)
                                 / world.physics_scale;
 
-                        println!("Center of mass: {com}");
-
                         let com_diff = com - parent_delta.rotation.mul_vec3(com);
-                        println!("Diff: {}", com_diff);
-
                         parent_delta.translation -= com_diff;
 
                         if transform.rotation != interpolated_pos.rotation
@@ -977,17 +973,14 @@ fn recurse(
                         // curr_parent_global_transform * new_transform * parent_delta_pos = interpolated_pos
                         // new_transform = curr_parent_global_transform.inverse() * interpolated_pos
 
-                        let (inverse_parent_rotation, inverse_parent_translation) = (
-                            parent_global_transform.rotation.inverse(),
-                            -parent_global_transform.translation,
-                        );
+                        let inverse_parent_rotation = parent_global_transform.rotation.inverse();
 
                         let new_rotation = Quat::IDENTITY; //inverse_parent_rotation * interpolated_pos.rotation;
 
                         #[cfg(feature = "dim2")]
                         let mut new_translation;
                         #[cfg(feature = "dim3")]
-                        let mut new_translation;
+                        let new_translation;
 
                         let translation_offset =
                             if rb_type.copied().unwrap_or(RigidBody::Fixed) == RigidBody::Dynamic {
@@ -997,18 +990,11 @@ fn recurse(
                                 Vec3::ZERO
                             };
 
-                        println!("Offset: {}", translation_offset);
-
                         let rotated_interpolation = inverse_parent_rotation
                             * (parent_delta.rotation
                                 * (interpolated_pos.translation - translation_offset));
 
                         new_translation = rotated_interpolation; // + inverse_parent_translation;
-
-                        // new_translation = parent_delta.rotation.mul_vec3(new_translation);
-
-                        println!("Was: {}", transform.translation);
-                        println!("I think your new trans should be: {new_translation}");
 
                         // In 2D, preserve the transform `z` component that may have been set by the user
                         #[cfg(feature = "dim2")]
@@ -1059,8 +1045,6 @@ fn recurse(
                             utils::transform_to_iso(&my_new_global_transform, world.physics_scale),
                             false,
                         );
-
-                        println!("My new global: {}", my_new_global_transform.translation);
 
                         // rb.set_rotation(
                         //     Rotation::from_quaternion(Quaternion::new(
