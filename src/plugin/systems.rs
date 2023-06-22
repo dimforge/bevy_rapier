@@ -997,8 +997,6 @@ fn recurse(
                         //      * */(interpolated_pos.translation - translation_offset))
                         //     + (inverse_parent_translation + parent_delta.translation);
 
-                        println!("PARENT D LOC: {}", parent_delta.translation);
-
                         let rotated_interpolation = parent_delta.translation
                             + inverse_parent_rotation.mul_vec3(parent_delta.rotation.mul_vec3(
                                 interpolated_pos.translation + inverse_parent_translation,
