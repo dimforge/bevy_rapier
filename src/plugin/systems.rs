@@ -26,6 +26,7 @@ use rapier::prelude::{
     ColliderBuilder, Isometry, QueryFilter, RigidBodyBuilder, RigidBodyHandle, RigidBodyType,
 };
 use std::collections::HashMap;
+use std::ops::Mul;
 
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 use {
@@ -839,7 +840,10 @@ pub fn writeback_rigid_bodies(
                                 / world.physics_scale;
 
                         let com_diff = com - parent_delta.rotation.mul_vec3(com);
-                        parent_delta.translation -= com_diff;
+                        // parent_delta.translation -= com_diff;
+
+                        // println!("COM DIFF: {com_diff}");
+                        // println!("COM: {com}");
 
                         if transform.rotation != interpolated_pos.rotation
                             || transform.translation != interpolated_pos.translation
@@ -970,7 +974,7 @@ fn recurse(
                         // We need to compute the new local transform such that:
                         // curr_parent_global_transform * new_transform * parent_delta_pos = interpolated_pos
                         // new_transform = curr_parent_global_transform.inverse() * interpolated_pos
-
+                        let inverse_parent_translation = -parent_global_transform.translation;
                         let inverse_parent_rotation = parent_global_transform.rotation.inverse();
 
                         let new_rotation = Quat::IDENTITY; //inverse_parent_rotation * interpolated_pos.rotation;
@@ -978,7 +982,7 @@ fn recurse(
                         #[cfg(feature = "dim2")]
                         let mut new_translation;
                         #[cfg(feature = "dim3")]
-                        let new_translation;
+                        let mut new_translation;
 
                         let translation_offset =
                             if rb_type.copied().unwrap_or(RigidBody::Fixed) == RigidBody::Dynamic {
@@ -988,11 +992,19 @@ fn recurse(
                                 Vec3::ZERO
                             };
 
-                        let rotated_interpolation = inverse_parent_rotation
-                            * (parent_delta.rotation
-                                * (interpolated_pos.translation - translation_offset));
+                        // let rotated_interpolation = inverse_parent_rotation
+                        //     * (/*parent_delta.rotation
+                        //      * */(interpolated_pos.translation - translation_offset))
+                        //     + (inverse_parent_translation + parent_delta.translation);
 
-                        new_translation = rotated_interpolation; // + inverse_parent_translation;
+                        println!("PARENT D LOC: {}", parent_delta.translation);
+
+                        let rotated_interpolation = parent_delta.translation
+                            + inverse_parent_rotation.mul_vec3(parent_delta.rotation.mul_vec3(
+                                interpolated_pos.translation + inverse_parent_translation,
+                            ));
+
+                        new_translation = rotated_interpolation;
 
                         // In 2D, preserve the transform `z` component that may have been set by the user
                         #[cfg(feature = "dim2")]
@@ -1000,7 +1012,10 @@ fn recurse(
                             new_translation.z = transform.translation.z;
                         }
 
-                        // new_translation = Vec3::new(0.0, 10.0, 0.0);
+                        println!("Parent delta: {}", parent_delta.translation);
+                        println!("I think your new trans should be: {new_translation}");
+
+                        new_translation = Vec3::new(0.0, 1.0, 0.0);
 
                         let old_transform = *transform;
 
