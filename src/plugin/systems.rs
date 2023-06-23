@@ -26,6 +26,7 @@ use rapier::prelude::{
     ColliderBuilder, Isometry, QueryFilter, RigidBodyBuilder, RigidBodyHandle, RigidBodyType,
 };
 use std::collections::HashMap;
+use std::ops::Mul;
 
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 use {
@@ -768,7 +769,7 @@ pub fn writeback_rigid_bodies(
     children_query: Query<&Children>,
 ) {
     for entity in top_entities.iter() {
-        let (transform, delta_transform, velocity) = if let Ok((
+        let (transform, delta_transform, velocity, world_offset) = if let Ok((
             entity,
             transform,
             mut interpolation,
@@ -781,6 +782,7 @@ pub fn writeback_rigid_bodies(
             let mut my_new_global_transform = Transform::IDENTITY;
             let mut parent_delta = Transform::IDENTITY;
             let mut my_velocity = Velocity::default();
+            let mut world_offset = Vec3::ZERO;
 
             let world = get_world(world_within, &mut context);
 
@@ -813,6 +815,8 @@ pub fn writeback_rigid_bodies(
                         {
                             interpolated_pos.translation.z = transform.translation.z;
                         }
+
+                        world_offset = transform.translation;
 
                         let (cur_inv_scale, cur_inv_rotation, cur_inv_translation) = transform
                             .compute_affine()
@@ -888,12 +892,18 @@ pub fn writeback_rigid_bodies(
                 }
             }
 
-            (my_new_global_transform, parent_delta, my_velocity)
+            (
+                my_new_global_transform,
+                parent_delta,
+                my_velocity,
+                world_offset,
+            )
         } else {
             (
                 Transform::IDENTITY,
                 Transform::IDENTITY,
                 Velocity::default(),
+                Vec3::ZERO,
             )
         };
 
@@ -907,6 +917,7 @@ pub fn writeback_rigid_bodies(
             velocity,
             &children_query,
             entity,
+            world_offset,
         );
     }
 }
@@ -916,11 +927,12 @@ fn recurse(
     config: &RapierConfiguration,
     sim_to_render_time: &SimulationToRenderTime,
     writeback: &mut Query<RigidBodyWritebackComponents, Without<RigidBodyDisabled>>,
-    parent_global_transform: Transform,
+    mut parent_global_transform: Transform,
     parent_delta: Transform,
     parent_velocity: Velocity,
     children_query: &Query<&Children>,
     parent_entity: Entity,
+    mut world_offset: Vec3,
 ) {
     let Ok(children) = children_query.get(parent_entity) else {
         return;
@@ -972,13 +984,16 @@ fn recurse(
                         // new_transform = curr_parent_global_transform.inverse() * interpolated_pos
 
                         let inverse_parent_rotation = parent_global_transform.rotation.inverse();
+                        let inverse_parent_translation = -parent_global_transform.translation;
+
+                        interpolated_pos.translation -= world_offset;
 
                         let new_rotation = Quat::IDENTITY; //inverse_parent_rotation * interpolated_pos.rotation;
 
                         #[cfg(feature = "dim2")]
                         let mut new_translation;
                         #[cfg(feature = "dim3")]
-                        let new_translation;
+                        let mut new_translation;
 
                         let translation_offset =
                             if rb_type.copied().unwrap_or(RigidBody::Fixed) == RigidBody::Dynamic {
@@ -992,7 +1007,40 @@ fn recurse(
                             * (parent_delta.rotation
                                 * (interpolated_pos.translation - translation_offset));
 
-                        new_translation = rotated_interpolation; // + inverse_parent_translation;
+                        // println!("A: {}", rotated_interpolation + inverse_parent_translation);
+                        // println!(
+                        //     "B: {}",
+                        //     rotated_interpolation
+                        //         + inverse_parent_rotation.mul_vec3(inverse_parent_translation)
+                        // );
+
+                        println!("Parent DELTA: {}", parent_delta.translation);
+
+                        println!(
+                            "A: {}",
+                            rotated_interpolation
+                                + inverse_parent_rotation
+                                    .mul(parent_delta.rotation)
+                                    .mul_vec3(inverse_parent_translation + world_offset)
+                        );
+                        // println!(
+                        //     "B: {}",
+                        //     rotated_interpolation
+                        //         + parent_delta
+                        //             .rotation
+                        //             .mul_vec3(inverse_parent_rotation.mul_vec3(
+                        //                 inverse_parent_translation + parent_delta.translation
+                        //             ))
+                        // );
+                        // println!(
+                        //     "C: {}",
+                        //     rotated_interpolation
+                        //         + parent_delta.rotation.mul_vec3(
+                        //             inverse_parent_rotation.mul_vec3(inverse_parent_translation)
+                        //                 + parent_delta.translation
+                        //         )
+                        // );
+                        new_translation = rotated_interpolation;
 
                         // In 2D, preserve the transform `z` component that may have been set by the user
                         #[cfg(feature = "dim2")]
@@ -1000,7 +1048,9 @@ fn recurse(
                             new_translation.z = transform.translation.z;
                         }
 
-                        // new_translation = Vec3::new(0.0, 10.0, 0.0);
+                        println!("Your new trans: {new_translation}");
+
+                        new_translation = Vec3::new(0.0, 10.0, 0.0);
 
                         let old_transform = *transform;
 
@@ -1033,7 +1083,9 @@ fn recurse(
                         // NOTE: we need to compute the result of the next transform propagation
                         //       to make sure that our change detection for transforms is exact
                         //       despite rounding errors.
+
                         my_new_global_transform = parent_global_transform.mul_transform(*transform);
+                        world_offset = my_new_global_transform.translation;
 
                         world
                             .last_body_transform_set
@@ -1105,6 +1157,7 @@ fn recurse(
             velocity,
             children_query,
             child,
+            world_offset,
         );
     }
 }
