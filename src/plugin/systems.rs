@@ -26,7 +26,6 @@ use rapier::prelude::{
     ColliderBuilder, Isometry, QueryFilter, RigidBodyBuilder, RigidBodyHandle, RigidBodyType,
 };
 use std::collections::HashMap;
-use std::ops::Mul;
 
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 use {
@@ -818,16 +817,16 @@ pub fn writeback_rigid_bodies(
 
                         world_offset = transform.translation;
 
-                        let (cur_inv_scale, cur_inv_rotation, cur_inv_translation) = transform
-                            .compute_affine()
-                            .inverse()
-                            .to_scale_rotation_translation();
+                        // let (cur_inv_scale, cur_inv_rotation, cur_inv_translation) = transform
+                        //     .compute_affine()
+                        //     .inverse()
+                        //     .to_scale_rotation_translation();
 
-                        parent_delta = interpolated_pos.mul_transform(Transform {
-                            translation: cur_inv_translation,
-                            rotation: cur_inv_rotation,
-                            scale: cur_inv_scale,
-                        });
+                        parent_delta = Transform {
+                            translation: interpolated_pos.translation - transform.translation,
+                            rotation: interpolated_pos.rotation * transform.rotation.inverse(),
+                            scale: transform.scale,
+                        };
 
                         let com = rb.center_of_mass();
 
@@ -927,7 +926,7 @@ fn recurse(
     config: &RapierConfiguration,
     sim_to_render_time: &SimulationToRenderTime,
     writeback: &mut Query<RigidBodyWritebackComponents, Without<RigidBodyDisabled>>,
-    mut parent_global_transform: Transform,
+    parent_global_transform: Transform,
     parent_delta: Transform,
     parent_velocity: Velocity,
     children_query: &Query<&Children>,
@@ -984,7 +983,6 @@ fn recurse(
                         // new_transform = curr_parent_global_transform.inverse() * interpolated_pos
 
                         let inverse_parent_rotation = parent_global_transform.rotation.inverse();
-                        let inverse_parent_translation = -parent_global_transform.translation;
 
                         interpolated_pos.translation -= world_offset;
 
@@ -993,7 +991,7 @@ fn recurse(
                         #[cfg(feature = "dim2")]
                         let mut new_translation;
                         #[cfg(feature = "dim3")]
-                        let mut new_translation;
+                        let new_translation;
 
                         let translation_offset =
                             if rb_type.copied().unwrap_or(RigidBody::Fixed) == RigidBody::Dynamic {
@@ -1007,39 +1005,6 @@ fn recurse(
                             * (parent_delta.rotation
                                 * (interpolated_pos.translation - translation_offset));
 
-                        // println!("A: {}", rotated_interpolation + inverse_parent_translation);
-                        // println!(
-                        //     "B: {}",
-                        //     rotated_interpolation
-                        //         + inverse_parent_rotation.mul_vec3(inverse_parent_translation)
-                        // );
-
-                        println!("Parent DELTA: {}", parent_delta.translation);
-
-                        println!(
-                            "A: {}",
-                            rotated_interpolation
-                                + inverse_parent_rotation
-                                    .mul(parent_delta.rotation)
-                                    .mul_vec3(inverse_parent_translation + world_offset)
-                        );
-                        // println!(
-                        //     "B: {}",
-                        //     rotated_interpolation
-                        //         + parent_delta
-                        //             .rotation
-                        //             .mul_vec3(inverse_parent_rotation.mul_vec3(
-                        //                 inverse_parent_translation + parent_delta.translation
-                        //             ))
-                        // );
-                        // println!(
-                        //     "C: {}",
-                        //     rotated_interpolation
-                        //         + parent_delta.rotation.mul_vec3(
-                        //             inverse_parent_rotation.mul_vec3(inverse_parent_translation)
-                        //                 + parent_delta.translation
-                        //         )
-                        // );
                         new_translation = rotated_interpolation;
 
                         // In 2D, preserve the transform `z` component that may have been set by the user
@@ -1047,10 +1012,6 @@ fn recurse(
                         {
                             new_translation.z = transform.translation.z;
                         }
-
-                        println!("Your new trans: {new_translation}");
-
-                        new_translation = Vec3::new(0.0, 10.0, 0.0);
 
                         let old_transform = *transform;
 
@@ -1064,17 +1025,10 @@ fn recurse(
                             transform.translation = new_translation;
                         }
 
-                        let inv_old_transform = {
-                            let (scale, rotation, translation) = old_transform
-                                .compute_affine()
-                                .inverse()
-                                .to_scale_rotation_translation();
-
-                            Transform {
-                                scale,
-                                rotation,
-                                translation,
-                            }
+                        let inv_old_transform = Transform {
+                            scale: old_transform.scale,
+                            rotation: old_transform.rotation.inverse(),
+                            translation: -old_transform.translation,
                         };
 
                         delta_transform = transform.mul_transform(inv_old_transform);
