@@ -81,20 +81,20 @@ impl Collider {
 
     /// Initialize a new collider with a cuboid shape defined by its half-extents.
     #[cfg(feature = "dim2")]
-    pub fn cuboid(hx: Real, hy: Real) -> Self {
-        SharedShape::cuboid(hx, hy).into()
+    pub fn cuboid(half_x: Real, half_y: Real) -> Self {
+        SharedShape::cuboid(half_x, half_y).into()
     }
 
     /// Initialize a new collider with a round cuboid shape defined by its half-extents
     /// and border radius.
     #[cfg(feature = "dim2")]
-    pub fn round_cuboid(hx: Real, hy: Real, border_radius: Real) -> Self {
-        SharedShape::round_cuboid(hx, hy, border_radius).into()
+    pub fn round_cuboid(half_x: Real, half_y: Real, border_radius: Real) -> Self {
+        SharedShape::round_cuboid(half_x, half_y, border_radius).into()
     }
 
     /// Initialize a new collider with a capsule shape.
-    pub fn capsule(a: Vect, b: Vect, radius: Real) -> Self {
-        SharedShape::capsule(a.into(), b.into(), radius).into()
+    pub fn capsule(axis: Vect, endpoint: Vect, radius: Real) -> Self {
+        SharedShape::capsule(axis.into(), endpoint.into(), radius).into()
     }
 
     /// Initialize a new collider with a capsule shape aligned with the `x` axis.
@@ -125,8 +125,8 @@ impl Collider {
     /// Initialize a new collider with a round cuboid shape defined by its half-extents
     /// and border radius.
     #[cfg(feature = "dim3")]
-    pub fn round_cuboid(hx: Real, hy: Real, hz: Real, border_radius: Real) -> Self {
-        SharedShape::round_cuboid(hx, hy, hz, border_radius).into()
+    pub fn round_cuboid(half_x: Real, half_y: Real, half_z: Real, border_radius: Real) -> Self {
+        SharedShape::round_cuboid(half_x, half_y, half_z, border_radius).into()
     }
 
     /// Initializes a collider with a segment shape.
@@ -550,12 +550,12 @@ impl Collider {
     /// The point is assumed to be expressed in the local-space of `self`.
     pub fn project_local_point_with_max_dist(
         &self,
-        pt: Vect,
+        point: Vect,
         solid: bool,
         max_dist: Real,
     ) -> Option<PointProjection> {
         self.raw
-            .project_local_point_with_max_dist(&pt.into(), solid, max_dist)
+            .project_local_point_with_max_dist(&point.into(), solid, max_dist)
             .map(Into::into)
     }
 
@@ -564,38 +564,38 @@ impl Collider {
         &self,
         translation: Vect,
         rotation: Rot,
-        pt: Vect,
+        point: Vect,
         solid: bool,
         max_dist: Real,
     ) -> Option<PointProjection> {
         let pos = (translation, rotation).into();
         self.raw
-            .project_point_with_max_dist(&pos, &pt.into(), solid, max_dist)
+            .project_point_with_max_dist(&pos, &point.into(), solid, max_dist)
             .map(Into::into)
     }
 
     /// Projects a point on `self`.
     ///
     /// The point is assumed to be expressed in the local-space of `self`.
-    pub fn project_local_point(&self, pt: Vect, solid: bool) -> PointProjection {
-        self.raw.project_local_point(&pt.into(), solid).into()
+    pub fn project_local_point(&self, point: Vect, solid: bool) -> PointProjection {
+        self.raw.project_local_point(&point.into(), solid).into()
     }
 
     /// Projects a point on the boundary of `self` and returns the id of the
     /// feature the point was projected on.
-    pub fn project_local_point_and_get_feature(&self, pt: Vect) -> (PointProjection, FeatureId) {
-        let (proj, feat) = self.raw.project_local_point_and_get_feature(&pt.into());
+    pub fn project_local_point_and_get_feature(&self, point: Vect) -> (PointProjection, FeatureId) {
+        let (proj, feat) = self.raw.project_local_point_and_get_feature(&point.into());
         (proj.into(), feat)
     }
 
     /// Computes the minimal distance between a point and `self`.
-    pub fn distance_to_local_point(&self, pt: Vect, solid: bool) -> Real {
-        self.raw.distance_to_local_point(&pt.into(), solid)
+    pub fn distance_to_local_point(&self, point: Vect, solid: bool) -> Real {
+        self.raw.distance_to_local_point(&point.into(), solid)
     }
 
     /// Tests if the given point is inside of `self`.
-    pub fn contains_local_point(&self, pt: Vect) -> bool {
-        self.raw.contains_local_point(&pt.into())
+    pub fn contains_local_point(&self, point: Vect) -> bool {
+        self.raw.contains_local_point(&point.into())
     }
 
     /// Projects a point on `self` transformed by `m`.
@@ -603,11 +603,11 @@ impl Collider {
         &self,
         translation: Vect,
         rotation: Rot,
-        pt: Vect,
+        point: Vect,
         solid: bool,
     ) -> PointProjection {
         let pos = (translation, rotation).into();
-        self.raw.project_point(&pos, &pt.into(), solid).into()
+        self.raw.project_point(&pos, &point.into(), solid).into()
     }
 
     /// Computes the minimal distance between a point and `self` transformed by `m`.
@@ -616,11 +616,11 @@ impl Collider {
         &self,
         translation: Vect,
         rotation: Rot,
-        pt: Vect,
+        point: Vect,
         solid: bool,
     ) -> Real {
         let pos = (translation, rotation).into();
-        self.raw.distance_to_point(&pos, &pt.into(), solid)
+        self.raw.distance_to_point(&pos, &point.into(), solid)
     }
 
     /// Projects a point on the boundary of `self` transformed by `m` and returns the id of the
@@ -629,17 +629,17 @@ impl Collider {
         &self,
         translation: Vect,
         rotation: Rot,
-        pt: Vect,
+        point: Vect,
     ) -> (PointProjection, FeatureId) {
         let pos = (translation, rotation).into();
-        let (proj, feat) = self.raw.project_point_and_get_feature(&pos, &pt.into());
+        let (proj, feat) = self.raw.project_point_and_get_feature(&pos, &point.into());
         (proj.into(), feat)
     }
 
     /// Tests if the given point is inside of `self` transformed by `m`.
-    pub fn contains_point(&self, translation: Vect, rotation: Rot, pt: Vect) -> bool {
+    pub fn contains_point(&self, translation: Vect, rotation: Rot, point: Vect) -> bool {
         let pos = (translation, rotation).into();
-        self.raw.contains_point(&pos, &pt.into())
+        self.raw.contains_point(&pos, &point.into())
     }
 
     /// Computes the time of impact between this transform shape and a ray.
