@@ -647,11 +647,11 @@ impl Collider {
         &self,
         ray_origin: Vect,
         ray_dir: Vect,
-        max_toi: Real,
+        max_time_of_impact: Real,
         solid: bool,
     ) -> Option<Real> {
         let ray = Ray::new(ray_origin.into(), ray_dir.into());
-        self.raw.cast_local_ray(&ray, max_toi, solid)
+        self.raw.cast_local_ray(&ray, max_time_of_impact, solid)
     }
 
     /// Computes the time of impact, and normal between this transformed shape and a ray.
@@ -659,19 +659,24 @@ impl Collider {
         &self,
         ray_origin: Vect,
         ray_dir: Vect,
-        max_toi: Real,
+        max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
         let ray = Ray::new(ray_origin.into(), ray_dir.into());
         self.raw
-            .cast_local_ray_and_get_normal(&ray, max_toi, solid)
+            .cast_local_ray_and_get_normal(&ray, max_time_of_impact, solid)
             .map(|inter| RayIntersection::from_rapier(inter, ray_origin, ray_dir))
     }
 
     /// Tests whether a ray intersects this transformed shape.
-    pub fn intersects_local_ray(&self, ray_origin: Vect, ray_dir: Vect, max_toi: Real) -> bool {
+    pub fn intersects_local_ray(
+        &self,
+        ray_origin: Vect,
+        ray_dir: Vect,
+        max_time_of_impact: Real,
+    ) -> bool {
         let ray = Ray::new(ray_origin.into(), ray_dir.into());
-        self.raw.intersects_local_ray(&ray, max_toi)
+        self.raw.intersects_local_ray(&ray, max_time_of_impact)
     }
 
     /// Computes the time of impact between this transform shape and a ray.
@@ -681,12 +686,12 @@ impl Collider {
         rotation: Rot,
         ray_origin: Vect,
         ray_dir: Vect,
-        max_toi: Real,
+        max_time_of_impact: Real,
         solid: bool,
     ) -> Option<Real> {
         let pos = (translation, rotation).into();
         let ray = Ray::new(ray_origin.into(), ray_dir.into());
-        self.raw.cast_ray(&pos, &ray, max_toi, solid)
+        self.raw.cast_ray(&pos, &ray, max_time_of_impact, solid)
     }
 
     /// Computes the time of impact, and normal between this transformed shape and a ray.
@@ -696,13 +701,13 @@ impl Collider {
         rotation: Rot,
         ray_origin: Vect,
         ray_dir: Vect,
-        max_toi: Real,
+        max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
         let pos = (translation, rotation).into();
         let ray = Ray::new(ray_origin.into(), ray_dir.into());
         self.raw
-            .cast_ray_and_get_normal(&pos, &ray, max_toi, solid)
+            .cast_ray_and_get_normal(&pos, &ray, max_time_of_impact, solid)
             .map(|inter| RayIntersection::from_rapier(inter, ray_origin, ray_dir))
     }
 
@@ -713,11 +718,11 @@ impl Collider {
         rotation: Rot,
         ray_origin: Vect,
         ray_dir: Vect,
-        max_toi: Real,
+        max_time_of_impact: Real,
     ) -> bool {
         let pos = (translation, rotation).into();
         let ray = Ray::new(ray_origin.into(), ray_dir.into());
-        self.raw.intersects_ray(&pos, &ray, max_toi)
+        self.raw.intersects_ray(&pos, &ray, max_time_of_impact)
     }
 }
 
