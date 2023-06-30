@@ -906,7 +906,7 @@ pub fn writeback_rigid_bodies(
             )
         };
 
-        recurse(
+        recurse_child_transforms(
             context.as_mut(),
             &config,
             &sim_to_render_time,
@@ -921,7 +921,7 @@ pub fn writeback_rigid_bodies(
     }
 }
 
-fn recurse(
+fn recurse_child_transforms(
     mut context: &mut RapierContext,
     config: &RapierConfiguration,
     sim_to_render_time: &SimulationToRenderTime,
@@ -931,13 +931,15 @@ fn recurse(
     parent_velocity: Velocity,
     children_query: &Query<&Children>,
     parent_entity: Entity,
-    mut world_offset: Vec3,
+    world_offset: Vec3,
 ) {
     let Ok(children) = children_query.get(parent_entity) else {
         return;
     };
 
     for child in children.iter().copied() {
+        let mut world_offset = world_offset;
+
         let (transform, delta_transform, velocity) = if let Ok((
             entity,
             transform,
@@ -1101,7 +1103,7 @@ fn recurse(
             (parent_global_transform, parent_delta, parent_velocity)
         };
 
-        recurse(
+        recurse_child_transforms(
             context,
             config,
             sim_to_render_time,
