@@ -9,8 +9,11 @@ fn main() {
         0xF9 as f32 / 255.0,
         0xFF as f32 / 255.0,
     )))
-    .add_plugins(DefaultPlugins)
-    .add_plugin(RapierDebugRenderPlugin::default())
+    .add_plugins((
+        DefaultPlugins,
+        RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0).with_default_system_setup(false),
+        RapierDebugRenderPlugin::default(),
+    ))
     .add_systems(Startup, (setup_graphics, setup_physics));
 
     app.configure_sets(
@@ -42,12 +45,7 @@ fn main() {
         ),
     );
 
-    app.add_plugin(
-        RapierPhysicsPlugin::<NoUserData>::default()
-            .with_physics_scale(100.)
-            .with_default_system_setup(false),
-    )
-    .run();
+    app.run();
 }
 
 fn despawn_one_box(

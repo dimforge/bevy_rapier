@@ -1507,7 +1507,7 @@ mod tests {
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_collider_initializes() {
         let mut app = App::new();
-        app.add_plugin(HeadlessRenderPlugin)
+        app.add_plugins(HeadlessRenderPlugin)
             .add_systems(Update, init_async_colliders);
 
         let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
@@ -1534,7 +1534,7 @@ mod tests {
         use bevy::scene::scene_spawner_system;
 
         let mut app = App::new();
-        app.add_plugin(HeadlessRenderPlugin).add_systems(
+        app.add_plugins(HeadlessRenderPlugin).add_systems(
             Update,
             init_async_scene_colliders.after(scene_spawner_system),
         );
@@ -1581,10 +1581,12 @@ mod tests {
     #[test]
     fn transform_propagation() {
         let mut app = App::new();
-        app.add_plugin(HeadlessRenderPlugin)
-            .add_plugin(TransformPlugin)
-            .add_plugin(TimePlugin)
-            .add_plugin(RapierPhysicsPlugin::<NoUserData>::default());
+        app.add_plugins((
+            HeadlessRenderPlugin,
+            TransformPlugin,
+            TimePlugin,
+            RapierPhysicsPlugin::<NoUserData>::default(),
+        ));
 
         let zero = (Transform::default(), Transform::default());
 
@@ -1636,10 +1638,12 @@ mod tests {
     #[test]
     fn transform_propagation2() {
         let mut app = App::new();
-        app.add_plugin(HeadlessRenderPlugin)
-            .add_plugin(TransformPlugin)
-            .add_plugin(TimePlugin)
-            .add_plugin(RapierPhysicsPlugin::<NoUserData>::default());
+        app.add_plugins((
+            HeadlessRenderPlugin,
+            TransformPlugin,
+            TimePlugin,
+            RapierPhysicsPlugin::<NoUserData>::default(),
+        ));
 
         let zero = (Transform::default(), Transform::default());
 
@@ -1716,16 +1720,18 @@ mod tests {
 
     impl Plugin for HeadlessRenderPlugin {
         fn build(&self, app: &mut App) {
-            app.add_plugin(WindowPlugin::default())
-                .add_plugin(AssetPlugin::default())
-                .add_plugin(ScenePlugin::default())
-                .add_plugin(RenderPlugin {
+            app.add_plugins((
+                WindowPlugin::default(),
+                AssetPlugin::default(),
+                ScenePlugin::default(),
+                RenderPlugin {
                     wgpu_settings: WgpuSettings {
                         backends: None,
                         ..Default::default()
                     },
-                })
-                .add_plugin(ImagePlugin::default());
+                },
+                ImagePlugin::default(),
+            ));
         }
     }
 }

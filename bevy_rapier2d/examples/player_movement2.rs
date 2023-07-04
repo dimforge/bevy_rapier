@@ -3,18 +3,20 @@ use bevy_rapier2d::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                resolution: WindowResolution::new(1000., 1000.),
-                title: "Player Movement Example".to_string(),
+        .add_plugins((
+            DefaultPlugins.set(WindowPlugin {
+                primary_window: Some(Window {
+                    resolution: WindowResolution::new(1000., 1000.),
+                    title: "Player Movement Example".to_string(),
+                    ..default()
+                }),
                 ..default()
             }),
-            ..default()
-        }))
+            RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0),
+            RapierDebugRenderPlugin::default(),
+        ))
         .add_systems(Startup, spawn_player)
         .add_systems(Update, player_movement)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-        .add_plugin(RapierDebugRenderPlugin::default())
         .run();
 }
 

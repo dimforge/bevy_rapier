@@ -20,9 +20,11 @@ fn main() {
         )))
         .insert_resource(DespawnResource::default())
         .insert_resource(ResizeResource::default())
-        .add_plugins(DefaultPlugins)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-        .add_plugin(RapierDebugRenderPlugin::default())
+        .add_plugins((
+            DefaultPlugins,
+            RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0),
+            RapierDebugRenderPlugin::default(),
+        ))
         .add_systems(Startup, (setup_graphics, setup_physics))
         .add_systems(Update, (despawn, resize))
         .run();
