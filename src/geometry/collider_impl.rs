@@ -172,16 +172,17 @@ impl Collider {
     /// Returns `None` if the index buffer or vertex buffer of the mesh are in an incompatible format.
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     pub fn from_bevy_mesh(mesh: &Mesh, collider_shape: &ComputedColliderShape) -> Option<Self> {
-        let vertices_indices = extract_mesh_vertices_indices(mesh);
+        let Some((vtx, idx)) = extract_mesh_vertices_indices(mesh) else { return None; };
         match collider_shape {
-            ComputedColliderShape::TriMesh => vertices_indices.map(|(vtx, idx)| {
-                SharedShape::trimesh_with_flags(vtx, idx, TriMeshFlags::MERGE_DUPLICATE_VERTICES)
-                    .into()
-            }),
+            ComputedColliderShape::TriMesh => {
+                Some(SharedShape::trimesh_with_flags(vtx, idx, TriMeshFlags::MERGE_DUPLICATE_VERTICES)
+                    .into())
+            },
+            ComputedColliderShape::ConvexHull => {
+                SharedShape::convex_hull(&vtx).map(|shape| shape.into())
+            },
             ComputedColliderShape::ConvexDecomposition(params) => {
-                vertices_indices.map(|(vtx, idx)| {
-                    SharedShape::convex_decomposition_with_params(&vtx, &idx, params).into()
-                })
+                Some(SharedShape::convex_decomposition_with_params(&vtx, &idx, params).into())
             }
         }
     }
