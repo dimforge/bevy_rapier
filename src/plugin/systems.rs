@@ -1107,9 +1107,9 @@ pub fn sync_removals(
                 false,
             );
         }
-        commands.get_entity(entity).map(|mut entity| {
+        if let Some(mut entity) = commands.get_entity(entity) {
             entity.remove::<RapierRigidBodyHandle>();
-        });
+        }
     }
 
     /*
@@ -1122,9 +1122,9 @@ pub fn sync_removals(
                 .remove(handle, &mut context.islands, &mut context.bodies, true);
             context.deleted_colliders.insert(handle, entity);
         }
-        commands.get_entity(entity).map(|mut entity| {
+        if let Some(mut entity) = commands.get_entity(entity) {
             entity.remove::<RapierColliderHandle>();
-        });
+        }
     }
 
     /*
@@ -1137,9 +1137,9 @@ pub fn sync_removals(
         if let Some(handle) = context.entity2impulse_joint.remove(&entity) {
             context.impulse_joints.remove(handle, true);
         }
-        commands.get_entity(entity).map(|mut entity| {
+        if let Some(mut entity) = commands.get_entity(entity) {
             entity.remove::<RapierImpulseJointHandle>();
-        });
+        }
     }
 
     /*
@@ -1152,9 +1152,9 @@ pub fn sync_removals(
         if let Some(handle) = context.entity2multibody_joint.remove(&entity) {
             context.multibody_joints.remove(handle, true);
         }
-        commands.get_entity(entity).map(|mut entity| {
+        if let Some(mut entity) = commands.get_entity(entity) {
             entity.remove::<RapierMultibodyJointHandle>();
-        });
+        }
     }
 
     /*
