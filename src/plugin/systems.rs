@@ -1090,11 +1090,12 @@ pub fn sync_removals(
     mut removed_rigid_body_disabled: RemovedComponents<RigidBodyDisabled>,
     mut removed_colliders_disabled: RemovedComponents<ColliderDisabled>,
 ) {
+    let context = &mut *context;
+
     /*
      * Rigid-bodies removal detection.
      */
-    let context = &mut *context;
-    for entity in removed_bodies.iter() {
+    for entity in removed_bodies.iter().chain(orphan_bodies.iter()) {
         if let Some(handle) = context.entity2body.remove(&entity) {
             let _ = context.last_body_transform_set.remove(&handle);
             context.bodies.remove(
@@ -1106,78 +1107,54 @@ pub fn sync_removals(
                 false,
             );
         }
-    }
-
-    let context = &mut *context;
-    for entity in orphan_bodies.iter() {
-        if let Some(handle) = context.entity2body.remove(&entity) {
-            let _ = context.last_body_transform_set.remove(&handle);
-            context.bodies.remove(
-                handle,
-                &mut context.islands,
-                &mut context.colliders,
-                &mut context.impulse_joints,
-                &mut context.multibody_joints,
-                false,
-            );
-        }
-        commands.entity(entity).remove::<RapierRigidBodyHandle>();
+        commands.get_entity(entity).map(|mut entity| {
+            entity.remove::<RapierRigidBodyHandle>();
+        });
     }
 
     /*
      * Collider removal detection.
      */
-    for entity in removed_colliders.iter() {
+    for entity in removed_colliders.iter().chain(orphan_colliders.iter()) {
         if let Some(handle) = context.entity2collider.remove(&entity) {
             context
                 .colliders
                 .remove(handle, &mut context.islands, &mut context.bodies, true);
             context.deleted_colliders.insert(handle, entity);
         }
-    }
-
-    for entity in orphan_colliders.iter() {
-        if let Some(handle) = context.entity2collider.remove(&entity) {
-            context
-                .colliders
-                .remove(handle, &mut context.islands, &mut context.bodies, true);
-            context.deleted_colliders.insert(handle, entity);
-        }
-        commands.entity(entity).remove::<RapierColliderHandle>();
+        commands.get_entity(entity).map(|mut entity| {
+            entity.remove::<RapierColliderHandle>();
+        });
     }
 
     /*
      * Impulse joint removal detection.
      */
-    for entity in removed_impulse_joints.iter() {
+    for entity in removed_impulse_joints
+        .iter()
+        .chain(orphan_impulse_joints.iter())
+    {
         if let Some(handle) = context.entity2impulse_joint.remove(&entity) {
             context.impulse_joints.remove(handle, true);
         }
-    }
-
-    for entity in orphan_impulse_joints.iter() {
-        if let Some(handle) = context.entity2impulse_joint.remove(&entity) {
-            context.impulse_joints.remove(handle, true);
-        }
-        commands.entity(entity).remove::<RapierImpulseJointHandle>();
+        commands.get_entity(entity).map(|mut entity| {
+            entity.remove::<RapierImpulseJointHandle>();
+        });
     }
 
     /*
      * Multibody joint removal detection.
      */
-    for entity in removed_multibody_joints.iter() {
+    for entity in removed_multibody_joints
+        .iter()
+        .chain(orphan_multibody_joints.iter())
+    {
         if let Some(handle) = context.entity2multibody_joint.remove(&entity) {
             context.multibody_joints.remove(handle, true);
         }
-    }
-
-    for entity in orphan_multibody_joints.iter() {
-        if let Some(handle) = context.entity2multibody_joint.remove(&entity) {
-            context.multibody_joints.remove(handle, true);
-        }
-        commands
-            .entity(entity)
-            .remove::<RapierMultibodyJointHandle>();
+        commands.get_entity(entity).map(|mut entity| {
+            entity.remove::<RapierMultibodyJointHandle>();
+        });
     }
 
     /*
