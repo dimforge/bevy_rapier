@@ -85,7 +85,12 @@ pub fn apply_scale(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
     mut changed_collider_scales: Query<
-        (&mut Collider,&RapierColliderHandle, &GlobalTransform, Option<&ColliderScale>),
+        (
+            &mut Collider,
+            &RapierColliderHandle,
+            &GlobalTransform,
+            Option<&ColliderScale>,
+        ),
         Or<(
             Changed<Collider>,
             Changed<GlobalTransform>,
@@ -131,7 +136,7 @@ pub fn apply_collider_user_changes(
     config: Res<RapierConfiguration>,
     mut context: ResMut<RapierContext>,
     changed_collider_transforms: Query<
-        (Entity, &RapierColliderHandle, &GlobalTransform),
+        (&RapierColliderHandle, &GlobalTransform),
         (Without<RapierRigidBodyHandle>, Changed<GlobalTransform>),
     >,
 
@@ -162,9 +167,8 @@ pub fn apply_collider_user_changes(
 ) {
     let scale = context.physics_scale;
 
-    for (entity, handle, transform) in changed_collider_transforms.iter() {
+    for (handle, transform) in changed_collider_transforms.iter() {
         if let Some(co) = context.colliders.get_mut(handle.0) {
-            let parent = co.parent();
             if co.parent().is_none() {
                 co.set_position(utils::transform_to_iso(
                     &transform.compute_transform(),
