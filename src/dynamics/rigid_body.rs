@@ -441,9 +441,9 @@ impl Dominance {
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect, FromReflect)]
 #[reflect(Component, PartialEq)]
 pub struct Sleeping {
-    /// The threshold linear velocity bellow which the body can fall asleep.
+    /// The linear velocity below which the body can fall asleep.
     pub linear_threshold: f32,
-    /// The angular linear velocity bellow which the body can fall asleep.
+    /// The angular velocity below which the body can fall asleep.
     pub angular_threshold: f32,
     /// Is this body sleeping?
     pub sleeping: bool,
