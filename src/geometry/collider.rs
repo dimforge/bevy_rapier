@@ -6,7 +6,7 @@ use {crate::geometry::VHACDParameters, bevy::utils::HashMap};
 use bevy::prelude::*;
 
 use bevy::ecs::{
-    entity::{EntityMap, MapEntities, MapEntitiesError},
+    entity::{EntityMapper, MapEntities},
     reflect::ReflectMapEntities,
 };
 use bevy::utils::HashSet;
@@ -527,9 +527,8 @@ impl FromWorld for ColliderParent {
 }
 
 impl MapEntities for ColliderParent {
-    fn map_entities(&mut self, entity_map: &EntityMap) -> Result<(), MapEntitiesError> {
-        self.0 = entity_map.get(self.0)?;
-        Ok(())
+    fn map_entities(&mut self, entity_map: &mut EntityMapper) {
+        self.0 = entity_map.get_or_reserve(self.0);
     }
 }
 

@@ -15,11 +15,13 @@ use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
-    BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities, KinematicCharacterController,
-    KinematicCharacterControllerOutput, MassModifiedEvent, RigidBodyDisabled, Vect, ColliderParent,
+    BevyPhysicsHooks, BevyPhysicsHooksAdapter, ColliderParent, CollidingEntities,
+    KinematicCharacterController, KinematicCharacterControllerOutput, MassModifiedEvent,
+    RigidBodyDisabled,
 };
 use crate::utils;
-use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
+use bevy::ecs::system::{StaticSystemParam, SystemParamItem, SystemParam};
+use bevy::hierarchy::HierarchyEvent;
 use bevy::prelude::*;
 use rapier::prelude::*;
 use std::collections::HashMap;
@@ -117,47 +119,191 @@ pub fn apply_scale(
     }
 }
 
+/// System responsible for detecting changes in the hierarchy that would
+/// affect the collider's parent rigid body.
+pub fn collect_collider_hierarchy_changes(
+    mut commands: Commands,
+
+    mut hierarchy_events: EventReader<HierarchyEvent>,
+    parents: Query<&Parent>,
+    childrens: Query<&Children>,
+    rigid_bodies: Query<&RigidBody>,
+    colliders: Query<&Collider>,
+    mut collider_parents: Query<&mut ColliderParent>,
+) {
+    let child_colliders = |entity: Entity| -> Vec<Entity> {
+        let mut found = Vec::new();
+        let mut possibilities = vec![entity];
+        while let Some(entity) = possibilities.pop() {
+            if rigid_bodies.contains(entity) {
+                continue;
+            }
+
+            if colliders.contains(entity) {
+                found.push(entity);
+            }
+
+            if let Ok(children) = childrens.get(entity) {
+                possibilities.extend(children.iter());
+            } else {
+                continue;
+            };
+        }
+
+        found
+    };
+
+    let parent_rigid_body = |mut entity: Entity| -> Option<Entity> {
+        loop {
+            if rigid_bodies.contains(entity) {
+                return Some(entity);
+            }
+
+            if let Ok(parent) = parents.get(entity) {
+                entity = parent.get();
+            } else {
+                return None;
+            }
+        }
+    };
+
+    for event in hierarchy_events.iter() {
+        match event {
+            HierarchyEvent::ChildAdded { child, .. } | HierarchyEvent::ChildMoved { child, .. } => {
+                let colliders = child_colliders(*child);
+                let Some(rigid_body) = parent_rigid_body(*child) else { continue };
+
+                for collider in colliders {
+                    let new_collider_parent = ColliderParent(rigid_body);
+                    if let Ok(mut collider_parent) = collider_parents.get_mut(collider) {
+                        *collider_parent = new_collider_parent;
+                    } else {
+                        commands.entity(collider).insert(new_collider_parent);
+                    }
+                }
+            }
+            HierarchyEvent::ChildRemoved { child, .. } => {
+                let colliders = child_colliders(*child);
+                for collider in colliders {
+                    if collider_parents.contains(collider) {
+                        commands.entity(collider).remove::<ColliderParent>();
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Collection of change queries for colliders.
+/// 
+/// Mainly used because bevy doesn't impl more than 
+/// 16 parameters for a system.
+#[derive(SystemParam)]
+pub struct ColliderChanges<'w, 's> {
+    changed_collider_transforms: Query<
+        'w,
+        's,
+        (
+            Entity,
+            &'static RapierColliderHandle,
+            &'static GlobalTransform,
+        ),
+        (Without<RapierRigidBodyHandle>, Changed<GlobalTransform>),
+    >,
+    changed_collider_parents: Query<
+        'w,
+        's,
+        (&'static RapierColliderHandle, &'static ColliderParent),
+        Changed<ColliderParent>,
+    >,
+    changed_shapes:
+        Query<'w, 's, (&'static RapierColliderHandle, &'static Collider), Changed<Collider>>,
+    changed_active_events: Query<
+        'w,
+        's,
+        (&'static RapierColliderHandle, &'static ActiveEvents),
+        Changed<ActiveEvents>,
+    >,
+    changed_active_hooks:
+        Query<'w, 's, (&'static RapierColliderHandle, &'static ActiveHooks), Changed<ActiveHooks>>,
+    changed_active_collision_types: Query<
+        'w,
+        's,
+        (&'static RapierColliderHandle, &'static ActiveCollisionTypes),
+        Changed<ActiveCollisionTypes>,
+    >,
+    changed_friction:
+        Query<'w, 's, (&'static RapierColliderHandle, &'static Friction), Changed<Friction>>,
+    changed_restitution:
+        Query<'w, 's, (&'static RapierColliderHandle, &'static Restitution), Changed<Restitution>>,
+    changed_collision_groups: Query<
+        'w,
+        's,
+        (&'static RapierColliderHandle, &'static CollisionGroups),
+        Changed<CollisionGroups>,
+    >,
+    changed_solver_groups: Query<
+        'w,
+        's,
+        (&'static RapierColliderHandle, &'static SolverGroups),
+        Changed<SolverGroups>,
+    >,
+    changed_sensors:
+        Query<'w, 's, (&'static RapierColliderHandle, &'static Sensor), Changed<Sensor>>,
+    changed_disabled: Query<
+        'w,
+        's,
+        (&'static RapierColliderHandle, &'static ColliderDisabled),
+        Changed<ColliderDisabled>,
+    >,
+    changed_contact_force_threshold: Query<
+        'w,
+        's,
+        (
+            &'static RapierColliderHandle,
+            &'static ContactForceEventThreshold,
+        ),
+        Changed<ContactForceEventThreshold>,
+    >,
+    changed_collider_mass_props: Query<
+        'w,
+        's,
+        (
+            &'static RapierColliderHandle,
+            &'static ColliderMassProperties,
+        ),
+        Changed<ColliderMassProperties>,
+    >,
+}
+
 /// System responsible for applying changes the user made to a collider-related component.
 pub fn apply_collider_user_changes(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
-    (changed_collider_transforms, parent_query, transform_query): (
-        Query<
-            (Entity, &RapierColliderHandle, &GlobalTransform),
-            (Without<RapierRigidBodyHandle>, Changed<GlobalTransform>),
-        >,
-        Query<&Parent>,
-        Query<&Transform>,
-    ),
 
-    changed_shapes: Query<(&RapierColliderHandle, &Collider), Changed<Collider>>,
-    changed_active_events: Query<(&RapierColliderHandle, &ActiveEvents), Changed<ActiveEvents>>,
-    changed_active_hooks: Query<(&RapierColliderHandle, &ActiveHooks), Changed<ActiveHooks>>,
-    changed_active_collision_types: Query<
-        (&RapierColliderHandle, &ActiveCollisionTypes),
-        Changed<ActiveCollisionTypes>,
-    >,
-    changed_friction: Query<(&RapierColliderHandle, &Friction), Changed<Friction>>,
-    changed_restitution: Query<(&RapierColliderHandle, &Restitution), Changed<Restitution>>,
-    changed_collision_groups: Query<
-        (&RapierColliderHandle, &CollisionGroups),
-        Changed<CollisionGroups>,
-    >,
-    changed_solver_groups: Query<(&RapierColliderHandle, &SolverGroups), Changed<SolverGroups>>,
-    changed_sensors: Query<(&RapierColliderHandle, &Sensor), Changed<Sensor>>,
-    changed_disabled: Query<(&RapierColliderHandle, &ColliderDisabled), Changed<ColliderDisabled>>,
-    changed_contact_force_threshold: Query<
-        (&RapierColliderHandle, &ContactForceEventThreshold),
-        Changed<ContactForceEventThreshold>,
-    >,
-    changed_collider_mass_props: Query<
-        (&RapierColliderHandle, &ColliderMassProperties),
-        Changed<ColliderMassProperties>,
-    >,
+    collider_changes: ColliderChanges,
+    parent_query: Query<&Parent>,
+    transform_query: Query<&Transform>,
 
     mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
     let scale = context.physics_scale;
+    let ColliderChanges {
+        changed_collider_transforms,
+        changed_collider_parents,
+        changed_shapes,
+        changed_active_events,
+        changed_active_hooks,
+        changed_active_collision_types,
+        changed_friction,
+        changed_restitution,
+        changed_collision_groups,
+        changed_solver_groups,
+        changed_sensors,
+        changed_disabled,
+        changed_contact_force_threshold,
+        changed_collider_mass_props,
+    } = collider_changes;
 
     for (entity, handle, transform) in changed_collider_transforms.iter() {
         if context.collider_parent(entity).is_some() {
@@ -172,6 +318,17 @@ pub fn apply_collider_user_changes(
                 &transform.compute_transform(),
                 scale,
             ))
+        }
+    }
+
+    for (handle, collider_parent) in changed_collider_parents.iter() {
+        if let Some(body_handle) = context.entity2body.get(&collider_parent.0).copied() {
+            let RapierContext {
+                ref mut colliders,
+                ref mut bodies,
+                ..
+            } = *context;
+            colliders.set_parent(handle.0, Some(body_handle), bodies);
         }
     }
 
@@ -1183,6 +1340,7 @@ pub fn sync_removals(
     mut removed_sensors: RemovedComponents<Sensor>,
     mut removed_rigid_body_disabled: RemovedComponents<RigidBodyDisabled>,
     mut removed_colliders_disabled: RemovedComponents<ColliderDisabled>,
+    mut removed_collider_parents: RemovedComponents<ColliderParent>,
 
     mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
@@ -1308,6 +1466,17 @@ pub fn sync_removals(
             if let Some(rb) = context.bodies.get_mut(*handle) {
                 rb.set_enabled(true);
             }
+        }
+    }
+
+    for entity in removed_collider_parents.iter() {
+        if let Some(handle) = context.entity2collider.get(&entity) {
+            let RapierContext {
+                ref mut colliders,
+                ref mut bodies,
+                ..
+            } = *context;
+            colliders.set_parent(*handle, None, bodies);
         }
     }
 
