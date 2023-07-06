@@ -5,7 +5,12 @@ use {crate::geometry::VHACDParameters, bevy::utils::HashMap};
 
 use bevy::prelude::*;
 
+use bevy::ecs::{
+    entity::{EntityMap, MapEntities, MapEntitiesError},
+    reflect::ReflectMapEntities,
+};
 use bevy::utils::HashSet;
+
 use rapier::geometry::Shape;
 use rapier::prelude::{ColliderHandle, InteractionGroups, SharedShape};
 
@@ -502,6 +507,39 @@ impl CollidingEntities {
 #[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct ColliderDisabled;
+
+/// Rigid body parent of the collider.
+#[derive(Component, Debug, Eq, PartialEq, Reflect)]
+#[reflect(Component, MapEntities, PartialEq)]
+pub struct ColliderParent(pub(crate) Entity);
+
+impl ColliderParent {
+    /// Gets the [`Entity`] ID of the rigid-body parent of the collider.
+    pub fn get(&self) -> Entity {
+        self.0
+    }
+}
+
+impl FromWorld for ColliderParent {
+    fn from_world(_world: &mut World) -> Self {
+        Self(Entity::PLACEHOLDER)
+    }
+}
+
+impl MapEntities for ColliderParent {
+    fn map_entities(&mut self, entity_map: &EntityMap) -> Result<(), MapEntitiesError> {
+        self.0 = entity_map.get(self.0)?;
+        Ok(())
+    }
+}
+
+impl std::ops::Deref for ColliderParent {
+    type Target = Entity;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 /// We restrict the scaling increment to 1.0e-4, to avoid numerical jitter
 /// due to the extraction of scaling factor from the GlobalTransform matrix.
