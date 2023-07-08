@@ -5,6 +5,7 @@ pub use self::rigid_body::*;
 pub use self::fixed_joint::*;
 pub use self::prismatic_joint::*;
 pub use self::revolute_joint::*;
+pub use self::rope_joint::*;
 
 use bevy::reflect::{FromReflect, Reflect};
 use rapier::dynamics::CoefficientCombineRule as RapierCoefficientCombineRule;
@@ -19,6 +20,7 @@ mod rigid_body;
 mod fixed_joint;
 mod prismatic_joint;
 mod revolute_joint;
+mod rope_joint;
 
 #[cfg(feature = "dim3")]
 mod spherical_joint;

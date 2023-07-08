@@ -61,6 +61,37 @@ fn create_prismatic_joints(commands: &mut Commands, origin: Vect, num: usize) {
     }
 }
 
+fn create_rope_joints(commands: &mut Commands, origin: Vect, num: usize) {
+    let rad = 0.4;
+    let shift = 1.0;
+
+    let mut curr_parent = commands
+        .spawn((
+            TransformBundle::from(Transform::from_xyz(origin.x, origin.y, origin.z)),
+            RigidBody::Fixed,
+            Collider::cuboid(rad, rad, rad),
+        ))
+        .id();
+
+    for i in 0..num {
+        let dz = (i + 1) as f32 * shift;
+
+        let rope = RopeJointBuilder::new()
+            .local_anchor2(Vec3::new(0.0, 0.0, -shift))
+            .limits([0.0, 2.0]);
+        let joint = ImpulseJoint::new(curr_parent, rope);
+
+        curr_parent = commands
+            .spawn((
+                TransformBundle::from(Transform::from_xyz(origin.x, origin.y, origin.z + dz)),
+                RigidBody::Dynamic,
+                Collider::cuboid(rad, rad, rad),
+                joint,
+            ))
+            .id();
+    }
+}
+
 fn create_revolute_joints(commands: &mut Commands, origin: Vec3, num: usize) {
     let rad = 0.4;
     let shift = 2.0;
@@ -243,5 +274,6 @@ pub fn setup_physics(mut commands: Commands) {
     create_prismatic_joints(&mut commands, Vec3::new(20.0, 10.0, 0.0), 5);
     create_revolute_joints(&mut commands, Vec3::new(20.0, 0.0, 0.0), 3);
     create_fixed_joints(&mut commands, Vec3::new(0.0, 10.0, 0.0), 5);
+    create_rope_joints(&mut commands, Vec3::new(30.0, 10.0, 0.0), 5);
     create_ball_joints(&mut commands, 15);
 }
