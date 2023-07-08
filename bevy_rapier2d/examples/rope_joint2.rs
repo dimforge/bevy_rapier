@@ -36,12 +36,12 @@ pub fn setup_physics(mut commands: Commands) {
         .id();
 
     let joint = RopeJointBuilder::new()
-        .local_anchor2(Vec2::new(0.0, rope_length))
+        .local_anchor2(Vec2::new(rope_length, 0.0))
         .limits([0.0, rope_length]);
 
     commands
         .spawn((
-            TransformBundle::from(Transform::from_xyz(0.0, -rad * 2.0, 0.0)),
+            TransformBundle::from(Transform::from_xyz(-rad * 2.0, 0.0, 0.0)),
             RigidBody::Dynamic,
             Collider::cuboid(rad, rad),
         ))
