@@ -74,12 +74,14 @@ impl RapierDebugRenderPlugin {
 }
 
 /// Context to control some aspect of the debug-renderer after initialization.
-#[derive(Resource)]
+#[derive(Resource, Reflect, FromReflect)]
+#[reflect(Resource)]
 pub struct DebugRenderContext {
     /// Is the debug-rendering currently enabled?
     pub enabled: bool,
     /// Pipeline responsible for rendering. Access `pipeline.mode` and `pipeline.style`
     /// to modify the set of rendered elements, and modify the default coloring rules.
+    #[reflect(ignore)]
     pub pipeline: DebugRenderPipeline,
     /// Are the debug-lines always rendered on top of other primitives?
     pub always_on_top: bool,
@@ -97,6 +99,8 @@ impl Default for DebugRenderContext {
 
 impl Plugin for RapierDebugRenderPlugin {
     fn build(&self, app: &mut App) {
+        app.register_type::<DebugRenderContext>();
+
         app.add_plugin(lines::DebugLinesPlugin::always_on_top(self.always_on_top))
             .insert_resource(DebugRenderContext {
                 enabled: self.enabled,
