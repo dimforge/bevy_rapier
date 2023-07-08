@@ -93,8 +93,8 @@ impl Collider {
     }
 
     /// Initialize a new collider with a capsule shape.
-    pub fn capsule(axis: Vect, endpoint: Vect, radius: Real) -> Self {
-        SharedShape::capsule(axis.into(), endpoint.into(), radius).into()
+    pub fn capsule(start: Vect, end: Vect, radius: Real) -> Self {
+        SharedShape::capsule(start.into(), end.into(), radius).into()
     }
 
     /// Initialize a new collider with a capsule shape aligned with the `x` axis.
