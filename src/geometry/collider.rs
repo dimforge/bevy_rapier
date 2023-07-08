@@ -51,6 +51,8 @@ pub enum ComputedColliderShape {
     /// Triangle-mesh.
     #[default]
     TriMesh,
+    /// Convex hull.
+    ConvexHull,
     /// Convex decomposition.
     ConvexDecomposition(VHACDParameters),
 }
