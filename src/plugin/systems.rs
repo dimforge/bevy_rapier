@@ -344,14 +344,18 @@ pub fn apply_rigid_body_user_changes(
         };
 
     for (handle, global_transform, mut interpolation) in changed_transforms.iter_mut() {
-        let mut transform_changed = None;    
+        let mut transform_changed = None;
+
         if let Some(interpolation) = interpolation.as_deref_mut() {
-            transform_changed = Some(transform_changed_fn(
-                &handle.0,
-                global_transform,
-                &context.last_body_transform_set,
-            ));
-            if transform_changed.unwrap() {
+            transform_changed = transform_changed.or_else(|| {
+                Some(transform_changed_fn(
+                    &handle.0,
+                    global_transform,
+                    &context.last_body_transform_set,
+                ))
+            });
+
+            if transform_changed == Some(true) {
                 // Reset the interpolation so we don’t overwrite
                 // the user’s input.
                 interpolation.start = None;
@@ -360,14 +364,17 @@ pub fn apply_rigid_body_user_changes(
         }
 
         if let Some(rb) = context.bodies.get_mut(handle.0) {
-            transform_changed = transform_changed.or_else(|| Some(transform_changed_fn(
-                &handle.0,
-                global_transform,
-                &context.last_body_transform_set,
-            )));
+            transform_changed = transform_changed.or_else(|| {
+                Some(transform_changed_fn(
+                    &handle.0,
+                    global_transform,
+                    &context.last_body_transform_set,
+                ))
+            });
+
             match rb.body_type() {
                 RigidBodyType::KinematicPositionBased => {
-                    if transform_changed.unwrap() {
+                    if transform_changed == Some(true) {
                         rb.set_next_kinematic_position(utils::transform_to_iso(
                             &global_transform.compute_transform(),
                             scale,
@@ -378,7 +385,7 @@ pub fn apply_rigid_body_user_changes(
                     }
                 }
                 _ => {
-                    if transform_changed.unwrap() {
+                    if transform_changed == Some(true) {
                         rb.set_position(
                             utils::transform_to_iso(&global_transform.compute_transform(), scale),
                             true,
@@ -509,7 +516,10 @@ pub fn writeback_rigid_bodies(
     config: Res<RapierConfiguration>,
     sim_to_render_time: Res<SimulationToRenderTime>,
     global_transforms: Query<&GlobalTransform>,
-    mut writeback: Query<RigidBodyWritebackComponents, (With<RigidBody>, Without<RigidBodyDisabled>)>,
+    mut writeback: Query<
+        RigidBodyWritebackComponents,
+        (With<RigidBody>, Without<RigidBodyDisabled>),
+    >,
 ) {
     let context = &mut *context;
     let scale = context.physics_scale;
