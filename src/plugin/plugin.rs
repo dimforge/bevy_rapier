@@ -71,8 +71,9 @@ where
                 systems::update_character_controls,
                 // Run Bevy transform propagation additionally to sync [`GlobalTransform`]
                 bevy::transform::systems::sync_simple_transforms
-                    .in_set(RapierTransformPropagateSet)
-                    .after(systems::update_character_controls),
+                    .after(systems::update_character_controls)
+                    .ambiguous_with(PropagateTransformsSet)
+                    .in_set(RapierTransformPropagateSet),
                 bevy::transform::systems::propagate_transforms
                     .after(systems::update_character_controls)
                     .in_set(PropagateTransformsSet)
@@ -87,7 +88,9 @@ where
                     .after(systems::init_rigid_bodies)
                     .after(systems::init_async_colliders),
                 systems::init_joints.after(systems::init_colliders),
-                systems::apply_initial_rigid_body_impulses.after(systems::init_colliders),
+                systems::apply_initial_rigid_body_impulses
+                    .after(systems::init_colliders)
+                    .ambiguous_with(systems::init_joints),
                 systems::sync_removals
                     .after(systems::init_joints)
                     .after(systems::apply_initial_rigid_body_impulses),
