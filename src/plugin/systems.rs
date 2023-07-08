@@ -16,7 +16,7 @@ use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
     BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities, KinematicCharacterController,
-    KinematicCharacterControllerOutput, RigidBodyDisabled,
+    KinematicCharacterControllerOutput, RigidBodyDisabled, Vect,
 };
 use crate::utils;
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
@@ -82,9 +82,15 @@ pub type ColliderComponents<'a> = (
 /// System responsible for applying [`GlobalTransform::scale`] and/or [`ColliderScale`] to
 /// colliders.
 pub fn apply_scale(
+    mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
     mut changed_collider_scales: Query<
-        (&mut Collider, &GlobalTransform, Option<&ColliderScale>),
+        (
+            &mut Collider,
+            &RapierColliderHandle,
+            &GlobalTransform,
+            Option<&ColliderScale>,
+        ),
         Or<(
             Changed<Collider>,
             Changed<GlobalTransform>,
@@ -95,7 +101,7 @@ pub fn apply_scale(
     // NOTE: we don’t have to apply the RapierConfiguration::physics_scale here because
     //       we are applying the scale to the user-facing shape here, not the ones inside
     //       colliders (yet).
-    for (mut shape, transform, custom_scale) in changed_collider_scales.iter_mut() {
+    for (mut shape, handle, transform, custom_scale) in changed_collider_scales.iter_mut() {
         #[cfg(feature = "dim2")]
         let effective_scale = match custom_scale {
             Some(ColliderScale::Absolute(scale)) => *scale,
@@ -112,6 +118,14 @@ pub fn apply_scale(
         };
 
         if shape.scale != crate::geometry::get_snapped_scale(effective_scale) {
+            if let Some(co) = context.colliders.get_mut(handle.0) {
+                if let Some(position) = co.position_wrt_parent() {
+                    let translation: Vect = position.translation.vector.into();
+                    let unscaled_translation: Vect = translation / shape.scale();
+                    let new_translation = unscaled_translation * effective_scale;
+                    co.set_translation_wrt_parent(new_translation.into());
+                }
+            }
             shape.set_scale(effective_scale, config.scaled_shape_subdivision);
         }
     }
@@ -125,6 +139,7 @@ pub fn apply_collider_user_changes(
         (&RapierColliderHandle, &GlobalTransform),
         (Without<RapierRigidBodyHandle>, Changed<GlobalTransform>),
     >,
+
     changed_shapes: Query<(&RapierColliderHandle, &Collider), Changed<Collider>>,
     changed_active_events: Query<(&RapierColliderHandle, &ActiveEvents), Changed<ActiveEvents>>,
     changed_active_hooks: Query<(&RapierColliderHandle, &ActiveHooks), Changed<ActiveHooks>>,
