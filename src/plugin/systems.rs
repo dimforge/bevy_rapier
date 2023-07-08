@@ -679,14 +679,8 @@ pub fn step_simulation<Hooks>(
     }
 }
 
-/// NOTE: This currently does nothing in 2D.
-#[cfg(feature = "async-collider")]
-#[cfg(feature = "dim2")]
-pub fn init_async_colliders() {}
-
-/// NOTE: This does nothing in 3D with headless.
-#[cfg(feature = "headless")]
-#[cfg(feature = "dim3")]
+/// NOTE: This currently does nothing in 2D, or without the async-collider feature
+#[cfg(any(feature = "dim2", not(feature = "async-collider")))]
 pub fn init_async_colliders() {}
 
 /// System responsible for creating `Collider` components from `AsyncCollider` components if the
