@@ -344,6 +344,7 @@ pub fn apply_rigid_body_user_changes(
         };
 
     for (handle, global_transform, mut interpolation) in changed_transforms.iter_mut() {
+        // Use an Option<bool> to avoid running the check twice.
         let mut transform_changed = None;
 
         if let Some(interpolation) = interpolation.as_deref_mut() {
