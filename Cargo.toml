@@ -2,6 +2,10 @@
 members = ["bevy_rapier2d", "bevy_rapier3d"]
 resolver = "2"
 
+[profile.dev]
+ # Use slightly better optimization by default, as examples otherwise seem laggy.
+opt-level = 1
+
 [profile.release]
 codegen-units = 1
 

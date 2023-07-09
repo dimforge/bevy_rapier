@@ -116,6 +116,19 @@ impl Velocity {
             angvel,
         }
     }
+
+    /// Get linear velocity of specific world-space point of a rigid-body.
+    ///
+    /// # Parameters
+    /// - `point`: the point (world-space) to compute the velocity for.
+    /// - `center_of_mass`: the center-of-mass (world-space) of the rigid-body the velocity belongs to.
+    pub fn linear_velocity_at_point(&self, point: Vect, center_of_mass: Vect) -> Vect {
+        #[cfg(feature = "dim2")]
+        return self.linvel + self.angvel * (point - center_of_mass).perp();
+
+        #[cfg(feature = "dim3")]
+        return self.linvel + self.angvel.cross(point - center_of_mass);
+    }
 }
 
 /// Mass-properties of a rigid-body, added to the contributions of its attached colliders.
@@ -441,9 +454,9 @@ impl Dominance {
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct Sleeping {
-    /// The threshold linear velocity bellow which the body can fall asleep.
+    /// The linear velocity below which the body can fall asleep.
     pub linear_threshold: f32,
-    /// The angular linear velocity bellow which the body can fall asleep.
+    /// The angular velocity below which the body can fall asleep.
     pub angular_threshold: f32,
     /// Is this body sleeping?
     pub sleeping: bool,

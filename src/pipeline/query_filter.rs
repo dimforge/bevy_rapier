@@ -51,12 +51,12 @@ impl<'a> QueryFilter<'a> {
         QueryFilterFlags::EXCLUDE_FIXED.into()
     }
 
-    /// Exclude from the query any collider attached to a dynamic rigid-body.
+    /// Exclude from the query any collider attached to a kinematic rigid-body.
     pub fn exclude_kinematic() -> Self {
         QueryFilterFlags::EXCLUDE_KINEMATIC.into()
     }
 
-    /// Exclude from the query any collider attached to a kinematic rigid-body.
+    /// Exclude from the query any collider attached to a dynamic rigid-body.
     pub fn exclude_dynamic() -> Self {
         QueryFilterFlags::EXCLUDE_DYNAMIC.into()
     }

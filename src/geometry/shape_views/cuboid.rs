@@ -30,7 +30,7 @@ impl_ref_methods!(CuboidViewMut);
 
 impl<'a> CuboidViewMut<'a> {
     /// Set the half-extents of the cuboid.
-    pub fn sed_half_extents(&mut self, half_extents: Vect) {
+    pub fn set_half_extents(&mut self, half_extents: Vect) {
         self.raw.half_extents = half_extents.into();
     }
 }

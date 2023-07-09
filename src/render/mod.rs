@@ -58,12 +58,14 @@ impl RapierDebugRenderPlugin {
 }
 
 /// Context to control some aspect of the debug-renderer after initialization.
-#[derive(Resource)]
+#[derive(Resource, Reflect)]
+#[reflect(Resource)]
 pub struct DebugRenderContext {
     /// Is the debug-rendering currently enabled?
     pub enabled: bool,
     /// Pipeline responsible for rendering. Access `pipeline.mode` and `pipeline.style`
     /// to modify the set of rendered elements, and modify the default coloring rules.
+    #[reflect(ignore)]
     pub pipeline: DebugRenderPipeline,
 }
 
@@ -78,6 +80,8 @@ impl Default for DebugRenderContext {
 
 impl Plugin for RapierDebugRenderPlugin {
     fn build(&self, app: &mut App) {
+        app.register_type::<DebugRenderContext>();
+
         app.insert_resource(DebugRenderContext {
             enabled: self.enabled,
             pipeline: DebugRenderPipeline::new(self.style, self.mode),

@@ -82,7 +82,9 @@ where
                     .after(systems::init_rigid_bodies)
                     .after(systems::init_async_colliders),
                 systems::init_joints.after(systems::init_colliders),
-                systems::apply_initial_rigid_body_impulses.after(systems::init_colliders),
+                systems::apply_initial_rigid_body_impulses
+                    .after(systems::init_colliders)
+                    .ambiguous_with(systems::init_joints),
                 systems::sync_removals
                     .after(systems::init_joints)
                     .after(systems::apply_initial_rigid_body_impulses),
