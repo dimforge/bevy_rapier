@@ -204,38 +204,36 @@ impl<'a> ColliderView<'a> {
     /// Convert to [`parry::SharedShape`].
     pub fn as_shared_shape(&self) -> SharedShape {
         match *self {
-            ColliderView::Ball(BallView { raw }) => SharedShape::new(raw.clone()),
-            ColliderView::Cuboid(CuboidView { raw }) => SharedShape::new(raw.clone()),
-            ColliderView::Capsule(CapsuleView { raw }) => SharedShape::new(raw.clone()),
-            ColliderView::Segment(SegmentView { raw }) => SharedShape::new(raw.clone()),
-            ColliderView::Triangle(TriangleView { raw }) => SharedShape::new(raw.clone()),
+            ColliderView::Ball(BallView { raw }) => SharedShape::new(*raw),
+            ColliderView::Cuboid(CuboidView { raw }) => SharedShape::new(*raw),
+            ColliderView::Capsule(CapsuleView { raw }) => SharedShape::new(*raw),
+            ColliderView::Segment(SegmentView { raw }) => SharedShape::new(*raw),
+            ColliderView::Triangle(TriangleView { raw }) => SharedShape::new(*raw),
             ColliderView::TriMesh(TriMeshView { raw }) => SharedShape::new(raw.clone()),
             ColliderView::Polyline(PolylineView { raw }) => SharedShape::new(raw.clone()),
-            ColliderView::HalfSpace(HalfSpaceView { raw }) => SharedShape::new(raw.clone()),
+            ColliderView::HalfSpace(HalfSpaceView { raw }) => SharedShape::new(*raw),
             ColliderView::HeightField(HeightFieldView { raw }) => SharedShape::new(raw.clone()),
             ColliderView::Compound(CompoundView { raw }) => SharedShape::new(raw.clone()),
             #[cfg(feature = "dim2")]
-            ColliderView::ConvexPolygon(ConvexPolygonView { raw }) => {
-                SharedShape::new(raw.clone())
-            }
+            ColliderView::ConvexPolygon(ConvexPolygonView { raw }) => SharedShape::new(raw.clone()),
             #[cfg(feature = "dim3")]
             ColliderView::ConvexPolyhedron(ConvexPolyhedronView { raw }) => {
                 SharedShape::new(raw.clone())
             }
             #[cfg(feature = "dim3")]
-            ColliderView::Cylinder(CylinderView { raw }) => SharedShape::new(raw.clone()),
+            ColliderView::Cylinder(CylinderView { raw }) => SharedShape::new(*raw),
             #[cfg(feature = "dim3")]
-            ColliderView::Cone(ConeView { raw }) => SharedShape::new(raw.clone()),
-            ColliderView::RoundCuboid(RoundCuboidView { raw }) => SharedShape::new(raw.clone()),
-            ColliderView::RoundTriangle(RoundTriangleView { raw }) => SharedShape::new(raw.clone()),
+            ColliderView::Cone(ConeView { raw }) => SharedShape::new(*raw),
+            ColliderView::RoundCuboid(RoundCuboidView { raw }) => SharedShape::new(*raw),
+            ColliderView::RoundTriangle(RoundTriangleView { raw }) => SharedShape::new(*raw),
             #[cfg(feature = "dim2")]
             ColliderView::RoundConvexPolygon(RoundConvexPolygonView { raw }) => {
                 SharedShape::new(raw.clone())
             }
             #[cfg(feature = "dim3")]
-            ColliderView::RoundCylinder(RoundCylinderView { raw }) => SharedShape::new(raw.clone()),
+            ColliderView::RoundCylinder(RoundCylinderView { raw }) => SharedShape::new(*raw),
             #[cfg(feature = "dim3")]
-            ColliderView::RoundCone(RoundConeView { raw }) => SharedShape::new(raw.clone()),
+            ColliderView::RoundCone(RoundConeView { raw }) => SharedShape::new(*raw),
             #[cfg(feature = "dim3")]
             ColliderView::RoundConvexPolyhedron(RoundConvexPolyhedronView { raw }) => {
                 SharedShape::new(raw.clone())
