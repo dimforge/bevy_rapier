@@ -35,13 +35,12 @@ fn main() {
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .add_plugins(DefaultPlugins)
-        .add_plugin(RapierPhysicsPlugin::<SameUserDataFilter>::pixels_per_meter(
-            100.0,
+        .add_plugins((
+            DefaultPlugins,
+            RapierPhysicsPlugin::<SameUserDataFilter>::pixels_per_meter(100.0),
+            RapierDebugRenderPlugin::default(),
         ))
-        .add_plugin(RapierDebugRenderPlugin::default())
-        .add_startup_system(setup_graphics)
-        .add_startup_system(setup_physics)
+        .add_systems(Startup, (setup_graphics, setup_physics))
         .run();
 }
 

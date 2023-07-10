@@ -7,7 +7,7 @@ pub use self::prismatic_joint::*;
 pub use self::revolute_joint::*;
 pub use self::rope_joint::*;
 
-use bevy::reflect::{FromReflect, Reflect};
+use bevy::reflect::Reflect;
 use rapier::dynamics::CoefficientCombineRule as RapierCoefficientCombineRule;
 
 #[cfg(feature = "dim3")]
@@ -32,7 +32,7 @@ mod spherical_joint;
 /// Each collider has its combination rule of type
 /// `CoefficientCombineRule`. And the rule
 /// actually used is given by `max(first_combine_rule as usize, second_combine_rule as usize)`.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Reflect, FromReflect, Default)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Reflect, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub enum CoefficientCombineRule {
     #[default]

@@ -20,8 +20,8 @@ required-features = [ "dim2" ]
 [features]
 default = [ "dim2", "async-collider", "debug-render-2d" ]
 dim2 = []
-debug-render-2d = [ "bevy/bevy_core_pipeline", "bevy/bevy_sprite", "bevy/bevy_render", "rapier2d/debug-render", "bevy/bevy_asset" ]
-debug-render-3d = [ "bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_render", "rapier2d/debug-render", "bevy/bevy_asset" ]
+debug-render-2d = [ "bevy/bevy_core_pipeline", "bevy/bevy_sprite", "bevy/bevy_gizmos", "rapier2d/debug-render", "bevy/bevy_asset" ]
+debug-render-3d = [ "bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_gizmos", "rapier2d/debug-render", "bevy/bevy_asset" ]
 parallel = [ "rapier2d/parallel" ]
 simd-stable = [ "rapier2d/simd-stable" ]
 simd-nightly = [ "rapier2d/simd-nightly" ]
@@ -32,8 +32,8 @@ headless = []
 async-collider = [ "bevy/bevy_asset", "bevy/bevy_scene" ]
 
 [dependencies]
-bevy = { version = "0.10", default-features = false }
-nalgebra = { version = "0.32.2", features = [ "convert-glam023" ] }
+bevy = { version = "0.11", default-features = false }
+nalgebra = { version = "0.32.3", features = [ "convert-glam024" ] }
 # Don't enable the default features because we don't need the ColliderSet/RigidBodySet
 rapier2d = "0.17.0"
 bitflags = "1"
@@ -42,10 +42,10 @@ log = "0.4"
 serde = { version = "1", features = [ "derive" ], optional = true}
 
 [dev-dependencies]
-bevy = { version = "0.10", default-features = false, features = ["x11"]}
+bevy = { version = "0.11", default-features = false, features = ["x11"]}
 oorandom = "11"
 approx = "0.5.1"
-glam = { version = "0.23", features = [ "approx" ] }
+glam = { version = "0.24", features = [ "approx" ] }
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
