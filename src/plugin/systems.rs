@@ -857,6 +857,22 @@ pub fn writeback_rigid_bodies(
                             scale: cur_inv_scale,
                         });
 
+                        let com = rb.center_of_mass();
+
+                        #[cfg(feature = "dim3")]
+                        let com = Vec3::new(
+                            com.x - rb.translation().x,
+                            com.y - rb.translation().y,
+                            com.z - rb.translation().z,
+                        ) / world.physics_scale;
+                        #[cfg(feature = "dim2")]
+                        let com =
+                            Vec3::new(com.x - rb.translation().x, com.y - rb.translation().y, 0.0)
+                                / world.physics_scale;
+
+                        let com_diff = com - parent_delta.rotation.mul_vec3(com);
+                        parent_delta.translation -= com_diff;
+
                         if transform.rotation != interpolated_pos.rotation
                             || transform.translation != interpolated_pos.translation
                         {
@@ -1011,14 +1027,7 @@ fn recurse(
                             * (parent_delta.rotation
                                 * (interpolated_pos.translation - translation_offset));
 
-                        println!("Rotated interpolation: {rotated_interpolation}",);
-
                         new_translation = rotated_interpolation; // + inverse_parent_translation;
-
-                        // new_translation = parent_delta.rotation.mul_vec3(new_translation);
-
-                        println!("Interpolated pos: {}", interpolated_pos.translation);
-                        println!("I think your new trans should be: {new_translation}");
 
                         // In 2D, preserve the transform `z` component that may have been set by the user
                         #[cfg(feature = "dim2")]
@@ -1069,8 +1078,6 @@ fn recurse(
                             utils::transform_to_iso(&my_new_global_transform, world.physics_scale),
                             false,
                         );
-
-                        println!("My new global: {}", my_new_global_transform.translation);
 
                         // rb.set_rotation(
                         //     Rotation::from_quaternion(Quaternion::new(
