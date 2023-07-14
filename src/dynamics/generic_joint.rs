@@ -1,4 +1,4 @@
-use crate::dynamics::{FixedJoint, PrismaticJoint, RevoluteJoint};
+use crate::dynamics::{FixedJoint, PrismaticJoint, RevoluteJoint, RopeJoint};
 use crate::math::{Real, Rot, Vect};
 use rapier::dynamics::{
     GenericJoint as RapierGenericJoint, JointAxesMask, JointAxis, JointLimits, JointMotor,
@@ -180,6 +180,12 @@ impl GenericJoint {
         self
     }
 
+    /// Sets the coupled degrees of freedom for this joint’s limits and motor.
+    pub fn set_coupled_axes(&mut self, axes: JointAxesMask) -> &mut Self {
+        self.raw.coupled_axes = axes;
+        self
+    }
+
     /// The spring-like motor model along the specified axis of this joint.
     #[must_use]
     pub fn motor_model(&self, axis: JointAxis) -> Option<MotorModel> {
@@ -290,6 +296,12 @@ impl GenericJoint {
         PrismaticJoint,
         JointAxesMask::LOCKED_PRISMATIC_AXES
     );
+    joint_conversion_methods!(
+        as_rope,
+        as_rope_mut,
+        RopeJoint,
+        JointAxesMask::FREE_FIXED_AXES
+    );
 
     #[cfg(feature = "dim3")]
     joint_conversion_methods!(
@@ -368,12 +380,12 @@ impl GenericJointBuilder {
         self
     }
 
-    // /// Sets the coupled degrees of freedom for this joint’s limits and motor.
-    // #[must_use]
-    // pub fn coupled_axes(mut self, axes: JointAxesMask) -> Self {
-    //     self.0.coupled_axes = axes;
-    //     self
-    // }
+    /// Sets the coupled degrees of freedom for this joint’s limits and motor.
+    #[must_use]
+    pub fn coupled_axes(mut self, axes: JointAxesMask) -> Self {
+        self.0.set_coupled_axes(axes);
+        self
+    }
 
     /// Set the spring-like model used by the motor to reach the desired target velocity and position.
     #[must_use]

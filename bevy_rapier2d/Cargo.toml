@@ -1,6 +1,6 @@
 [package]
 name = "bevy_rapier2d"
-version = "0.21.0"
+version = "0.22.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 description = "2-dimensional physics engine in Rust, official Bevy plugin."
 documentation = "http://docs.rs/bevy_rapier2d"
@@ -19,26 +19,21 @@ required-features = [ "dim2" ]
 
 [features]
 default = [ "dim2", "async-collider", "debug-render-2d" ]
-dim2 = ["bevy/bevy_render"]
-debug-render-2d = [ "bevy/bevy_core_pipeline", "bevy/bevy_sprite", "bevy/bevy_render", "rapier2d/debug-render" ]
-debug-render-3d = [ "bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_render", "rapier2d/debug-render" ]
+dim2 = []
+debug-render-2d = [ "bevy/bevy_core_pipeline", "bevy/bevy_sprite", "bevy/bevy_gizmos", "rapier2d/debug-render", "bevy/bevy_asset" ]
+debug-render-3d = [ "bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_gizmos", "rapier2d/debug-render", "bevy/bevy_asset" ]
 parallel = [ "rapier2d/parallel" ]
 simd-stable = [ "rapier2d/simd-stable" ]
 simd-nightly = [ "rapier2d/simd-nightly" ]
 wasm-bindgen = [ "rapier2d/wasm-bindgen" ]
 serde-serialize = [ "rapier2d/serde-serialize", "bevy/serialize", "serde" ]
 enhanced-determinism = [ "rapier2d/enhanced-determinism" ]
-
-# Enables the AsyncCollider and AsyncSceneCollider components that wait for specific
-# assets to be loaded before creating the actual Collider.
-# See https://github.com/dimforge/bevy_rapier/issues/296 for a workaround on how
-# to use this when using bevy headless.
-async-collider = [ ]
-
+headless = []
+async-collider = [ "bevy/bevy_asset", "bevy/bevy_scene" ]
 
 [dependencies]
-bevy = { version = "0.10", default-features = false, features = ["bevy_asset", "bevy_scene"] }
-nalgebra = { version = "0.32.2", features = [ "convert-glam023" ] }
+bevy = { version = "0.11", default-features = false }
+nalgebra = { version = "0.32.3", features = [ "convert-glam024" ] }
 # Don't enable the default features because we don't need the ColliderSet/RigidBodySet
 rapier2d = "0.17.0"
 bitflags = "1"
@@ -47,10 +42,10 @@ log = "0.4"
 serde = { version = "1", features = [ "derive" ], optional = true}
 
 [dev-dependencies]
-bevy = { version = "0.10", default-features = false, features = ["x11"]}
+bevy = { version = "0.11", default-features = false, features = ["x11"]}
 oorandom = "11"
 approx = "0.5.1"
-glam = { version = "0.23", features = [ "approx" ] }
+glam = { version = "0.24", features = [ "approx" ] }
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs

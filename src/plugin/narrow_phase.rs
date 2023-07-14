@@ -31,12 +31,13 @@ impl RapierWorld {
             .flat_map(|h| {
                 self.narrow_phase
                     .intersections_with(*h)
-                    .map(|(h1, h2, inter)| {
-                        (
-                            self.collider_entity(h1).unwrap(),
-                            self.collider_entity(h2).unwrap(),
-                            inter,
-                        )
+                    .filter_map(|(h1, h2, inter)| {
+                        let e1 = self.collider_entity(h1);
+                        let e2 = self.collider_entity(h2);
+                        match (e1, e2) {
+                            (Some(e1), Some(e2)) => Some((e1, e2, inter)),
+                            _ => None,
+                        }
                     })
             })
     }
@@ -75,12 +76,13 @@ impl RapierWorld {
     pub fn intersection_pairs(&self) -> impl Iterator<Item = (Entity, Entity, bool)> + '_ {
         self.narrow_phase
             .intersection_pairs()
-            .map(|(h1, h2, inter)| {
-                (
-                    self.collider_entity(h1).unwrap(),
-                    self.collider_entity(h2).unwrap(),
-                    inter,
-                )
+            .filter_map(|(h1, h2, inter)| {
+                let e1 = self.collider_entity(h1);
+                let e2 = self.collider_entity(h2);
+                match (e1, e2) {
+                    (Some(e1), Some(e2)) => Some((e1, e2, inter)),
+                    _ => None,
+                }
             })
     }
 }

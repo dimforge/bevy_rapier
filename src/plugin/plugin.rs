@@ -3,7 +3,7 @@ use crate::plugin::configuration::SimulationToRenderTime;
 use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
 use bevy::ecs::{event::Events, schedule::SystemConfigs, system::SystemParamItem};
-use bevy::prelude::*;
+use bevy::{prelude::*, transform::TransformSystem};
 use std::marker::PhantomData;
 
 pub use super::context::RapierWorld;
@@ -64,11 +64,6 @@ where
     /// [`with_system_setup(false)`](Self::with_system_setup).
     /// See [`PhysicsSet`] for a description of these systems.
     pub fn get_systems(set: PhysicsSet) -> SystemConfigs {
-        // A set for `propagate_transforms` to mark it as ambiguous with `sync_simple_transforms`.
-        // Used instead of the `SystemTypeSet` as that would not allow multiple instances of the system.
-        #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
-        struct PropagateTransformsSet;
-
         match set {
             PhysicsSet::SyncBackend => (
                 // Change any worlds needed before doing any calculations
@@ -79,12 +74,12 @@ where
                 // Run the character controller before the manual transform propagation.
                 systems::update_character_controls.after(systems::sync_removals),
                 // Run Bevy transform propagation additionally to sync [`GlobalTransform`]
-                bevy::transform::systems::sync_simple_transforms
-                    .in_set(RapierTransformPropagateSet)
-                    .after(systems::update_character_controls),
-                bevy::transform::systems::propagate_transforms
+                (
+                    bevy::transform::systems::sync_simple_transforms,
+                    bevy::transform::systems::propagate_transforms,
+                )
+                    .chain()
                     .after(systems::update_character_controls)
-                    .in_set(PropagateTransformsSet)
                     .in_set(RapierTransformPropagateSet),
                 systems::init_async_colliders.after(RapierTransformPropagateSet),
                 systems::apply_scale.after(systems::init_async_colliders),
@@ -96,7 +91,9 @@ where
                     .after(systems::init_rigid_bodies)
                     .after(systems::init_async_colliders),
                 systems::init_joints.after(systems::init_colliders),
-                systems::apply_initial_rigid_body_impulses.after(systems::init_colliders),
+                systems::apply_initial_rigid_body_impulses
+                    .after(systems::init_colliders)
+                    .ambiguous_with(systems::init_joints),
                 // Step 1 - Teleport entities whose parents have moved &
                 systems::sync_vel.after(systems::init_rigid_bodies),
                 // #[cfg(all(feature = "dim3", feature = "async-collider"))]
@@ -105,7 +102,7 @@ where
                 //     .before(systems::init_async_colliders),
             )
                 .into_configs(),
-            PhysicsSet::SyncBackendFlush => (apply_system_buffers,).into_configs(),
+            PhysicsSet::SyncBackendFlush => (apply_deferred,).into_configs(),
             PhysicsSet::StepSimulation => (
                 systems::step_simulation::<PhysicsHooks>,
                 Events::<CollisionEvent>::update_system
@@ -140,8 +137,7 @@ impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystem
 }
 
 /// [`StageLabel`] for each phase of the plugin.
-#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
-#[system_set(base)]
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum PhysicsSet {
     /// This set runs the systems responsible for synchronizing (and
     /// initializing) backend data structures with current component state.
@@ -205,6 +201,7 @@ where
         // Add each set as necessary
         if self.default_system_setup {
             app.configure_sets(
+                PostUpdate,
                 (
                     PhysicsSet::SyncBackend,
                     PhysicsSet::SyncBackendFlush,
@@ -212,23 +209,19 @@ where
                     PhysicsSet::Writeback,
                 )
                     .chain()
-                    .after(CoreSet::UpdateFlush)
-                    .before(CoreSet::PostUpdate),
+                    .before(TransformSystem::TransformPropagate),
             );
 
             app.add_systems(
-                Self::get_systems(PhysicsSet::SyncBackend).in_base_set(PhysicsSet::SyncBackend),
-            );
-            app.add_systems(
-                Self::get_systems(PhysicsSet::SyncBackendFlush)
-                    .in_base_set(PhysicsSet::SyncBackendFlush),
-            );
-            app.add_systems(
-                Self::get_systems(PhysicsSet::StepSimulation)
-                    .in_base_set(PhysicsSet::StepSimulation),
-            );
-            app.add_systems(
-                Self::get_systems(PhysicsSet::Writeback).in_base_set(PhysicsSet::Writeback),
+                PostUpdate,
+                (
+                    Self::get_systems(PhysicsSet::SyncBackend).in_set(PhysicsSet::SyncBackend),
+                    Self::get_systems(PhysicsSet::SyncBackendFlush)
+                        .in_set(PhysicsSet::SyncBackendFlush),
+                    Self::get_systems(PhysicsSet::StepSimulation)
+                        .in_set(PhysicsSet::StepSimulation),
+                    Self::get_systems(PhysicsSet::Writeback).in_set(PhysicsSet::Writeback),
+                ),
             );
         }
     }

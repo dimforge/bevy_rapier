@@ -1,5 +1,5 @@
 use crate::math::{Real, Vect};
-use bevy::prelude::Entity;
+use bevy::prelude::{Entity, Event};
 use rapier::dynamics::RigidBodySet;
 use rapier::geometry::{
     ColliderHandle, ColliderSet, CollisionEvent as RapierCollisionEvent, CollisionEventFlags,
@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 /// Events occurring when two colliders start or stop colliding
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Event, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum CollisionEvent {
     /// Event occurring when two colliders start colliding
     Started(Entity, Entity, CollisionEventFlags),
@@ -20,7 +20,7 @@ pub enum CollisionEvent {
 
 /// Event occurring when the sum of the magnitudes of the contact forces
 /// between two colliders exceed a threshold.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Event, Copy, Clone, Debug, PartialEq)]
 pub struct ContactForceEvent {
     /// The first collider involved in the contact.
     pub collider1: Entity,

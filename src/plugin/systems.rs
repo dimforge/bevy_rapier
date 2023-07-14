@@ -17,15 +17,13 @@ use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
     BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities, ContactForceEvent,
     KinematicCharacterController, KinematicCharacterControllerOutput, PhysicsWorld, Real,
-    RigidBodyDisabled,
+    RigidBodyDisabled, Vect,
 };
 use crate::utils;
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
 use bevy::prelude::*;
-use nalgebra::{Quaternion, UnitQuaternion};
 use rapier::prelude::{
     ColliderBuilder, Isometry, QueryFilter, RigidBodyBuilder, RigidBodyHandle, RigidBodyType,
-    Rotation,
 };
 use std::collections::HashMap;
 
@@ -103,9 +101,16 @@ fn get_world<'a>(
 /// System responsible for applying [`GlobalTransform::scale`] and/or [`ColliderScale`] to
 /// colliders.
 pub fn apply_scale(
+    mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
     mut changed_collider_scales: Query<
-        (&mut Collider, &GlobalTransform, Option<&ColliderScale>),
+        (
+            &mut Collider,
+            &RapierColliderHandle,
+            &GlobalTransform,
+            Option<&ColliderScale>,
+            Option<&PhysicsWorld>,
+        ),
         Or<(
             Changed<Collider>,
             Changed<GlobalTransform>,
@@ -116,7 +121,9 @@ pub fn apply_scale(
     // NOTE: we don’t have to apply the RapierConfiguration::physics_scale here because
     //       we are applying the scale to the user-facing shape here, not the ones inside
     //       colliders (yet).
-    for (mut shape, transform, custom_scale) in changed_collider_scales.iter_mut() {
+    for (mut shape, handle, transform, custom_scale, physics_world) in
+        changed_collider_scales.iter_mut()
+    {
         #[cfg(feature = "dim2")]
         let effective_scale = match custom_scale {
             Some(ColliderScale::Absolute(scale)) => *scale,
@@ -133,6 +140,15 @@ pub fn apply_scale(
         };
 
         if shape.scale != crate::geometry::get_snapped_scale(effective_scale) {
+            let world = get_world(physics_world, &mut context);
+            if let Some(co) = world.colliders.get_mut(handle.0) {
+                if let Some(position) = co.position_wrt_parent() {
+                    let translation: Vect = position.translation.vector.into();
+                    let unscaled_translation: Vect = translation / shape.scale();
+                    let new_translation = unscaled_translation * effective_scale;
+                    co.set_translation_wrt_parent(new_translation.into());
+                }
+            }
             shape.set_scale(effective_scale, config.scaled_shape_subdivision);
         }
     }
@@ -553,7 +569,7 @@ pub fn apply_rigid_body_user_changes(
     // This is needed for detecting if the user actually changed the rigid-body
     // transform, or if it was just the change we made in our `writeback_rigid_bodies`
     // system.
-    let transform_changed =
+    let transform_changed_fn =
         |handle: &RigidBodyHandle,
          transform: &GlobalTransform,
          last_transform_set: &HashMap<RigidBodyHandle, GlobalTransform>| {
@@ -569,22 +585,37 @@ pub fn apply_rigid_body_user_changes(
     for (handle, global_transform, mut interpolation, world_within) in changed_transforms.iter_mut()
     {
         let world = get_world(world_within, &mut context);
+        let mut transform_changed = None;
 
         if let Some(interpolation) = interpolation.as_deref_mut() {
-            // Reset the interpolation so we don’t overwrite
-            // the user’s input.
-            interpolation.start = None;
-            interpolation.end = None;
+            transform_changed = transform_changed.or_else(|| {
+                Some(transform_changed_fn(
+                    &handle.0,
+                    global_transform,
+                    &world.last_body_transform_set,
+                ))
+            });
+
+            if transform_changed == Some(true) {
+                // Reset the interpolation so we don’t overwrite
+                // the user’s input.
+                interpolation.start = None;
+                interpolation.end = None;
+            }
         }
 
         if let Some(rb) = world.bodies.get_mut(handle.0) {
+            transform_changed = transform_changed.or_else(|| {
+                Some(transform_changed_fn(
+                    &handle.0,
+                    global_transform,
+                    &world.last_body_transform_set,
+                ))
+            });
+
             match rb.body_type() {
                 RigidBodyType::KinematicPositionBased => {
-                    if transform_changed(
-                        &handle.0,
-                        global_transform,
-                        &world.last_body_transform_set,
-                    ) {
+                    if transform_changed == Some(true) {
                         rb.set_next_kinematic_position(utils::transform_to_iso(
                             &global_transform.compute_transform(),
                             world.physics_scale,
@@ -595,11 +626,7 @@ pub fn apply_rigid_body_user_changes(
                     }
                 }
                 _ => {
-                    if transform_changed(
-                        &handle.0,
-                        global_transform,
-                        &world.last_body_transform_set,
-                    ) {
+                    if transform_changed == Some(true) {
                         rb.set_position(
                             utils::transform_to_iso(
                                 &global_transform.compute_transform(),
@@ -766,7 +793,10 @@ pub fn writeback_rigid_bodies(
     config: Res<RapierConfiguration>,
     sim_to_render_time: Res<SimulationToRenderTime>,
     top_entities: Query<Entity, Without<Parent>>,
-    mut writeback: Query<RigidBodyWritebackComponents, Without<RigidBodyDisabled>>,
+    mut writeback: Query<
+        RigidBodyWritebackComponents,
+        (With<RigidBody>, Without<RigidBodyDisabled>),
+    >,
     children_query: Query<&Children>,
 ) {
     for entity in top_entities.iter() {
@@ -901,7 +931,10 @@ fn recurse(
     mut context: &mut RapierContext,
     config: &RapierConfiguration,
     sim_to_render_time: &SimulationToRenderTime,
-    writeback: &mut Query<RigidBodyWritebackComponents, Without<RigidBodyDisabled>>,
+    writeback: &mut Query<
+        RigidBodyWritebackComponents,
+        (With<RigidBody>, Without<RigidBodyDisabled>),
+    >,
     parent_global_transform: Transform,
     parent_delta: Transform,
     parent_velocity: Velocity,
@@ -957,17 +990,14 @@ fn recurse(
                         // curr_parent_global_transform * new_transform * parent_delta_pos = interpolated_pos
                         // new_transform = curr_parent_global_transform.inverse() * interpolated_pos
 
-                        let (inverse_parent_rotation, inverse_parent_translation) = (
-                            parent_global_transform.rotation.inverse(),
-                            -parent_global_transform.translation,
-                        );
+                        let inverse_parent_rotation = parent_global_transform.rotation.inverse();
 
                         let new_rotation = Quat::IDENTITY; //inverse_parent_rotation * interpolated_pos.rotation;
 
                         #[cfg(feature = "dim2")]
                         let mut new_translation;
                         #[cfg(feature = "dim3")]
-                        let mut new_translation;
+                        let new_translation;
 
                         let translation_offset =
                             if rb_type.copied().unwrap_or(RigidBody::Fixed) == RigidBody::Dynamic {
@@ -1360,14 +1390,8 @@ pub fn step_simulation<Hooks>(
     }
 }
 
-/// NOTE: This currently does nothing in 2D.
-#[cfg(feature = "async-collider")]
-#[cfg(feature = "dim2")]
-pub fn init_async_colliders() {}
-
-/// NOTE: This does nothing in 3D with headless.
-#[cfg(feature = "headless")]
-#[cfg(feature = "dim3")]
+/// NOTE: This currently does nothing in 2D, or without the async-collider feature
+#[cfg(any(feature = "dim2", not(feature = "async-collider")))]
 pub fn init_async_colliders() {}
 
 /// System responsible for creating `Collider` components from `AsyncCollider` components if the
@@ -2190,7 +2214,7 @@ mod tests {
     fn colliding_entities_updates() {
         let mut app = App::new();
         app.add_event::<CollisionEvent>()
-            .add_system(update_colliding_entities);
+            .add_systems(Update, update_colliding_entities);
 
         let entity1 = app.world.spawn(CollidingEntities::default()).id();
         let entity2 = app.world.spawn(CollidingEntities::default()).id();
@@ -2276,8 +2300,8 @@ mod tests {
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_collider_initializes() {
         let mut app = App::new();
-        app.add_plugin(HeadlessRenderPlugin)
-            .add_system(init_async_colliders);
+        app.add_plugins(HeadlessRenderPlugin)
+            .add_systems(Update, init_async_colliders);
 
         let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
         let cube = meshes.add(Cube::default().into());
@@ -2303,8 +2327,10 @@ mod tests {
         use bevy::scene::scene_spawner_system;
 
         let mut app = App::new();
-        app.add_plugin(HeadlessRenderPlugin)
-            .add_system(init_async_scene_colliders.after(scene_spawner_system));
+        app.add_plugins(HeadlessRenderPlugin).add_systems(
+            Update,
+            init_async_scene_colliders.after(scene_spawner_system),
+        );
 
         let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
         let cube_handle = meshes.add(Cube::default().into());
@@ -2348,10 +2374,12 @@ mod tests {
     #[test]
     fn transform_propagation() {
         let mut app = App::new();
-        app.add_plugin(HeadlessRenderPlugin)
-            .add_plugin(TransformPlugin)
-            .add_plugin(TimePlugin)
-            .add_plugin(RapierPhysicsPlugin::<NoUserData>::default());
+        app.add_plugins((
+            HeadlessRenderPlugin,
+            TransformPlugin,
+            TimePlugin,
+            RapierPhysicsPlugin::<NoUserData>::default(),
+        ));
 
         let zero = (Transform::default(), Transform::default());
 
@@ -2407,10 +2435,12 @@ mod tests {
     #[test]
     fn transform_propagation2() {
         let mut app = App::new();
-        app.add_plugin(HeadlessRenderPlugin)
-            .add_plugin(TransformPlugin)
-            .add_plugin(TimePlugin)
-            .add_plugin(RapierPhysicsPlugin::<NoUserData>::default());
+        app.add_plugins((
+            HeadlessRenderPlugin,
+            TransformPlugin,
+            TimePlugin,
+            RapierPhysicsPlugin::<NoUserData>::default(),
+        ));
 
         let zero = (Transform::default(), Transform::default());
 
@@ -2491,16 +2521,18 @@ mod tests {
 
     impl Plugin for HeadlessRenderPlugin {
         fn build(&self, app: &mut App) {
-            app.add_plugin(WindowPlugin::default())
-                .add_plugin(AssetPlugin::default())
-                .add_plugin(ScenePlugin)
-                .add_plugin(RenderPlugin {
+            app.add_plugins((
+                WindowPlugin::default(),
+                AssetPlugin::default(),
+                ScenePlugin::default(),
+                RenderPlugin {
                     wgpu_settings: WgpuSettings {
                         backends: None,
                         ..Default::default()
                     },
-                })
-                .add_plugin(ImagePlugin::default());
+                },
+                ImagePlugin::default(),
+            ));
         }
     }
 }
