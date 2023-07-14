@@ -954,7 +954,7 @@ pub fn writeback_rigid_bodies(
 }
 
 fn recurse_child_transforms(
-    mut context: &mut RapierContext,
+    context: &mut RapierContext,
     config: &RapierConfiguration,
     sim_to_render_time: &SimulationToRenderTime,
     writeback: &mut Query<
@@ -989,7 +989,7 @@ fn recurse_child_transforms(
             let mut delta_transform = parent_delta;
             let mut my_velocity = parent_velocity;
 
-            let world = get_world(world_within, &mut context);
+            let world = get_world(world_within, context);
 
             // TODO: do this the other way round: iterate through Rapier’s RigidBodySet on the active bodies,
             // and update the components accordingly. That way, we don’t have to iterate through the entities that weren’t changed
@@ -2393,7 +2393,7 @@ mod tests {
             app.add_plugins((
                 WindowPlugin::default(),
                 AssetPlugin::default(),
-                ScenePlugin::default(),
+                ScenePlugin,
                 RenderPlugin {
                     wgpu_settings: WgpuSettings {
                         backends: None,
