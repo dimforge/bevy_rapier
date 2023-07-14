@@ -76,9 +76,9 @@ impl_ref_methods!(CapsuleViewMut);
 
 impl<'a> CapsuleViewMut<'a> {
     /// Set the segment of this capsule.
-    pub fn set_segment(&mut self, a: Vect, b: Vect) {
-        self.raw.segment.a = a.into();
-        self.raw.segment.b = b.into();
+    pub fn set_segment(&mut self, start: Vect, end: Vect) {
+        self.raw.segment.a = start.into();
+        self.raw.segment.b = end.into();
     }
 
     /// Set the radius of this capsule.

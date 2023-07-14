@@ -3,33 +3,28 @@ use core::fmt;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
+use crate::geometry::{Collider, PointProjection, RayIntersection, Toi};
+use crate::math::{Rot, Vect};
+use crate::pipeline::{CollisionEvent, ContactForceEvent, QueryFilter};
+use crate::prelude::events::EventQueue;
+use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query};
+use rapier::control::CharacterAutostep;
 use rapier::prelude::{
-    Aabb as RapierAabb, BroadPhase, CCDSolver, ColliderHandle, ColliderSet, EventHandler,
-    FeatureId, ImpulseJointHandle, ImpulseJointSet, IntegrationParameters, IslandManager,
+    BroadPhase, CCDSolver, ColliderHandle, ColliderSet, EventHandler, FeatureId,
+    ImpulseJointHandle, ImpulseJointSet, IntegrationParameters, IslandManager,
     MultibodyJointHandle, MultibodyJointSet, NarrowPhase, PhysicsHooks, PhysicsPipeline,
     QueryFilter as RapierQueryFilter, QueryPipeline, Ray, Real, RigidBodyHandle, RigidBodySet,
 };
 
-use crate::geometry::{Collider, PointProjection, RayIntersection, Toi};
-use crate::math::{Rot, Vect};
-use crate::pipeline::QueryFilter;
-use crate::prelude::events::EventQueue;
-use bevy::prelude::{Entity, GlobalTransform, Query};
-use bevy::render::primitives::Aabb;
-
 use crate::control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput};
 use crate::dynamics::TransformInterpolation;
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
-use crate::prelude::{CollisionEvent, CollisionGroups, ContactForceEvent, RapierRigidBodyHandle};
-#[cfg(feature = "dim2")]
-use bevy::math::Vec3Swizzles;
-use rapier::control::CharacterAutostep;
+use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
 
 /// Represents the world in the rapier context
 pub type WorldId = usize;
 
 /// This world id is the default world that is created.
-/// This world CAN be removed manually, but will be there by default.
 pub const DEFAULT_WORLD_ID: WorldId = 0;
 
 /// The Rapier context, containing all the state of the physics engine.
@@ -687,18 +682,21 @@ impl RapierWorld {
     }
 
     /// Finds all entities of all the colliders with an Aabb intersecting the given Aabb.
+    #[cfg(not(feature = "headless"))]
     pub fn colliders_with_aabb_intersecting_aabb(
         &self,
-        aabb: Aabb,
+        aabb: bevy::render::primitives::Aabb,
         mut callback: impl FnMut(Entity) -> bool,
     ) {
         #[cfg(feature = "dim2")]
-        let scaled_aabb = RapierAabb {
+        use bevy::math::Vec3Swizzles;
+        #[cfg(feature = "dim2")]
+        let scaled_aabb = rapier::prelude::Aabb {
             mins: (aabb.min().xy() / self.physics_scale).into(),
             maxs: (aabb.max().xy() / self.physics_scale).into(),
         };
         #[cfg(feature = "dim3")]
-        let scaled_aabb = RapierAabb {
+        let scaled_aabb = rapier::prelude::Aabb {
             mins: (aabb.min() / self.physics_scale).into(),
             maxs: (aabb.max() / self.physics_scale).into(),
         };
@@ -1392,7 +1390,7 @@ impl RapierContext {
     pub fn colliders_with_aabb_intersecting_aabb(
         &self,
         world_id: WorldId,
-        aabb: Aabb,
+        aabb: bevy::render::primitives::Aabb,
         callback: impl FnMut(Entity) -> bool,
     ) -> Result<(), WorldError> {
         self.worlds
