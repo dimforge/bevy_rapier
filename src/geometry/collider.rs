@@ -510,7 +510,7 @@ pub struct ColliderDisabled;
 
 /// Rigid body parent of the collider.
 #[derive(Component, Debug, Eq, PartialEq, Reflect)]
-#[reflect(Component, MapEntities, PartialEq)]
+#[reflect(Component, PartialEq)]
 pub struct ColliderParent(pub(crate) Entity);
 
 impl ColliderParent {

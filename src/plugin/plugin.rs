@@ -95,6 +95,7 @@ where
                 systems::init_colliders,
                 systems::init_joints,
                 systems::sync_removals,
+                systems::collect_collider_hierarchy_changes,
                 // Run this here so the folowwing systems do not have a 1 frame delay.
                 apply_deferred,
                 systems::apply_scale,
