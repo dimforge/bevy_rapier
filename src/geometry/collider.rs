@@ -3,12 +3,14 @@ use std::fmt;
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 use {crate::geometry::VHACDParameters, bevy::utils::HashMap};
 
-use bevy::prelude::*;
-use bevy::ecs::{
-    entity::{EntityMapper, MapEntities},
-    reflect::ReflectMapEntities,
+use bevy::{
+    ecs::{
+        entity::{MapEntities, EntityMapper},
+        reflect::ReflectMapEntities,
+    },
+    prelude::*,
+    utils::HashSet,
 };
-use bevy::utils::HashSet;
 
 use rapier::geometry::Shape;
 use rapier::prelude::{ColliderHandle, InteractionGroups, SharedShape};
@@ -509,7 +511,7 @@ pub struct ColliderDisabled;
 
 /// Rigid body parent of the collider.
 #[derive(Component, Debug, Eq, PartialEq, Reflect)]
-#[reflect(Component, PartialEq)]
+#[reflect(Component, MapEntities, PartialEq)]
 pub struct ColliderParent(pub(crate) Entity);
 
 impl ColliderParent {
@@ -526,8 +528,8 @@ impl FromWorld for ColliderParent {
 }
 
 impl MapEntities for ColliderParent {
-    fn map_entities(&mut self, entity_map: &mut EntityMapper) {
-        self.0 = entity_map.get_or_reserve(self.0);
+    fn map_entities(&mut self, entity_mapper: &mut EntityMapper) {
+        self.0 = entity_mapper.get_or_reserve(self.0);
     }
 }
 
