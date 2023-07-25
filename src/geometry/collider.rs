@@ -4,7 +4,6 @@ use std::fmt;
 use {crate::geometry::VHACDParameters, bevy::utils::HashMap};
 
 use bevy::prelude::*;
-
 use bevy::ecs::{
     entity::{EntityMapper, MapEntities},
     reflect::ReflectMapEntities,
