@@ -171,7 +171,9 @@ pub fn collect_collider_hierarchy_changes(
         match event {
             HierarchyEvent::ChildAdded { child, .. } | HierarchyEvent::ChildMoved { child, .. } => {
                 let colliders = child_colliders(*child);
-                let Some(rigid_body) = parent_rigid_body(*child) else { continue };
+                let Some(rigid_body) = parent_rigid_body(*child) else {
+                    continue;
+                };
 
                 for collider in colliders {
                     let new_collider_parent = ColliderParent(rigid_body);
@@ -1985,6 +1987,91 @@ mod tests {
             );
             approx::assert_relative_eq!(body_transform.scale, child_transform.scale,);
         }
+    }
+
+    #[test]
+    fn collider_parent() {
+        let mut app = App::new();
+        app.add_plugins((
+            HeadlessRenderPlugin,
+            TransformPlugin,
+            HierarchyPlugin,
+            TimePlugin,
+            RapierPhysicsPlugin::<NoUserData>::default(),
+        ));
+
+        fn verify_collider_parent(
+            ctx: Res<RapierContext>,
+            colliders: Query<(Entity, Option<&ColliderParent>), With<Collider>>,
+            parents: Query<&Parent>,
+            bodies: Query<(), With<RigidBody>>,
+        ) {
+            for (collider_entity, collider_parent) in &colliders {
+                let rapier_parent = ctx.collider_parent(collider_entity);
+                let collider_parent = collider_parent.map(|parent| parent.get());
+
+                let mut entity = collider_entity;
+                let mut hierarchal_parent = None;
+                loop {
+                    if bodies.contains(entity) {
+                        hierarchal_parent = Some(entity);
+                        break;
+                    }
+
+                    let Ok(parent) = parents.get(entity) else { break };
+                    entity = parent.get();
+                }
+
+                println!(
+                    "{:?} == {:?} == {:?}",
+                    rapier_parent, collider_parent, hierarchal_parent
+                );
+                assert_eq!(rapier_parent, collider_parent);
+                assert_eq!(rapier_parent, hierarchal_parent);
+            }
+        }
+
+        app.add_systems(Last, verify_collider_parent);
+
+        let parent1 = app
+            .world
+            .spawn((TransformBundle::default(), RigidBody::Dynamic))
+            .id();
+
+        let parent2 = app
+            .world
+            .spawn((TransformBundle::default(), RigidBody::Dynamic))
+            .id();
+
+        let inbetween = app.world.spawn((TransformBundle::default(),)).id();
+
+        let child = app
+            .world
+            .spawn((TransformBundle::default(), Collider::default()))
+            .id();
+
+        // Unnested
+        app.update();
+        app.world.entity_mut(child).set_parent(parent1);
+        app.update();
+        app.world.entity_mut(child).set_parent(parent2);
+        app.update();
+        app.world.entity_mut(child).remove_parent();
+        app.update();
+
+        // Nested
+        app.world.entity_mut(child).set_parent(inbetween);
+        app.update();
+        app.world.entity_mut(inbetween).set_parent(parent1);
+        app.update();
+        app.world.entity_mut(inbetween).set_parent(parent2);
+        app.update();
+        app.world.entity_mut(inbetween).remove_parent();
+        app.update();
+
+        app.world.entity_mut(inbetween).set_parent(parent1);
+        app.world.entity_mut(child).remove_parent();
+        app.update();
     }
 
     // Allows run tests for systems containing rendering related things without GPU
