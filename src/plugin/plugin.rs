@@ -73,7 +73,9 @@ where
                     .after(systems::update_character_controls)
                     .in_set(RapierTransformPropagateSet),
                 systems::init_async_colliders.after(RapierTransformPropagateSet),
-                systems::apply_scale.after(systems::init_async_colliders),
+                systems::apply_scale
+                    .after(systems::init_async_colliders)
+                    .after(systems::init_colliders),
                 systems::apply_collider_user_changes.after(systems::apply_scale),
                 systems::apply_rigid_body_user_changes.after(systems::apply_collider_user_changes),
                 systems::apply_joint_user_changes.after(systems::apply_rigid_body_user_changes),
