@@ -1858,6 +1858,7 @@ mod tests {
         app.add_plugins((
             HeadlessRenderPlugin,
             TransformPlugin,
+            HierarchyPlugin,
             TimePlugin,
             RapierPhysicsPlugin::<NoUserData>::default(),
         ));
@@ -1915,6 +1916,7 @@ mod tests {
         app.add_plugins((
             HeadlessRenderPlugin,
             TransformPlugin,
+            HierarchyPlugin,
             TimePlugin,
             RapierPhysicsPlugin::<NoUserData>::default(),
         ));
