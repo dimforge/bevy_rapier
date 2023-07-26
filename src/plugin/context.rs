@@ -124,9 +124,11 @@ impl RapierContext {
             .get(&entity)
             .map(|handle| self.bodies.get(*handle))
             .flatten()
-            .map(|body| body.colliders())
-            .map(|colliders| colliders.iter().filter_map(|handle| self.collider_entity(*handle)))
-            .map(|colliders| colliders)
+            .map(|body| {
+                body.colliders()
+                    .iter()
+                    .filter_map(|handle| self.collider_entity(*handle))
+            })
             .into_iter()
             .flatten()
     }
