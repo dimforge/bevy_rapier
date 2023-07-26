@@ -122,8 +122,7 @@ impl RapierContext {
     pub fn colliders(&self, entity: Entity) -> impl Iterator<Item = Entity> + '_ {
         self.entity2body()
             .get(&entity)
-            .map(|handle| self.bodies.get(*handle))
-            .flatten()
+            .and_then(|handle| self.bodies.get(*handle))
             .map(|body| {
                 body.colliders()
                     .iter()
