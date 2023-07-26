@@ -2,7 +2,11 @@ use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::configuration::SimulationToRenderTime;
 use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
-use bevy::ecs::{event::Events, schedule::SystemConfigs, system::SystemParamItem};
+use bevy::ecs::{
+    event::Events,
+    schedule::{ScheduleLabel, SystemConfigs},
+    system::SystemParamItem,
+};
 use bevy::{prelude::*, transform::TransformSystem};
 use std::marker::PhantomData;
 
@@ -57,9 +61,14 @@ where
         }
     }
 
-    /// Adds the physics systems to the `FixedUpdate` schedule rather than main.
-    pub fn fixed(mut self) -> Self {
-        self.schedule = Box::new(CoreSchedule::FixedUpdate);
+    /// Adds the physics systems to the `FixedUpdate` schedule rather than `PostUpdate`.
+    pub fn fixed(self) -> Self {
+        self.in_schedule(FixedUpdate)
+    }
+
+    /// Adds the physics systems to the provided schedule rather than `PostUpdate`.
+    pub fn in_schedule(mut self, schedule: impl ScheduleLabel) -> Self {
+        self.schedule = Box::new(schedule);
         self
     }
 
@@ -128,7 +137,7 @@ pub struct RapierTransformPropagateSet;
 impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystemParam> {
     fn default() -> Self {
         Self {
-            schedule: Box::new(CoreSchedule::Main),
+            schedule: Box::new(PostUpdate),
             physics_scale: 1.0,
             default_system_setup: true,
             _phantom: PhantomData,
@@ -199,9 +208,8 @@ where
 
         // Add each set as necessary
         if self.default_system_setup {
-<<<<<<< HEAD
             app.configure_sets(
-                PostUpdate,
+                self.schedule.clone(),
                 (
                     PhysicsSet::SyncBackend,
                     PhysicsSet::SyncBackendFlush,
@@ -212,8 +220,11 @@ where
                     .before(TransformSystem::TransformPropagate),
             );
 
+            // These *must* be in the main schedule currently so that they do not miss events.
+            app.add_systems(PostUpdate, (systems::sync_removals,));
+
             app.add_systems(
-                PostUpdate,
+                self.schedule.clone(),
                 (
                     Self::get_systems(PhysicsSet::SyncBackend).in_set(PhysicsSet::SyncBackend),
                     Self::get_systems(PhysicsSet::SyncBackendFlush)
@@ -222,46 +233,18 @@ where
                         .in_set(PhysicsSet::StepSimulation),
                     Self::get_systems(PhysicsSet::Writeback).in_set(PhysicsSet::Writeback),
                 ),
-=======
-            app.world
-                .resource_mut::<Schedules>()
-                .get_mut(&self.schedule.clone())
-                .expect("Expected schedule to exist")
-                .configure_sets(
-                    (
-                        PhysicsSet::SyncBackend,
-                        PhysicsSet::SyncBackendFlush,
-                        PhysicsSet::StepSimulation,
-                        PhysicsSet::Writeback,
-                    )
-                        .chain()
-                        .after(CoreSet::UpdateFlush)
-                        .before(CoreSet::PostUpdate),
-                );
+            );
 
-            app.add_system(systems::sync_removals.in_base_set(CoreSet::PostUpdate));
-
-            app.add_systems(
-                Self::get_systems(PhysicsSet::SyncBackend)
-                    .in_base_set(PhysicsSet::SyncBackend)
-                    .in_schedule(self.schedule.clone()),
-            );
-            app.add_systems(
-                Self::get_systems(PhysicsSet::SyncBackendFlush)
-                    .in_base_set(PhysicsSet::SyncBackendFlush)
-                    .in_schedule(self.schedule.clone()),
-            );
-            app.add_systems(
-                Self::get_systems(PhysicsSet::StepSimulation)
-                    .in_base_set(PhysicsSet::StepSimulation)
-                    .in_schedule(self.schedule.clone()),
-            );
-            app.add_systems(
-                Self::get_systems(PhysicsSet::Writeback)
-                    .in_base_set(PhysicsSet::Writeback)
-                    .in_schedule(self.schedule.clone()),
->>>>>>> 7c99ef2... Allow customizing the schedule with FixedUpdate
-            );
+            // Warn user if the timestep mode isn't in Fixed
+            if self.schedule.as_dyn_eq().dyn_eq(FixedUpdate.as_dyn_eq()) {
+                let config = app.world.resource::<RapierConfiguration>();
+                match config.timestep_mode {
+                    TimestepMode::Fixed { .. } => {}
+                    mode => {
+                        warn!("TimestepMode is set to `{:?}`, it is recommended to use `TimestepMode::Fixed` if you have the physics in `FixedUpdate`", mode);
+                    }
+                }
+            }
         }
     }
 }
