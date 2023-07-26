@@ -157,7 +157,14 @@ impl Default for AdditionalMassProperties {
 /// and the `AdditionalMassProperties` should be modified instead).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
-pub struct ReadMassProperties(pub MassProperties);
+pub struct ReadMassProperties(MassProperties);
+
+impl ReadMassProperties {
+    /// Get the [`MassProperties`] of this rigid-body.
+    pub fn get(&self) -> &MassProperties {
+        &self.0
+    }
+}
 
 /// Center-of-mass, mass, and angular inertia.
 ///
