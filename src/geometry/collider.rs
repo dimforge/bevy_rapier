@@ -5,7 +5,7 @@ use {crate::geometry::VHACDParameters, bevy::utils::HashMap};
 
 use bevy::{
     ecs::{
-        entity::{MapEntities, EntityMapper},
+        entity::{EntityMapper, MapEntities},
         reflect::ReflectMapEntities,
     },
     prelude::*,
