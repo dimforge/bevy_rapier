@@ -146,9 +146,9 @@ impl<'a> From<TypedShape<'a>> for ColliderView<'a> {
     }
 }
 
-impl<'a> Into<TypedShape<'a>> for ColliderView<'a> {
-    fn into(self) -> TypedShape<'a> {
-        self.as_typed_shape()
+impl<'a> From<ColliderView<'a>> for TypedShape<'a> {
+    fn from(collider_view: ColliderView<'a>) -> TypedShape<'a> {
+        collider_view.as_typed_shape()
     }
 }
 
