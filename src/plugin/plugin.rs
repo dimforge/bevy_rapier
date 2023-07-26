@@ -73,6 +73,7 @@ where
                     .in_set(RapierTransformPropagateSet),
                 #[cfg(all(feature = "dim3", feature = "async-collider"))]
                 systems::init_async_scene_colliders.after(bevy::scene::scene_spawner_system),
+                #[cfg(all(feature = "dim3", feature = "async-collider"))]
                 systems::init_async_colliders,
                 systems::init_rigid_bodies,
                 systems::init_colliders,
