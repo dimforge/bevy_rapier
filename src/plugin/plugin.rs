@@ -77,16 +77,17 @@ where
                 systems::init_rigid_bodies,
                 systems::init_colliders,
                 systems::init_joints,
+                systems::sync_removals,
+                // Run this here so the folowwing systems do not have a 1 frame delay.
+                apply_deferred,
                 systems::apply_scale,
                 systems::apply_collider_user_changes,
                 systems::apply_rigid_body_user_changes,
                 systems::apply_joint_user_changes,
                 systems::apply_initial_rigid_body_impulses,
-                systems::sync_removals,
             )
                 .chain()
                 .into_configs(),
-            PhysicsSet::SyncBackendFlush => (apply_deferred,).into_configs(),
             PhysicsSet::StepSimulation => (
                 systems::step_simulation::<PhysicsHooks>,
                 Events::<CollisionEvent>::update_system
@@ -127,8 +128,6 @@ pub enum PhysicsSet {
     /// initializing) backend data structures with current component state.
     /// These systems typically run at the after [`CoreSet::Update`].
     SyncBackend,
-    /// The copy of [`apply_system_buffers`] that runs immediately after [`PhysicsSet::SyncBackend`].
-    SyncBackendFlush,
     /// The systems responsible for advancing the physics simulation, and
     /// updating the internal state for scene queries.
     /// These systems typically run immediately after [`PhysicsSet::SyncBackend`].
@@ -187,7 +186,6 @@ where
                 PostUpdate,
                 (
                     PhysicsSet::SyncBackend,
-                    PhysicsSet::SyncBackendFlush,
                     PhysicsSet::StepSimulation,
                     PhysicsSet::Writeback,
                 )
@@ -199,8 +197,6 @@ where
                 PostUpdate,
                 (
                     Self::get_systems(PhysicsSet::SyncBackend).in_set(PhysicsSet::SyncBackend),
-                    Self::get_systems(PhysicsSet::SyncBackendFlush)
-                        .in_set(PhysicsSet::SyncBackendFlush),
                     Self::get_systems(PhysicsSet::StepSimulation)
                         .in_set(PhysicsSet::StepSimulation),
                     Self::get_systems(PhysicsSet::Writeback).in_set(PhysicsSet::Writeback),
