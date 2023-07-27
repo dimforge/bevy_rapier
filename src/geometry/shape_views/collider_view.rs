@@ -152,6 +152,12 @@ impl<'a> From<ColliderView<'a>> for TypedShape<'a> {
     }
 }
 
+impl<'a> From<ColliderView<'a>> for SharedShape {
+    fn from(collider_view: ColliderView<'a>) -> SharedShape {
+        collider_view.as_shared_shape()
+    }
+}
+
 impl<'a> ColliderView<'a> {
     /// Convert to [`parry::TypedShape`].
     pub fn as_typed_shape(&self) -> TypedShape<'a> {
