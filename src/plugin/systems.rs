@@ -42,6 +42,7 @@ pub type RigidBodyWritebackComponents<'a> = (
     Option<&'a mut TransformInterpolation>,
     Option<&'a mut Velocity>,
     Option<&'a mut Sleeping>,
+    Option<&'a mut ReadMassProperties>,
 );
 
 /// Components related to rigid-bodies.
@@ -526,7 +527,7 @@ pub fn writeback_rigid_bodies(
     let scale = context.physics_scale;
 
     if config.physics_pipeline_active {
-        for (entity, parent, transform, mut interpolation, mut velocity, mut sleeping) in
+        for (entity, parent, transform, mut interpolation, mut velocity, mut sleeping, mut mass_props) in
             writeback.iter_mut()
         {
             // TODO: do this the other way round: iterate through Rapier’s RigidBodySet on the active bodies,
@@ -649,6 +650,17 @@ pub fn writeback_rigid_bodies(
                         //       change tracking when the values didn’t change.
                         if sleeping.sleeping != rb.is_sleeping() {
                             sleeping.sleeping = rb.is_sleeping();
+                        }
+                    }
+
+                    if let Some(mass_props) = &mut mass_props {
+                        let new_mass_props = MassProperties::from_rapier(rb.mass_properties().local_mprops, scale);
+
+                        // NOTE: we write the new value only if there was an
+                        //       actual change, in order to not trigger bevy’s
+                        //       change tracking when the values didn’t change.
+                        if mass_props.get() != &new_mass_props {
+                            mass_props.set(new_mass_props);
                         }
                     }
                 }
@@ -873,10 +885,10 @@ pub fn init_colliders(
                 // Inserting the collider changed the rigid-body’s mass properties.
                 // Read them back from the engine.
                 if let Some(parent_body) = context.bodies.get(body_handle) {
-                    mprops.0 = MassProperties::from_rapier(
+                    mprops.set(MassProperties::from_rapier(
                         parent_body.mass_properties().local_mprops,
                         physics_scale,
-                    );
+                    ));
                 }
             }
             handle

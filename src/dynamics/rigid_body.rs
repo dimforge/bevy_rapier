@@ -164,6 +164,10 @@ impl ReadMassProperties {
     pub fn get(&self) -> &MassProperties {
         &self.0
     }
+
+    pub(crate) fn set(&mut self, mass_props: MassProperties) {
+        self.0 = mass_props;
+    }
 }
 
 /// Center-of-mass, mass, and angular inertia.
