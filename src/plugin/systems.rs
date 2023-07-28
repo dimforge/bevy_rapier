@@ -134,8 +134,9 @@ pub fn apply_scale(
 
 /// System responsible for applying changes the user made to a collider-related component.
 pub fn apply_collider_user_changes(
-    config: Res<RapierConfiguration>,
     mut context: ResMut<RapierContext>,
+    config: Res<RapierConfiguration>,
+
     changed_collider_transforms: Query<
         (&RapierColliderHandle, &GlobalTransform),
         (Without<RapierRigidBodyHandle>, Changed<GlobalTransform>),
@@ -165,6 +166,8 @@ pub fn apply_collider_user_changes(
         (&RapierColliderHandle, &ColliderMassProperties),
         Changed<ColliderMassProperties>,
     >,
+
+    mut modified_masses: ResMut<ModifiedMasses>,
 ) {
     let scale = context.physics_scale;
 
@@ -183,7 +186,13 @@ pub fn apply_collider_user_changes(
         if let Some(co) = context.colliders.get_mut(handle.0) {
             let mut scaled_shape = shape.clone();
             scaled_shape.set_scale(shape.scale / scale, config.scaled_shape_subdivision);
-            co.set_shape(scaled_shape.raw.clone())
+            co.set_shape(scaled_shape.raw.clone());
+
+            if let Some(body) = co.parent() {
+                if let Some(body_entity) = context.rigid_body_entity(body) {
+                    modified_masses.push(body_entity);
+                }
+            }
         }
     }
 
@@ -258,6 +267,12 @@ pub fn apply_collider_user_changes(
                     co.set_mass_properties(mprops.into_rapier(scale))
                 }
             }
+
+            if let Some(body) = co.parent() {
+                if let Some(body_entity) = context.rigid_body_entity(body) {
+                    modified_masses.push(body_entity);
+                }
+            }
         }
     }
 }
@@ -277,7 +292,7 @@ pub fn apply_rigid_body_user_changes(
     >,
     changed_velocities: Query<(&RapierRigidBodyHandle, &Velocity), Changed<Velocity>>,
     changed_additional_mass_props: Query<
-        (&RapierRigidBodyHandle, &AdditionalMassProperties),
+        (Entity, &RapierRigidBodyHandle, &AdditionalMassProperties),
         Changed<AdditionalMassProperties>,
     >,
     changed_locked_axes: Query<(&RapierRigidBodyHandle, &LockedAxes), Changed<LockedAxes>>,
@@ -295,6 +310,8 @@ pub fn apply_rigid_body_user_changes(
         (&RapierRigidBodyHandle, &RigidBodyDisabled),
         Changed<RigidBodyDisabled>,
     >,
+
+    mut modified_masses: ResMut<ModifiedMasses>,
 ) {
     let context = &mut *context;
     let scale = context.physics_scale;
@@ -409,7 +426,7 @@ pub fn apply_rigid_body_user_changes(
         }
     }
 
-    for (handle, mprops) in changed_additional_mass_props.iter() {
+    for (entity, handle, mprops) in changed_additional_mass_props.iter() {
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             match mprops {
                 AdditionalMassProperties::MassProperties(mprops) => {
@@ -419,6 +436,8 @@ pub fn apply_rigid_body_user_changes(
                     rb.set_additional_mass(*mass, true);
                 }
             }
+
+            modified_masses.push(entity);
         }
     }
 
@@ -652,8 +671,32 @@ pub fn writeback_rigid_bodies(
                             sleeping.sleeping = rb.is_sleeping();
                         }
                     }
+                }
+            }
+        }
+    }
+}
 
-                    if let Some(mass_props) = &mut mass_props {
+/// Entities that likely had their mass properties changed this frame.
+#[derive(Resource, Deref, DerefMut)]
+pub struct ModifiedMasses(pub Vec<Entity>);
+
+/// System responsible for writing updated mass properties back into the [`ReadMassProperties`] component.
+pub fn writeback_mass_properties(
+    mut context: ResMut<RapierContext>,
+    config: Res<RapierConfiguration>,
+
+    mut mass_props: Query<&mut ReadMassProperties>,
+    mut modified_masses: ResMut<ModifiedMasses>,
+) {
+    let context = &mut *context;
+    let scale = context.physics_scale;
+
+    if config.physics_pipeline_active {
+        for entity in modified_masses.drain(..) {
+            if let Some(handle) = context.entity2body.get(&entity).copied() {
+                if let Some(rb) = context.bodies.get(handle) {
+                    if let Ok(mut mass_props) = mass_props.get_mut(entity) {
                         let new_mass_props = MassProperties::from_rapier(rb.mass_properties().local_mprops, scale);
 
                         // NOTE: we write the new value only if there was an
