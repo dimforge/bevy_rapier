@@ -546,8 +546,15 @@ pub fn writeback_rigid_bodies(
     let scale = context.physics_scale;
 
     if config.physics_pipeline_active {
-        for (entity, parent, transform, mut interpolation, mut velocity, mut sleeping, mut mass_props) in
-            writeback.iter_mut()
+        for (
+            entity,
+            parent,
+            transform,
+            mut interpolation,
+            mut velocity,
+            mut sleeping,
+            mut mass_props,
+        ) in writeback.iter_mut()
         {
             // TODO: do this the other way round: iterate through Rapier’s RigidBodySet on the active bodies,
             // and update the components accordingly. That way, we don’t have to iterate through the entities that weren’t changed
@@ -697,7 +704,8 @@ pub fn writeback_mass_properties(
             if let Some(handle) = context.entity2body.get(&entity).copied() {
                 if let Some(rb) = context.bodies.get(handle) {
                     if let Ok(mut mass_props) = mass_props.get_mut(entity) {
-                        let new_mass_props = MassProperties::from_rapier(rb.mass_properties().local_mprops, scale);
+                        let new_mass_props =
+                            MassProperties::from_rapier(rb.mass_properties().local_mprops, scale);
 
                         // NOTE: we write the new value only if there was an
                         //       actual change, in order to not trigger bevy’s
