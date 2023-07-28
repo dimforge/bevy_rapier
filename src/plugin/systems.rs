@@ -42,7 +42,6 @@ pub type RigidBodyWritebackComponents<'a> = (
     Option<&'a mut TransformInterpolation>,
     Option<&'a mut Velocity>,
     Option<&'a mut Sleeping>,
-    Option<&'a mut ReadMassProperties>,
 );
 
 /// Components related to rigid-bodies.
@@ -553,7 +552,6 @@ pub fn writeback_rigid_bodies(
             mut interpolation,
             mut velocity,
             mut sleeping,
-            mut mass_props,
         ) in writeback.iter_mut()
         {
             // TODO: do this the other way round: iterate through Rapier’s RigidBodySet on the active bodies,
