@@ -106,6 +106,7 @@ where
             PhysicsSet::Writeback => (
                 systems::update_colliding_entities,
                 systems::writeback_rigid_bodies,
+                systems::writeback_mass_properties,
             )
                 .into_configs(),
         }
