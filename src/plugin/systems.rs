@@ -16,7 +16,7 @@ use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
     BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities, KinematicCharacterController,
-    KinematicCharacterControllerOutput, RigidBodyDisabled, Vect, MassModified,
+    KinematicCharacterControllerOutput, MassModified, RigidBodyDisabled, Vect,
 };
 use crate::utils;
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
@@ -689,7 +689,7 @@ pub fn writeback_mass_properties(
 
     if config.physics_pipeline_active {
         for entity in mass_modified.iter() {
-            if let Some(handle) = context.entity2body.get(&entity).copied() {
+            if let Some(handle) = context.entity2body.get(entity).copied() {
                 if let Some(rb) = context.bodies.get(handle) {
                     if let Ok(mut mass_props) = mass_props.get_mut(**entity) {
                         let new_mass_props =

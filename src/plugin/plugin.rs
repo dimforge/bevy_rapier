@@ -107,8 +107,7 @@ where
                 systems::update_colliding_entities,
                 systems::writeback_rigid_bodies,
                 systems::writeback_mass_properties,
-                Events::<MassModified>::update_system
-                    .after(systems::writeback_mass_properties),
+                Events::<MassModified>::update_system.after(systems::writeback_mass_properties),
             )
                 .into_configs(),
         }
