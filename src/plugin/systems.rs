@@ -545,14 +545,8 @@ pub fn writeback_rigid_bodies(
     let scale = context.physics_scale;
 
     if config.physics_pipeline_active {
-        for (
-            entity,
-            parent,
-            transform,
-            mut interpolation,
-            mut velocity,
-            mut sleeping,
-        ) in writeback.iter_mut()
+        for (entity, parent, transform, mut interpolation, mut velocity, mut sleeping) in
+            writeback.iter_mut()
         {
             // TODO: do this the other way round: iterate through Rapier’s RigidBodySet on the active bodies,
             // and update the components accordingly. That way, we don’t have to iterate through the entities that weren’t changed
