@@ -84,11 +84,7 @@ pub type ColliderComponents<'a> = (
 pub fn apply_scale(
     config: Res<RapierConfiguration>,
     mut changed_collider_scales: Query<
-        (
-            &mut Collider,
-            &GlobalTransform,
-            Option<&ColliderScale>,
-        ),
+        (&mut Collider, &GlobalTransform, Option<&ColliderScale>),
         Or<(
             Changed<Collider>,
             Changed<GlobalTransform>,
@@ -170,10 +166,10 @@ pub fn apply_collider_user_changes(
                 co.set_position_wrt_parent(utils::transform_to_iso(&collider_position, scale));
             }
         } else if let Some(co) = context.colliders.get_mut(handle.0) {
-                co.set_position(utils::transform_to_iso(
-                    &transform.compute_transform(),
-                    scale,
-                ))
+            co.set_position(utils::transform_to_iso(
+                &transform.compute_transform(),
+                scale,
+            ))
         }
     }
 
