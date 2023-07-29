@@ -85,12 +85,7 @@ pub fn apply_scale(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
     mut changed_collider_scales: Query<
-        (
-            &mut Collider,
-            &RapierColliderHandle,
-            &GlobalTransform,
-            Option<&ColliderScale>,
-        ),
+        (&mut Collider, &RapierColliderHandle, &GlobalTransform, Option<&ColliderScale>),
         Or<(
             Changed<Collider>,
             Changed<GlobalTransform>,
@@ -121,9 +116,13 @@ pub fn apply_scale(
             if let Some(co) = context.colliders.get_mut(handle.0) {
                 if let Some(position) = co.position_wrt_parent() {
                     let translation: Vect = position.translation.vector.into();
-                    let unscaled_translation: Vect = translation / shape.scale();
-                    let new_translation = unscaled_translation * effective_scale;
-                    co.set_translation_wrt_parent(new_translation.into());
+                    let ratio = effective_scale / shape.scale();
+                    let scaled_translation = translation * ratio;
+                    if translation.length() > 0.0 {
+                        //info!("translation: {:.2?}", translation);
+                        //info!("scaled: {:.2?}", scaled_translation);
+                    }
+                    //co.set_translation_wrt_parent(scaled_translation.into());
                 }
             }
             shape.set_scale(effective_scale, config.scaled_shape_subdivision);
@@ -135,10 +134,13 @@ pub fn apply_scale(
 pub fn apply_collider_user_changes(
     config: Res<RapierConfiguration>,
     mut context: ResMut<RapierContext>,
-    changed_collider_transforms: Query<
-        (&RapierColliderHandle, &GlobalTransform),
-        (Without<RapierRigidBodyHandle>, Changed<GlobalTransform>),
-    >,
+    (changed_collider_transforms, parent_query): (
+        Query<
+            (Entity, &RapierColliderHandle, &GlobalTransform),
+            (Without<RapierRigidBodyHandle>, Changed<GlobalTransform>),
+        >,
+        Query<(&Parent, Option<&Transform>)>,
+    ),
 
     changed_shapes: Query<(&RapierColliderHandle, &Collider), Changed<Collider>>,
     changed_active_events: Query<(&RapierColliderHandle, &ActiveEvents), Changed<ActiveEvents>>,
@@ -167,9 +169,15 @@ pub fn apply_collider_user_changes(
 ) {
     let scale = context.physics_scale;
 
-    for (handle, transform) in changed_collider_transforms.iter() {
-        if let Some(co) = context.colliders.get_mut(handle.0) {
-            if co.parent().is_none() {
+    for (entity, handle, transform) in changed_collider_transforms.iter() {
+        if context.collider_parent(entity).is_some() {
+            let (_, collider_position) = collider_offset(entity, &context, &parent_query);
+
+            if let Some(co) = context.colliders.get_mut(handle.0) {
+                co.set_position_wrt_parent(utils::transform_to_iso(&collider_position, scale));
+            }
+        } else {
+            if let Some(co) = context.colliders.get_mut(handle.0) {
                 co.set_position(utils::transform_to_iso(
                     &transform.compute_transform(),
                     scale,
@@ -761,6 +769,30 @@ pub fn init_async_scene_colliders(
     }
 }
 
+fn collider_offset(
+    entity: Entity,
+    context: &RapierContext,
+    parent_query: &Query<(&Parent, Option<&Transform>)>,
+) -> (Option<RigidBodyHandle>, Transform) {
+    let mut body_entity = entity;
+    let mut body_handle = context.entity2body.get(&body_entity).copied();
+    let mut child_transform = Transform::default();
+    while body_handle.is_none() {
+        if let Ok((parent_entity, transform)) = parent_query.get(body_entity) {
+            if let Some(transform) = transform {
+                child_transform = *transform * child_transform;
+            }
+            body_entity = parent_entity.get();
+        } else {
+            break;
+        }
+
+        body_handle = context.entity2body.get(&body_entity).copied();
+    }
+
+    (body_handle, child_transform)
+}
+
 /// System responsible for creating new Rapier colliders from the related `bevy_rapier` components.
 pub fn init_colliders(
     mut commands: Commands,
@@ -845,21 +877,8 @@ pub fn init_colliders(
             builder = builder.contact_force_event_threshold(threshold.0);
         }
 
-        let mut body_entity = entity;
-        let mut body_handle = context.entity2body.get(&body_entity).copied();
-        let mut child_transform = Transform::default();
-        while body_handle.is_none() {
-            if let Ok((parent_entity, transform)) = parent_query.get(body_entity) {
-                if let Some(transform) = transform {
-                    child_transform = *transform * child_transform;
-                }
-                body_entity = parent_entity.get();
-            } else {
-                break;
-            }
-
-            body_handle = context.entity2body.get(&body_entity).copied();
-        }
+        let body_entity = entity;
+        let (body_handle, child_transform) = collider_offset(entity, &context, &parent_query);
 
         builder = builder.user_data(entity.to_bits() as u128);
 
