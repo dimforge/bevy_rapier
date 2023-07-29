@@ -113,18 +113,6 @@ pub fn apply_scale(
         };
 
         if shape.scale != crate::geometry::get_snapped_scale(effective_scale) {
-            if let Some(co) = context.colliders.get_mut(handle.0) {
-                if let Some(position) = co.position_wrt_parent() {
-                    let translation: Vect = position.translation.vector.into();
-                    let ratio = effective_scale / shape.scale();
-                    let scaled_translation = translation * ratio;
-                    if translation.length() > 0.0 {
-                        //info!("translation: {:.2?}", translation);
-                        //info!("scaled: {:.2?}", scaled_translation);
-                    }
-                    //co.set_translation_wrt_parent(scaled_translation.into());
-                }
-            }
             shape.set_scale(effective_scale, config.scaled_shape_subdivision);
         }
     }
@@ -134,12 +122,12 @@ pub fn apply_scale(
 pub fn apply_collider_user_changes(
     config: Res<RapierConfiguration>,
     mut context: ResMut<RapierContext>,
-    (changed_collider_transforms, parent_query): (
+    (changed_collider_transforms, parent_query, transform_query): (
         Query<
             (Entity, &RapierColliderHandle, &GlobalTransform),
             (Without<RapierRigidBodyHandle>, Changed<GlobalTransform>),
         >,
-        Query<(&Parent, Option<&Transform>)>,
+        Query<&Parent>, Query<&Transform>,
     ),
 
     changed_shapes: Query<(&RapierColliderHandle, &Collider), Changed<Collider>>,
@@ -171,7 +159,7 @@ pub fn apply_collider_user_changes(
 
     for (entity, handle, transform) in changed_collider_transforms.iter() {
         if context.collider_parent(entity).is_some() {
-            let (_, collider_position) = collider_offset(entity, &context, &parent_query);
+            let (_, collider_position) = collider_offset(entity, &context, &parent_query, &transform_query);
 
             if let Some(co) = context.colliders.get_mut(handle.0) {
                 co.set_position_wrt_parent(utils::transform_to_iso(&collider_position, scale));
@@ -772,14 +760,15 @@ pub fn init_async_scene_colliders(
 fn collider_offset(
     entity: Entity,
     context: &RapierContext,
-    parent_query: &Query<(&Parent, Option<&Transform>)>,
+    parent_query: &Query<&Parent>,
+    transform_query: &Query<&Transform>,
 ) -> (Option<RigidBodyHandle>, Transform) {
     let mut body_entity = entity;
     let mut body_handle = context.entity2body.get(&body_entity).copied();
     let mut child_transform = Transform::default();
     while body_handle.is_none() {
-        if let Ok((parent_entity, transform)) = parent_query.get(body_entity) {
-            if let Some(transform) = transform {
+        if let Ok(parent_entity) = parent_query.get(body_entity) {
+            if let Ok(transform) = transform_query.get(body_entity) {
                 child_transform = *transform * child_transform;
             }
             body_entity = parent_entity.get();
@@ -788,6 +777,17 @@ fn collider_offset(
         }
 
         body_handle = context.entity2body.get(&body_entity).copied();
+    }
+
+    if body_handle.is_some() {
+        if let Ok(transform) = transform_query.get(body_entity) {
+            let scale_transform = Transform {
+                scale: transform.scale,
+                ..default()
+            };
+
+            child_transform = scale_transform * child_transform;
+        }
     }
 
     (body_handle, child_transform)
@@ -800,7 +800,8 @@ pub fn init_colliders(
     mut context: ResMut<RapierContext>,
     colliders: Query<(ColliderComponents, Option<&GlobalTransform>), Without<RapierColliderHandle>>,
     mut rigid_body_mprops: Query<&mut ReadMassProperties>,
-    parent_query: Query<(&Parent, Option<&Transform>)>,
+    parent_query: Query<&Parent>,
+    transform_query: Query<&Transform>,
 ) {
     let context = &mut *context;
     let physics_scale = context.physics_scale;
@@ -878,7 +879,7 @@ pub fn init_colliders(
         }
 
         let body_entity = entity;
-        let (body_handle, child_transform) = collider_offset(entity, &context, &parent_query);
+        let (body_handle, child_transform) = collider_offset(entity, &context, &parent_query, &transform_query);
 
         builder = builder.user_data(entity.to_bits() as u128);
 
