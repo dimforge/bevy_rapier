@@ -107,6 +107,8 @@ where
                 systems::update_colliding_entities,
                 systems::writeback_rigid_bodies,
                 systems::writeback_mass_properties,
+                Events::<MassModified>::update_system
+                    .after(systems::writeback_mass_properties),
             )
                 .into_configs(),
         }
@@ -181,7 +183,6 @@ where
         // Insert all of our required resources. Don’t overwrite
         // the `RapierConfiguration` if it already exists.
         app.init_resource::<RapierConfiguration>();
-        app.init_resource::<systems::ModifiedMasses>();
 
         app.insert_resource(SimulationToRenderTime::default())
             .insert_resource(RapierContext {
@@ -189,7 +190,8 @@ where
                 ..Default::default()
             })
             .insert_resource(Events::<CollisionEvent>::default())
-            .insert_resource(Events::<ContactForceEvent>::default());
+            .insert_resource(Events::<ContactForceEvent>::default())
+            .insert_resource(Events::<MassModified>::default());
 
         // Add each set as necessary
         if self.default_system_setup {

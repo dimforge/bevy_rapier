@@ -170,6 +170,16 @@ impl ReadMassProperties {
     }
 }
 
+/// Entity that likely had their mass properties changed this frame.
+#[derive(Deref, Copy, Clone, Debug, PartialEq, Event)]
+pub struct MassModified(pub Entity);
+
+impl From<Entity> for MassModified {
+    fn from(entity: Entity) -> Self {
+        Self(entity)
+    }
+}
+
 /// Center-of-mass, mass, and angular inertia.
 ///
 /// This cannot be used as a component. Use the components `ReadMassProperties` to read a rigid-body’s

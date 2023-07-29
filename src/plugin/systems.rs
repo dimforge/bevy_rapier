@@ -16,7 +16,7 @@ use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
     BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities, KinematicCharacterController,
-    KinematicCharacterControllerOutput, RigidBodyDisabled, Vect,
+    KinematicCharacterControllerOutput, RigidBodyDisabled, Vect, MassModified,
 };
 use crate::utils;
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
@@ -166,7 +166,7 @@ pub fn apply_collider_user_changes(
         Changed<ColliderMassProperties>,
     >,
 
-    mut modified_masses: ResMut<ModifiedMasses>,
+    mut mass_modified: EventWriter<MassModified>,
 ) {
     let scale = context.physics_scale;
 
@@ -189,7 +189,7 @@ pub fn apply_collider_user_changes(
 
             if let Some(body) = co.parent() {
                 if let Some(body_entity) = context.rigid_body_entity(body) {
-                    modified_masses.push(body_entity);
+                    mass_modified.send(body_entity.into());
                 }
             }
         }
@@ -269,7 +269,7 @@ pub fn apply_collider_user_changes(
 
             if let Some(body) = co.parent() {
                 if let Some(body_entity) = context.rigid_body_entity(body) {
-                    modified_masses.push(body_entity);
+                    mass_modified.send(body_entity.into());
                 }
             }
         }
@@ -310,7 +310,7 @@ pub fn apply_rigid_body_user_changes(
         Changed<RigidBodyDisabled>,
     >,
 
-    mut modified_masses: ResMut<ModifiedMasses>,
+    mut mass_modified: EventWriter<MassModified>,
 ) {
     let context = &mut *context;
     let scale = context.physics_scale;
@@ -436,7 +436,7 @@ pub fn apply_rigid_body_user_changes(
                 }
             }
 
-            modified_masses.push(entity);
+            mass_modified.send(entity.into());
         }
     }
 
@@ -676,27 +676,22 @@ pub fn writeback_rigid_bodies(
     }
 }
 
-/// Entities that likely had their mass properties changed this frame.
-#[derive(Resource, Deref, DerefMut, Default, Reflect)]
-#[reflect(Resource)]
-pub struct ModifiedMasses(pub Vec<Entity>);
-
 /// System responsible for writing updated mass properties back into the [`ReadMassProperties`] component.
 pub fn writeback_mass_properties(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
 
     mut mass_props: Query<&mut ReadMassProperties>,
-    mut modified_masses: ResMut<ModifiedMasses>,
+    mut mass_modified: EventReader<MassModified>,
 ) {
     let context = &mut *context;
     let scale = context.physics_scale;
 
     if config.physics_pipeline_active {
-        for entity in modified_masses.drain(..) {
+        for entity in mass_modified.iter() {
             if let Some(handle) = context.entity2body.get(&entity).copied() {
                 if let Some(rb) = context.bodies.get(handle) {
-                    if let Ok(mut mass_props) = mass_props.get_mut(entity) {
+                    if let Ok(mut mass_props) = mass_props.get_mut(**entity) {
                         let new_mass_props =
                             MassProperties::from_rapier(rb.mass_properties().local_mprops, scale);
 
@@ -1171,7 +1166,7 @@ pub fn sync_removals(
     mut removed_rigid_body_disabled: RemovedComponents<RigidBodyDisabled>,
     mut removed_colliders_disabled: RemovedComponents<ColliderDisabled>,
 
-    mut modified_masses: ResMut<ModifiedMasses>,
+    mut mass_modified: EventWriter<MassModified>,
 ) {
     /*
      * Rigid-bodies removal detection.
@@ -1211,8 +1206,8 @@ pub fn sync_removals(
      * Collider removal detection.
      */
     for entity in removed_colliders.iter() {
-        if let Some(body) = context.collider_parent(entity) {
-            modified_masses.push(body);
+        if let Some(parent) = context.collider_parent(entity) {
+            mass_modified.send(parent.into());
         }
 
         if let Some(handle) = context.entity2collider.remove(&entity) {
@@ -1224,8 +1219,8 @@ pub fn sync_removals(
     }
 
     for entity in orphan_colliders.iter() {
-        if let Some(body) = context.collider_parent(entity) {
-            modified_masses.push(body);
+        if let Some(parent) = context.collider_parent(entity) {
+            mass_modified.send(parent.into());
         }
 
         if let Some(handle) = context.entity2collider.remove(&entity) {
