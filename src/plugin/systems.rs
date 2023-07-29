@@ -119,6 +119,35 @@ pub fn apply_scale(
     }
 }
 
+fn find_child_colliders(
+    base_entity: Entity,
+    colliders: &Query<&Collider>,
+    rigid_bodies: &Query<&RigidBody>,
+    childrens: &Query<&Children>,
+
+    found: &mut Vec<Entity>,
+    possibilities: &mut Vec<Entity>,
+) {
+    found.clear();
+    possibilities.clear();
+    possibilities.push(base_entity);
+    while let Some(entity) = possibilities.pop() {
+        if rigid_bodies.contains(entity) {
+            continue;
+        }
+
+        if colliders.contains(entity) {
+            found.push(entity);
+        }
+
+        if let Ok(children) = childrens.get(entity) {
+            possibilities.extend(children.iter());
+        } else {
+            continue;
+        };
+    }
+}
+
 /// System responsible for detecting changes in the hierarchy that would
 /// affect the collider's parent rigid body.
 pub fn collect_collider_hierarchy_changes(
@@ -130,29 +159,10 @@ pub fn collect_collider_hierarchy_changes(
     rigid_bodies: Query<&RigidBody>,
     colliders: Query<&Collider>,
     mut collider_parents: Query<&mut ColliderParent>,
+
+    mut found: Local<Vec<Entity>>,
+    mut possibilities: Local<Vec<Entity>>,
 ) {
-    let child_colliders = |entity: Entity| -> Vec<Entity> {
-        let mut found = Vec::new();
-        let mut possibilities = vec![entity];
-        while let Some(entity) = possibilities.pop() {
-            if rigid_bodies.contains(entity) {
-                continue;
-            }
-
-            if colliders.contains(entity) {
-                found.push(entity);
-            }
-
-            if let Ok(children) = childrens.get(entity) {
-                possibilities.extend(children.iter());
-            } else {
-                continue;
-            };
-        }
-
-        found
-    };
-
     let parent_rigid_body = |mut entity: Entity| -> Option<Entity> {
         loop {
             if rigid_bodies.contains(entity) {
@@ -170,25 +180,39 @@ pub fn collect_collider_hierarchy_changes(
     for event in hierarchy_events.iter() {
         match event {
             HierarchyEvent::ChildAdded { child, .. } | HierarchyEvent::ChildMoved { child, .. } => {
-                let colliders = child_colliders(*child);
                 let Some(rigid_body) = parent_rigid_body(*child) else {
                     continue;
                 };
+                find_child_colliders(
+                    *child,
+                    &colliders,
+                    &rigid_bodies,
+                    &childrens,
+                    &mut found,
+                    &mut possibilities,
+                );
 
-                for collider in colliders {
+                for collider in &found {
                     let new_collider_parent = ColliderParent(rigid_body);
-                    if let Ok(mut collider_parent) = collider_parents.get_mut(collider) {
+                    if let Ok(mut collider_parent) = collider_parents.get_mut(*collider) {
                         *collider_parent = new_collider_parent;
                     } else {
-                        commands.entity(collider).insert(new_collider_parent);
+                        commands.entity(*collider).insert(new_collider_parent);
                     }
                 }
             }
             HierarchyEvent::ChildRemoved { child, .. } => {
-                let colliders = child_colliders(*child);
-                for collider in colliders {
-                    if collider_parents.contains(collider) {
-                        commands.entity(collider).remove::<ColliderParent>();
+                find_child_colliders(
+                    *child,
+                    &colliders,
+                    &rigid_bodies,
+                    &childrens,
+                    &mut found,
+                    &mut possibilities,
+                );
+                for collider in &found {
+                    if collider_parents.contains(*collider) {
+                        commands.entity(*collider).remove::<ColliderParent>();
                     }
                 }
             }
