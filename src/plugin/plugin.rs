@@ -181,6 +181,7 @@ where
         // Insert all of our required resources. Don’t overwrite
         // the `RapierConfiguration` if it already exists.
         app.init_resource::<RapierConfiguration>();
+        app.init_resource::<systems::ModifiedMasses>();
 
         app.insert_resource(SimulationToRenderTime::default())
             .insert_resource(RapierContext {

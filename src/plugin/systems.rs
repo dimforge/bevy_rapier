@@ -677,7 +677,8 @@ pub fn writeback_rigid_bodies(
 }
 
 /// Entities that likely had their mass properties changed this frame.
-#[derive(Resource, Deref, DerefMut)]
+#[derive(Resource, Deref, DerefMut, Default, Reflect)]
+#[reflect(Resource)]
 pub struct ModifiedMasses(pub Vec<Entity>);
 
 /// System responsible for writing updated mass properties back into the [`ReadMassProperties`] component.
