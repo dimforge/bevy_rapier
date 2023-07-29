@@ -168,25 +168,18 @@ pub fn collect_collider_hierarchy_changes(
     };
 
     for event in hierarchy_events.iter() {
-        println!("event: {:?}", event);
         match event {
             HierarchyEvent::ChildAdded { child, .. } | HierarchyEvent::ChildMoved { child, .. } => {
-                println!("child add/moved");
                 let colliders = child_colliders(*child);
                 let Some(rigid_body) = parent_rigid_body(*child) else {
-                    println!("no rigid body parent");
                     continue;
                 };
 
-                println!("- updating colliders");
                 for collider in colliders {
-                    println!("- collider: {:?}", collider);
                     let new_collider_parent = ColliderParent(rigid_body);
                     if let Ok(mut collider_parent) = collider_parents.get_mut(collider) {
-                        println!(" - update existing");
                         *collider_parent = new_collider_parent;
                     } else {
-                        println!(" - insert new");
                         commands.entity(collider).insert(new_collider_parent);
                     }
                 }
@@ -330,23 +323,14 @@ pub fn apply_collider_user_changes(
         }
     }
 
-
-    for entity in &test_query {
-        println!("entity {:?} has a cparent", entity);
-    }
-
-    println!("checking changes");
-    for (handle, collider_parent, collider_entity) in changed_collider_parents.iter() {
-        println!("changed collider: {:?}", collider_entity);
+    for (handle, collider_parent) in changed_collider_parents.iter() {
         if let Some(body_handle) = context.entity2body.get(&collider_parent.0).copied() {
-            println!("body parent: {:?}", collider_parent.0);
             let RapierContext {
                 ref mut colliders,
                 ref mut bodies,
                 ..
             } = *context;
             colliders.set_parent(handle.0, Some(body_handle), bodies);
-            println!("collider parent: {:?}", context.collider_parent(collider_entity));
         }
     }
 
@@ -2025,8 +2009,19 @@ mod tests {
             colliders: Query<(Entity, Option<&ColliderParent>), With<Collider>>,
             parents: Query<&Parent>,
             bodies: Query<(), With<RigidBody>>,
-            names: Query<DebugName>,
+            names: Query<&Name>,
         ) {
+            let row_length = 60;
+            let column_length = row_length / 4;
+            let column = |collider: &str, rapier: &str, component: &str, hierarchal: &str| {
+                println!(
+                    "{:<column_length$}| {:<column_length$}| {:<column_length$}| {:<column_length$}",
+                    collider, rapier, component, hierarchal,
+                );
+            };
+
+            column("collider", "rapier", "component", "hierarchal");
+            println!("{}", "-".repeat(row_length));
             for (collider_entity, collider_parent) in &colliders {
                 let rapier_parent = ctx.collider_parent(collider_entity);
                 let collider_parent = collider_parent.map(|parent| parent.get());
@@ -2043,12 +2038,21 @@ mod tests {
                     entity = parent.get();
                 }
 
-                let disp = |entity: Option<Entity>| -> String {
-                    entity.map(|entity| format!("{:?}", names.get(entity).unwrap())).unwrap_or("None".to_owned())
+                let named = |entity: Option<Entity>| -> String {
+                    entity
+                        .map(|entity| {
+                            names
+                                .get(entity)
+                                .map(|name| name.as_str().to_owned())
+                                .unwrap_or(format!("{:?}", entity))
+                        })
+                        .unwrap_or("None".to_owned())
                 };
-                println!(
-                    "Collider {}: {} = {} = {}",
-                    disp(Some(collider_entity)), disp(rapier_parent), disp(collider_parent), disp(hierarchal_parent),
+                column(
+                    &named(Some(collider_entity)),
+                    &named(rapier_parent),
+                    &named(collider_parent),
+                    &named(hierarchal_parent),
                 );
 
                 assert_eq!(rapier_parent, collider_parent);
@@ -2059,36 +2063,58 @@ mod tests {
         fn frame(mut frame: Local<u32>) {
             *frame += 1;
             println!("-- frame {} -----------", *frame);
+            println!();
         }
 
         app.add_systems(Last, (frame, verify_collider_parent).chain());
 
-        app
+        let self_parented = app
             .world
-            .spawn((Name::new("Self-parented"), TransformBundle::default(), RigidBody::Dynamic, Collider::default()));
+            .spawn((
+                Name::new("Self-parented"),
+                TransformBundle::default(),
+                RigidBody::Dynamic,
+                Collider::default(),
+            ))
+            .id();
 
         let parent1 = app
             .world
-            .spawn((Name::new("Parent 1"), TransformBundle::default(), RigidBody::Dynamic))
+            .spawn((
+                Name::new("Parent 1"),
+                TransformBundle::default(),
+                RigidBody::Dynamic,
+            ))
             .id();
 
         let parent2 = app
             .world
-            .spawn((Name::new("Parent 2"), TransformBundle::default(), RigidBody::Dynamic))
+            .spawn((
+                Name::new("Parent 2"),
+                TransformBundle::default(),
+                RigidBody::Dynamic,
+            ))
             .id();
 
-        let inbetween = app.world.spawn((Name::new("Inbetween"), TransformBundle::default(),)).id();
+        let inbetween = app
+            .world
+            .spawn((Name::new("Inbetween"), TransformBundle::default()))
+            .id();
 
         let child = app
             .world
-            .spawn((Name::new("Child collider"), TransformBundle::default(), Collider::default()))
+            .spawn((
+                Name::new("Child collider"),
+                TransformBundle::default(),
+                Collider::default(),
+            ))
             .id();
 
         // Unnested
         app.update();
+        app.world.entity_mut(self_parented).despawn_recursive();
         app.world.entity_mut(child).set_parent(parent1);
         app.update();
-        /*
         app.world.entity_mut(child).set_parent(parent2);
         app.update();
         app.world.entity_mut(child).remove_parent();
@@ -2107,7 +2133,6 @@ mod tests {
         app.world.entity_mut(inbetween).set_parent(parent1);
         app.world.entity_mut(child).remove_parent();
         app.update();
- */
     }
 
     // Allows run tests for systems containing rendering related things without GPU

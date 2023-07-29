@@ -87,6 +87,28 @@ where
                 )
                     .chain()
                     .in_set(RapierTransformPropagateSet),
+<<<<<<< HEAD
+=======
+                systems::init_async_colliders.after(RapierTransformPropagateSet),
+                systems::collect_collider_hierarchy_changes
+                    .before(systems::apply_collider_user_changes),
+                apply_deferred.after(systems::collect_collider_hierarchy_changes),
+                systems::apply_scale.after(systems::init_async_colliders),
+                systems::apply_collider_user_changes.after(systems::apply_scale),
+                systems::apply_rigid_body_user_changes.after(systems::apply_collider_user_changes),
+                systems::apply_joint_user_changes.after(systems::apply_rigid_body_user_changes),
+                systems::init_rigid_bodies.after(systems::apply_joint_user_changes),
+                systems::init_colliders
+                    .after(systems::init_rigid_bodies)
+                    .after(systems::init_async_colliders),
+                systems::init_joints.after(systems::init_colliders),
+                systems::apply_initial_rigid_body_impulses
+                    .after(systems::init_colliders)
+                    .ambiguous_with(systems::init_joints),
+                systems::sync_removals
+                    .after(systems::init_joints)
+                    .after(systems::apply_initial_rigid_body_impulses),
+>>>>>>> 9246295 (Formatting, etc.)
                 #[cfg(all(feature = "dim3", feature = "async-collider"))]
                 systems::init_async_scene_colliders.after(bevy::scene::scene_spawner_system),
                 #[cfg(all(feature = "dim3", feature = "async-collider"))]
