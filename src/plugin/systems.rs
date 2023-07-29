@@ -1175,6 +1175,8 @@ pub fn sync_removals(
     mut removed_sensors: RemovedComponents<Sensor>,
     mut removed_rigid_body_disabled: RemovedComponents<RigidBodyDisabled>,
     mut removed_colliders_disabled: RemovedComponents<ColliderDisabled>,
+
+    mut modified_masses: ResMut<ModifiedMasses>,
 ) {
     /*
      * Rigid-bodies removal detection.
@@ -1214,6 +1216,10 @@ pub fn sync_removals(
      * Collider removal detection.
      */
     for entity in removed_colliders.iter() {
+        if let Some(body) = context.collider_parent(entity) {
+            modified_masses.push(body);
+        }
+
         if let Some(handle) = context.entity2collider.remove(&entity) {
             context
                 .colliders
@@ -1223,6 +1229,10 @@ pub fn sync_removals(
     }
 
     for entity in orphan_colliders.iter() {
+        if let Some(body) = context.collider_parent(entity) {
+            modified_masses.push(body);
+        }
+
         if let Some(handle) = context.entity2collider.remove(&entity) {
             context
                 .colliders
@@ -1293,7 +1303,6 @@ pub fn sync_removals(
         }
     }
 
-    // TODO: update mass props after collider removal.
     // TODO: what about removing forces?
 }
 
