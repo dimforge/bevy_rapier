@@ -16,7 +16,7 @@ use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
     BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities, KinematicCharacterController,
-    KinematicCharacterControllerOutput, RigidBodyDisabled, Vect,
+    KinematicCharacterControllerOutput, RigidBodyDisabled,
 };
 use crate::utils;
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
@@ -82,10 +82,13 @@ pub type ColliderComponents<'a> = (
 /// System responsible for applying [`GlobalTransform::scale`] and/or [`ColliderScale`] to
 /// colliders.
 pub fn apply_scale(
-    mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
     mut changed_collider_scales: Query<
-        (&mut Collider, &RapierColliderHandle, &GlobalTransform, Option<&ColliderScale>),
+        (
+            &mut Collider,
+            &GlobalTransform,
+            Option<&ColliderScale>,
+        ),
         Or<(
             Changed<Collider>,
             Changed<GlobalTransform>,
@@ -96,7 +99,7 @@ pub fn apply_scale(
     // NOTE: we don’t have to apply the RapierConfiguration::physics_scale here because
     //       we are applying the scale to the user-facing shape here, not the ones inside
     //       colliders (yet).
-    for (mut shape, handle, transform, custom_scale) in changed_collider_scales.iter_mut() {
+    for (mut shape, transform, custom_scale) in changed_collider_scales.iter_mut() {
         #[cfg(feature = "dim2")]
         let effective_scale = match custom_scale {
             Some(ColliderScale::Absolute(scale)) => *scale,
@@ -127,7 +130,8 @@ pub fn apply_collider_user_changes(
             (Entity, &RapierColliderHandle, &GlobalTransform),
             (Without<RapierRigidBodyHandle>, Changed<GlobalTransform>),
         >,
-        Query<&Parent>, Query<&Transform>,
+        Query<&Parent>,
+        Query<&Transform>,
     ),
 
     changed_shapes: Query<(&RapierColliderHandle, &Collider), Changed<Collider>>,
@@ -159,18 +163,17 @@ pub fn apply_collider_user_changes(
 
     for (entity, handle, transform) in changed_collider_transforms.iter() {
         if context.collider_parent(entity).is_some() {
-            let (_, collider_position) = collider_offset(entity, &context, &parent_query, &transform_query);
+            let (_, collider_position) =
+                collider_offset(entity, &context, &parent_query, &transform_query);
 
             if let Some(co) = context.colliders.get_mut(handle.0) {
                 co.set_position_wrt_parent(utils::transform_to_iso(&collider_position, scale));
             }
-        } else {
-            if let Some(co) = context.colliders.get_mut(handle.0) {
+        } else if let Some(co) = context.colliders.get_mut(handle.0) {
                 co.set_position(utils::transform_to_iso(
                     &transform.compute_transform(),
                     scale,
                 ))
-            }
         }
     }
 
@@ -879,7 +882,8 @@ pub fn init_colliders(
         }
 
         let body_entity = entity;
-        let (body_handle, child_transform) = collider_offset(entity, &context, &parent_query, &transform_query);
+        let (body_handle, child_transform) =
+            collider_offset(entity, context, &parent_query, &transform_query);
 
         builder = builder.user_data(entity.to_bits() as u128);
 
