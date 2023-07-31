@@ -1,4 +1,4 @@
-use crate::plugin::RapierContext;
+use crate::plugin::{PhysicsSet, RapierContext};
 use bevy::prelude::*;
 use rapier::math::{Point, Real};
 use rapier::pipeline::{DebugRenderBackend, DebugRenderObject, DebugRenderPipeline};
@@ -86,7 +86,7 @@ impl Plugin for RapierDebugRenderPlugin {
             enabled: self.enabled,
             pipeline: DebugRenderPipeline::new(self.style, self.mode),
         })
-        .add_systems(PostUpdate, debug_render_scene);
+        .add_systems(PostUpdate, debug_render_scene.after(PhysicsSet::Writeback));
     }
 }
 
