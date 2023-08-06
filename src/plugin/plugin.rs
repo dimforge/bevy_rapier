@@ -116,6 +116,9 @@ where
             PhysicsSet::Writeback => (
                 systems::update_colliding_entities,
                 systems::writeback_rigid_bodies,
+                systems::writeback_mass_properties,
+                Events::<MassModifiedEvent>::update_system
+                    .after(systems::writeback_mass_properties),
             )
                 .into_configs(),
         }
@@ -196,7 +199,8 @@ where
                 ..Default::default()
             })
             .insert_resource(Events::<CollisionEvent>::default())
-            .insert_resource(Events::<ContactForceEvent>::default());
+            .insert_resource(Events::<ContactForceEvent>::default())
+            .insert_resource(Events::<MassModifiedEvent>::default());
 
         // Add each set as necessary
         if self.default_system_setup {

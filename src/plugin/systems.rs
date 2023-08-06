@@ -16,7 +16,7 @@ use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
     BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities, KinematicCharacterController,
-    KinematicCharacterControllerOutput, RigidBodyDisabled,
+    KinematicCharacterControllerOutput, MassModifiedEvent, RigidBodyDisabled,
 };
 use crate::utils;
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
@@ -119,8 +119,8 @@ pub fn apply_scale(
 
 /// System responsible for applying changes the user made to a collider-related component.
 pub fn apply_collider_user_changes(
-    config: Res<RapierConfiguration>,
     mut context: ResMut<RapierContext>,
+    config: Res<RapierConfiguration>,
     (changed_collider_transforms, parent_query, transform_query): (
         Query<
             (Entity, &RapierColliderHandle, &GlobalTransform),
@@ -154,6 +154,8 @@ pub fn apply_collider_user_changes(
         (&RapierColliderHandle, &ColliderMassProperties),
         Changed<ColliderMassProperties>,
     >,
+
+    mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
     let scale = context.physics_scale;
 
@@ -177,7 +179,13 @@ pub fn apply_collider_user_changes(
         if let Some(co) = context.colliders.get_mut(handle.0) {
             let mut scaled_shape = shape.clone();
             scaled_shape.set_scale(shape.scale / scale, config.scaled_shape_subdivision);
-            co.set_shape(scaled_shape.raw.clone())
+            co.set_shape(scaled_shape.raw.clone());
+
+            if let Some(body) = co.parent() {
+                if let Some(body_entity) = context.rigid_body_entity(body) {
+                    mass_modified.send(body_entity.into());
+                }
+            }
         }
     }
 
@@ -252,6 +260,12 @@ pub fn apply_collider_user_changes(
                     co.set_mass_properties(mprops.into_rapier(scale))
                 }
             }
+
+            if let Some(body) = co.parent() {
+                if let Some(body_entity) = context.rigid_body_entity(body) {
+                    mass_modified.send(body_entity.into());
+                }
+            }
         }
     }
 }
@@ -271,7 +285,7 @@ pub fn apply_rigid_body_user_changes(
     >,
     changed_velocities: Query<(&RapierRigidBodyHandle, &Velocity), Changed<Velocity>>,
     changed_additional_mass_props: Query<
-        (&RapierRigidBodyHandle, &AdditionalMassProperties),
+        (Entity, &RapierRigidBodyHandle, &AdditionalMassProperties),
         Changed<AdditionalMassProperties>,
     >,
     changed_locked_axes: Query<(&RapierRigidBodyHandle, &LockedAxes), Changed<LockedAxes>>,
@@ -289,6 +303,8 @@ pub fn apply_rigid_body_user_changes(
         (&RapierRigidBodyHandle, &RigidBodyDisabled),
         Changed<RigidBodyDisabled>,
     >,
+
+    mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
     let context = &mut *context;
     let scale = context.physics_scale;
@@ -403,7 +419,7 @@ pub fn apply_rigid_body_user_changes(
         }
     }
 
-    for (handle, mprops) in changed_additional_mass_props.iter() {
+    for (entity, handle, mprops) in changed_additional_mass_props.iter() {
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             match mprops {
                 AdditionalMassProperties::MassProperties(mprops) => {
@@ -413,6 +429,8 @@ pub fn apply_rigid_body_user_changes(
                     rb.set_additional_mass(*mass, true);
                 }
             }
+
+            mass_modified.send(entity.into());
         }
     }
 
@@ -644,6 +662,38 @@ pub fn writeback_rigid_bodies(
                         //       change tracking when the values didn’t change.
                         if sleeping.sleeping != rb.is_sleeping() {
                             sleeping.sleeping = rb.is_sleeping();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// System responsible for writing updated mass properties back into the [`ReadMassProperties`] component.
+pub fn writeback_mass_properties(
+    mut context: ResMut<RapierContext>,
+    config: Res<RapierConfiguration>,
+
+    mut mass_props: Query<&mut ReadMassProperties>,
+    mut mass_modified: EventReader<MassModifiedEvent>,
+) {
+    let context = &mut *context;
+    let scale = context.physics_scale;
+
+    if config.physics_pipeline_active {
+        for entity in mass_modified.iter() {
+            if let Some(handle) = context.entity2body.get(entity).copied() {
+                if let Some(rb) = context.bodies.get(handle) {
+                    if let Ok(mut mass_props) = mass_props.get_mut(**entity) {
+                        let new_mass_props =
+                            MassProperties::from_rapier(rb.mass_properties().local_mprops, scale);
+
+                        // NOTE: we write the new value only if there was an
+                        //       actual change, in order to not trigger bevy’s
+                        //       change tracking when the values didn’t change.
+                        if mass_props.get() != &new_mass_props {
+                            mass_props.set(new_mass_props);
                         }
                     }
                 }
@@ -889,10 +939,10 @@ pub fn init_colliders(
                 // Inserting the collider changed the rigid-body’s mass properties.
                 // Read them back from the engine.
                 if let Some(parent_body) = context.bodies.get(body_handle) {
-                    mprops.0 = MassProperties::from_rapier(
+                    mprops.set(MassProperties::from_rapier(
                         parent_body.mass_properties().local_mprops,
                         physics_scale,
-                    );
+                    ));
                 }
             }
             handle
@@ -1130,6 +1180,8 @@ pub fn sync_removals(
     mut removed_sensors: RemovedComponents<Sensor>,
     mut removed_rigid_body_disabled: RemovedComponents<RigidBodyDisabled>,
     mut removed_colliders_disabled: RemovedComponents<ColliderDisabled>,
+
+    mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
     /*
      * Rigid-bodies removal detection.
@@ -1169,6 +1221,10 @@ pub fn sync_removals(
      * Collider removal detection.
      */
     for entity in removed_colliders.iter() {
+        if let Some(parent) = context.collider_parent(entity) {
+            mass_modified.send(parent.into());
+        }
+
         if let Some(handle) = context.entity2collider.remove(&entity) {
             context
                 .colliders
@@ -1178,6 +1234,10 @@ pub fn sync_removals(
     }
 
     for entity in orphan_colliders.iter() {
+        if let Some(parent) = context.collider_parent(entity) {
+            mass_modified.send(parent.into());
+        }
+
         if let Some(handle) = context.entity2collider.remove(&entity) {
             context
                 .colliders
@@ -1248,7 +1308,6 @@ pub fn sync_removals(
         }
     }
 
-    // TODO: update mass props after collider removal.
     // TODO: what about removing forces?
 }
 

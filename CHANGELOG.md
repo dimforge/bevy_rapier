@@ -12,6 +12,7 @@
 ### Fix
 - Fix debug-renderer lagging one frame behind.
 - Fix Collider `Transform` rotation change not being taken into account by the physics engine.
+- Fix automatic update of `ReadMassProperties`.
 
 ## 0.22.0 (10 July 2023)
 ### Modified
