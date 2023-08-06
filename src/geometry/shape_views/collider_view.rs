@@ -7,6 +7,7 @@ use rapier::parry::either::Either;
 use rapier::parry::shape::TypedShape;
 
 /// Read-only access to the properties of a collider.
+#[derive(Copy, Clone)]
 pub enum ColliderView<'a> {
     /// A ball shape.
     Ball(BallView<'a>),
