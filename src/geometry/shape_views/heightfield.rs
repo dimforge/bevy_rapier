@@ -3,6 +3,7 @@ use rapier::parry::shape::HeightField;
 pub use rapier::parry::shape::HeightFieldCellStatus;
 
 /// Read-only access to the properties of a heightfield.
+#[derive(Copy, Clone)]
 pub struct HeightFieldView<'a> {
     /// The raw shape from Rapier.
     pub raw: &'a HeightField,

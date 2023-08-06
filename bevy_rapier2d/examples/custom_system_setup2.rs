@@ -20,7 +20,6 @@ fn main() {
         PostUpdate,
         (
             PhysicsSet::SyncBackend,
-            PhysicsSet::SyncBackendFlush,
             PhysicsSet::StepSimulation,
             PhysicsSet::Writeback,
         )
@@ -33,8 +32,6 @@ fn main() {
         (
             RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsSet::SyncBackend)
                 .in_set(PhysicsSet::SyncBackend),
-            RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsSet::SyncBackendFlush)
-                .in_set(PhysicsSet::SyncBackendFlush),
             (
                 RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsSet::StepSimulation),
                 despawn_one_box,

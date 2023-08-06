@@ -2,7 +2,11 @@ use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::configuration::SimulationToRenderTime;
 use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
-use bevy::ecs::{event::Events, schedule::SystemConfigs, system::SystemParamItem};
+use bevy::ecs::{
+    event::Events,
+    schedule::{ScheduleLabel, SystemConfigs},
+    system::SystemParamItem,
+};
 use bevy::{prelude::*, transform::TransformSystem};
 use std::marker::PhantomData;
 
@@ -14,6 +18,7 @@ pub type NoUserData = ();
 /// This will automatically setup all the resources needed to run a physics simulation with the
 /// Rapier physics engine.
 pub struct RapierPhysicsPlugin<PhysicsHooks = ()> {
+    schedule: Box<dyn ScheduleLabel>,
     physics_scale: f32,
     default_system_setup: bool,
     _phantom: PhantomData<PhysicsHooks>,
@@ -52,8 +57,19 @@ where
         Self {
             physics_scale: pixels_per_meter,
             default_system_setup: true,
-            _phantom: PhantomData,
+            ..default()
         }
+    }
+
+    /// Adds the physics systems to the `FixedUpdate` schedule rather than `PostUpdate`.
+    pub fn in_fixed_schedule(self) -> Self {
+        self.in_schedule(FixedUpdate)
+    }
+
+    /// Adds the physics systems to the provided schedule rather than `PostUpdate`.
+    pub fn in_schedule(mut self, schedule: impl ScheduleLabel) -> Self {
+        self.schedule = Box::new(schedule);
+        self
     }
 
     /// Provided for use when staging systems outside of this plugin using
@@ -70,31 +86,25 @@ where
                     bevy::transform::systems::propagate_transforms,
                 )
                     .chain()
-                    .after(systems::update_character_controls)
                     .in_set(RapierTransformPropagateSet),
-                systems::init_async_colliders.after(RapierTransformPropagateSet),
-                systems::apply_scale.after(systems::init_async_colliders),
-                systems::apply_collider_user_changes.after(systems::apply_scale),
-                systems::apply_rigid_body_user_changes.after(systems::apply_collider_user_changes),
-                systems::apply_joint_user_changes.after(systems::apply_rigid_body_user_changes),
-                systems::init_rigid_bodies.after(systems::apply_joint_user_changes),
-                systems::init_colliders
-                    .after(systems::init_rigid_bodies)
-                    .after(systems::init_async_colliders),
-                systems::init_joints.after(systems::init_colliders),
-                systems::apply_initial_rigid_body_impulses
-                    .after(systems::init_colliders)
-                    .ambiguous_with(systems::init_joints),
-                systems::sync_removals
-                    .after(systems::init_joints)
-                    .after(systems::apply_initial_rigid_body_impulses),
                 #[cfg(all(feature = "dim3", feature = "async-collider"))]
-                systems::init_async_scene_colliders
-                    .after(bevy::scene::scene_spawner_system)
-                    .before(systems::init_async_colliders),
+                systems::init_async_scene_colliders.after(bevy::scene::scene_spawner_system),
+                #[cfg(all(feature = "dim3", feature = "async-collider"))]
+                systems::init_async_colliders,
+                systems::init_rigid_bodies,
+                systems::init_colliders,
+                systems::init_joints,
+                systems::sync_removals,
+                // Run this here so the folowwing systems do not have a 1 frame delay.
+                apply_deferred,
+                systems::apply_scale,
+                systems::apply_collider_user_changes,
+                systems::apply_rigid_body_user_changes,
+                systems::apply_joint_user_changes,
+                systems::apply_initial_rigid_body_impulses,
             )
+                .chain()
                 .into_configs(),
-            PhysicsSet::SyncBackendFlush => (apply_deferred,).into_configs(),
             PhysicsSet::StepSimulation => (
                 systems::step_simulation::<PhysicsHooks>,
                 Events::<CollisionEvent>::update_system
@@ -123,6 +133,7 @@ pub struct RapierTransformPropagateSet;
 impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystemParam> {
     fn default() -> Self {
         Self {
+            schedule: Box::new(PostUpdate),
             physics_scale: 1.0,
             default_system_setup: true,
             _phantom: PhantomData,
@@ -137,8 +148,6 @@ pub enum PhysicsSet {
     /// initializing) backend data structures with current component state.
     /// These systems typically run at the after [`CoreSet::Update`].
     SyncBackend,
-    /// The copy of [`apply_system_buffers`] that runs immediately after [`PhysicsSet::SyncBackend`].
-    SyncBackendFlush,
     /// The systems responsible for advancing the physics simulation, and
     /// updating the internal state for scene queries.
     /// These systems typically run immediately after [`PhysicsSet::SyncBackend`].
@@ -195,10 +204,9 @@ where
         // Add each set as necessary
         if self.default_system_setup {
             app.configure_sets(
-                PostUpdate,
+                self.schedule.clone(),
                 (
                     PhysicsSet::SyncBackend,
-                    PhysicsSet::SyncBackendFlush,
                     PhysicsSet::StepSimulation,
                     PhysicsSet::Writeback,
                 )
@@ -206,17 +214,29 @@ where
                     .before(TransformSystem::TransformPropagate),
             );
 
+            // These *must* be in the main schedule currently so that they do not miss events.
+            app.add_systems(PostUpdate, (systems::sync_removals,));
+
             app.add_systems(
-                PostUpdate,
+                self.schedule.clone(),
                 (
                     Self::get_systems(PhysicsSet::SyncBackend).in_set(PhysicsSet::SyncBackend),
-                    Self::get_systems(PhysicsSet::SyncBackendFlush)
-                        .in_set(PhysicsSet::SyncBackendFlush),
                     Self::get_systems(PhysicsSet::StepSimulation)
                         .in_set(PhysicsSet::StepSimulation),
                     Self::get_systems(PhysicsSet::Writeback).in_set(PhysicsSet::Writeback),
                 ),
             );
+
+            // Warn user if the timestep mode isn't in Fixed
+            if self.schedule.as_dyn_eq().dyn_eq(FixedUpdate.as_dyn_eq()) {
+                let config = app.world.resource::<RapierConfiguration>();
+                match config.timestep_mode {
+                    TimestepMode::Fixed { .. } => {}
+                    mode => {
+                        warn!("TimestepMode is set to `{:?}`, it is recommended to use `TimestepMode::Fixed` if you have the physics in `FixedUpdate`", mode);
+                    }
+                }
+            }
         }
     }
 }

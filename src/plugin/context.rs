@@ -117,6 +117,21 @@ impl RapierContext {
             .and_then(|h| self.rigid_body_entity(h))
     }
 
+    /// If entity is a rigid-body, this returns the collider `Entity`s attached
+    /// to that rigid-body.
+    pub fn rigid_body_colliders(&self, entity: Entity) -> impl Iterator<Item = Entity> + '_ {
+        self.entity2body()
+            .get(&entity)
+            .and_then(|handle| self.bodies.get(*handle))
+            .map(|body| {
+                body.colliders()
+                    .iter()
+                    .filter_map(|handle| self.collider_entity(*handle))
+            })
+            .into_iter()
+            .flatten()
+    }
+
     /// Retrieve the Bevy entity the given Rapier collider (identified by its handle) is attached.
     pub fn collider_entity(&self, handle: ColliderHandle) -> Option<Entity> {
         Self::collider_entity_with_set(&self.colliders, handle)

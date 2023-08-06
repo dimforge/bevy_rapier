@@ -2,6 +2,7 @@ use crate::math::Vect;
 use rapier::geometry::Cuboid;
 
 /// Read-only access to the properties of a cuboid.
+#[derive(Copy, Clone)]
 pub struct CuboidView<'a> {
     /// The raw shape from Rapier.
     pub raw: &'a Cuboid,
