@@ -62,7 +62,7 @@ where
     }
 
     /// Adds the physics systems to the `FixedUpdate` schedule rather than `PostUpdate`.
-    pub fn fixed(self) -> Self {
+    pub fn in_fixed_schedule(self) -> Self {
         self.in_schedule(FixedUpdate)
     }
 
