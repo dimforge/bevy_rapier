@@ -2,6 +2,7 @@ use crate::math::Real;
 use rapier::parry::shape::Cylinder;
 
 /// Read-only access to the properties of a cylinder.
+#[derive(Copy, Clone)]
 pub struct CylinderView<'a> {
     /// The raw shape from Rapier.
     pub raw: &'a Cylinder,

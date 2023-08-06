@@ -19,6 +19,7 @@ use {
 macro_rules!  round_shape_view(
     ($RoundShape: ident, $RoundShapeView: ident, $ShapeView: ident, $RoundShapeViewMut: ident, $ShapeViewMut: ident) => {
         /// Read-only access to the properties of a round shape.
+        #[derive(Copy, Clone)]
         pub struct $RoundShapeView<'a> {
             /// The raw shape from Rapier.
             pub raw: &'a $RoundShape,
