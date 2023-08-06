@@ -119,7 +119,7 @@ impl RapierContext {
 
     /// If entity is a rigid-body, this returns the collider `Entity`s attached
     /// to that rigid-body.
-    pub fn colliders(&self, entity: Entity) -> impl Iterator<Item = Entity> + '_ {
+    pub fn rigid_body_colliders(&self, entity: Entity) -> impl Iterator<Item = Entity> + '_ {
         self.entity2body()
             .get(&entity)
             .and_then(|handle| self.bodies.get(*handle))

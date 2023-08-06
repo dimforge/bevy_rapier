@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+### Added
+- Add `RapierContext::rigid_body_colliders` to retrieve all collider entities attached to this rigid-body.
+
 ## 0.22.0 (10 July 2023)
 ### Modified
 - Update to Bevy 0.11.
