@@ -154,13 +154,13 @@ impl<'a> From<ColliderView<'a>> for TypedShape<'a> {
 
 impl<'a> From<ColliderView<'a>> for SharedShape {
     fn from(collider_view: ColliderView<'a>) -> SharedShape {
-        collider_view.as_shared_shape()
+        collider_view.to_shared_shape()
     }
 }
 
 impl<'a> ColliderView<'a> {
     /// Convert to [`parry::TypedShape`].
-    pub fn as_typed_shape(&self) -> TypedShape<'a> {
+    pub fn as_typed_shape(self) -> TypedShape<'a> {
         match self {
             ColliderView::Ball(BallView { raw: s }) => TypedShape::Ball(s),
             ColliderView::Cuboid(CuboidView { raw: s }) => TypedShape::Cuboid(s),
@@ -208,8 +208,8 @@ impl<'a> ColliderView<'a> {
     }
 
     /// Convert to [`parry::SharedShape`].
-    pub fn as_shared_shape(&self) -> SharedShape {
-        match *self {
+    pub fn to_shared_shape(self) -> SharedShape {
+        match self {
             ColliderView::Ball(BallView { raw }) => SharedShape::new(*raw),
             ColliderView::Cuboid(CuboidView { raw }) => SharedShape::new(*raw),
             ColliderView::Capsule(CapsuleView { raw }) => SharedShape::new(*raw),
