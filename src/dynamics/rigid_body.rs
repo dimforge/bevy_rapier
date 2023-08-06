@@ -172,9 +172,9 @@ impl ReadMassProperties {
 
 /// Entity that likely had their mass properties changed this frame.
 #[derive(Deref, Copy, Clone, Debug, PartialEq, Event)]
-pub struct MassModified(pub Entity);
+pub struct MassModifiedEvent(pub Entity);
 
-impl From<Entity> for MassModified {
+impl From<Entity> for MassModifiedEvent {
     fn from(entity: Entity) -> Self {
         Self(entity)
     }

@@ -16,7 +16,7 @@ use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
     BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities, KinematicCharacterController,
-    KinematicCharacterControllerOutput, MassModified, RigidBodyDisabled,
+    KinematicCharacterControllerOutput, MassModifiedEvent, RigidBodyDisabled,
 };
 use crate::utils;
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
@@ -155,7 +155,7 @@ pub fn apply_collider_user_changes(
         Changed<ColliderMassProperties>,
     >,
 
-    mut mass_modified: EventWriter<MassModified>,
+    mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
     let scale = context.physics_scale;
 
@@ -304,7 +304,7 @@ pub fn apply_rigid_body_user_changes(
         Changed<RigidBodyDisabled>,
     >,
 
-    mut mass_modified: EventWriter<MassModified>,
+    mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
     let context = &mut *context;
     let scale = context.physics_scale;
@@ -676,7 +676,7 @@ pub fn writeback_mass_properties(
     config: Res<RapierConfiguration>,
 
     mut mass_props: Query<&mut ReadMassProperties>,
-    mut mass_modified: EventReader<MassModified>,
+    mut mass_modified: EventReader<MassModifiedEvent>,
 ) {
     let context = &mut *context;
     let scale = context.physics_scale;
@@ -1181,7 +1181,7 @@ pub fn sync_removals(
     mut removed_rigid_body_disabled: RemovedComponents<RigidBodyDisabled>,
     mut removed_colliders_disabled: RemovedComponents<ColliderDisabled>,
 
-    mut mass_modified: EventWriter<MassModified>,
+    mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
     /*
      * Rigid-bodies removal detection.
