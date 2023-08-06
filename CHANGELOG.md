@@ -6,6 +6,8 @@
     `TypedShape` or `SharedShape`. The `From` trait has also been implemented accordingly.
 - Implement `Copy` for `ColliderView` and all the other non-mut shape views.
 - Add `RapierContext::rigid_body_colliders` to retrieve all collider entities attached to this rigid-body.
+- Add `RapierPhysicsPlugin::in_fixed_schedule`/`::in_schedude` to add rapier’s systems to a fixed/custom
+  schedule.
 
 ## 0.22.0 (10 July 2023)
 ### Modified
