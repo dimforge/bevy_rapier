@@ -77,6 +77,21 @@ impl RevoluteJoint {
         self
     }
 
+    /// Returns the locked axes that are set for the revolute joint.
+    pub fn locked_axes(&self) -> JointAxesMask {
+        self.data.locked_axes()
+    }
+
+    /// Allows you to set the locked axes for the revolute joint
+    /// If the inputed axes enable any of the axes that are included in
+    /// `JointAxesMask::LOCKED_REVOLUTE_AXES`, then they won't have an effect.
+    pub fn set_locked_axes(mut self, axes: JointAxesMask) -> Self {
+        let mut filtered_axes = axes;
+        filtered_axes.set(JointAxesMask::LOCKED_REVOLUTE_AXES, false);
+        self.data.lock_axes(filtered_axes);
+        self
+    }
+
     /// The motor affecting the joint’s rotational degree of freedom.
     #[must_use]
     pub fn motor(&self) -> Option<&JointMotor> {
@@ -186,6 +201,16 @@ impl RevoluteJointBuilder {
     #[must_use]
     pub fn local_anchor2(mut self, anchor2: Vect) -> Self {
         self.0.set_local_anchor2(anchor2);
+        self
+    }
+
+    /// Allows you to set the locked axes for the revolute joint
+    /// If the inputed axes enable any of the axes that are included in
+    /// `JointAxesMask::LOCKED_REVOLUTE_AXES`, then they won't have an effect.
+    pub fn lock_axes(mut self, axes: JointAxesMask) -> Self {
+        let mut filtered_axes = axes;
+        filtered_axes.set(JointAxesMask::LOCKED_REVOLUTE_AXES, false);
+        self.0.data.lock_axes(filtered_axes);
         self
     }
 

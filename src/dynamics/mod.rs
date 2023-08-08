@@ -9,6 +9,7 @@ pub use self::rope_joint::*;
 
 use bevy::reflect::Reflect;
 use rapier::dynamics::CoefficientCombineRule as RapierCoefficientCombineRule;
+pub use rapier::dynamics::{JointAxesMask, JointAxis};
 
 #[cfg(feature = "dim3")]
 pub use self::spherical_joint::*;
