@@ -82,34 +82,42 @@ impl RayIntersection {
 pub struct Toi {
     /// The time at which the objects touch.
     pub toi: Real,
-    /// The local-space closest point on the first shape at the time of impact.
+    /// Detail about the impact points.
     ///
-    /// Undefined if `status` is `Penetrating`.
-    pub witness1: Vect,
-    /// The local-space closest point on the second shape at the time of impact.
-    ///
-    /// Undefined if `status` is `Penetrating`.
-    pub witness2: Vect,
-    /// The local-space outward normal on the first shape at the time of impact.
-    ///
-    /// Undefined if `status` is `Penetrating`.
-    pub normal1: Vect,
-    /// The local-space outward normal on the second shape at the time of impact.
-    ///
-    /// Undefined if `status` is `Penetrating`.
-    pub normal2: Vect,
+    /// `None` if `status` is `Penetrating`.
+    pub details: Option<ToiDetails>,
     /// The way the time-of-impact computation algorithm terminated.
     pub status: TOIStatus,
 }
 
+/// In depth information about a time-of-impact (TOI) computation.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct ToiDetails {
+    /// The local-space closest point on the first shape at the time of impact.
+    pub witness1: Vect,
+    /// The local-space closest point on the second shape at the time of impact.
+    pub witness2: Vect,
+    /// The local-space outward normal on the first shape at the time of impact.
+    pub normal1: Vect,
+    /// The local-space outward normal on the second shape at the time of impact.
+    pub normal2: Vect,
+}
+
 impl Toi {
     pub(crate) fn from_rapier(physics_scale: Real, toi: rapier::parry::query::TOI) -> Self {
+        let details = if toi.status != TOIStatus::Penetrating {
+            Some(ToiDetails {
+                witness1: (toi.witness1 * physics_scale).into(),
+                witness2: (toi.witness2 * physics_scale).into(),
+                normal1: toi.normal1.into(),
+                normal2: toi.normal2.into(),
+            })
+        } else {
+            None
+        };
         Self {
             toi: toi.toi,
-            witness1: (toi.witness1 * physics_scale).into(),
-            witness2: (toi.witness2 * physics_scale).into(),
-            normal1: toi.normal1.into(),
-            normal2: toi.normal2.into(),
+            details: details,
             status: toi.status,
         }
     }
