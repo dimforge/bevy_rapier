@@ -139,6 +139,7 @@ impl RapierContext {
             .map(|c| Entity::from_bits(c.user_data as u64))
     }
 
+    /// Convert a [`QueryFilter`] into a `rapier::QueryFilter`.
     pub fn with_query_filter<T>(
         &self,
         filter: QueryFilter,
@@ -153,6 +154,8 @@ impl RapierContext {
         )
     }
 
+    /// Convert a [`QueryFilter`] into a `rapier::QueryFilter` without directly
+    /// borrowing the [`RapierContext`].
     pub fn with_query_filter_elts<T>(
         entity2collider: &HashMap<Entity, ColliderHandle>,
         entity2body: &HashMap<Entity, RigidBodyHandle>,
