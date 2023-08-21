@@ -77,6 +77,12 @@ where
     /// See [`PhysicsSet`] for a description of these systems.
     pub fn get_systems(set: PhysicsSet) -> SystemConfigs {
         match set {
+            PhysicsSet::EveryFrame => (
+                systems::collect_collider_hierarchy_changes,
+                apply_deferred,
+                systems::sync_removals,
+            ).chain()
+            .into_configs(),
             PhysicsSet::SyncBackend => (
                 // Run the character controller before the manual transform propagation.
                 systems::update_character_controls,
@@ -87,28 +93,6 @@ where
                 )
                     .chain()
                     .in_set(RapierTransformPropagateSet),
-<<<<<<< HEAD
-=======
-                systems::init_async_colliders.after(RapierTransformPropagateSet),
-                systems::collect_collider_hierarchy_changes
-                    .before(systems::apply_collider_user_changes),
-                apply_deferred.after(systems::collect_collider_hierarchy_changes),
-                systems::apply_scale.after(systems::init_async_colliders),
-                systems::apply_collider_user_changes.after(systems::apply_scale),
-                systems::apply_rigid_body_user_changes.after(systems::apply_collider_user_changes),
-                systems::apply_joint_user_changes.after(systems::apply_rigid_body_user_changes),
-                systems::init_rigid_bodies.after(systems::apply_joint_user_changes),
-                systems::init_colliders
-                    .after(systems::init_rigid_bodies)
-                    .after(systems::init_async_colliders),
-                systems::init_joints.after(systems::init_colliders),
-                systems::apply_initial_rigid_body_impulses
-                    .after(systems::init_colliders)
-                    .ambiguous_with(systems::init_joints),
-                systems::sync_removals
-                    .after(systems::init_joints)
-                    .after(systems::apply_initial_rigid_body_impulses),
->>>>>>> 9246295 (Formatting, etc.)
                 #[cfg(all(feature = "dim3", feature = "async-collider"))]
                 systems::init_async_scene_colliders.after(bevy::scene::scene_spawner_system),
                 #[cfg(all(feature = "dim3", feature = "async-collider"))]
@@ -116,10 +100,10 @@ where
                 systems::init_rigid_bodies,
                 systems::init_colliders,
                 systems::init_joints,
-                systems::sync_removals,
                 systems::collect_collider_hierarchy_changes,
-                // Run this here so the folowwing systems do not have a 1 frame delay.
+                // Run this here so the following systems do not have a 1 frame delay.
                 apply_deferred,
+                systems::sync_removals,
                 systems::apply_scale,
                 systems::apply_collider_user_changes,
                 systems::apply_rigid_body_user_changes,
@@ -182,6 +166,9 @@ pub enum PhysicsSet {
     /// components and the [`GlobalTransform`] component.
     /// These systems typically run immediately after [`PhysicsSet::StepSimulation`].
     Writeback,
+    /// The systems responsible for responding to state like `Events` that get
+    /// cleared every 2 main schedule runs.
+    EveryFrame,
 }
 
 impl<PhysicsHooks> Plugin for RapierPhysicsPlugin<PhysicsHooks>
@@ -233,6 +220,10 @@ where
         // Add each set as necessary
         if self.default_system_setup {
             app.configure_sets(
+                PostUpdate
+                PhysicsSet::EveryFrame,
+            );
+            app.configure_sets(
                 self.schedule.clone(),
                 (
                     PhysicsSet::SyncBackend,
@@ -244,7 +235,7 @@ where
             );
 
             // These *must* be in the main schedule currently so that they do not miss events.
-            app.add_systems(PostUpdate, (systems::sync_removals,));
+            app.add_systems(PostUpdate, Self::get_systems(PhysicsSet::EveryFrame).in_set(PhysicsSet::EveryFrame));
 
             app.add_systems(
                 self.schedule.clone(),
