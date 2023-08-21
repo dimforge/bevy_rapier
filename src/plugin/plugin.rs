@@ -220,8 +220,8 @@ where
         // Add each set as necessary
         if self.default_system_setup {
             app.configure_sets(
-                PostUpdate
-                PhysicsSet::EveryFrame,
+                PostUpdate,
+                (PhysicsSet::EveryFrame,),
             );
             app.configure_sets(
                 self.schedule.clone(),
