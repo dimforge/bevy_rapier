@@ -117,8 +117,8 @@ impl Toi {
         };
         Self {
             toi: toi.toi,
-            details: details,
             status: toi.status,
+            details,
         }
     }
 }
