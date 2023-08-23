@@ -20,7 +20,7 @@ use crate::prelude::{
     RigidBodyDisabled,
 };
 use crate::utils;
-use bevy::ecs::system::{StaticSystemParam, SystemParamItem, SystemParam};
+use bevy::ecs::system::{StaticSystemParam, SystemParam, SystemParamItem};
 use bevy::hierarchy::HierarchyEvent;
 use bevy::prelude::*;
 use rapier::prelude::*;
@@ -221,8 +221,8 @@ pub fn collect_collider_hierarchy_changes(
 }
 
 /// Collection of change queries for colliders.
-/// 
-/// Mainly used because bevy doesn't impl more than 
+///
+/// Mainly used because bevy doesn't impl more than
 /// 16 parameters for a system.
 #[derive(SystemParam)]
 pub struct ColliderChanges<'w, 's> {

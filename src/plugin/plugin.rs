@@ -81,8 +81,9 @@ where
                 systems::collect_collider_hierarchy_changes,
                 apply_deferred,
                 systems::sync_removals,
-            ).chain()
-            .into_configs(),
+            )
+                .chain()
+                .into_configs(),
             PhysicsSet::SyncBackend => (
                 // Run the character controller before the manual transform propagation.
                 systems::update_character_controls,
@@ -219,10 +220,7 @@ where
 
         // Add each set as necessary
         if self.default_system_setup {
-            app.configure_sets(
-                PostUpdate,
-                (PhysicsSet::EveryFrame,),
-            );
+            app.configure_sets(PostUpdate, (PhysicsSet::EveryFrame,));
             app.configure_sets(
                 self.schedule.clone(),
                 (
@@ -235,7 +233,10 @@ where
             );
 
             // These *must* be in the main schedule currently so that they do not miss events.
-            app.add_systems(PostUpdate, Self::get_systems(PhysicsSet::EveryFrame).in_set(PhysicsSet::EveryFrame));
+            app.add_systems(
+                PostUpdate,
+                Self::get_systems(PhysicsSet::EveryFrame).in_set(PhysicsSet::EveryFrame),
+            );
 
             app.add_systems(
                 self.schedule.clone(),
