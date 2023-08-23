@@ -104,7 +104,8 @@ pub struct ToiDetails {
 }
 
 impl Toi {
-    pub(crate) fn from_rapier(physics_scale: Real, toi: rapier::parry::query::TOI) -> Self {
+    /// Convert from internal `rapier::Toi`.
+    pub fn from_rapier(physics_scale: Real, toi: rapier::parry::query::TOI) -> Self {
         let details = if toi.status != TOIStatus::Penetrating {
             Some(ToiDetails {
                 witness1: (toi.witness1 * physics_scale).into(),
