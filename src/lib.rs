@@ -17,21 +17,27 @@
 extern crate serde;
 
 pub extern crate nalgebra as na;
-#[cfg(feature = "dim2")]
+#[cfg(all(feature = "dim2", feature = "f32"))]
 pub extern crate rapier2d as rapier;
-#[cfg(feature = "dim3")]
+#[cfg(all(feature = "dim2", feature = "f64"))]
+pub extern crate rapier3d_f64 as rapier;
+#[cfg(all(feature = "dim3", feature = "f32"))]
 pub extern crate rapier3d as rapier;
+#[cfg(all(feature = "dim3", feature = "f64"))]
+pub extern crate rapier3d_f64 as rapier;
 pub use rapier::parry;
 
 /// Type aliases to select the right vector/rotation types based
 /// on the dimension used by the engine.
 #[cfg(feature = "dim2")]
 pub mod math {
-    use bevy::math::Vec2;
     /// The real type (f32 or f64).
     pub type Real = rapier::math::Real;
     /// The vector type.
-    pub type Vect = Vec2;
+    #[cfg(feature = "f32")]
+    pub type Vect = bevy::math::Vec2;
+    #[cfg(feature = "f64")]
+    pub type Vect = bevy::math::DVec2;
     /// The rotation type (in 2D this is an angle in radians).
     pub type Rot = Real;
 }
@@ -40,13 +46,18 @@ pub mod math {
 /// on the dimension used by the engine.
 #[cfg(feature = "dim3")]
 pub mod math {
-    use bevy::math::{Quat, Vec3};
     /// The real type (f32 or f64).
     pub type Real = rapier::math::Real;
     /// The vector type.
-    pub type Vect = Vec3;
+    #[cfg(feature = "f32")]
+    pub type Vect = bevy::math::Vec3;
+    #[cfg(feature = "f64")]
+    pub type Vect = bevy::math::DVec3;
     /// The rotation type.
-    pub type Rot = Quat;
+    #[cfg(feature = "f32")]
+    pub type Rot = bevy::math::Quat;
+    #[cfg(feature = "f64")]
+    pub type Rot = bevy::math::DQuat;
 }
 
 /// Components related to physics dynamics (rigid-bodies, velocities, etc.)

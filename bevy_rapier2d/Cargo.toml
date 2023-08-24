@@ -18,16 +18,18 @@ path = "../src/lib.rs"
 required-features = [ "dim2" ]
 
 [features]
-default = [ "dim2", "async-collider", "debug-render-2d" ]
+default = [ "dim2", "async-collider", "debug-render-2d", "f32" ]
+f32 = [ "rapier2d" ]
+f64 = [ "rapier2d-f64" ]
 dim2 = []
-debug-render-2d = [ "bevy/bevy_core_pipeline", "bevy/bevy_sprite", "bevy/bevy_gizmos", "rapier2d/debug-render", "bevy/bevy_asset" ]
-debug-render-3d = [ "bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_gizmos", "rapier2d/debug-render", "bevy/bevy_asset" ]
-parallel = [ "rapier2d/parallel" ]
-simd-stable = [ "rapier2d/simd-stable" ]
-simd-nightly = [ "rapier2d/simd-nightly" ]
-wasm-bindgen = [ "rapier2d/wasm-bindgen" ]
-serde-serialize = [ "rapier2d/serde-serialize", "bevy/serialize", "serde" ]
-enhanced-determinism = [ "rapier2d/enhanced-determinism" ]
+debug-render-2d = [ "bevy/bevy_core_pipeline", "bevy/bevy_sprite", "bevy/bevy_gizmos", "rapier2d?/debug-render", "rapier2d-f64?/debug-render", "bevy/bevy_asset" ]
+debug-render-3d = [ "bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_gizmos", "rapier2d?/debug-render", "rapier2d-f64?/debug-render", "bevy/bevy_asset" ]
+parallel = [ "rapier2d?/parallel", "rapier2d-f64?/parallel" ]
+simd-stable = [ "rapier2d?/simd-stable", "rapier2d-f64?/simd-stable" ]
+simd-nightly = [ "rapier2d?/simd-nightly", "rapier2d-f64?/simd-nightly" ]
+wasm-bindgen = [ "rapier2d?/wasm-bindgen", "rapier2d-f64?/wasm-bindgen" ]
+serde-serialize = [ "rapier2d-f64?/serde-serialize", "rapier2d?/serde-serialize", "bevy/serialize", "serde" ]
+enhanced-determinism = [ "rapier2d?/enhanced-determinism", "rapier2d-f64?/enhanced-determinism" ]
 headless = []
 async-collider = [ "bevy/bevy_asset", "bevy/bevy_scene" ]
 
@@ -35,7 +37,8 @@ async-collider = [ "bevy/bevy_asset", "bevy/bevy_scene" ]
 bevy = { version = "0.11", default-features = false }
 nalgebra = { version = "0.32.3", features = [ "convert-glam024" ] }
 # Don't enable the default features because we don't need the ColliderSet/RigidBodySet
-rapier2d = "0.17.0"
+rapier2d = { version = "0.17.0", optional = true }
+rapier2d-f64 = { version = "0.17.0", optional = true }
 bitflags = "1"
 #bevy_prototype_debug_lines = { version = "0.6", optional = true }
 log = "0.4"
