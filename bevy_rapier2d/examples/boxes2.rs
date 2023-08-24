@@ -56,7 +56,7 @@ pub fn setup_physics(mut commands: Commands) {
             commands.spawn((
                 TransformBundle::from(Transform::from_xyz(x, y, 0.0)),
                 RigidBody::Dynamic,
-                Collider::cuboid(rad, rad),
+                Collider::cuboid(rad.as_precise(), rad.as_precise()),
             ));
         }
 

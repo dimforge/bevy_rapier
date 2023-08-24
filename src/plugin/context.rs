@@ -18,7 +18,7 @@ use crate::control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput};
 use crate::dynamics::TransformInterpolation;
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
-use crate::utils::as_real::*;
+use crate::utils::as_precise::*;
 use rapier::control::CharacterAutostep;
 
 /// The Rapier context, containing all the state of the physics engine.
@@ -233,7 +233,7 @@ impl RapierContext {
                 time_scale,
                 substeps,
             } => {
-                sim_to_render_time.diff += time.delta_seconds_f64().as_single();
+                sim_to_render_time.diff += time.delta_seconds_f64().as_precise();
 
                 while sim_to_render_time.diff > 0.0 {
                     // NOTE: in this comparison we do the same computations we
@@ -283,7 +283,7 @@ impl RapierContext {
             } => {
                 let mut substep_integration_parameters = self.integration_parameters;
                 substep_integration_parameters.dt =
-                    (time.delta_seconds_f64().as_single() * time_scale).min(max_dt) / (substeps as Real);
+                    (time.delta_seconds_f64().as_precise() * time_scale).min(max_dt) / (substeps as Real);
 
                 for _ in 0..substeps {
                     self.pipeline.step(
@@ -735,13 +735,13 @@ impl RapierContext {
         use bevy::math::Vec3Swizzles;
         #[cfg(feature = "dim2")]
         let scaled_aabb = rapier::prelude::Aabb {
-            mins: (aabb.min().xy().as_real() / scale).into(),
-            maxs: (aabb.max().xy().as_real() / scale).into(),
+            mins: (aabb.min().xy().as_precise() / scale).into(),
+            maxs: (aabb.max().xy().as_precise() / scale).into(),
         };
         #[cfg(feature = "dim3")]
         let scaled_aabb = rapier::prelude::Aabb {
-            mins: (aabb.min().as_real() / scale).into(),
-            maxs: (aabb.max().as_real() / scale).into(),
+            mins: (aabb.min().as_precise() / scale).into(),
+            maxs: (aabb.max().as_precise() / scale).into(),
         };
         #[allow(clippy::redundant_closure)]
         // False-positive, we can't move callback, closure becomes `FnOnce`

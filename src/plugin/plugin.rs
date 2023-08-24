@@ -2,6 +2,7 @@ use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::configuration::SimulationToRenderTime;
 use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
+use crate::math::Real;
 use bevy::ecs::{
     event::Events,
     schedule::{ScheduleLabel, SystemConfigs},
@@ -53,7 +54,7 @@ where
     ///
     /// This conversion unit assumes that the 2D camera uses an unscaled projection.
     #[cfg(feature = "dim2")]
-    pub fn pixels_per_meter(pixels_per_meter: f32) -> Self {
+    pub fn pixels_per_meter(pixels_per_meter: Real) -> Self {
         Self {
             physics_scale: pixels_per_meter,
             default_system_setup: true,

@@ -95,7 +95,7 @@ impl Plugin for RapierDebugRenderPlugin {
 }
 
 struct BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
-    physics_scale: f32,
+    physics_scale: Real,
     custom_colors: Query<'world, 'state, &'a ColliderDebugColor>,
     context: &'b RapierContext,
     gizmos: Gizmos<'state>,
@@ -143,7 +143,7 @@ impl<'world, 'state, 'a, 'b> DebugRenderBackend for BevyLinesRenderBackend<'worl
         b: Point<Real>,
         color: [f32; 4],
     ) {
-        let scale = self.physics_scale;
+        let scale = self.physics_scale as f32;
         let color = self.object_color(object, color);
         self.gizmos.line(
             [a.x as f32 * scale, a.y as f32 * scale, a.z as f32 * scale].into(),
@@ -164,14 +164,14 @@ fn debug_render_scene(
     }
 
     let mut backend = BevyLinesRenderBackend {
-        physics_scale: rapier_context.physics_scale as f32,
+        physics_scale: rapier_context.physics_scale,
         custom_colors,
         context: &rapier_context,
         gizmos,
     };
 
     let unscaled_style = render_context.pipeline.style;
-    render_context.pipeline.style.rigid_body_axes_length /= rapier_context.physics_scale as f32;
+    render_context.pipeline.style.rigid_body_axes_length /= rapier_context.physics_scale;
     render_context.pipeline.render(
         &mut backend,
         &rapier_context.bodies,

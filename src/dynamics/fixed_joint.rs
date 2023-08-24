@@ -1,5 +1,5 @@
 use crate::dynamics::{GenericJoint, GenericJointBuilder};
-use crate::math::{Rot, Vect};
+use crate::math::{Rot, Vect, AsPrecise};
 use rapier::dynamics::JointAxesMask;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -65,8 +65,8 @@ impl FixedJoint {
     }
 
     /// Sets the joint’s anchor, expressed in the local-space of the first rigid-body.
-    pub fn set_local_anchor1(&mut self, anchor1: Vect) -> &mut Self {
-        self.data.set_local_anchor1(anchor1);
+    pub fn set_local_anchor1(&mut self, anchor1: impl AsPrecise<Out = Vect>) -> &mut Self {
+        self.data.set_local_anchor1(anchor1.as_precise());
         self
     }
 
@@ -77,8 +77,8 @@ impl FixedJoint {
     }
 
     /// Sets the joint’s anchor, expressed in the local-space of the second rigid-body.
-    pub fn set_local_anchor2(&mut self, anchor2: Vect) -> &mut Self {
-        self.data.set_local_anchor2(anchor2);
+    pub fn set_local_anchor2(&mut self, anchor2: impl AsPrecise<Out = Vect>) -> &mut Self {
+        self.data.set_local_anchor2(anchor2.as_precise());
         self
     }
 }
@@ -115,15 +115,15 @@ impl FixedJointBuilder {
 
     /// Sets the joint’s anchor, expressed in the local-space of the first rigid-body.
     #[must_use]
-    pub fn local_anchor1(mut self, anchor1: Vect) -> Self {
-        self.0.set_local_anchor1(anchor1);
+    pub fn local_anchor1(mut self, anchor1: impl AsPrecise<Out = Vect>) -> Self {
+        self.0.set_local_anchor1(anchor1.as_precise());
         self
     }
 
     /// Sets the joint’s anchor, expressed in the local-space of the second rigid-body.
     #[must_use]
-    pub fn local_anchor2(mut self, anchor2: Vect) -> Self {
-        self.0.set_local_anchor2(anchor2);
+    pub fn local_anchor2(mut self, anchor2: impl AsPrecise<Out = Vect>) -> Self {
+        self.0.set_local_anchor2(anchor2.as_precise());
         self
     }
 

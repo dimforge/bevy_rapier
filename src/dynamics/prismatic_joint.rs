@@ -1,5 +1,5 @@
 use crate::dynamics::{GenericJoint, GenericJointBuilder};
-use crate::math::{Real, Vect};
+use crate::math::{Real, Vect, AsPrecise};
 use rapier::dynamics::{JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel};
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -14,10 +14,10 @@ impl PrismaticJoint {
     /// Creates a new prismatic joint allowing only relative translations along the specified axis.
     ///
     /// This axis is expressed in the local-space of both rigid-bodies.
-    pub fn new(axis: Vect) -> Self {
+    pub fn new(axis: impl AsPrecise<Out = Vect>) -> Self {
         let data = GenericJointBuilder::new(JointAxesMask::LOCKED_PRISMATIC_AXES)
-            .local_axis1(axis)
-            .local_axis2(axis)
+            .local_axis1(axis.as_precise())
+            .local_axis2(axis.as_precise())
             .build();
         Self { data }
     }
@@ -45,8 +45,8 @@ impl PrismaticJoint {
     }
 
     /// Sets the joint’s anchor, expressed in the local-space of the first rigid-body.
-    pub fn set_local_anchor1(&mut self, anchor1: Vect) -> &mut Self {
-        self.data.set_local_anchor1(anchor1);
+    pub fn set_local_anchor1(&mut self, anchor1: impl AsPrecise<Out = Vect>) -> &mut Self {
+        self.data.set_local_anchor1(anchor1.as_precise());
         self
     }
 
@@ -57,8 +57,8 @@ impl PrismaticJoint {
     }
 
     /// Sets the joint’s anchor, expressed in the local-space of the second rigid-body.
-    pub fn set_local_anchor2(&mut self, anchor2: Vect) -> &mut Self {
-        self.data.set_local_anchor2(anchor2);
+    pub fn set_local_anchor2(&mut self, anchor2: impl AsPrecise<Out = Vect>) -> &mut Self {
+        self.data.set_local_anchor2(anchor2.as_precise());
         self
     }
 
@@ -69,8 +69,8 @@ impl PrismaticJoint {
     }
 
     /// Sets the principal axis of the joint, expressed in the local-space of the first rigid-body.
-    pub fn set_local_axis1(&mut self, axis1: Vect) -> &mut Self {
-        self.data.set_local_axis1(axis1);
+    pub fn set_local_axis1(&mut self, axis1: impl AsPrecise<Out = Vect>) -> &mut Self {
+        self.data.set_local_axis1(axis1.as_precise());
         self
     }
 
@@ -81,8 +81,8 @@ impl PrismaticJoint {
     }
 
     /// Sets the principal axis of the joint, expressed in the local-space of the second rigid-body.
-    pub fn set_local_axis2(&mut self, axis2: Vect) -> &mut Self {
-        self.data.set_local_axis2(axis2);
+    pub fn set_local_axis2(&mut self, axis2: impl AsPrecise<Out = Vect>) -> &mut Self {
+        self.data.set_local_axis2(axis2.as_precise());
         self
     }
 
@@ -166,35 +166,35 @@ impl PrismaticJointBuilder {
     /// Creates a new builder for prismatic joints.
     ///
     /// This axis is expressed in the local-space of both rigid-bodies.
-    pub fn new(axis: Vect) -> Self {
-        Self(PrismaticJoint::new(axis))
+    pub fn new(axis: impl AsPrecise<Out = Vect>) -> Self {
+        Self(PrismaticJoint::new(axis.as_precise()))
     }
 
     /// Sets the joint’s anchor, expressed in the local-space of the first rigid-body.
     #[must_use]
-    pub fn local_anchor1(mut self, anchor1: Vect) -> Self {
-        self.0.set_local_anchor1(anchor1);
+    pub fn local_anchor1(mut self, anchor1: impl AsPrecise<Out = Vect>) -> Self {
+        self.0.set_local_anchor1(anchor1.as_precise());
         self
     }
 
     /// Sets the joint’s anchor, expressed in the local-space of the second rigid-body.
     #[must_use]
-    pub fn local_anchor2(mut self, anchor2: Vect) -> Self {
-        self.0.set_local_anchor2(anchor2);
+    pub fn local_anchor2(mut self, anchor2: impl AsPrecise<Out = Vect>) -> Self {
+        self.0.set_local_anchor2(anchor2.as_precise());
         self
     }
 
     /// Sets the principal axis of the joint, expressed in the local-space of the first rigid-body.
     #[must_use]
-    pub fn local_axis1(mut self, axis1: Vect) -> Self {
-        self.0.set_local_axis1(axis1);
+    pub fn local_axis1(mut self, axis1: impl AsPrecise<Out = Vect>) -> Self {
+        self.0.set_local_axis1(axis1.as_precise());
         self
     }
 
     /// Sets the principal axis of the joint, expressed in the local-space of the second rigid-body.
     #[must_use]
-    pub fn local_axis2(mut self, axis2: Vect) -> Self {
-        self.0.set_local_axis2(axis2);
+    pub fn local_axis2(mut self, axis2: impl AsPrecise<Out = Vect>) -> Self {
+        self.0.set_local_axis2(axis2.as_precise());
         self
     }
 

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_rapier3d::{utils::as_real::*, prelude::*};
+use bevy_rapier3d::{utils::as_precise::*, prelude::*};
 
 fn main() {
     App::new()
@@ -34,7 +34,7 @@ pub fn setup_physics(mut commands: Commands) {
 
     commands.spawn((
         TransformBundle::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
-        Collider::cuboid(ground_size.as_real(), ground_height.as_real(), ground_size.as_real()),
+        Collider::cuboid(ground_size.as_precise(), ground_height.as_precise(), ground_size.as_precise()),
     ));
 
     /*
@@ -72,7 +72,7 @@ pub fn setup_physics(mut commands: Commands) {
                         child.spawn((
                             TransformBundle::from(Transform::from_xyz(x, y, z)),
                             RigidBody::Dynamic,
-                            Collider::cuboid(rad.as_real(), rad.as_real(), rad.as_real()),
+                            Collider::cuboid(rad.as_precise(), rad.as_precise(), rad.as_precise()),
                             ColliderDebugColor(colors[color % 3]),
                         ));
                     });

@@ -18,7 +18,7 @@ use crate::prelude::{
     BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities, KinematicCharacterController,
     KinematicCharacterControllerOutput, MassModifiedEvent, RigidBodyDisabled,
 };
-use crate::utils::{self, as_real::*};
+use crate::utils::{self, as_precise::*};
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
 use bevy::prelude::*;
 use rapier::prelude::*;
@@ -100,15 +100,15 @@ pub fn apply_scale(
         let effective_scale = match custom_scale {
             Some(ColliderScale::Absolute(scale)) => *scale,
             Some(ColliderScale::Relative(scale)) => {
-                *scale * transform.compute_transform().scale.xy().as_real()
+                *scale * transform.compute_transform().scale.xy().as_precise()
             }
-            None => transform.compute_transform().scale.xy().as_real(),
+            None => transform.compute_transform().scale.xy().as_precise(),
         };
         #[cfg(feature = "dim3")]
         let effective_scale = match custom_scale {
             Some(ColliderScale::Absolute(scale)) => *scale,
-            Some(ColliderScale::Relative(scale)) => *scale * transform.compute_transform().scale.as_real(),
-            None => transform.compute_transform().scale.as_real(),
+            Some(ColliderScale::Relative(scale)) => *scale * transform.compute_transform().scale.as_precise(),
+            None => transform.compute_transform().scale.as_precise(),
         };
 
         if shape.scale != crate::geometry::get_snapped_scale(effective_scale) {

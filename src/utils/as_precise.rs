@@ -2,9 +2,9 @@
 use bevy::math::*;
 
 /// Convert value into the precision the compilation is using.
-pub trait AsReal {
-    type Real;
-    fn as_real(self) -> Self::Real;
+pub trait AsPrecise: Clone + Copy {
+    type Out;
+    fn as_precise(self) -> Self::Out;
 }
 
 /// Convert value into single precision floating point.
@@ -13,11 +13,11 @@ pub trait AsSingle {
     fn as_single(self) -> Self::Single;
 }
 
-macro_rules! as_real_self {
+macro_rules! as_precise_self {
     ($ty:ty) => {
-        impl AsReal for $ty {
-            type Real = $ty;
-            fn as_real(self) -> Self::Real {
+        impl AsPrecise for $ty {
+            type Out = $ty;
+            fn as_precise(self) -> Self::Out {
                 self
             }
         }
@@ -80,46 +80,46 @@ impl AsSingle for DQuat {
 #[cfg(feature = "f32")]
 mod real {
     use bevy::math::*;
-    use super::{AsReal, AsSingle};
+    use super::{AsPrecise, AsSingle};
 
-    as_real_self!(f32);
-    as_real_self!(Vec2);
-    as_real_self!(Vec3);
-    as_real_self!(Vec3A);
-    as_real_self!(Vec4);
-    as_real_self!(Quat);
+    as_precise_self!(f32);
+    as_precise_self!(Vec2);
+    as_precise_self!(Vec3);
+    as_precise_self!(Vec3A);
+    as_precise_self!(Vec4);
+    as_precise_self!(Quat);
 
-    impl AsReal for f64 {
-        type Real = f32;
-        fn as_real(self) -> Self::Real {
+    impl AsPrecise for f64 {
+        type Out = f32;
+        fn as_precise(self) -> Self::Out {
             self.as_single()
         }
     }
 
-    impl AsReal for DVec2 {
-        type Real = Vec2;
-        fn as_real(self) -> Self::Real {
+    impl AsPrecise for DVec2 {
+        type Out = Vec2;
+        fn as_precise(self) -> Self::Out {
             self.as_single()
         }
     }
 
-    impl AsReal for DVec3 {
-        type Real = Vec3;
-        fn as_real(self) -> Self::Real {
+    impl AsPrecise for DVec3 {
+        type Out = Vec3;
+        fn as_precise(self) -> Self::Out {
             self.as_single()
         }
     }
 
-    impl AsReal for DVec4 {
-        type Real = Vec4;
-        fn as_real(self) -> Self::Real {
+    impl AsPrecise for DVec4 {
+        type Out = Vec4;
+        fn as_precise(self) -> Self::Out {
             self.as_single()
         }
     }
 
-    impl AsReal for DQuat {
-        type Real = Quat;
-        fn as_real(self) -> Self::Real {
+    impl AsPrecise for DQuat {
+        type Out = Quat;
+        fn as_precise(self) -> Self::Out {
             self.as_single()
         }
     }
@@ -128,52 +128,52 @@ mod real {
 #[cfg(feature = "f64")]
 mod real {
     use bevy::math::*;
-    use super::AsReal;
+    use super::AsPrecise;
 
-    as_real_self!(f64);
-    as_real_self!(DVec2);
-    as_real_self!(DVec3);
-    as_real_self!(DVec4);
-    as_real_self!(DQuat);
+    as_precise_self!(f64);
+    as_precise_self!(DVec2);
+    as_precise_self!(DVec3);
+    as_precise_self!(DVec4);
+    as_precise_self!(DQuat);
 
-    impl AsReal for f32 {
-        type Real = f64;
-        fn as_real(self) -> Self::Real {
+    impl AsPrecise for f32 {
+        type Out = f64;
+        fn as_precise(self) -> Self::Out {
             self as f64
         }
     }
 
-    impl AsReal for Vec2 {
-        type Real = DVec2;
-        fn as_real(self) -> Self::Real {
+    impl AsPrecise for Vec2 {
+        type Out = DVec2;
+        fn as_precise(self) -> Self::Out {
             self.as_dvec2()
         }
     }
 
-    impl AsReal for Vec3 {
-        type Real = DVec3;
-        fn as_real(self) -> Self::Real {
+    impl AsPrecise for Vec3 {
+        type Out = DVec3;
+        fn as_precise(self) -> Self::Out {
             self.as_dvec3()
         }
     }
 
-    impl AsReal for Vec3A {
-        type Real = DVec3;
-        fn as_real(self) -> Self::Real {
+    impl AsPrecise for Vec3A {
+        type Out = DVec3;
+        fn as_precise(self) -> Self::Out {
             self.as_dvec3()
         }
     }
 
-    impl AsReal for Vec4 {
-        type Real = DVec4;
-        fn as_real(self) -> Self::Real {
+    impl AsPrecise for Vec4 {
+        type Out = DVec4;
+        fn as_precise(self) -> Self::Out {
             self.as_dvec4()
         }
     }
 
-    impl AsReal for Quat {
-        type Real = DQuat;
-        fn as_real(self) -> Self::Real {
+    impl AsPrecise for Quat {
+        type Out = DQuat;
+        fn as_precise(self) -> Self::Out {
             self.as_f64()
         }
     }

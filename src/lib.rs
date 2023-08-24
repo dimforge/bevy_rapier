@@ -20,7 +20,7 @@ pub extern crate nalgebra as na;
 #[cfg(all(feature = "dim2", feature = "f32"))]
 pub extern crate rapier2d as rapier;
 #[cfg(all(feature = "dim2", feature = "f64"))]
-pub extern crate rapier3d_f64 as rapier;
+pub extern crate rapier2d_f64 as rapier;
 #[cfg(all(feature = "dim3", feature = "f32"))]
 pub extern crate rapier3d as rapier;
 #[cfg(all(feature = "dim3", feature = "f64"))]
@@ -28,9 +28,11 @@ pub extern crate rapier3d_f64 as rapier;
 pub use rapier::parry;
 
 /// Type aliases to select the right vector/rotation types based
-/// on the dimension used by the engine.
+/// on the dimension and precision used by the engine.
 #[cfg(feature = "dim2")]
 pub mod math {
+    pub use crate::utils::as_precise::*;
+
     /// The real type (f32 or f64).
     pub type Real = rapier::math::Real;
     /// The vector type.
@@ -43,9 +45,11 @@ pub mod math {
 }
 
 /// Type aliases to select the right vector/rotation types based
-/// on the dimension used by the engine.
+/// on the dimension and precision used by the engine.
 #[cfg(feature = "dim3")]
 pub mod math {
+    pub use crate::utils::as_precise::*;
+
     /// The real type (f32 or f64).
     pub type Real = rapier::math::Real;
     /// The vector type.

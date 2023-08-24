@@ -1,5 +1,5 @@
 use crate::dynamics::{GenericJoint, GenericJointBuilder};
-use crate::math::{Real, Vect};
+use crate::math::{Real, Vect, AsPrecise};
 use rapier::dynamics::{JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel};
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -42,8 +42,8 @@ impl RopeJoint {
     }
 
     /// Sets the joint’s anchor, expressed in the local-space of the first rigid-body.
-    pub fn set_local_anchor1(&mut self, anchor1: Vect) -> &mut Self {
-        self.data.set_local_anchor1(anchor1);
+    pub fn set_local_anchor1(&mut self, anchor1: impl AsPrecise<Out = Vect>) -> &mut Self {
+        self.data.set_local_anchor1(anchor1.as_precise());
         self
     }
 
@@ -54,8 +54,8 @@ impl RopeJoint {
     }
 
     /// Sets the joint’s anchor, expressed in the local-space of the second rigid-body.
-    pub fn set_local_anchor2(&mut self, anchor2: Vect) -> &mut Self {
-        self.data.set_local_anchor2(anchor2);
+    pub fn set_local_anchor2(&mut self, anchor2: impl AsPrecise<Out = Vect>) -> &mut Self {
+        self.data.set_local_anchor2(anchor2.as_precise());
         self
     }
 
@@ -66,8 +66,8 @@ impl RopeJoint {
     }
 
     /// Sets the principal axis of the joint, expressed in the local-space of the first rigid-body.
-    pub fn set_local_axis1(&mut self, axis1: Vect) -> &mut Self {
-        self.data.set_local_axis1(axis1);
+    pub fn set_local_axis1(&mut self, axis1: impl AsPrecise<Out = Vect>) -> &mut Self {
+        self.data.set_local_axis1(axis1.as_precise());
         self
     }
 
@@ -78,8 +78,8 @@ impl RopeJoint {
     }
 
     /// Sets the principal axis of the joint, expressed in the local-space of the second rigid-body.
-    pub fn set_local_axis2(&mut self, axis2: Vect) -> &mut Self {
-        self.data.set_local_axis2(axis2);
+    pub fn set_local_axis2(&mut self, axis2: impl AsPrecise<Out = Vect>) -> &mut Self {
+        self.data.set_local_axis2(axis2.as_precise());
         self
     }
 
@@ -199,15 +199,15 @@ impl RopeJointBuilder {
 
     /// Sets the joint’s anchor, expressed in the local-space of the first rigid-body.
     #[must_use]
-    pub fn local_anchor1(mut self, anchor1: Vect) -> Self {
-        self.0.set_local_anchor1(anchor1);
+    pub fn local_anchor1(mut self, anchor1: impl AsPrecise<Out = Vect>) -> Self {
+        self.0.set_local_anchor1(anchor1.as_precise());
         self
     }
 
     /// Sets the joint’s anchor, expressed in the local-space of the second rigid-body.
     #[must_use]
-    pub fn local_anchor2(mut self, anchor2: Vect) -> Self {
-        self.0.set_local_anchor2(anchor2);
+    pub fn local_anchor2(mut self, anchor2: impl AsPrecise<Out = Vect>) -> Self {
+        self.0.set_local_anchor2(anchor2.as_precise());
         self
     }
 
