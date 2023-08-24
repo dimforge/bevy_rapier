@@ -486,15 +486,15 @@ impl RapierContext {
     /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     pub fn cast_ray(
         &self,
-        ray_origin: Vect,
-        ray_dir: Vect,
-        max_toi: Real,
+        ray_origin: impl AsPrecise<Out = Vect>,
+        ray_dir: impl AsPrecise<Out = Vect>,
+        max_toi: impl AsPrecise<Out = Real>,
         solid: bool,
         filter: QueryFilter,
     ) -> Option<(Entity, Real)> {
         let ray = Ray::new(
-            (ray_origin / self.physics_scale).into(),
-            (ray_dir / self.physics_scale).into(),
+            (ray_origin.as_precise() / self.physics_scale).into(),
+            (ray_dir.as_precise() / self.physics_scale).into(),
         );
 
         let (h, toi) = self.with_query_filter(filter, move |filter| {
@@ -502,7 +502,7 @@ impl RapierContext {
                 &self.bodies,
                 &self.colliders,
                 &ray,
-                max_toi,
+                max_toi.as_precise(),
                 solid,
                 filter,
             )
@@ -770,14 +770,14 @@ impl RapierContext {
     #[allow(clippy::too_many_arguments)]
     pub fn cast_shape(
         &self,
-        shape_pos: Vect,
-        shape_rot: Rot,
-        shape_vel: Vect,
+        shape_pos: impl AsPrecise<Out = Vect>,
+        shape_rot: impl AsPrecise<Out = Rot>,
+        shape_vel: impl AsPrecise<Out = Vect>,
         shape: &Collider,
-        max_toi: Real,
+        max_toi: impl AsPrecise<Out = Real>,
         filter: QueryFilter,
     ) -> Option<(Entity, Toi)> {
-        let scaled_transform = (shape_pos / self.physics_scale, shape_rot).into();
+        let scaled_transform = (shape_pos.as_precise() / self.physics_scale, shape_rot.as_precise()).into();
         let mut scaled_shape = shape.clone();
         // TODO: how to set a good number of subdivisions, we don’t have access to the
         //       RapierConfiguration::scaled_shape_subdivision here.
@@ -788,9 +788,9 @@ impl RapierContext {
                 &self.bodies,
                 &self.colliders,
                 &scaled_transform,
-                &(shape_vel / self.physics_scale).into(),
+                &(shape_vel.as_precise() / self.physics_scale).into(),
                 &*scaled_shape.raw,
-                max_toi,
+                max_toi.as_precise(),
                 true,
                 filter,
             )
@@ -862,13 +862,13 @@ impl RapierContext {
     /// * `callback` - A function called with the entities of each collider intersecting the `shape`.
     pub fn intersections_with_shape(
         &self,
-        shape_pos: Vect,
-        shape_rot: Rot,
+        shape_pos: impl AsPrecise<Out = Vect>,
+        shape_rot: impl AsPrecise<Out = Rot>,
         shape: &Collider,
         filter: QueryFilter,
         mut callback: impl FnMut(Entity) -> bool,
     ) {
-        let scaled_transform = (shape_pos / self.physics_scale, shape_rot).into();
+        let scaled_transform = (shape_pos.as_precise() / self.physics_scale, shape_rot.as_precise()).into();
         let mut scaled_shape = shape.clone();
         // TODO: how to set a good number of subdivisions, we don’t have access to the
         //       RapierConfiguration::scaled_shape_subdivision here.
