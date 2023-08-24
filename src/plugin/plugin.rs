@@ -19,7 +19,7 @@ pub type NoUserData = ();
 /// Rapier physics engine.
 pub struct RapierPhysicsPlugin<PhysicsHooks = ()> {
     schedule: Box<dyn ScheduleLabel>,
-    physics_scale: f32,
+    physics_scale: Real,
     default_system_setup: bool,
     _phantom: PhantomData<PhysicsHooks>,
 }
@@ -35,7 +35,7 @@ where
     /// all the length-related quantities by the `physics_scale` factor. This should
     /// likely always be 1.0 in 3D. In 2D, this is useful to specify a "pixels-per-meter"
     /// conversion ratio.
-    pub fn with_physics_scale(mut self, physics_scale: f32) -> Self {
+    pub fn with_physics_scale(mut self, physics_scale: Real) -> Self {
         self.physics_scale = physics_scale;
         self
     }

@@ -18,7 +18,7 @@ use crate::prelude::{
     BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities, KinematicCharacterController,
     KinematicCharacterControllerOutput, MassModifiedEvent, RigidBodyDisabled,
 };
-use crate::utils;
+use crate::utils::{self, as_real::*};
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
 use bevy::prelude::*;
 use rapier::prelude::*;
@@ -100,15 +100,15 @@ pub fn apply_scale(
         let effective_scale = match custom_scale {
             Some(ColliderScale::Absolute(scale)) => *scale,
             Some(ColliderScale::Relative(scale)) => {
-                *scale * transform.compute_transform().scale.xy()
+                *scale * transform.compute_transform().scale.xy().as_real()
             }
-            None => transform.compute_transform().scale.xy(),
+            None => transform.compute_transform().scale.xy().as_real(),
         };
         #[cfg(feature = "dim3")]
         let effective_scale = match custom_scale {
             Some(ColliderScale::Absolute(scale)) => *scale,
-            Some(ColliderScale::Relative(scale)) => *scale * transform.compute_transform().scale,
-            None => transform.compute_transform().scale,
+            Some(ColliderScale::Relative(scale)) => *scale * transform.compute_transform().scale.as_real(),
+            None => transform.compute_transform().scale.as_real(),
         };
 
         if shape.scale != crate::geometry::get_snapped_scale(effective_scale) {
@@ -1465,11 +1465,11 @@ pub fn update_character_controls(
 
             if let Ok(mut transform) = transforms.get_mut(entity_to_move) {
                 // TODO: take the parent’s GlobalTransform rotation into account?
-                transform.translation.x += movement.translation.x * physics_scale;
-                transform.translation.y += movement.translation.y * physics_scale;
+                transform.translation.x += (movement.translation.x * physics_scale).as_single();
+                transform.translation.y += (movement.translation.y * physics_scale).as_single();
                 #[cfg(feature = "dim3")]
                 {
-                    transform.translation.z += movement.translation.z * physics_scale;
+                    transform.translation.z += (movement.translation.z * physics_scale).as_single();
                 }
             }
 

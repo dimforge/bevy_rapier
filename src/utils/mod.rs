@@ -1,14 +1,31 @@
 use bevy::prelude::Transform;
 use rapier::math::{Isometry, Real};
 
+pub mod as_real;
+pub use as_real::*;
+
 /// Converts a Rapier isometry to a Bevy transform.
 ///
 /// The translation is multiplied by the `physics_scale`.
 #[cfg(feature = "dim2")]
 pub fn iso_to_transform(iso: &Isometry<Real>, physics_scale: Real) -> Transform {
+    #[cfg(feature = "f32")]
+    let (translation, rotation) = {
+        use bevy::math::{Vec3, Quat};
+        let translation: Vec3 = iso.translation.vector.into();
+        let rotation = Quat::from_rotation_z(iso.rotation.angle());
+        (translation, rotation)
+    };
+    #[cfg(feature = "f64")]
+    let (translation, rotation) = {
+        use bevy::math::{DVec3, DQuat};
+        let translation: DVec3 = iso.translation.vector.into();
+        let rotation = DQuat::from_rotation_z(iso.rotation.angle());
+        (translation, rotation)
+    };
     Transform {
-        translation: (iso.translation.vector.push(0.0) * physics_scale).into(),
-        rotation: bevy::prelude::Quat::from_rotation_z(iso.rotation.angle()),
+        translation: translation.as_single(),
+        rotation: rotation.as_single(),
         ..Default::default()
     }
 }
@@ -18,9 +35,23 @@ pub fn iso_to_transform(iso: &Isometry<Real>, physics_scale: Real) -> Transform 
 /// The translation is multiplied by the `physics_scale`.
 #[cfg(feature = "dim3")]
 pub fn iso_to_transform(iso: &Isometry<Real>, physics_scale: Real) -> Transform {
+    #[cfg(feature = "f32")]
+    let (translation, rotation) = {
+        use bevy::math::{Vec3, Quat};
+        let translation: Vec3 = iso.translation.vector.into();
+        let rotation: Quat = iso.rotation.into();
+        (translation, rotation)
+    };
+    #[cfg(feature = "f64")]
+    let (translation, rotation) = {
+        use bevy::math::{DVec3, DQuat};
+        let translation: DVec3 = iso.translation.vector.into();
+        let rotation: DQuat = iso.rotation.into();
+        (translation, rotation)
+    };
     Transform {
-        translation: (iso.translation.vector * physics_scale).into(),
-        rotation: iso.rotation.into(),
+        translation: (translation * physics_scale).as_single(),
+        rotation: rotation.as_single(),
         ..Default::default()
     }
 }
@@ -31,9 +62,11 @@ pub fn iso_to_transform(iso: &Isometry<Real>, physics_scale: Real) -> Transform 
 #[cfg(feature = "dim2")]
 pub(crate) fn transform_to_iso(transform: &Transform, physics_scale: Real) -> Isometry<Real> {
     use bevy::math::Vec3Swizzles;
+    let translation = transform.translation.as_real();
+    let rotation = transform.rotation.to_scaled_axis().z.as_real();
     Isometry::new(
-        (transform.translation / physics_scale).xy().into(),
-        transform.rotation.to_scaled_axis().z,
+        (translation / physics_scale).xy().into(),
+        rotation,
     )
 }
 
@@ -42,9 +75,11 @@ pub(crate) fn transform_to_iso(transform: &Transform, physics_scale: Real) -> Is
 /// The translation is divided by the `physics_scale`.
 #[cfg(feature = "dim3")]
 pub(crate) fn transform_to_iso(transform: &Transform, physics_scale: Real) -> Isometry<Real> {
+    let translation = transform.translation.as_real();
+    let rotation = transform.rotation.as_real();
     Isometry::from_parts(
-        (transform.translation / physics_scale).into(),
-        transform.rotation.into(),
+        (translation / physics_scale).into(),
+        rotation.into(),
     )
 }
 

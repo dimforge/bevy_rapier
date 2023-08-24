@@ -1,4 +1,5 @@
 use crate::math::Vect;
+use crate::prelude::Real;
 use bevy::prelude::*;
 use rapier::prelude::{
     Isometry, LockedAxes as RapierLockedAxes, RigidBodyActivation, RigidBodyHandle, RigidBodyType,
@@ -70,7 +71,7 @@ pub struct Velocity {
     pub linvel: Vect,
     /// The angular velocity of the rigid-body.
     #[cfg(feature = "dim2")]
-    pub angvel: f32,
+    pub angvel: Real,
     /// The angular velocity of the rigid-body.
     #[cfg(feature = "dim3")]
     pub angvel: Vect,
@@ -101,7 +102,7 @@ impl Velocity {
 
     /// Initialize a velocity with the given angular velocity, and a linear velocity of zero.
     #[cfg(feature = "dim2")]
-    pub const fn angular(angvel: f32) -> Self {
+    pub const fn angular(angvel: Real) -> Self {
         Self {
             linvel: Vect::ZERO,
             angvel,
@@ -138,7 +139,7 @@ pub enum AdditionalMassProperties {
     /// This mass will be added to the rigid-body. The rigid-body’s total
     /// angular inertia tensor (obtained from its attached colliders) will
     /// be scaled accordingly.
-    Mass(f32),
+    Mass(Real),
     /// These mass properties will be added to the rigid-body.
     MassProperties(MassProperties),
 }
@@ -190,10 +191,10 @@ pub struct MassProperties {
     /// The center of mass of a rigid-body expressed in its local-space.
     pub local_center_of_mass: Vect,
     /// The mass of a rigid-body.
-    pub mass: f32,
+    pub mass: Real,
     /// The principal angular inertia of the rigid-body.
     #[cfg(feature = "dim2")]
-    pub principal_inertia: f32,
+    pub principal_inertia: Real,
     /// The principal vectors of the local angular inertia tensor of the rigid-body.
     #[cfg(feature = "dim3")]
     pub principal_inertia_local_frame: crate::math::Rot,
@@ -205,7 +206,7 @@ pub struct MassProperties {
 impl MassProperties {
     /// Converts these mass-properties to Rapier’s `MassProperties` structure.
     #[cfg(feature = "dim2")]
-    pub fn into_rapier(self, physics_scale: f32) -> rapier::dynamics::MassProperties {
+    pub fn into_rapier(self, physics_scale: Real) -> rapier::dynamics::MassProperties {
         rapier::dynamics::MassProperties::new(
             (self.local_center_of_mass / physics_scale).into(),
             self.mass,
@@ -216,7 +217,7 @@ impl MassProperties {
 
     /// Converts these mass-properties to Rapier’s `MassProperties` structure.
     #[cfg(feature = "dim3")]
-    pub fn into_rapier(self, physics_scale: f32) -> rapier::dynamics::MassProperties {
+    pub fn into_rapier(self, physics_scale: Real) -> rapier::dynamics::MassProperties {
         rapier::dynamics::MassProperties::with_principal_inertia_frame(
             (self.local_center_of_mass / physics_scale).into(),
             self.mass,
@@ -226,7 +227,7 @@ impl MassProperties {
     }
 
     /// Converts Rapier’s `MassProperties` structure to `Self`.
-    pub fn from_rapier(mprops: rapier::dynamics::MassProperties, physics_scale: f32) -> Self {
+    pub fn from_rapier(mprops: rapier::dynamics::MassProperties, physics_scale: Real) -> Self {
         #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
         Self {
             mass: mprops.mass(),
@@ -279,7 +280,7 @@ pub struct ExternalForce {
     pub force: Vect,
     /// The angular torque applied to the rigid-body.
     #[cfg(feature = "dim2")]
-    pub torque: f32,
+    pub torque: Real,
     /// The angular torque applied to the rigid-body.
     #[cfg(feature = "dim3")]
     pub torque: Vect,
@@ -351,7 +352,7 @@ pub struct ExternalImpulse {
     pub impulse: Vect,
     /// The angular impulse applied to the rigid-body.
     #[cfg(feature = "dim2")]
-    pub torque_impulse: f32,
+    pub torque_impulse: Real,
     /// The angular impulse applied to the rigid-body.
     #[cfg(feature = "dim3")]
     pub torque_impulse: Vect,
@@ -421,7 +422,7 @@ impl SubAssign for ExternalImpulse {
 /// applied to this rigid-body.
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
-pub struct GravityScale(pub f32);
+pub struct GravityScale(pub Real);
 
 impl Default for GravityScale {
     fn default() -> Self {
@@ -476,9 +477,9 @@ impl Dominance {
 #[reflect(Component, PartialEq)]
 pub struct Sleeping {
     /// The linear velocity below which the body can fall asleep.
-    pub linear_threshold: f32,
+    pub linear_threshold: Real,
     /// The angular velocity below which the body can fall asleep.
-    pub angular_threshold: f32,
+    pub angular_threshold: Real,
     /// Is this body sleeping?
     pub sleeping: bool,
 }
@@ -510,9 +511,9 @@ impl Default for Sleeping {
 pub struct Damping {
     // TODO: rename these to "linear" and "angular"?
     /// Damping factor for gradually slowing down the translational motion of the rigid-body.
-    pub linear_damping: f32,
+    pub linear_damping: Real,
     /// Damping factor for gradually slowing down the angular motion of the rigid-body.
-    pub angular_damping: f32,
+    pub angular_damping: Real,
 }
 
 impl Default for Damping {
@@ -530,14 +531,14 @@ impl Default for Damping {
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component)]
 pub struct TransformInterpolation {
     /// The starting point of the interpolation.
-    pub start: Option<Isometry<f32>>,
+    pub start: Option<Isometry<Real>>,
     /// The end point of the interpolation.
-    pub end: Option<Isometry<f32>>,
+    pub end: Option<Isometry<Real>>,
 }
 
 impl TransformInterpolation {
     /// Interpolates between the start and end positions with `t` in the range `[0..1]`.
-    pub fn lerp_slerp(&self, t: f32) -> Option<Isometry<f32>> {
+    pub fn lerp_slerp(&self, t: Real) -> Option<Isometry<Real>> {
         if let (Some(start), Some(end)) = (self.start, self.end) {
             Some(start.lerp_slerp(&end, t))
         } else {

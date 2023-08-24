@@ -1,12 +1,12 @@
 use bevy::prelude::Resource;
 
-use crate::math::Vect;
+use crate::math::{Vect, Real};
 
 /// Difference between simulation and rendering time
 #[derive(Resource, Default)]
 pub struct SimulationToRenderTime {
     /// Difference between simulation and rendering time
-    pub diff: f32,
+    pub diff: Real,
 }
 
 /// The different ways of adjusting the timestep length.
@@ -16,7 +16,7 @@ pub enum TimestepMode {
     /// `dt` seconds at each Bevy tick by performing `substeps` of length `dt / substeps`.
     Fixed {
         /// The physics simulation will be advanced by this total amount at each Bevy tick.
-        dt: f32,
+        dt: Real,
         /// This number of substeps of length `dt / substeps` will be performed at each Bevy tick.
         substeps: usize,
     },
@@ -26,10 +26,10 @@ pub enum TimestepMode {
     /// `time_scale < 1.0` makes the simulation run in slow-motion.
     Variable {
         /// Maximum amount of time the physics simulation may be advanced at each Bevy tick.
-        max_dt: f32,
+        max_dt: Real,
         /// Multiplier controlling if the physics simulation should advance faster (> 1.0),
         /// at the same speed (= 1.0) or slower (< 1.0) than the real time.
-        time_scale: f32,
+        time_scale: Real,
         /// The number of substeps that will be performed at each tick.
         substeps: usize,
     },
@@ -40,10 +40,10 @@ pub enum TimestepMode {
     Interpolated {
         /// The physics simulation will be advanced by this total amount at each Bevy tick, unless
         /// the physics simulation time is ahead of a the real time.
-        dt: f32,
+        dt: Real,
         /// Multiplier controlling if the physics simulation should advance faster (> 1.0),
         /// at the same speed (= 1.0) or slower (< 1.0) than the real time.
-        time_scale: f32,
+        time_scale: Real,
         /// The number of substeps that will be performed whenever the physics simulation is advanced.
         substeps: usize,
     },

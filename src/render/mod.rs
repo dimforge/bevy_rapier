@@ -126,11 +126,11 @@ impl<'world, 'state, 'a, 'b> DebugRenderBackend for BevyLinesRenderBackend<'worl
         b: Point<Real>,
         color: [f32; 4],
     ) {
-        let scale = self.physics_scale;
+        let scale = self.physics_scale as f32;
         let color = self.object_color(object, color);
         self.gizmos.line(
-            [a.x * scale, a.y * scale, 0.0].into(),
-            [b.x * scale, b.y * scale, 0.0].into(),
+            [a.x as f32 * scale, a.y as f32 * scale, 0.0].into(),
+            [b.x as f32 * scale, b.y as f32 * scale, 0.0].into(),
             Color::hsla(color[0], color[1], color[2], color[3]),
         )
     }
@@ -146,8 +146,8 @@ impl<'world, 'state, 'a, 'b> DebugRenderBackend for BevyLinesRenderBackend<'worl
         let scale = self.physics_scale;
         let color = self.object_color(object, color);
         self.gizmos.line(
-            [a.x * scale, a.y * scale, a.z * scale].into(),
-            [b.x * scale, b.y * scale, b.z * scale].into(),
+            [a.x as f32 * scale, a.y as f32 * scale, a.z as f32 * scale].into(),
+            [b.x as f32 * scale, b.y as f32 * scale, b.z as f32 * scale].into(),
             Color::hsla(color[0], color[1], color[2], color[3]),
         )
     }
@@ -164,14 +164,14 @@ fn debug_render_scene(
     }
 
     let mut backend = BevyLinesRenderBackend {
-        physics_scale: rapier_context.physics_scale,
+        physics_scale: rapier_context.physics_scale as f32,
         custom_colors,
         context: &rapier_context,
         gizmos,
     };
 
     let unscaled_style = render_context.pipeline.style;
-    render_context.pipeline.style.rigid_body_axes_length /= rapier_context.physics_scale;
+    render_context.pipeline.style.rigid_body_axes_length /= rapier_context.physics_scale as f32;
     render_context.pipeline.render(
         &mut backend,
         &rapier_context.bodies,

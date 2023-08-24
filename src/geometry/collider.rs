@@ -10,7 +10,8 @@ use rapier::geometry::Shape;
 use rapier::prelude::{ColliderHandle, InteractionGroups, SharedShape};
 
 use crate::dynamics::{CoefficientCombineRule, MassProperties};
-use crate::math::Vect;
+use crate::math::{Real, Vect};
+use crate::utils::as_real::*;
 
 /// The Rapier handle of a collider that was inserted to the physics scene.
 #[derive(Copy, Clone, Debug, Component)]
@@ -109,9 +110,9 @@ pub struct Sensor;
 #[reflect(Component, PartialEq)]
 pub enum ColliderMassProperties {
     /// The mass-properties are computed automatically from the collider’s shape and this density.
-    Density(f32),
+    Density(Real),
     /// The mass-properties are computed automatically from the collider’s shape and this mass.
-    Mass(f32),
+    Mass(Real),
     /// The mass-properties of the collider are replaced by the ones specified here.
     MassProperties(MassProperties),
 }
@@ -130,7 +131,7 @@ pub struct Friction {
     ///
     /// The greater the value, the stronger the friction forces will be.
     /// Should be `>= 0`.
-    pub coefficient: f32,
+    pub coefficient: Real,
     /// The rule applied to combine the friction coefficients of two colliders in contact.
     pub combine_rule: CoefficientCombineRule,
 }
@@ -147,18 +148,18 @@ impl Default for Friction {
 impl Friction {
     /// Creates a `Friction` component from the given friction coefficient, and using the default
     /// `CoefficientCombineRule::Average` coefficient combine rule.
-    pub const fn new(coefficient: f32) -> Self {
+    pub const fn new(coefficient: Real) -> Self {
         Self {
-            coefficient,
+            coefficient: coefficient,
             combine_rule: CoefficientCombineRule::Average,
         }
     }
 
     /// Creates a `Friction` component from the given friction coefficient, and using the default
     /// `CoefficientCombineRule::Average` coefficient combine rule.
-    pub const fn coefficient(coefficient: f32) -> Self {
+    pub const fn coefficient(coefficient: Real) -> Self {
         Self {
-            coefficient,
+            coefficient: coefficient,
             combine_rule: CoefficientCombineRule::Average,
         }
     }
@@ -172,7 +173,7 @@ pub struct Restitution {
     ///
     /// The greater the value, the stronger the restitution forces will be.
     /// Should be `>= 0`.
-    pub coefficient: f32,
+    pub coefficient: Real,
     /// The rule applied to combine the friction coefficients of two colliders in contact.
     pub combine_rule: CoefficientCombineRule,
 }
@@ -180,18 +181,18 @@ pub struct Restitution {
 impl Restitution {
     /// Creates a `Restitution` component from the given restitution coefficient, and using the default
     /// `CoefficientCombineRule::Average` coefficient combine rule.
-    pub const fn new(coefficient: f32) -> Self {
+    pub const fn new(coefficient: Real) -> Self {
         Self {
-            coefficient,
+            coefficient: coefficient,
             combine_rule: CoefficientCombineRule::Average,
         }
     }
 
     /// Creates a `Restitution` component from the given restitution coefficient, and using the default
     /// `CoefficientCombineRule::Average` coefficient combine rule.
-    pub const fn coefficient(coefficient: f32) -> Self {
+    pub const fn coefficient(coefficient: Real) -> Self {
         Self {
-            coefficient,
+            coefficient: coefficient,
             combine_rule: CoefficientCombineRule::Average,
         }
     }
@@ -457,11 +458,11 @@ impl From<ActiveEvents> for rapier::pipeline::ActiveEvents {
 /// The total force magnitude beyond which a contact force event can be emitted.
 #[derive(Copy, Clone, PartialEq, Component, Reflect)]
 #[reflect(Component)]
-pub struct ContactForceEventThreshold(pub f32);
+pub struct ContactForceEventThreshold(pub Real);
 
 impl Default for ContactForceEventThreshold {
     fn default() -> Self {
-        Self(f32::MAX)
+        Self(Real::MAX)
     }
 }
 
@@ -506,8 +507,8 @@ pub struct ColliderDisabled;
 /// We restrict the scaling increment to 1.0e-4, to avoid numerical jitter
 /// due to the extraction of scaling factor from the GlobalTransform matrix.
 pub fn get_snapped_scale(scale: Vect) -> Vect {
-    fn snap_value(new: f32) -> f32 {
-        const PRECISION: f32 = 1.0e4;
+    fn snap_value(new: Real) -> Real {
+        const PRECISION: Real = 1.0e4;
         (new * PRECISION).round() / PRECISION
     }
 

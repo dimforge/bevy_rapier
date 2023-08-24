@@ -1,5 +1,6 @@
 use crate::geometry::shape_views::{CuboidView, CuboidViewMut, TriangleView, TriangleViewMut};
 use rapier::geometry::{RoundCuboid, RoundTriangle};
+use crate::math::{Real, Vect};
 
 #[cfg(feature = "dim2")]
 use {
@@ -27,7 +28,7 @@ macro_rules!  round_shape_view(
 
         impl<'a> $RoundShapeView<'a> {
             /// The radius of the round border of this shape.
-            pub fn border_radius(&self) -> f32 {
+            pub fn border_radius(&self) -> Real {
                 self.raw.border_radius
             }
 
@@ -47,12 +48,12 @@ macro_rules!  round_shape_view(
 
         impl<'a> $RoundShapeViewMut<'a> {
             /// The radius of the round border of this shape.
-            pub fn border_radius(&self) -> f32 {
+            pub fn border_radius(&self) -> Real {
                 self.raw.border_radius
             }
 
             /// Set the radius of the round border of this shape.
-            pub fn set_border_radius(&mut self, new_border_radius: f32) {
+            pub fn set_border_radius(&mut self, new_border_radius: Real) {
                 self.raw.border_radius = new_border_radius;
             }
 
