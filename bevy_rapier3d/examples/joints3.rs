@@ -25,7 +25,7 @@ fn setup_graphics(mut commands: Commands) {
     });
 }
 
-fn create_prismatic_joints(commands: &mut Commands, origin: Vect, num: usize) {
+fn create_prismatic_joints(commands: &mut Commands, origin: Vec3, num: usize) {
     let rad = 0.4;
     let shift = 1.0;
 
@@ -62,7 +62,7 @@ fn create_prismatic_joints(commands: &mut Commands, origin: Vect, num: usize) {
     }
 }
 
-fn create_rope_joints(commands: &mut Commands, origin: Vect, num: usize) {
+fn create_rope_joints(commands: &mut Commands, origin: Vec3, num: usize) {
     let rad = 0.4;
     let shift = 1.0;
 

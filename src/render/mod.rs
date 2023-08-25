@@ -1,4 +1,5 @@
 use crate::plugin::RapierContext;
+use crate::prelude::*;
 use bevy::prelude::*;
 use bevy::transform::TransformSystem;
 use rapier::math::{Point, Real};
@@ -95,7 +96,7 @@ impl Plugin for RapierDebugRenderPlugin {
 }
 
 struct BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
-    physics_scale: f32,
+    physics_scale: Real,
     custom_colors: Query<'world, 'state, &'a ColliderDebugColor>,
     context: &'b RapierContext,
     gizmos: Gizmos<'state>,
@@ -126,11 +127,12 @@ impl<'world, 'state, 'a, 'b> DebugRenderBackend for BevyLinesRenderBackend<'worl
         b: Point<Real>,
         color: [f32; 4],
     ) {
-        let scale = self.physics_scale;
+        let a = (Vect::from(a) * self.physics_scale).as_single();
+        let b = (Vect::from(b) * self.physics_scale).as_single();
         let color = self.object_color(object, color);
         self.gizmos.line(
-            [a.x * scale, a.y * scale, 0.0].into(),
-            [b.x * scale, b.y * scale, 0.0].into(),
+            a.extend(0.0),
+            b.extend(0.0),
             Color::hsla(color[0], color[1], color[2], color[3]),
         )
     }
@@ -143,13 +145,11 @@ impl<'world, 'state, 'a, 'b> DebugRenderBackend for BevyLinesRenderBackend<'worl
         b: Point<Real>,
         color: [f32; 4],
     ) {
-        let scale = self.physics_scale;
+        let a = (Vect::from(a) * self.physics_scale).as_single();
+        let b = (Vect::from(b) * self.physics_scale).as_single();
         let color = self.object_color(object, color);
-        self.gizmos.line(
-            [a.x * scale, a.y * scale, a.z * scale].into(),
-            [b.x * scale, b.y * scale, b.z * scale].into(),
-            Color::hsla(color[0], color[1], color[2], color[3]),
-        )
+        self.gizmos
+            .line(a, b, Color::hsla(color[0], color[1], color[2], color[3]))
     }
 }
 

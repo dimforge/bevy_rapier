@@ -30,7 +30,7 @@ fn setup_graphics(mut commands: Commands) {
 }
 
 fn ramp_size() -> Vec3 {
-    Vec3::new(10.0, 1.0, 1.0)
+    Vec3::new(10.0, 1.5, 1.0)
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -62,7 +62,7 @@ pub fn setup_physics(mut commands: Commands) {
     let mut indices: Vec<[u32; 3]> = Vec::new();
 
     let segments = 32;
-    let bowl_size = Vec3::new(10.0, 3.0, 10.0);
+    let bowl_size = Vec3::new(10.0, 6.0, 10.0);
 
     for ix in 0..=segments {
         for iz in 0..=segments {
@@ -111,9 +111,9 @@ impl Default for BallState {
     fn default() -> Self {
         Self {
             seconds_until_next_spawn: 0.5,
-            seconds_between_spawns: 2.0,
+            seconds_between_spawns: 2.5,
             balls_spawned: 0,
-            max_balls: 10,
+            max_balls: 200,
         }
     }
 }
@@ -129,7 +129,7 @@ fn ball_spawner(
 
     // NOTE: The timing here only works properly with `time_dependent_number_of_timesteps`
     // disabled, as it is for examples.
-    ball_state.seconds_until_next_spawn -= rapier_context.integration_parameters.dt;
+    ball_state.seconds_until_next_spawn -= rapier_context.integration_parameters.dt as f32;
     if ball_state.seconds_until_next_spawn > 0.0 {
         return;
     }
@@ -142,7 +142,7 @@ fn ball_spawner(
     commands.spawn((
         TransformBundle::from(Transform::from_xyz(
             ramp_size.x * 0.9,
-            ramp_size.y / 2.0 + rad * 3.0,
+            ramp_size.y + rad * 3.0,
             0.0,
         )),
         RigidBody::Dynamic,
