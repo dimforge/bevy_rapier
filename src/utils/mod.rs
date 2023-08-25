@@ -10,8 +10,9 @@ pub mod as_precise;
 /// The translation is multiplied by the `physics_scale`.
 #[cfg(feature = "dim2")]
 pub fn iso_to_transform(iso: &Isometry<Real>, physics_scale: Real) -> Transform {
+    use bevy::math::Quat;
     let translation = Vect::from(iso.translation.vector) * physics_scale;
-    let rotation = Quat::from_rotation_z(iso.rotation.angle());
+    let rotation = Quat::from_rotation_z(iso.rotation.angle().as_single());
     Transform {
         translation: translation.as_single().extend(0.0),
         rotation: rotation,

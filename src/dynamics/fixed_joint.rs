@@ -41,8 +41,8 @@ impl FixedJoint {
     }
 
     /// Sets the joint’s basis, expressed in the first rigid-body’s local-space.
-    pub fn set_local_basis1(&mut self, local_basis: Rot) -> &mut Self {
-        self.data.set_local_basis1(local_basis);
+    pub fn set_local_basis1(&mut self, local_basis: impl AsPrecise<Out = Rot>) -> &mut Self {
+        self.data.set_local_basis1(local_basis.as_precise());
         self
     }
 
@@ -53,8 +53,8 @@ impl FixedJoint {
     }
 
     /// Sets joint’s basis, expressed in the second rigid-body’s local-space.
-    pub fn set_local_basis2(&mut self, local_basis: Rot) -> &mut Self {
-        self.data.set_local_basis2(local_basis);
+    pub fn set_local_basis2(&mut self, local_basis: impl AsPrecise<Out = Rot>) -> &mut Self {
+        self.data.set_local_basis2(local_basis.as_precise());
         self
     }
 
@@ -101,15 +101,15 @@ impl FixedJointBuilder {
 
     /// Sets the joint’s basis, expressed in the first rigid-body’s local-space.
     #[must_use]
-    pub fn local_basis1(mut self, local_basis: Rot) -> Self {
-        self.0.set_local_basis1(local_basis);
+    pub fn local_basis1(mut self, local_basis: impl AsPrecise<Out = Rot>) -> Self {
+        self.0.set_local_basis1(local_basis.as_precise());
         self
     }
 
     /// Sets joint’s basis, expressed in the second rigid-body’s local-space.
     #[must_use]
-    pub fn local_basis2(mut self, local_basis: Rot) -> Self {
-        self.0.set_local_basis2(local_basis);
+    pub fn local_basis2(mut self, local_basis: impl AsPrecise<Out = Rot>) -> Self {
+        self.0.set_local_basis2(local_basis.as_precise());
         self
     }
 
