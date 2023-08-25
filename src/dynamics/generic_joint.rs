@@ -1,5 +1,5 @@
 use crate::dynamics::{FixedJoint, PrismaticJoint, RevoluteJoint, RopeJoint};
-use crate::math::{Real, Rot, Vect, AsPrecise};
+use crate::math::{AsPrecise, Real, Rot, Vect};
 use rapier::dynamics::{
     GenericJoint as RapierGenericJoint, JointAxesMask, JointAxis, JointLimits, JointMotor,
     MotorModel,
@@ -117,7 +117,8 @@ impl GenericJoint {
 
     /// Sets the principal (local X) axis of this joint, expressed in the first rigid-body’s local-space.
     pub fn set_local_axis1(&mut self, local_axis: impl AsPrecise<Out = Vect>) -> &mut Self {
-        self.raw.set_local_axis1(local_axis.as_precise().try_into().unwrap());
+        self.raw
+            .set_local_axis1(local_axis.as_precise().try_into().unwrap());
         self
     }
 
@@ -129,7 +130,8 @@ impl GenericJoint {
 
     /// Sets the principal (local X) axis of this joint, expressed in the second rigid-body’s local-space.
     pub fn set_local_axis2(&mut self, local_axis: impl AsPrecise<Out = Vect>) -> &mut Self {
-        self.raw.set_local_axis2(local_axis.as_precise().try_into().unwrap());
+        self.raw
+            .set_local_axis2(local_axis.as_precise().try_into().unwrap());
         self
     }
 

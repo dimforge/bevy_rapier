@@ -1,16 +1,21 @@
-
 use bevy::math::*;
 
-/// Convert value into the precision the compilation is using.
+/// Convenience method for converting math types into single or double
+/// floating point precision depending on feature flags.
 pub trait AsPrecise: Clone + Copy {
+    /// Single or double precision version of this type.
     type Out;
+    /// Convert into single or double precision floating point
+    /// depending on feature flags.
     fn as_precise(self) -> Self::Out;
 }
 
-/// Convert value into single precision floating point.
-pub trait AsSingle {
-    type Single;
-    fn as_single(self) -> Self::Single;
+/// Convenience method for converting math types into single precision floating point.
+pub trait AsSingle: Clone + Copy {
+    /// Single precision version of this type.
+    type Out;
+    /// Convert value into single precision floating point.
+    fn as_single(self) -> Self::Out;
 }
 
 macro_rules! as_precise_self {
@@ -21,18 +26,18 @@ macro_rules! as_precise_self {
                 self
             }
         }
-    }
+    };
 }
 
 macro_rules! as_single_self {
     ($ty:ty) => {
         impl AsSingle for $ty {
-            type Single = $ty;
-            fn as_single(self) -> Self::Single {
+            type Out = $ty;
+            fn as_single(self) -> Self::Out {
                 self
             }
         }
-    }
+    };
 }
 
 as_single_self!(f32);
@@ -43,44 +48,44 @@ as_single_self!(Vec4);
 as_single_self!(Quat);
 
 impl AsSingle for f64 {
-    type Single = f32;
-    fn as_single(self) -> Self::Single {
+    type Out = f32;
+    fn as_single(self) -> Self::Out {
         self as f32
     }
 }
 
 impl AsSingle for DVec2 {
-    type Single = Vec2;
-    fn as_single(self) -> Self::Single {
+    type Out = Vec2;
+    fn as_single(self) -> Self::Out {
         self.as_vec2()
     }
 }
 
 impl AsSingle for DVec3 {
-    type Single = Vec3;
-    fn as_single(self) -> Self::Single {
+    type Out = Vec3;
+    fn as_single(self) -> Self::Out {
         self.as_vec3()
     }
 }
 
 impl AsSingle for DVec4 {
-    type Single = Vec4;
-    fn as_single(self) -> Self::Single {
+    type Out = Vec4;
+    fn as_single(self) -> Self::Out {
         self.as_vec4()
     }
 }
 
 impl AsSingle for DQuat {
-    type Single = Quat;
-    fn as_single(self) -> Self::Single {
+    type Out = Quat;
+    fn as_single(self) -> Self::Out {
         self.as_f32()
     }
 }
 
 #[cfg(feature = "f32")]
 mod real {
-    use bevy::math::*;
     use super::{AsPrecise, AsSingle};
+    use bevy::math::*;
 
     as_precise_self!(f32);
     as_precise_self!(Vec2);
@@ -127,8 +132,8 @@ mod real {
 
 #[cfg(feature = "f64")]
 mod real {
-    use bevy::math::*;
     use super::AsPrecise;
+    use bevy::math::*;
 
     as_precise_self!(f64);
     as_precise_self!(DVec2);

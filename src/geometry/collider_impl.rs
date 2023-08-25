@@ -53,7 +53,10 @@ impl Collider {
     /// Initialize a new collider with a cylindrical shape defined by its half-height
     /// (along along the y axis) and its radius.
     #[cfg(feature = "dim3")]
-    pub fn cylinder(half_height: impl AsPrecise<Out = Real>, radius: impl AsPrecise<Out = Real>) -> Self {
+    pub fn cylinder(
+        half_height: impl AsPrecise<Out = Real>,
+        radius: impl AsPrecise<Out = Real>,
+    ) -> Self {
         SharedShape::cylinder(half_height.as_precise(), radius.as_precise()).into()
     }
 
@@ -61,14 +64,26 @@ impl Collider {
     /// (along along the y axis), its radius, and its roundedness (the
     /// radius of the sphere used for dilating the cylinder).
     #[cfg(feature = "dim3")]
-    pub fn round_cylinder(half_height: impl AsPrecise<Out = Real>, radius: impl AsPrecise<Out = Real>, border_radius: impl AsPrecise<Out = Real>) -> Self {
-        SharedShape::round_cylinder(half_height.as_precise(), radius.as_precise(), border_radius.as_precise()).into()
+    pub fn round_cylinder(
+        half_height: impl AsPrecise<Out = Real>,
+        radius: impl AsPrecise<Out = Real>,
+        border_radius: impl AsPrecise<Out = Real>,
+    ) -> Self {
+        SharedShape::round_cylinder(
+            half_height.as_precise(),
+            radius.as_precise(),
+            border_radius.as_precise(),
+        )
+        .into()
     }
 
     /// Initialize a new collider with a cone shape defined by its half-height
     /// (along along the y axis) and its basis radius.
     #[cfg(feature = "dim3")]
-    pub fn cone(half_height: impl AsPrecise<Out = Real>, radius: impl AsPrecise<Out = Real>) -> Self {
+    pub fn cone(
+        half_height: impl AsPrecise<Out = Real>,
+        radius: impl AsPrecise<Out = Real>,
+    ) -> Self {
         SharedShape::cone(half_height.as_precise(), radius.as_precise()).into()
     }
 
@@ -76,8 +91,17 @@ impl Collider {
     /// (along along the y axis), its radius, and its roundedness (the
     /// radius of the sphere used for dilating the cylinder).
     #[cfg(feature = "dim3")]
-    pub fn round_cone(half_height: impl AsPrecise<Out = Real>, radius: impl AsPrecise<Out = Real>, border_radius: impl AsPrecise<Out = Real>) -> Self {
-        SharedShape::round_cone(half_height.as_precise(), radius.as_precise(), border_radius.as_precise()).into()
+    pub fn round_cone(
+        half_height: impl AsPrecise<Out = Real>,
+        radius: impl AsPrecise<Out = Real>,
+        border_radius: impl AsPrecise<Out = Real>,
+    ) -> Self {
+        SharedShape::round_cone(
+            half_height.as_precise(),
+            radius.as_precise(),
+            border_radius.as_precise(),
+        )
+        .into()
     }
 
     /// Initialize a new collider with a cuboid shape defined by its half-extents.
@@ -89,45 +113,87 @@ impl Collider {
     /// Initialize a new collider with a round cuboid shape defined by its half-extents
     /// and border radius.
     #[cfg(feature = "dim2")]
-    pub fn round_cuboid(half_x: impl AsPrecise<Out = Real>, half_y: impl AsPrecise<Out = Real>, border_radius: impl AsPrecise<Out = Real>) -> Self {
-        SharedShape::round_cuboid(half_x.as_precise(), half_y.as_precise(), border_radius.as_precise()).into()
+    pub fn round_cuboid(
+        half_x: impl AsPrecise<Out = Real>,
+        half_y: impl AsPrecise<Out = Real>,
+        border_radius: impl AsPrecise<Out = Real>,
+    ) -> Self {
+        SharedShape::round_cuboid(
+            half_x.as_precise(),
+            half_y.as_precise(),
+            border_radius.as_precise(),
+        )
+        .into()
     }
 
     /// Initialize a new collider with a capsule shape.
-    pub fn capsule(start: impl AsPrecise<Out = Vect>, end: impl AsPrecise<Out = Vect>, radius: impl AsPrecise<Out = Real>) -> Self {
-        SharedShape::capsule(start.as_precise().into(), end.as_precise().into(), radius.as_precise()).into()
+    pub fn capsule(
+        start: impl AsPrecise<Out = Vect>,
+        end: impl AsPrecise<Out = Vect>,
+        radius: impl AsPrecise<Out = Real>,
+    ) -> Self {
+        SharedShape::capsule(
+            start.as_precise().into(),
+            end.as_precise().into(),
+            radius.as_precise(),
+        )
+        .into()
     }
 
     /// Initialize a new collider with a capsule shape aligned with the `x` axis.
-    pub fn capsule_x(half_height: impl AsPrecise<Out = Real>, radius: impl AsPrecise<Out = Real>) -> Self {
+    pub fn capsule_x(
+        half_height: impl AsPrecise<Out = Real>,
+        radius: impl AsPrecise<Out = Real>,
+    ) -> Self {
         let p = Point::from(Vector::x() * half_height.as_precise());
         SharedShape::capsule(-p, p, radius.as_precise()).into()
     }
 
     /// Initialize a new collider with a capsule shape aligned with the `y` axis.
-    pub fn capsule_y(half_height: impl AsPrecise<Out = Real>, radius: impl AsPrecise<Out = Real>) -> Self {
+    pub fn capsule_y(
+        half_height: impl AsPrecise<Out = Real>,
+        radius: impl AsPrecise<Out = Real>,
+    ) -> Self {
         let p = Point::from(Vector::y() * half_height.as_precise());
         SharedShape::capsule(-p, p, radius.as_precise()).into()
     }
 
     /// Initialize a new collider with a capsule shape aligned with the `z` axis.
     #[cfg(feature = "dim3")]
-    pub fn capsule_z(half_height: impl AsPrecise<Out = Real>, radius: impl AsPrecise<Out = Real>) -> Self {
+    pub fn capsule_z(
+        half_height: impl AsPrecise<Out = Real>,
+        radius: impl AsPrecise<Out = Real>,
+    ) -> Self {
         let p = Point::from(Vector::z() * half_height.as_precise());
         SharedShape::capsule(-p, p, radius.as_precise()).into()
     }
 
     /// Initialize a new collider with a cuboid shape defined by its half-extents.
     #[cfg(feature = "dim3")]
-    pub fn cuboid(hx: impl AsPrecise<Out = Real>, hy: impl AsPrecise<Out = Real>, hz: impl AsPrecise<Out = Real>) -> Self {
+    pub fn cuboid(
+        hx: impl AsPrecise<Out = Real>,
+        hy: impl AsPrecise<Out = Real>,
+        hz: impl AsPrecise<Out = Real>,
+    ) -> Self {
         SharedShape::cuboid(hx.as_precise(), hy.as_precise(), hz.as_precise()).into()
     }
 
     /// Initialize a new collider with a round cuboid shape defined by its half-extents
     /// and border radius.
     #[cfg(feature = "dim3")]
-    pub fn round_cuboid(half_x: impl AsPrecise<Out = Real>, half_y: impl AsPrecise<Out = Real>, half_z: impl AsPrecise<Out = Real>, border_radius: impl AsPrecise<Out = Real>) -> Self {
-        SharedShape::round_cuboid(half_x.as_precise(), half_y.as_precise(), half_z.as_precise(), border_radius.as_precise()).into()
+    pub fn round_cuboid(
+        half_x: impl AsPrecise<Out = Real>,
+        half_y: impl AsPrecise<Out = Real>,
+        half_z: impl AsPrecise<Out = Real>,
+        border_radius: impl AsPrecise<Out = Real>,
+    ) -> Self {
+        SharedShape::round_cuboid(
+            half_x.as_precise(),
+            half_y.as_precise(),
+            half_z.as_precise(),
+            border_radius.as_precise(),
+        )
+        .into()
     }
 
     /// Initializes a collider with a segment shape.
@@ -136,13 +202,33 @@ impl Collider {
     }
 
     /// Initializes a collider with a triangle shape.
-    pub fn triangle(a: impl AsPrecise<Out = Vect>, b: impl AsPrecise<Out = Vect>, c: impl AsPrecise<Out = Vect>) -> Self {
-        SharedShape::triangle(a.as_precise().into(), b.as_precise().into(), c.as_precise().into()).into()
+    pub fn triangle(
+        a: impl AsPrecise<Out = Vect>,
+        b: impl AsPrecise<Out = Vect>,
+        c: impl AsPrecise<Out = Vect>,
+    ) -> Self {
+        SharedShape::triangle(
+            a.as_precise().into(),
+            b.as_precise().into(),
+            c.as_precise().into(),
+        )
+        .into()
     }
 
     /// Initializes a collider with a triangle shape with round corners.
-    pub fn round_triangle(a: impl AsPrecise<Out = Vect>, b: impl AsPrecise<Out = Vect>, c: impl AsPrecise<Out = Vect>, border_radius: impl AsPrecise<Out = Real>) -> Self {
-        SharedShape::round_triangle(a.as_precise().into(), b.as_precise().into(), c.as_precise().into(), border_radius.as_precise()).into()
+    pub fn round_triangle(
+        a: impl AsPrecise<Out = Vect>,
+        b: impl AsPrecise<Out = Vect>,
+        c: impl AsPrecise<Out = Vect>,
+        border_radius: impl AsPrecise<Out = Real>,
+    ) -> Self {
+        SharedShape::round_triangle(
+            a.as_precise().into(),
+            b.as_precise().into(),
+            c.as_precise().into(),
+            border_radius.as_precise(),
+        )
+        .into()
     }
 
     /// Initializes a collider with a polyline shape defined by its vertex and index buffers.
@@ -153,7 +239,10 @@ impl Collider {
 
     /// Initializes a collider with a triangle mesh shape defined by its vertex and index buffers.
     pub fn trimesh<V: AsPrecise<Out = Vect>>(vertices: Vec<V>, indices: Vec<[u32; 3]>) -> Self {
-        let vertices = vertices.into_iter().map(|v| v.as_precise().into()).collect();
+        let vertices = vertices
+            .into_iter()
+            .map(|v| v.as_precise().into())
+            .collect();
         SharedShape::trimesh(vertices, indices).into()
     }
 
@@ -164,7 +253,10 @@ impl Collider {
         indices: Vec<[u32; 3]>,
         flags: TriMeshFlags,
     ) -> Self {
-        let vertices = vertices.into_iter().map(|v| v.as_precise().into()).collect();
+        let vertices = vertices
+            .into_iter()
+            .map(|v| v.as_precise().into())
+            .collect();
         SharedShape::trimesh_with_flags(vertices, indices, flags).into()
     }
 
@@ -190,7 +282,10 @@ impl Collider {
 
     /// Initializes a collider with a compound shape obtained from the decomposition of
     /// the given trimesh (in 3D) or polyline (in 2D) into convex parts.
-    pub fn convex_decomposition<V: AsPrecise<Out = Vect>>(vertices: &[V], indices: &[[u32; DIM]]) -> Self {
+    pub fn convex_decomposition<V: AsPrecise<Out = Vect>>(
+        vertices: &[V],
+        indices: &[[u32; DIM]],
+    ) -> Self {
         let vertices: Vec<_> = vertices.iter().map(|v| (*v).as_precise().into()).collect();
         SharedShape::convex_decomposition(&vertices, indices).into()
     }
@@ -245,7 +340,10 @@ impl Collider {
     /// Initializes a new collider with a round 2D convex polygon or 3D convex polyhedron
     /// obtained after computing the convex-hull of the given points. The shape is dilated
     /// by a sphere of radius `border_radius`.
-    pub fn round_convex_hull<V: AsPrecise<Out = Vect>>(points: &[V], border_radius: impl AsPrecise<Out = Real>) -> Option<Self> {
+    pub fn round_convex_hull<V: AsPrecise<Out = Vect>>(
+        points: &[V],
+        border_radius: impl AsPrecise<Out = Real>,
+    ) -> Option<Self> {
         let points: Vec<_> = points.iter().map(|v| (*v).as_precise().into()).collect();
         SharedShape::round_convex_hull(&points, border_radius.as_precise()).map(Into::into)
     }
@@ -263,7 +361,10 @@ impl Collider {
     /// given polyline assumed to be convex (no convex-hull will be automatically
     /// computed). The polygon shape is dilated by a sphere of radius `border_radius`.
     #[cfg(feature = "dim2")]
-    pub fn round_convex_polyline<V: AsPrecise<Out = Vect>>(points: Vec<V>, border_radius: Real) -> Option<Self> {
+    pub fn round_convex_polyline<V: AsPrecise<Out = Vect>>(
+        points: Vec<V>,
+        border_radius: Real,
+    ) -> Option<Self> {
         let points = points.into_iter().map(|v| v.as_precise().into()).collect();
         SharedShape::round_convex_polyline(points, border_radius).map(Into::into)
     }
@@ -272,7 +373,10 @@ impl Collider {
     /// given triangle-mesh assumed to be convex (no convex-hull will be automatically
     /// computed).
     #[cfg(feature = "dim3")]
-    pub fn convex_mesh<V: AsPrecise<Out = Vect>>(points: Vec<V>, indices: &[[u32; 3]]) -> Option<Self> {
+    pub fn convex_mesh<V: AsPrecise<Out = Vect>>(
+        points: Vec<V>,
+        indices: &[[u32; 3]],
+    ) -> Option<Self> {
         let points = points.into_iter().map(|v| v.as_precise().into()).collect();
         SharedShape::convex_mesh(points, indices).map(Into::into)
     }
@@ -293,7 +397,10 @@ impl Collider {
     /// Initializes a collider with a heightfield shape defined by its set of height and a scale
     /// factor along each coordinate axis.
     #[cfg(feature = "dim2")]
-    pub fn heightfield<R: AsPrecise<Out = Real>>(heights: Vec<R>, scale: impl AsPrecise<Out = Vect>) -> Self {
+    pub fn heightfield<R: AsPrecise<Out = Real>>(
+        heights: Vec<R>,
+        scale: impl AsPrecise<Out = Vect>,
+    ) -> Self {
         let heights = heights.into_iter().map(|v| v.as_precise().into()).collect();
         SharedShape::heightfield(DVector::from_vec(heights), scale.as_precise().into()).into()
     }
@@ -301,7 +408,12 @@ impl Collider {
     /// Initializes a collider with a heightfield shape defined by its set of height (in
     /// column-major format) and a scale factor along each coordinate axis.
     #[cfg(feature = "dim3")]
-    pub fn heightfield<R: AsPrecise<Out = Real>>(heights: Vec<R>, num_rows: usize, num_cols: usize, scale: Vect) -> Self {
+    pub fn heightfield<R: AsPrecise<Out = Real>>(
+        heights: Vec<R>,
+        num_rows: usize,
+        num_cols: usize,
+        scale: Vect,
+    ) -> Self {
         assert_eq!(
             heights.len(),
             num_rows * num_cols,

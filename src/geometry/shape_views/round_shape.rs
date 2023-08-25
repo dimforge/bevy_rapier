@@ -1,6 +1,6 @@
 use crate::geometry::shape_views::{CuboidView, CuboidViewMut, TriangleView, TriangleViewMut};
+use crate::math::Real;
 use rapier::geometry::{RoundCuboid, RoundTriangle};
-use crate::math::{Real, Vect};
 
 #[cfg(feature = "dim2")]
 use {

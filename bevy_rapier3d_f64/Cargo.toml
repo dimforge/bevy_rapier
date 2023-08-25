@@ -1,5 +1,5 @@
 [package]
-name = "bevy_rapier3d"
+name = "bevy_rapier3d_f64"
 version = "0.22.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 description = "3-dimensional physics engine in Rust, official Bevy plugin."
@@ -15,21 +15,21 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 path = "../src/lib.rs"
-required-features = [ "dim3", "f32" ]
+required-features = [ "dim3", "f64" ]
 
 [features]
-default = [ "dim3", "async-collider", "debug-render-3d", "f32" ]
+default = [ "dim3", "async-collider", "debug-render-3d", "f64" ]
 dim3 = []
-f32 = []
+f64 = []
 debug-render = [ "debug-render-3d" ]
-debug-render-2d = [ "bevy/bevy_core_pipeline", "bevy/bevy_sprite", "bevy/bevy_gizmos", "rapier3d/debug-render", "bevy/bevy_asset" ]
-debug-render-3d = [ "bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_gizmos", "rapier3d/debug-render", "bevy/bevy_asset" ]
-parallel = [ "rapier3d/parallel" ]
-simd-stable = [ "rapier3d/simd-stable" ]
-simd-nightly = [ "rapier3d/simd-nightly" ]
-wasm-bindgen = [ "rapier3d/wasm-bindgen" ]
-serde-serialize = [ "rapier3d/serde-serialize", "bevy/serialize", "serde" ]
-enhanced-determinism = [ "rapier3d/enhanced-determinism" ]
+debug-render-2d = [ "bevy/bevy_core_pipeline", "bevy/bevy_sprite", "bevy/bevy_gizmos", "rapier3d-f64/debug-render", "bevy/bevy_asset" ]
+debug-render-3d = [ "bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_gizmos", "rapier3d-f64/debug-render", "bevy/bevy_asset" ]
+parallel = [ "rapier3d-f64/parallel" ]
+simd-stable = [ "rapier3d-f64/simd-stable" ]
+simd-nightly = [ "rapier3d-f64/simd-nightly" ]
+wasm-bindgen = [ "rapier3d-f64/wasm-bindgen" ]
+serde-serialize = [ "rapier3d-f64/serde-serialize", "bevy/serialize", "serde" ]
+enhanced-determinism = [ "rapier3d-f64/enhanced-determinism" ]
 headless = [ ]
 async-collider = [ "bevy/bevy_asset", "bevy/bevy_scene" ]
 
@@ -37,7 +37,7 @@ async-collider = [ "bevy/bevy_asset", "bevy/bevy_scene" ]
 bevy = { version = "0.11", default-features = false }
 nalgebra = { version = "0.32.3", features = [ "convert-glam024" ] }
 # Don't enable the default features because we don't need the ColliderSet/RigidBodySet
-rapier3d = "0.17"
+rapier3d-f64 = "0.17"
 bitflags = "1"
 #bevy_prototype_debug_lines = { version = "0.6", features = ["3d"], optional = true }
 log = "0.4"

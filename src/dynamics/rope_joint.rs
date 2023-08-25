@@ -1,5 +1,5 @@
 use crate::dynamics::{GenericJoint, GenericJointBuilder};
-use crate::math::{Real, Vect, AsPrecise};
+use crate::math::{AsPrecise, Real, Vect};
 use rapier::dynamics::{JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel};
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]

@@ -32,16 +32,28 @@ jobs:
       - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
       - name: Clippy for bevy_rapier2d
         run: cargo clippy --verbose -p bevy_rapier2d
+      - name: Clippy for bevy_rapier2d_f64
+        run: cargo clippy --verbose -p bevy_rapier2d_f64
       - name: Clippy for bevy_rapier3d
         run: cargo clippy --verbose -p bevy_rapier3d
+      - name: Clippy for bevy_rapier3d_f64
+        run: cargo clippy --verbose -p bevy_rapier3d_f64
       - name: Clippy for bevy_rapier2d (debug-render, simd, serde)
         run: cargo clippy --verbose -p bevy_rapier2d --features debug-render-2d,simd-stable,serde-serialize
+      - name: Clippy for bevy_rapier2d_f64 (debug-render, simd, serde)
+        run: cargo clippy --verbose -p bevy_rapier2d_f64 --features debug-render-2d,simd-stable,serde-serialize
       - name: Clippy for bevy_rapier3d (debug-render, simd, serde)
         run: cargo clippy --verbose -p bevy_rapier3d --features debug-render-3d,simd-stable,serde-serialize
+      - name: Clippy for bevy_rapier3d_f64 (debug-render, simd, serde)
+        run: cargo clippy --verbose -p bevy_rapier3d_f64 --features debug-render-3d,simd-stable,serde-serialize
       - name: Test for bevy_rapier2d
         run: cargo test --verbose -p bevy_rapier2d
+      - name: Test for bevy_rapier2d_f64
+        run: cargo test --verbose -p bevy_rapier2d_f64
       - name: Test for bevy_rapier3d
         run: cargo test --verbose -p bevy_rapier3d
+      - name: Test for bevy_rapier3d_f64
+        run: cargo test --verbose -p bevy_rapier3d_f64
   test-wasm:
     runs-on: ubuntu-latest
     env:

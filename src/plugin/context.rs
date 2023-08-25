@@ -283,7 +283,8 @@ impl RapierContext {
             } => {
                 let mut substep_integration_parameters = self.integration_parameters;
                 substep_integration_parameters.dt =
-                    (time.delta_seconds_f64().as_precise() * time_scale).min(max_dt) / (substeps as Real);
+                    (time.delta_seconds_f64().as_precise() * time_scale).min(max_dt)
+                        / (substeps as Real);
 
                 for _ in 0..substeps {
                     self.pipeline.step(
@@ -777,7 +778,11 @@ impl RapierContext {
         max_toi: impl AsPrecise<Out = Real>,
         filter: QueryFilter,
     ) -> Option<(Entity, Toi)> {
-        let scaled_transform = (shape_pos.as_precise() / self.physics_scale, shape_rot.as_precise()).into();
+        let scaled_transform = (
+            shape_pos.as_precise() / self.physics_scale,
+            shape_rot.as_precise(),
+        )
+            .into();
         let mut scaled_shape = shape.clone();
         // TODO: how to set a good number of subdivisions, we don’t have access to the
         //       RapierConfiguration::scaled_shape_subdivision here.
@@ -868,7 +873,11 @@ impl RapierContext {
         filter: QueryFilter,
         mut callback: impl FnMut(Entity) -> bool,
     ) {
-        let scaled_transform = (shape_pos.as_precise() / self.physics_scale, shape_rot.as_precise()).into();
+        let scaled_transform = (
+            shape_pos.as_precise() / self.physics_scale,
+            shape_rot.as_precise(),
+        )
+            .into();
         let mut scaled_shape = shape.clone();
         // TODO: how to set a good number of subdivisions, we don’t have access to the
         //       RapierConfiguration::scaled_shape_subdivision here.

@@ -1,6 +1,6 @@
 use bevy::prelude::Resource;
 
-use crate::math::{Vect, Real};
+use crate::math::{Real, Vect};
 
 /// Difference between simulation and rendering time
 #[derive(Resource, Default)]

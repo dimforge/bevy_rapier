@@ -107,7 +107,9 @@ pub fn apply_scale(
         #[cfg(feature = "dim3")]
         let effective_scale = match custom_scale {
             Some(ColliderScale::Absolute(scale)) => *scale,
-            Some(ColliderScale::Relative(scale)) => *scale * transform.compute_transform().scale.as_precise(),
+            Some(ColliderScale::Relative(scale)) => {
+                *scale * transform.compute_transform().scale.as_precise()
+            }
             None => transform.compute_transform().scale.as_precise(),
         };
 

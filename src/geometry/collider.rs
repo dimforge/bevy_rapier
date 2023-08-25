@@ -11,7 +11,6 @@ use rapier::prelude::{ColliderHandle, InteractionGroups, SharedShape};
 
 use crate::dynamics::{CoefficientCombineRule, MassProperties};
 use crate::math::{Real, Vect};
-use crate::utils::as_precise::*;
 
 /// The Rapier handle of a collider that was inserted to the physics scene.
 #[derive(Copy, Clone, Debug, Component)]

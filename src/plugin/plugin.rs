@@ -1,8 +1,8 @@
+use crate::math::Real;
 use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::configuration::SimulationToRenderTime;
 use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
-use crate::math::Real;
 use bevy::ecs::{
     event::Events,
     schedule::{ScheduleLabel, SystemConfigs},

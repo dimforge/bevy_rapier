@@ -38,6 +38,7 @@ pub mod math {
     /// The vector type.
     #[cfg(feature = "f32")]
     pub type Vect = bevy::math::Vec2;
+    /// The vector type.
     #[cfg(feature = "f64")]
     pub type Vect = bevy::math::DVec2;
     /// The rotation type (in 2D this is an angle in radians).
@@ -55,11 +56,13 @@ pub mod math {
     /// The vector type.
     #[cfg(feature = "f32")]
     pub type Vect = bevy::math::Vec3;
+    /// The vector type.
     #[cfg(feature = "f64")]
     pub type Vect = bevy::math::DVec3;
     /// The rotation type.
     #[cfg(feature = "f32")]
     pub type Rot = bevy::math::Quat;
+    /// The rotation type.
     #[cfg(feature = "f64")]
     pub type Rot = bevy::math::DQuat;
 }
