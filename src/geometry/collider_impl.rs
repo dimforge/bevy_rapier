@@ -403,7 +403,7 @@ impl Collider {
         heights: Vec<R>,
         scale: impl AsPrecise<Out = Vect>,
     ) -> Self {
-        let heights = heights.into_iter().map(|v| v.as_precise().into()).collect();
+        let heights = heights.into_iter().map(|v| v.as_precise()).collect();
         SharedShape::heightfield(DVector::from_vec(heights), scale.as_precise().into()).into()
     }
 
@@ -421,7 +421,7 @@ impl Collider {
             num_rows * num_cols,
             "Invalid number of heights provided."
         );
-        let heights = heights.into_iter().map(|v| v.as_precise().into()).collect();
+        let heights = heights.into_iter().map(|v| v.as_precise()).collect();
         let heights = rapier::na::DMatrix::from_vec(num_rows, num_cols, heights);
         SharedShape::heightfield(heights, scale.into()).into()
     }

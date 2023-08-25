@@ -1,4 +1,5 @@
 use crate::plugin::RapierContext;
+use crate::prelude::*;
 use bevy::prelude::*;
 use bevy::transform::TransformSystem;
 use rapier::math::{Point, Real};
@@ -126,11 +127,12 @@ impl<'world, 'state, 'a, 'b> DebugRenderBackend for BevyLinesRenderBackend<'worl
         b: Point<Real>,
         color: [f32; 4],
     ) {
-        let scale = self.physics_scale as f32;
+        let a = (Vect::from(a) * self.physics_scale).as_single();
+        let b = (Vect::from(b) * self.physics_scale).as_single();
         let color = self.object_color(object, color);
         self.gizmos.line(
-            [a.x as f32 * scale, a.y as f32 * scale, 0.0].into(),
-            [b.x as f32 * scale, b.y as f32 * scale, 0.0].into(),
+            a.extend(0.0),
+            b.extend(0.0),
             Color::hsla(color[0], color[1], color[2], color[3]),
         )
     }
@@ -143,13 +145,11 @@ impl<'world, 'state, 'a, 'b> DebugRenderBackend for BevyLinesRenderBackend<'worl
         b: Point<Real>,
         color: [f32; 4],
     ) {
-        let scale = self.physics_scale as f32;
+        let a = (Vect::from(a) * self.physics_scale).as_single();
+        let b = (Vect::from(b) * self.physics_scale).as_single();
         let color = self.object_color(object, color);
-        self.gizmos.line(
-            [a.x as f32 * scale, a.y as f32 * scale, a.z as f32 * scale].into(),
-            [b.x as f32 * scale, b.y as f32 * scale, b.z as f32 * scale].into(),
-            Color::hsla(color[0], color[1], color[2], color[3]),
-        )
+        self.gizmos
+            .line(a, b, Color::hsla(color[0], color[1], color[2], color[3]))
     }
 }
 

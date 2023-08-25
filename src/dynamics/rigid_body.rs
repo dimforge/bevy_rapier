@@ -240,11 +240,13 @@ impl MassProperties {
     }
 }
 
+#[derive(Default, Component, Reflect, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[reflect(Component, PartialEq)]
+/// Flags affecting the behavior of the constraints solver for a given contact manifold.
+pub struct LockedAxes(u8);
+
 bitflags::bitflags! {
-    #[derive(Default, Component, Reflect)]
-    #[reflect(Component, PartialEq)]
-    /// Flags affecting the behavior of the constraints solver for a given contact manifold.
-    pub struct LockedAxes: u8 {
+    impl LockedAxes: u8 {
         /// Flag indicating that the rigid-body cannot translate along the `X` axis.
         const TRANSLATION_LOCKED_X = 1 << 0;
         /// Flag indicating that the rigid-body cannot translate along the `Y` axis.
@@ -252,7 +254,7 @@ bitflags::bitflags! {
         /// Flag indicating that the rigid-body cannot translate along the `Z` axis.
         const TRANSLATION_LOCKED_Z = 1 << 2;
         /// Flag indicating that the rigid-body cannot translate along any direction.
-        const TRANSLATION_LOCKED = Self::TRANSLATION_LOCKED_X.bits | Self::TRANSLATION_LOCKED_Y.bits | Self::TRANSLATION_LOCKED_Z.bits;
+        const TRANSLATION_LOCKED = Self::TRANSLATION_LOCKED_X.bits() | Self::TRANSLATION_LOCKED_Y.bits() | Self::TRANSLATION_LOCKED_Z.bits();
         /// Flag indicating that the rigid-body cannot rotate along the `X` axis.
         const ROTATION_LOCKED_X = 1 << 3;
         /// Flag indicating that the rigid-body cannot rotate along the `Y` axis.
@@ -260,7 +262,7 @@ bitflags::bitflags! {
         /// Flag indicating that the rigid-body cannot rotate along the `Z` axis.
         const ROTATION_LOCKED_Z = 1 << 5;
         /// Combination of flags indicating that the rigid-body cannot rotate along any axis.
-        const ROTATION_LOCKED = Self::ROTATION_LOCKED_X.bits | Self::ROTATION_LOCKED_Y.bits | Self::ROTATION_LOCKED_Z.bits;
+        const ROTATION_LOCKED = Self::ROTATION_LOCKED_X.bits() | Self::ROTATION_LOCKED_Y.bits() | Self::ROTATION_LOCKED_Z.bits();
     }
 }
 

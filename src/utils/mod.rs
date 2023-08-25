@@ -15,7 +15,7 @@ pub fn iso_to_transform(iso: &Isometry<Real>, physics_scale: Real) -> Transform 
     let rotation = Quat::from_rotation_z(iso.rotation.angle().as_single());
     Transform {
         translation: translation.as_single().extend(0.0),
-        rotation: rotation,
+        rotation,
         ..Default::default()
     }
 }
@@ -25,11 +25,11 @@ pub fn iso_to_transform(iso: &Isometry<Real>, physics_scale: Real) -> Transform 
 /// The translation is multiplied by the `physics_scale`.
 #[cfg(feature = "dim3")]
 pub fn iso_to_transform(iso: &Isometry<Real>, physics_scale: Real) -> Transform {
-    let translation = Vect::from(iso.translation.vector) * physics_scale;
-    let rotation = Rot::from(iso.rotation);
+    let translation = (Vect::from(iso.translation.vector) * physics_scale).as_single();
+    let rotation = Rot::from(iso.rotation).as_single();
     Transform {
-        translation: translation.as_single(),
-        rotation: rotation.as_single(),
+        translation,
+        rotation,
         ..Default::default()
     }
 }
