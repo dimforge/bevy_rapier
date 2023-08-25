@@ -510,12 +510,19 @@ impl CollidingEntities {
 pub struct ColliderDisabled;
 
 /// Rigid body parent of the collider.
+/// 
+/// This is not meant to be set directly, this is controlled by bevy's hierarchy.
+/// 
+/// To change a colliders parent, set the [`Parent`] of the entity to a
+/// different rigid body or remove the parent to leave the collider unattached.
 #[derive(Component, Debug, Eq, PartialEq, Reflect)]
 #[reflect(Component, MapEntities, PartialEq)]
 pub struct ColliderParent(pub(crate) Entity);
 
 impl ColliderParent {
-    /// Gets the [`Entity`] ID of the rigid-body parent of the collider.
+    /// Gets the [`Entity`] ID of the rigid-body parent this collider is attached to.
+    /// 
+    /// This may be the same entity as the collider.
     pub fn get(&self) -> Entity {
         self.0
     }
@@ -535,7 +542,6 @@ impl MapEntities for ColliderParent {
 
 impl std::ops::Deref for ColliderParent {
     type Target = Entity;
-
     fn deref(&self) -> &Self::Target {
         &self.0
     }
