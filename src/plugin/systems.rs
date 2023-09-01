@@ -959,7 +959,9 @@ pub fn init_async_scene_colliders(
     mesh_handles: Query<(&Name, &Handle<Mesh>)>,
 ) {
     let Some(meshes) = meshes else { return };
-    let Some(scene_spawner) = scene_spawner else { return };
+    let Some(scene_spawner) = scene_spawner else {
+        return;
+    };
     for (scene_entity, scene_instance, async_collider) in async_colliders.iter() {
         if scene_spawner.instance_is_ready(**scene_instance) {
             for child_entity in children.iter_descendants(scene_entity) {
@@ -2058,7 +2060,9 @@ mod tests {
                         break;
                     }
 
-                    let Ok(parent) = parents.get(entity) else { break };
+                    let Ok(parent) = parents.get(entity) else {
+                        break;
+                    };
                     entity = parent.get();
                 }
 
