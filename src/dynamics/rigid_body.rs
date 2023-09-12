@@ -170,7 +170,7 @@ impl ReadMassProperties {
     }
 }
 
-impl Deref for ReadMassProperties {
+impl std::ops::Deref for ReadMassProperties {
     type Target = MassProperties;
     fn deref(&self) -> &Self::Target {
         self.get()
