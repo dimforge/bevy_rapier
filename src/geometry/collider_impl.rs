@@ -1,6 +1,6 @@
 #[cfg(feature = "dim2")]
 use na::DVector;
-#[cfg(all(feature = "dim3", feature = "async-collider"))]
+//#[cfg(all(feature = "dim3", feature = "async-collider"))]
 use {
     bevy::prelude::*,
     bevy::render::mesh::{Indices, VertexAttributeValues},
@@ -9,7 +9,7 @@ use {
 use rapier::prelude::{FeatureId, Point, Ray, SharedShape, Vector, DIM};
 
 use super::{get_snapped_scale, shape_views::*};
-#[cfg(all(feature = "dim3", feature = "async-collider"))]
+//#[cfg(feature = "async-collider")]
 use crate::geometry::ComputedColliderShape;
 use crate::geometry::{Collider, PointProjection, RayIntersection, TriMeshFlags, VHACDParameters};
 use crate::math::{Real, Rot, Vect};
@@ -170,19 +170,33 @@ impl Collider {
     /// Initializes a collider with a Bevy Mesh.
     ///
     /// Returns `None` if the index buffer or vertex buffer of the mesh are in an incompatible format.
-    #[cfg(all(feature = "dim3", feature = "async-collider"))]
+    //#[cfg(all(feature = "dim3", feature = "async-collider"))]
     pub fn from_bevy_mesh(mesh: &Mesh, collider_shape: &ComputedColliderShape) -> Option<Self> {
-        let Some((vtx, idx)) = extract_mesh_vertices_indices(mesh) else { return None; };
+        let Some((vtx, idx)) = extract_mesh_vertices_indices(mesh) else {
+            return None;
+        };
+
+        #[cfg(feature = "dim2")]
+        let vtx = vtx.iter().map(|v| v.truncate()).collect::<Vec<_>>();
+
         match collider_shape {
-            ComputedColliderShape::TriMesh => Some(
-                SharedShape::trimesh_with_flags(vtx, idx, TriMeshFlags::MERGE_DUPLICATE_VERTICES)
-                    .into(),
-            ),
+            ComputedColliderShape::TriMesh => Some(Collider::trimesh_with_flags(
+                vtx,
+                idx,
+                TriMeshFlags::MERGE_DUPLICATE_VERTICES,
+            )),
             ComputedColliderShape::ConvexHull => {
-                SharedShape::convex_hull(&vtx).map(|shape| shape.into())
+                Collider::convex_hull(&vtx).map(|shape| shape.into())
             }
             ComputedColliderShape::ConvexDecomposition(params) => {
-                Some(SharedShape::convex_decomposition_with_params(&vtx, &idx, params).into())
+                #[cfg(feature = "dim2")]
+                let idx = idx.iter().map(|i| [i[0], i[1]]).collect::<Vec<_>>();
+
+                Some(Collider::convex_decomposition_with_params(
+                    &vtx,
+                    idx.as_slice(),
+                    params,
+                ))
             }
         }
     }
@@ -732,25 +746,21 @@ impl Default for Collider {
     }
 }
 
-#[cfg(all(feature = "dim3", feature = "async-collider"))]
+//#[cfg(all(feature = "dim3", feature = "async-collider"))]
 #[allow(clippy::type_complexity)]
-fn extract_mesh_vertices_indices(mesh: &Mesh) -> Option<(Vec<na::Point3<Real>>, Vec<[u32; 3]>)> {
-    use rapier::na::point;
-
+fn extract_mesh_vertices_indices(mesh: &Mesh) -> Option<(Vec<Vec3>, Vec<[u32; 3]>)> {
     let vertices = mesh.attribute(Mesh::ATTRIBUTE_POSITION)?;
     let indices = mesh.indices()?;
 
     let vtx: Vec<_> = match vertices {
         VertexAttributeValues::Float32(vtx) => Some(
-            vtx.chunks(3)
-                .map(|v| point![v[0] as Real, v[1] as Real, v[2] as Real])
+            vtx.chunks_exact(3)
+                .map(|v| Vec3::new(v[0], v[1], v[2]))
                 .collect(),
         ),
-        VertexAttributeValues::Float32x3(vtx) => Some(
-            vtx.iter()
-                .map(|v| point![v[0] as Real, v[1] as Real, v[2] as Real])
-                .collect(),
-        ),
+        VertexAttributeValues::Float32x3(vtx) => {
+            Some(vtx.iter().copied().map(Vec3::from).collect())
+        }
         _ => None,
     }?;
 

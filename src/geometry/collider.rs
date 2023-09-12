@@ -1,7 +1,7 @@
 use std::fmt;
 
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
-use {crate::geometry::VHACDParameters, bevy::utils::HashMap};
+use bevy::utils::HashMap;
 
 use bevy::prelude::*;
 
@@ -10,6 +10,7 @@ use rapier::geometry::Shape;
 use rapier::prelude::{ColliderHandle, InteractionGroups, SharedShape};
 
 use crate::dynamics::{CoefficientCombineRule, MassProperties};
+use crate::geometry::VHACDParameters;
 use crate::math::Vect;
 
 /// The Rapier handle of a collider that was inserted to the physics scene.
@@ -44,7 +45,6 @@ impl Default for AsyncSceneCollider {
 }
 
 /// Shape type based on a Bevy mesh asset.
-#[cfg(all(feature = "dim3", feature = "async-collider"))]
 #[derive(Debug, Clone, Default)]
 pub enum ComputedColliderShape {
     /// Triangle-mesh.
