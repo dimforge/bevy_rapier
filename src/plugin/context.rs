@@ -1,28 +1,26 @@
 use bevy::prelude::*;
+use bevy::render::primitives::Aabb;
 use core::fmt;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
 use rapier::prelude::{
-    Aabb as RapierAabb, BroadPhase, CCDSolver, ColliderHandle, ColliderSet, EventHandler,
-    FeatureId, ImpulseJointHandle, ImpulseJointSet, IntegrationParameters, IslandManager,
+    BroadPhase, CCDSolver, ColliderHandle, ColliderSet, EventHandler, FeatureId,
+    ImpulseJointHandle, ImpulseJointSet, IntegrationParameters, IslandManager,
     MultibodyJointHandle, MultibodyJointSet, NarrowPhase, PhysicsHooks, PhysicsPipeline,
     QueryFilter as RapierQueryFilter, QueryPipeline, Ray, Real, RigidBodyHandle, RigidBodySet,
 };
 
 use crate::geometry::{Collider, PointProjection, RayIntersection, Toi};
 use crate::math::{Rot, Vect};
-use crate::pipeline::QueryFilter;
+use crate::pipeline::{CollisionEvent, ContactForceEvent, QueryFilter};
 use crate::prelude::events::EventQueue;
-use bevy::prelude::{Entity, GlobalTransform, Query};
-use bevy::render::primitives::Aabb;
+use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query};
 
 use crate::control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput};
 use crate::dynamics::TransformInterpolation;
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
-use crate::prelude::{CollisionEvent, CollisionGroups, ContactForceEvent, RapierRigidBodyHandle};
-#[cfg(feature = "dim2")]
-use bevy::math::Vec3Swizzles;
+use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
 use rapier::control::CharacterAutostep;
 
 /// Represents the world in the rapier context
@@ -112,6 +110,53 @@ impl RapierWorld {
         }
     }
 
+    /// If the collider attached to `entity` is attached to a rigid-body, this
+    /// returns the `Entity` containing that rigid-body.
+    pub fn collider_parent(&self, entity: Entity) -> Option<Entity> {
+        self.entity2collider
+            .get(&entity)
+            .and_then(|h| self.colliders.get(*h))
+            .and_then(|co| co.parent())
+            .and_then(|h| self.rigid_body_entity(h))
+    }
+
+    /// If entity is a rigid-body, this returns the collider `Entity`s attached
+    /// to that rigid-body.
+    pub fn rigid_body_colliders(&self, entity: Entity) -> impl Iterator<Item = Entity> + '_ {
+        self.entity2body
+            .get(&entity)
+            .and_then(|handle| self.bodies.get(*handle))
+            .map(|body| {
+                body.colliders()
+                    .iter()
+                    .filter_map(|handle| self.collider_entity(*handle))
+            })
+            .into_iter()
+            .flatten()
+    }
+
+    /// Retrieve the Bevy entity the given Rapier collider (identified by its handle) is attached.
+    pub fn collider_entity(&self, handle: ColliderHandle) -> Option<Entity> {
+        Self::collider_entity_with_set(&self.colliders, handle)
+    }
+
+    // Mostly used to avoid borrowing self completely.
+    pub(crate) fn collider_entity_with_set(
+        colliders: &ColliderSet,
+        handle: ColliderHandle,
+    ) -> Option<Entity> {
+        colliders
+            .get(handle)
+            .map(|c| Entity::from_bits(c.user_data as u64))
+    }
+
+    /// Retrieve the Bevy entity the given Rapier rigid-body (identified by its handle) is attached.
+    pub fn rigid_body_entity(&self, handle: RigidBodyHandle) -> Option<Entity> {
+        self.bodies
+            .get(handle)
+            .map(|c| Entity::from_bits(c.user_data as u64))
+    }
+
     fn with_query_filter<T>(
         &self,
         filter: QueryFilter,
@@ -156,13 +201,6 @@ impl RapierWorld {
         } else {
             f(rapier_filter)
         }
-    }
-
-    /// Retrieve the Bevy entity the given Rapier rigid-body (identified by its handle) is attached.
-    pub fn rigid_body_entity(&self, handle: RigidBodyHandle) -> Option<Entity> {
-        self.bodies
-            .get(handle)
-            .map(|c| Entity::from_bits(c.user_data as u64))
     }
 
     /// Advance the simulation, based on the given timestep mode.
@@ -421,21 +459,6 @@ impl RapierWorld {
         }
     }
 
-    // Mostly used to avoid borrowing self completely.
-    pub(crate) fn collider_entity_with_set(
-        colliders: &ColliderSet,
-        handle: ColliderHandle,
-    ) -> Option<Entity> {
-        colliders
-            .get(handle)
-            .map(|c| Entity::from_bits(c.user_data as u64))
-    }
-
-    /// Retrieve the Bevy entity the given Rapier collider (identified by its handle) is attached.
-    pub fn collider_entity(&self, handle: ColliderHandle) -> Option<Entity> {
-        RapierWorld::collider_entity_with_set(&self.colliders, handle)
-    }
-
     /// Find the closest intersection between a ray and a set of collider.
     ///
     /// # Parameters
@@ -687,18 +710,21 @@ impl RapierWorld {
     }
 
     /// Finds all entities of all the colliders with an Aabb intersecting the given Aabb.
+    #[cfg(not(feature = "headless"))]
     pub fn colliders_with_aabb_intersecting_aabb(
         &self,
-        aabb: Aabb,
+        aabb: bevy::render::primitives::Aabb,
         mut callback: impl FnMut(Entity) -> bool,
     ) {
         #[cfg(feature = "dim2")]
-        let scaled_aabb = RapierAabb {
+        use bevy::math::Vec3Swizzles;
+        #[cfg(feature = "dim2")]
+        let scaled_aabb = rapier::prelude::Aabb {
             mins: (aabb.min().xy() / self.physics_scale).into(),
             maxs: (aabb.max().xy() / self.physics_scale).into(),
         };
         #[cfg(feature = "dim3")]
-        let scaled_aabb = RapierAabb {
+        let scaled_aabb = rapier::prelude::Aabb {
             mins: (aabb.min() / self.physics_scale).into(),
             maxs: (aabb.max() / self.physics_scale).into(),
         };

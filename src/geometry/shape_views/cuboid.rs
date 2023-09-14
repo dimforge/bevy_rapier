@@ -2,6 +2,7 @@ use crate::math::Vect;
 use rapier::geometry::Cuboid;
 
 /// Read-only access to the properties of a cuboid.
+#[derive(Copy, Clone)]
 pub struct CuboidView<'a> {
     /// The raw shape from Rapier.
     pub raw: &'a Cuboid,
@@ -30,7 +31,7 @@ impl_ref_methods!(CuboidViewMut);
 
 impl<'a> CuboidViewMut<'a> {
     /// Set the half-extents of the cuboid.
-    pub fn sed_half_extents(&mut self, half_extents: Vect) {
+    pub fn set_half_extents(&mut self, half_extents: Vect) {
         self.raw.half_extents = half_extents.into();
     }
 }

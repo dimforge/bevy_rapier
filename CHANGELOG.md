@@ -1,5 +1,38 @@
 # Changelog
 
+## Unreleased
+### Added
+- `ColliderView::as_typed_shape` and `::to_shared_shape` to convert a `ColliderView` to a parry’s
+    `TypedShape` or `SharedShape`. The `From` trait has also been implemented accordingly.
+- Implement `Copy` for `ColliderView` and all the other non-mut shape views.
+- Add `RapierContext::rigid_body_colliders` to retrieve all collider entities attached to this rigid-body.
+- Add `RapierPhysicsPlugin::in_fixed_schedule`/`::in_schedude` to add rapier’s systems to a fixed/custom
+  schedule.
+
+### Fix
+- Fix debug-renderer lagging one frame behind.
+- Fix Collider `Transform` rotation change not being taken into account by the physics engine.
+- Fix automatic update of `ReadMassProperties`.
+
+## 0.22.0 (10 July 2023)
+### Modified
+- Update to Bevy 0.11.
+- Disabled rigid-bodies are no longer synchronized with the rapier backend.
+- Switch to bevy’s gizmo system for the debug-renderer. This removes the vendored debug lines plugin.
+
+### Added
+- Add a joint for simulating ropes: the `RopeJoint`.
+- Add `Velocity::linear_velocity_at_point` to calculate the linear velocity at the given world-space point.
+- Add the `ComputedColliderShape::ConvexHull` variant to automatcially calculate the convex-hull of an imported mesh.
+- Implement `Reflect` for the debug-renderer.
+
+### Fix
+- Fix broken interpolation for rigid-bodies with the `TransformInterpolation` component.
+- Fix compilation when `bevy_rapier` is being used with headless bevy.
+- Improved performance of the writeback system by not iterting on non-rigid-body entities.
+- Fix typo by renaming `CuboidViewMut::sed_half_extents` to `set_half_extents`.
+- Properly scale parented collider’s offset based on changes on its `ColliderScale`.
+
 ## 0.21.0  (07 March 2023)
 ### Modified
 - Update to Bevy 0.10.

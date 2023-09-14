@@ -2,6 +2,7 @@ use crate::math::Vect;
 use rapier::parry::shape::HalfSpace;
 
 /// Read-only access to the properties of a half-space.
+#[derive(Copy, Clone)]
 pub struct HalfSpaceView<'a> {
     /// The raw shape from Rapier.
     pub raw: &'a HalfSpace,

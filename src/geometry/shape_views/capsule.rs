@@ -3,6 +3,7 @@ use crate::math::{Real, Rot, Vect};
 use rapier::parry::shape::Capsule;
 
 /// Read-only access to the properties of a capsule.
+#[derive(Copy, Clone)]
 pub struct CapsuleView<'a> {
     /// The raw shape from Rapier.
     pub raw: &'a Capsule,
@@ -76,9 +77,9 @@ impl_ref_methods!(CapsuleViewMut);
 
 impl<'a> CapsuleViewMut<'a> {
     /// Set the segment of this capsule.
-    pub fn set_segment(&mut self, a: Vect, b: Vect) {
-        self.raw.segment.a = a.into();
-        self.raw.segment.b = b.into();
+    pub fn set_segment(&mut self, start: Vect, end: Vect) {
+        self.raw.segment.a = start.into();
+        self.raw.segment.b = end.into();
     }
 
     /// Set the radius of this capsule.

@@ -2,6 +2,7 @@ use crate::math::Vect;
 use rapier::parry::shape::ConvexPolygon;
 
 /// Read-only access to the properties of a convex polygon.
+#[derive(Copy, Clone)]
 pub struct ConvexPolygonView<'a> {
     /// The raw shape from Rapier.
     pub raw: &'a ConvexPolygon,

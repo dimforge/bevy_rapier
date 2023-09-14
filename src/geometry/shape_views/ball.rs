@@ -2,6 +2,7 @@ use crate::math::Real;
 use rapier::parry::shape::Ball;
 
 /// Read-only access to the properties of a ball.
+#[derive(Copy, Clone)]
 pub struct BallView<'a> {
     /// The raw shape from Rapier.
     pub raw: &'a Ball,
