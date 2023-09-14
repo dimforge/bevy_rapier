@@ -84,11 +84,8 @@ where
             PhysicsSet::SyncBackend => (
                 // Change any worlds needed before doing any calculations
                 systems::apply_changing_worlds,
-                // Make sure to remove any dead bodies after changing_worlds but before everything else
-                // to avoid it deleting something right after adding it
-                systems::sync_removals.after(systems::apply_changing_worlds),
                 // Run the character controller before the manual transform propagation.
-                systems::update_character_controls.after(systems::sync_removals),
+                systems::update_character_controls,
                 // Run Bevy transform propagation additionally to sync [`GlobalTransform`]
                 (
                     bevy::transform::systems::sync_simple_transforms,

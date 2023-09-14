@@ -5,9 +5,7 @@ const N_WORLDS: WorldId = 5;
 const WORLD_CHANGE_DELAY_SEC: f32 = 3.0;
 
 #[derive(Component)]
-/*
- * Denotes which object(s) to change the world of
- */
+/// Denotes which object(s) to change the world of
 struct ChangeWorld;
 
 fn main() {
@@ -17,12 +15,13 @@ fn main() {
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .add_plugins(DefaultPlugins)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierDebugRenderPlugin::default())
-        .add_startup_system(setup_graphics)
-        .add_startup_system(setup_physics)
-        .add_system(change_world)
+        .add_plugins((
+            DefaultPlugins,
+            RapierPhysicsPlugin::<NoUserData>::default(),
+            RapierDebugRenderPlugin::default(),
+        ))
+        .add_systems(Startup, (setup_physics, setup_graphics))
+        .add_systems(Update, change_world)
         .run();
 }
 
