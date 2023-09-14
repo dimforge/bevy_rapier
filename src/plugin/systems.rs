@@ -1157,7 +1157,11 @@ fn recurse_child_transforms(
     }
 }
 
-/// Syncs up all parent/child velocities to make sure they all match
+/// Syncs up child velocities with their parents in the physics simulation.
+/// This is done to avoid child components getting hit by their parent and rapier
+/// assuming the child is hit by the full velocity of the parent instead of `parent vel - child vel`.
+///
+/// This will not change the bevy component's velocity.
 pub fn sync_vel(
     top_ents: Query<Entity, Without<Parent>>,
     vel_query: Query<&Velocity>,

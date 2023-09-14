@@ -16,10 +16,13 @@
 #[cfg(feature = "serde-serialize")]
 extern crate serde;
 
+/// nalgebra used by bevy_rapier
 pub extern crate nalgebra as na;
 #[cfg(feature = "dim2")]
+/// rapier2d used by bevy_rapier
 pub extern crate rapier2d as rapier;
 #[cfg(feature = "dim3")]
+/// rapier3d used by bevy_rapier
 pub extern crate rapier3d as rapier;
 pub use rapier::parry;
 

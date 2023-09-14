@@ -20,7 +20,7 @@ fn main() {
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
         ))
-        .add_systems(Startup, (setup_physics, setup_graphics))
+        .add_systems(Startup, (setup_graphics, setup_physics))
         .add_systems(Update, change_world)
         .run();
 }

@@ -1,9 +1,14 @@
 use bevy::prelude::*;
-use bevy::render::primitives::Aabb;
 use core::fmt;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
+use crate::geometry::{Collider, PointProjection, RayIntersection, Toi};
+use crate::math::{Rot, Vect};
+use crate::pipeline::{CollisionEvent, ContactForceEvent, QueryFilter};
+use crate::prelude::events::EventQueue;
+use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query};
+use rapier::control::CharacterAutostep;
 use rapier::prelude::{
     BroadPhase, CCDSolver, ColliderHandle, ColliderSet, EventHandler, FeatureId,
     ImpulseJointHandle, ImpulseJointSet, IntegrationParameters, IslandManager,
@@ -11,23 +16,15 @@ use rapier::prelude::{
     QueryFilter as RapierQueryFilter, QueryPipeline, Ray, Real, RigidBodyHandle, RigidBodySet,
 };
 
-use crate::geometry::{Collider, PointProjection, RayIntersection, Toi};
-use crate::math::{Rot, Vect};
-use crate::pipeline::{CollisionEvent, ContactForceEvent, QueryFilter};
-use crate::prelude::events::EventQueue;
-use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query};
-
 use crate::control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput};
 use crate::dynamics::TransformInterpolation;
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
-use rapier::control::CharacterAutostep;
 
 /// Represents the world in the rapier context
 pub type WorldId = usize;
 
 /// This world id is the default world that is created.
-/// This world CAN be removed manually, but will be there by default.
 pub const DEFAULT_WORLD_ID: WorldId = 0;
 
 /// The Rapier context, containing all the state of the physics engine.
@@ -1418,7 +1415,7 @@ impl RapierContext {
     pub fn colliders_with_aabb_intersecting_aabb(
         &self,
         world_id: WorldId,
-        aabb: Aabb,
+        aabb: bevy::render::primitives::Aabb,
         callback: impl FnMut(Entity) -> bool,
     ) -> Result<(), WorldError> {
         self.worlds
