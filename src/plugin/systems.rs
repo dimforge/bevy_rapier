@@ -1030,10 +1030,9 @@ fn recurse_child_transforms(
 
                         let new_rotation = Quat::IDENTITY; //inverse_parent_rotation * interpolated_pos.rotation;
 
-                        #[cfg(feature = "dim2")]
+                        // has to be mut in 2d mode
+                        #[allow(unused_mut)]
                         let mut new_translation;
-                        #[cfg(feature = "dim3")]
-                        let new_translation;
 
                         let translation_offset =
                             if rb_type.copied().unwrap_or(RigidBody::Fixed) == RigidBody::Dynamic {
