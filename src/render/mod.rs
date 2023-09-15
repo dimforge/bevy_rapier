@@ -111,8 +111,7 @@ impl Plugin for RapierDebugRenderPlugin {
 
 struct BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
     custom_colors: Query<'world, 'state, &'a ColliderDebugColor>,
-    global: bool,
-    visible: Query<'world, 'state, &'a ColliderDebug>,
+    visible_colliders: Option<Query<'world, 'state, &'a ColliderDebug>>,
     context: &'b RapierContext,
     gizmos: Gizmos<'world, 'state>,
 }
@@ -133,16 +132,16 @@ impl<'world, 'state, 'a, 'b> BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
     }
 
     fn drawing_enabled(&self, object: DebugRenderObject) -> bool {
-        match object {
-            DebugRenderObject::Collider(h, ..) => self
-                .context
-                .colliders
-                .get(h)
-                .map(|co| {
-                    let entity = Entity::from_bits(co.user_data as u64);
-                    self.global || self.visible.contains(entity)
-                })
-                .unwrap_or(false),
+        match (object, &self.visible_colliders) {
+            (DebugRenderObject::Collider(h, ..), Some(visible_colliders)) => {
+                let collider = self.context.colliders.get(h);
+                collider
+                    .map(|co| {
+                        let entity = Entity::from_bits(co.user_data as u64);
+                        visible_colliders.contains(entity)
+                    })
+                    .unwrap_or(false)
+            }
             _ => true,
         }
     }
@@ -195,7 +194,7 @@ fn debug_render_scene<'a>(
     mut render_context: ResMut<DebugRenderContext>,
     gizmos: Gizmos,
     custom_colors: Query<&'a ColliderDebugColor>,
-    visible: Query<&'a ColliderDebug>,
+    visible_colliders: Query<&'a ColliderDebug>,
 ) {
     if !render_context.enabled {
         return;
@@ -204,7 +203,7 @@ fn debug_render_scene<'a>(
     let mut backend = BevyLinesRenderBackend {
         global: render_context.global,
         custom_colors,
-        visible,
+        visible_colliders: render_context.global.then(|| visible_colliders),
         context: &rapier_context,
         gizmos,
     };
