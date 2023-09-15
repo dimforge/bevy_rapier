@@ -97,15 +97,17 @@ where
                 #[cfg(all(feature = "dim3", feature = "async-collider"))]
                 systems::init_async_colliders,
                 systems::init_rigid_bodies,
+                systems::sync_vel,
                 systems::init_colliders,
                 systems::init_joints,
+                systems::sync_removals,
+                // Run this here so the folowing systems do not have a 1 frame delay.
                 apply_deferred,
                 systems::apply_scale,
                 systems::apply_collider_user_changes,
                 systems::apply_rigid_body_user_changes,
                 systems::apply_joint_user_changes,
                 systems::apply_initial_rigid_body_impulses,
-                systems::sync_vel,
             )
                 .chain()
                 .into_configs(),
