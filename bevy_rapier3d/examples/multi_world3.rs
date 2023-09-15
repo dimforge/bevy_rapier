@@ -15,8 +15,10 @@ fn main() {
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
         ))
-        .add_systems(Startup, (setup_graphics, setup_physics))
+        .add_systems(Startup, (setup_physics, setup_graphics))
         .add_systems(Update, move_middle_world)
+        // .add_systems(Update, change_world)
+        // .add_systems(Update, despawn_last)
         .run();
 }
 
@@ -36,7 +38,7 @@ fn move_middle_world(time: Res<Time>, mut query: Query<(&mut Transform, &Physics
     }
 }
 
-// Demonstrates despawning an entity removing it from its world
+/// Demonstrates despawning an entity removing it from its world
 // fn despawn_last(query: Query<(&PhysicsWorld, Entity)>, mut commands: Commands) {
 //     for (bw, entity) in query.iter() {
 //         if bw.world_id == N_WORLDS - 1 {
@@ -45,7 +47,7 @@ fn move_middle_world(time: Res<Time>, mut query: Query<(&mut Transform, &Physics
 //     }
 // }
 
-// Demonstrates how easy it is to move one entity to another world.
+/// Demonstrates how easy it is to move one entity to another world.
 // fn change_world(mut query: Query<&mut PhysicsWorld>) {
 //     for mut bw in query.iter_mut() {
 //         if bw.world_id == 1 {

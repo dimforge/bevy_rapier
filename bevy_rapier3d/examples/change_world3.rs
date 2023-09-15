@@ -5,9 +5,7 @@ const N_WORLDS: WorldId = 5;
 const WORLD_CHANGE_DELAY_SEC: f32 = 3.0;
 
 #[derive(Component)]
-/*
- * Denotes which object(s) to change the world of
- */
+/// Denotes which object(s) to change the world of
 struct ChangeWorld;
 
 fn main() {

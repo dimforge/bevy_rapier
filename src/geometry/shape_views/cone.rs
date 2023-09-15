@@ -2,6 +2,7 @@ use crate::math::Real;
 use rapier::parry::shape::Cone;
 
 /// Read-only access to the properties of a cone.
+#[derive(Copy, Clone)]
 pub struct ConeView<'a> {
     /// The raw shape from Rapier.
     pub raw: &'a Cone,

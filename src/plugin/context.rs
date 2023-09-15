@@ -107,6 +107,53 @@ impl RapierWorld {
         }
     }
 
+    /// If the collider attached to `entity` is attached to a rigid-body, this
+    /// returns the `Entity` containing that rigid-body.
+    pub fn collider_parent(&self, entity: Entity) -> Option<Entity> {
+        self.entity2collider
+            .get(&entity)
+            .and_then(|h| self.colliders.get(*h))
+            .and_then(|co| co.parent())
+            .and_then(|h| self.rigid_body_entity(h))
+    }
+
+    /// If entity is a rigid-body, this returns the collider `Entity`s attached
+    /// to that rigid-body.
+    pub fn rigid_body_colliders(&self, entity: Entity) -> impl Iterator<Item = Entity> + '_ {
+        self.entity2body
+            .get(&entity)
+            .and_then(|handle| self.bodies.get(*handle))
+            .map(|body| {
+                body.colliders()
+                    .iter()
+                    .filter_map(|handle| self.collider_entity(*handle))
+            })
+            .into_iter()
+            .flatten()
+    }
+
+    /// Retrieve the Bevy entity the given Rapier collider (identified by its handle) is attached.
+    pub fn collider_entity(&self, handle: ColliderHandle) -> Option<Entity> {
+        Self::collider_entity_with_set(&self.colliders, handle)
+    }
+
+    // Mostly used to avoid borrowing self completely.
+    pub(crate) fn collider_entity_with_set(
+        colliders: &ColliderSet,
+        handle: ColliderHandle,
+    ) -> Option<Entity> {
+        colliders
+            .get(handle)
+            .map(|c| Entity::from_bits(c.user_data as u64))
+    }
+
+    /// Retrieve the Bevy entity the given Rapier rigid-body (identified by its handle) is attached.
+    pub fn rigid_body_entity(&self, handle: RigidBodyHandle) -> Option<Entity> {
+        self.bodies
+            .get(handle)
+            .map(|c| Entity::from_bits(c.user_data as u64))
+    }
+
     fn with_query_filter<T>(
         &self,
         filter: QueryFilter,
@@ -151,13 +198,6 @@ impl RapierWorld {
         } else {
             f(rapier_filter)
         }
-    }
-
-    /// Retrieve the Bevy entity the given Rapier rigid-body (identified by its handle) is attached.
-    pub fn rigid_body_entity(&self, handle: RigidBodyHandle) -> Option<Entity> {
-        self.bodies
-            .get(handle)
-            .map(|c| Entity::from_bits(c.user_data as u64))
     }
 
     /// Advance the simulation, based on the given timestep mode.
@@ -414,21 +454,6 @@ impl RapierWorld {
             effective_translation: (result.translation * physics_scale).into(),
             grounded: result.grounded,
         }
-    }
-
-    // Mostly used to avoid borrowing self completely.
-    pub(crate) fn collider_entity_with_set(
-        colliders: &ColliderSet,
-        handle: ColliderHandle,
-    ) -> Option<Entity> {
-        colliders
-            .get(handle)
-            .map(|c| Entity::from_bits(c.user_data as u64))
-    }
-
-    /// Retrieve the Bevy entity the given Rapier collider (identified by its handle) is attached.
-    pub fn collider_entity(&self, handle: ColliderHandle) -> Option<Entity> {
-        RapierWorld::collider_entity_with_set(&self.colliders, handle)
     }
 
     /// Find the closest intersection between a ray and a set of collider.

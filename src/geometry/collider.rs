@@ -323,6 +323,7 @@ bitflags::bitflags! {
 
         /// All of the groups.
         const ALL = u32::MAX;
+
         /// None of the groups.
         const NONE = 0;
     }
@@ -467,6 +468,8 @@ impl Default for ContactForceEventThreshold {
 
 /// Component which will be filled (if present) with a list of entities with which the current
 /// entity is currently in contact.
+///
+/// This currently only updates when on an entity with a `Collider`.
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
 pub struct CollidingEntities(pub(crate) HashSet<Entity>);

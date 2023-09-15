@@ -3,6 +3,7 @@ use crate::math::{Real, Rot, Vect};
 use rapier::parry::shape::Capsule;
 
 /// Read-only access to the properties of a capsule.
+#[derive(Copy, Clone)]
 pub struct CapsuleView<'a> {
     /// The raw shape from Rapier.
     pub raw: &'a Capsule,

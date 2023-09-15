@@ -1,4 +1,5 @@
-use crate::{math::Vect, plugin::WorldId};
+use crate::math::Vect;
+use crate::plugin::context::WorldId;
 use bevy::prelude::*;
 use rapier::prelude::{
     Isometry, LockedAxes as RapierLockedAxes, RigidBodyActivation, RigidBodyHandle, RigidBodyType,
@@ -157,7 +158,28 @@ impl Default for AdditionalMassProperties {
 /// and the `AdditionalMassProperties` should be modified instead).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
-pub struct ReadMassProperties(pub MassProperties);
+pub struct ReadMassProperties(MassProperties);
+
+impl ReadMassProperties {
+    /// Get the [`MassProperties`] of this rigid-body.
+    pub fn get(&self) -> &MassProperties {
+        &self.0
+    }
+
+    pub(crate) fn set(&mut self, mass_props: MassProperties) {
+        self.0 = mass_props;
+    }
+}
+
+/// Entity that likely had their mass properties changed this frame.
+#[derive(Deref, Copy, Clone, Debug, PartialEq, Event)]
+pub struct MassModifiedEvent(pub Entity);
+
+impl From<Entity> for MassModifiedEvent {
+    fn from(entity: Entity) -> Self {
+        Self(entity)
+    }
+}
 
 /// Center-of-mass, mass, and angular inertia.
 ///

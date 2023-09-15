@@ -1,6 +1,7 @@
 use crate::plugin::context::RapierWorld;
 use crate::plugin::RapierContext;
 use bevy::prelude::*;
+use bevy::transform::TransformSystem;
 use rapier::math::{Point, Real};
 use rapier::pipeline::{DebugRenderBackend, DebugRenderObject, DebugRenderPipeline};
 pub use rapier::pipeline::{DebugRenderMode, DebugRenderStyle};
@@ -87,23 +88,26 @@ impl Plugin for RapierDebugRenderPlugin {
             enabled: self.enabled,
             pipeline: DebugRenderPipeline::new(self.style, self.mode),
         })
-        .add_systems(PostUpdate, debug_render_scene);
+        .add_systems(
+            PostUpdate,
+            debug_render_scene.after(TransformSystem::TransformPropagate),
+        );
     }
 }
 
-struct BevyLinesRenderBackend<'world, 'state, 'a, 'b, 'd> {
+struct BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
     physics_scale: f32,
-    custom_colors: &'d Query<'world, 'state, &'a ColliderDebugColor>,
+    custom_colors: Query<'world, 'state, &'a ColliderDebugColor>,
     world: Option<&'b RapierWorld>,
     gizmos: Gizmos<'state>,
 }
 
-impl<'world, 'state, 'a, 'b, 'd> BevyLinesRenderBackend<'world, 'state, 'a, 'b, 'd> {
+impl<'world, 'state, 'a, 'b> BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
     fn object_color(&self, object: DebugRenderObject, default: [f32; 4]) -> [f32; 4] {
         let color = match object {
             DebugRenderObject::Collider(h, ..) => self
                 .world
-                .expect("World should be set here.")
+                .expect("World not set before triggering debug render")
                 .colliders
                 .get(h)
                 .and_then(|co| {
@@ -119,9 +123,7 @@ impl<'world, 'state, 'a, 'b, 'd> BevyLinesRenderBackend<'world, 'state, 'a, 'b, 
     }
 }
 
-impl<'world, 'state, 'a, 'b, 'd> DebugRenderBackend
-    for BevyLinesRenderBackend<'world, 'state, 'a, 'b, 'd>
-{
+impl<'world, 'state, 'a, 'b> DebugRenderBackend for BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
     #[cfg(feature = "dim2")]
     fn draw_line(
         &mut self,
@@ -169,7 +171,7 @@ fn debug_render_scene(
 
     let mut backend = BevyLinesRenderBackend {
         physics_scale: 0.0,
-        custom_colors: &custom_colors,
+        custom_colors,
         world: None,
         gizmos,
     };
