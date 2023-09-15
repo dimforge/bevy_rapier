@@ -82,8 +82,6 @@ where
     pub fn get_systems(set: PhysicsSet) -> SystemConfigs {
         match set {
             PhysicsSet::SyncBackend => (
-                // Change any worlds needed before doing any calculations
-                systems::apply_changing_worlds,
                 // Run the character controller before the manual transform propagation.
                 systems::update_character_controls,
                 // Run Bevy transform propagation additionally to sync [`GlobalTransform`]
@@ -92,25 +90,25 @@ where
                     bevy::transform::systems::propagate_transforms,
                 )
                     .chain()
+                    .after(systems::update_character_controls)
                     .in_set(RapierTransformPropagateSet),
+                systems::apply_scale.after(RapierTransformPropagateSet),
+                systems::apply_collider_user_changes.after(systems::apply_scale),
+                systems::apply_rigid_body_user_changes.after(systems::apply_collider_user_changes),
+                systems::apply_joint_user_changes.after(systems::apply_rigid_body_user_changes),
+                systems::init_rigid_bodies.after(systems::apply_joint_user_changes),
+                systems::init_colliders.after(systems::init_rigid_bodies),
+                systems::init_joints.after(systems::init_colliders),
+                systems::apply_initial_rigid_body_impulses
+                    .after(systems::init_colliders)
+                    .ambiguous_with(systems::init_joints),
+                // Step 1 - Teleport entities whose parents have moved &
+                systems::sync_vel.after(systems::init_rigid_bodies),
                 #[cfg(all(feature = "dim3", feature = "async-collider"))]
-                systems::init_async_scene_colliders.after(bevy::scene::scene_spawner_system),
-                #[cfg(all(feature = "dim3", feature = "async-collider"))]
-                systems::init_async_colliders,
-                systems::init_rigid_bodies,
-                systems::init_colliders,
-                systems::init_joints,
-                systems::sync_vel,
-                systems::sync_removals,
-                // Run this here so the folowwing systems do not have a 1 frame delay.
-                apply_deferred,
-                systems::apply_scale,
-                systems::apply_collider_user_changes,
-                systems::apply_rigid_body_user_changes,
-                systems::apply_joint_user_changes,
-                systems::apply_initial_rigid_body_impulses,
+                systems::init_async_scene_colliders
+                    .after(bevy::scene::scene_spawner_system)
+                    .before(systems::init_async_colliders),
             )
-                .chain()
                 .into_configs(),
             PhysicsSet::StepSimulation => (
                 systems::step_simulation::<PhysicsHooks>,
@@ -224,7 +222,17 @@ where
             );
 
             // These *must* be in the main schedule currently so that they do not miss events.
-            app.add_systems(PostUpdate, (systems::sync_removals,));
+            app.add_systems(
+                PostUpdate,
+                (
+                    // Change any worlds needed before doing any calculations
+                    systems::apply_changing_worlds,
+                    // Make sure to remove any dead bodies after changing_worlds but before everything else
+                    // to avoid it deleting something right after adding it
+                    systems::sync_removals,
+                )
+                    .chain(),
+            );
 
             app.add_systems(
                 self.schedule.clone(),
