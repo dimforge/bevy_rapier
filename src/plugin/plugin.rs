@@ -92,23 +92,22 @@ where
                     .chain()
                     .after(systems::update_character_controls)
                     .in_set(RapierTransformPropagateSet),
-                systems::apply_scale.after(RapierTransformPropagateSet),
-                systems::apply_collider_user_changes.after(systems::apply_scale),
-                systems::apply_rigid_body_user_changes.after(systems::apply_collider_user_changes),
-                systems::apply_joint_user_changes.after(systems::apply_rigid_body_user_changes),
-                systems::init_rigid_bodies.after(systems::apply_joint_user_changes),
-                systems::init_colliders.after(systems::init_rigid_bodies),
-                systems::init_joints.after(systems::init_colliders),
-                systems::apply_initial_rigid_body_impulses
-                    .after(systems::init_colliders)
-                    .ambiguous_with(systems::init_joints),
-                // Step 1 - Teleport entities whose parents have moved &
-                systems::sync_vel.after(systems::init_rigid_bodies),
                 #[cfg(all(feature = "dim3", feature = "async-collider"))]
-                systems::init_async_scene_colliders
-                    .after(bevy::scene::scene_spawner_system)
-                    .before(systems::init_async_colliders),
+                systems::init_async_scene_colliders.after(bevy::scene::scene_spawner_system),
+                #[cfg(all(feature = "dim3", feature = "async-collider"))]
+                systems::init_async_colliders,
+                systems::init_rigid_bodies,
+                systems::init_colliders,
+                systems::init_joints,
+                apply_deferred,
+                systems::apply_scale,
+                systems::apply_collider_user_changes,
+                systems::apply_rigid_body_user_changes,
+                systems::apply_joint_user_changes,
+                systems::apply_initial_rigid_body_impulses,
+                systems::sync_vel,
             )
+                .chain()
                 .into_configs(),
             PhysicsSet::StepSimulation => (
                 systems::step_simulation::<PhysicsHooks>,

@@ -110,6 +110,7 @@ pub fn apply_scale(
         )>,
     >,
 ) {
+    println!("Apply scale");
     // NOTE: we don’t have to apply the RapierConfiguration::physics_scale here because
     //       we are applying the scale to the user-facing shape here, not the ones inside
     //       colliders (yet).
@@ -223,6 +224,7 @@ pub fn apply_collider_user_changes(
 
     mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
+    println!("apply_collider_user_changes");
     for (entity, handle, transform, world_within) in changed_collider_transforms.iter() {
         let world = get_world(world_within, &mut context);
         let scale = world.physics_scale;
@@ -540,6 +542,7 @@ pub fn apply_rigid_body_user_changes(
 
     mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
+    println!("apply_rigid_body_user_changes");
     // Deal with sleeping first, because other changes may then wake-up the
     // rigid-body again.
     for (handle, sleeping, world_within) in changed_sleeping.iter() {
@@ -775,6 +778,7 @@ pub fn apply_joint_user_changes(
         Changed<MultibodyJoint>,
     >,
 ) {
+    println!("apply_joint_user_changes");
     // TODO: right now, we only support propagating changes made to the joint data.
     //       Re-parenting the joint isn’t supported yet.
     for (handle, changed_joint, world_within) in changed_impulse_joints.iter() {
@@ -1169,6 +1173,7 @@ pub fn sync_vel(
     children_query: Query<&Children>,
     mut context: ResMut<RapierContext>,
 ) {
+    println!("sync_vel");
     for ent in top_ents.iter() {
         let vel = if let Ok(velocity) = vel_query.get(ent) {
             *velocity
@@ -1178,13 +1183,13 @@ pub fn sync_vel(
 
         if let Ok(children) = children_query.get(ent) {
             for child in children.iter().copied() {
-                tp_and_sync_recurse(child, &query, &children_query, vel, &mut context);
+                sync_velocity_recursively(child, &query, &children_query, vel, &mut context);
             }
         }
     }
 }
 
-fn tp_and_sync_recurse(
+fn sync_velocity_recursively(
     ent: Entity,
     query: &Query<(&RapierRigidBodyHandle, Option<&PhysicsWorld>)>,
     children_query: &Query<&Children>,
@@ -1215,7 +1220,7 @@ fn tp_and_sync_recurse(
 
     if let Ok(children) = children_query.get(ent) {
         for child in children.iter().copied() {
-            tp_and_sync_recurse(child, query, children_query, vel, context);
+            sync_velocity_recursively(child, query, children_query, vel, context);
         }
     }
 }
@@ -1413,6 +1418,7 @@ pub fn init_colliders(
     parent_query: Query<&Parent>,
     transform_query: Query<&Transform>,
 ) {
+    println!("init_colliders");
     for (
         (
             entity,
@@ -1534,6 +1540,7 @@ pub fn init_rigid_bodies(
     mut context: ResMut<RapierContext>,
     rigid_bodies: Query<RigidBodyComponents, Without<RapierRigidBodyHandle>>,
 ) {
+    println!("init_rigid_bodies");
     for (
         entity,
         rb,
@@ -1655,6 +1662,7 @@ pub fn apply_initial_rigid_body_impulses(
         Without<RapierRigidBodyHandle>,
     >,
 ) {
+    println!("apply_initial_rigid_body_impulses");
     for (entity, mut impulse, world_within) in init_impulses.iter_mut() {
         let world = get_world(world_within, &mut context);
 
@@ -1691,6 +1699,7 @@ pub fn init_joints(
     >,
     parent_query: Query<&Parent>,
 ) {
+    println!("init_joints");
     for (entity, joint, world_within) in impulse_joints.iter() {
         let world = get_world(world_within, &mut context);
 
@@ -1986,6 +1995,7 @@ pub fn update_character_controls(
     )>,
     mut transforms: Query<&mut Transform>,
 ) {
+    println!("update_character_controls");
     for (
         entity,
         mut controller,
