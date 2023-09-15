@@ -158,7 +158,7 @@ impl Default for AdditionalMassProperties {
 /// and the `AdditionalMassProperties` should be modified instead).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
-pub struct ReadMassProperties(MassProperties);
+pub struct ReadMassProperties(pub MassProperties);
 
 impl ReadMassProperties {
     /// Get the [`MassProperties`] of this rigid-body.
