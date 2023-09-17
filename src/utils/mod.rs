@@ -29,7 +29,7 @@ pub fn iso_to_transform(iso: &Isometry<Real>, physics_scale: Real) -> Transform 
 ///
 /// The translation is divided by the `physics_scale`.
 #[cfg(feature = "dim2")]
-pub(crate) fn transform_to_iso(transform: &Transform, physics_scale: Real) -> Isometry<Real> {
+pub fn transform_to_iso(transform: &Transform, physics_scale: Real) -> Isometry<Real> {
     use bevy::math::Vec3Swizzles;
     Isometry::new(
         (transform.translation / physics_scale).xy().into(),
@@ -41,7 +41,7 @@ pub(crate) fn transform_to_iso(transform: &Transform, physics_scale: Real) -> Is
 ///
 /// The translation is divided by the `physics_scale`.
 #[cfg(feature = "dim3")]
-pub(crate) fn transform_to_iso(transform: &Transform, physics_scale: Real) -> Isometry<Real> {
+pub fn transform_to_iso(transform: &Transform, physics_scale: Real) -> Isometry<Real> {
     Isometry::from_parts(
         (transform.translation / physics_scale).into(),
         transform.rotation.into(),
