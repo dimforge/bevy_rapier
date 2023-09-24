@@ -56,8 +56,20 @@ pub enum ComputedColliderShape {
     ConvexDecomposition(VHACDParameters),
 }
 
-/// A geometric entity that can be attached to a body so it can be affected by contacts
+/// A geometric entity that can be attached to a [`RigidBody`] so it can be affected by contacts
 /// and intersection queries.
+/// 
+/// Related components:
+/// - [`ColliderMassProperties`]
+/// - [`Friction`]
+/// - [`Restitution`]
+/// - [`Sensor`]
+/// - [`CollisionGroups`]
+/// - [`SolverGroups`]
+/// - [`ActiveCollisionTypes`]
+/// - [`CollidingEntities`]
+/// - [`ColliderScale`]
+/// - [`ColliderDisabled`]
 #[derive(Component, Clone)] // TODO: Reflect
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct Collider {
@@ -89,7 +101,7 @@ impl fmt::Debug for Collider {
     }
 }
 
-/// Overwrites the default application of [`GlobalTransform::scale`] to collider shapes.
+/// Overwrites the default application of [`GlobalTransform::scale`] to a [`Collider`]'s shapes.
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 pub enum ColliderScale {
     /// This scale will be multiplied with the scale in the [`GlobalTransform`] component
@@ -99,12 +111,12 @@ pub enum ColliderScale {
     Absolute(Vect),
 }
 
-/// Indicates whether or not the collider is a sensor.
+/// Indicates whether or not the [`Collider`] is a sensor.
 #[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct Sensor;
 
-/// Custom mass-properties of a collider.
+/// Custom mass-properties of a [`Collider`].
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub enum ColliderMassProperties {
@@ -122,7 +134,7 @@ impl Default for ColliderMassProperties {
     }
 }
 
-/// The friction affecting a collider.
+/// The friction affecting a [`Collider`].
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct Friction {
@@ -164,7 +176,7 @@ impl Friction {
     }
 }
 
-/// The restitution affecting a collider.
+/// The restitution affecting a [`Collider`].
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct Restitution {
