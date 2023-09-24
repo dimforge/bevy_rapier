@@ -67,6 +67,8 @@ pub enum ComputedColliderShape {
 /// - [`CollisionGroups`]
 /// - [`SolverGroups`]
 /// - [`ActiveCollisionTypes`]
+/// - [`ActiveEvents`]
+/// - [`ContactForceEventThreshold`]
 /// - [`CollidingEntities`]
 /// - [`ColliderScale`]
 /// - [`ColliderDisabled`]
@@ -453,16 +455,16 @@ impl From<ActiveHooks> for rapier::pipeline::ActiveHooks {
 #[derive(Default, Component, Reflect, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 #[reflect(Component)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-/// Flags affecting the events generated for this collider.
+/// Flags affecting the events generated for this [`Collider`].
 pub struct ActiveEvents(u32);
 
 bitflags::bitflags! {
     impl ActiveEvents: u32 {
         /// If set, Rapier will call `EventHandler::handle_collision_event`
-        /// whenever relevant for this collider.
+        /// whenever relevant for this [`Collider`].
         const COLLISION_EVENTS = 0b0001;
         /// If set, Rapier will call `EventHandler::handle_contact_force_event`
-        /// whenever relevant for this collider.
+        /// whenever relevant for this [`Collider`].
         const CONTACT_FORCE_EVENTS = 0b0010;
     }
 }
@@ -474,7 +476,10 @@ impl From<ActiveEvents> for rapier::pipeline::ActiveEvents {
     }
 }
 
-/// The total force magnitude beyond which a contact force event can be emitted.
+/// The total force magnitude beyond which a [`ContactForceEvent`] can be emitted.
+/// 
+/// This requires that the [`ActiveEvents::CONTACT_FORCE_EVENTS`] flag is set on the
+/// entity.
 #[derive(Copy, Clone, PartialEq, Component, Reflect)]
 #[reflect(Component)]
 pub struct ContactForceEventThreshold(pub f32);

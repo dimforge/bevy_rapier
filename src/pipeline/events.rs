@@ -10,6 +10,9 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 /// Events occurring when two colliders start or stop colliding
+/// 
+/// This will only get triggered if the entity has the
+/// [`ActiveEvent::COLLISION_EVENTS`] flag enabled.
 #[derive(Event, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum CollisionEvent {
     /// Event occurring when two colliders start colliding
@@ -19,7 +22,10 @@ pub enum CollisionEvent {
 }
 
 /// Event occurring when the sum of the magnitudes of the contact forces
-/// between two colliders exceed a threshold.
+/// between two colliders exceed a threshold ([`ContactForceEventThreshold`]).
+/// 
+/// This will only get triggered if the entity has the
+/// [`ActiveEvent::CONTACT_FORCE_EVENTS`] flag enabled.
 #[derive(Event, Copy, Clone, Debug, PartialEq)]
 pub struct ContactForceEvent {
     /// The first collider involved in the contact.
