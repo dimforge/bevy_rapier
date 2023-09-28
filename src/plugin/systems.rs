@@ -538,7 +538,7 @@ pub fn writeback_rigid_bodies(
     let context = &mut *context;
     let scale = context.physics_scale;
 
-    if config.physics_pipeline_active {
+    if !config.physics_pipeline_active {
         return;
     }
 
