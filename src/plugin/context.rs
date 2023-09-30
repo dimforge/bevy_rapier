@@ -154,8 +154,8 @@ impl RapierContext {
         )
     }
 
-    /// Convert a [`QueryFilter`] into a `rapier::QueryFilter` without directly
-    /// borrowing the [`RapierContext`].
+    /// Without borrowing the [`RapierContext`], calls the closure `f` once
+    /// after converting the given [`QueryFilter`] into a raw `rapier::QueryFilter`.
     pub fn with_query_filter_elts<T>(
         entity2collider: &HashMap<Entity, ColliderHandle>,
         entity2body: &HashMap<Entity, RigidBodyHandle>,
