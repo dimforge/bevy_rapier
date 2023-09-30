@@ -85,7 +85,7 @@ impl From<RigidBodyType> for RigidBody {
 pub struct Velocity {
     /// The linear velocity of the [`RigidBody`].
     pub linvel: Vect,
-    /// The angular velocity of the [`RigidBody`] in radians.
+    /// The angular velocity of the [`RigidBody`] in radian per second.
     #[cfg(feature = "dim2")]
     pub angvel: f32,
     /// The angular velocity of the [`RigidBody`].
