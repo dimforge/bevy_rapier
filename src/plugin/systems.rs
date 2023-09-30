@@ -542,11 +542,7 @@ pub fn writeback_rigid_bodies(
         return;
     }
 
-    for (handle, rb) in context
-        .bodies
-        .iter()
-        .filter(|(_, body)| body.is_enabled())
-    {
+    for (handle, rb) in context.bodies.iter().filter(|(_, body)| body.is_enabled()) {
         let Some(entity) = context.rigid_body_entity(handle) else {
             continue;
         };
