@@ -5,11 +5,26 @@ use rapier::prelude::{
 };
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 
-/// The Rapier handle of a rigid-body that was inserted to the physics scene.
+/// The Rapier handle of a [`RigidBody`] that was inserted to the physics scene.
 #[derive(Copy, Clone, Debug, Component)]
 pub struct RapierRigidBodyHandle(pub RigidBodyHandle);
 
-/// A rigid-body.
+/// A [`RigidBody`].
+///
+/// Related components:
+/// - [`GlobalTransform`]: used as the ground truth for the bodies position.
+/// - [`Velocity`]
+/// - [`ExternalImpulse`]
+/// - [`ExternalForce`]
+/// - [`AdditionalMassProperties`]
+/// - [`ReadMassProperties`]
+/// - [`Damping`]
+/// - [`Dominance`]
+/// - [`Ccd`]: Helps prevent tunneling through thin objects or rigid bodies
+///            moving at high velocities.
+/// - [`LockedAxes`]
+/// - [`RigidBodyDisabled`]
+/// - [`GravityScale`]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Component, Reflect, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[reflect(Component, PartialEq)]
@@ -57,21 +72,23 @@ impl From<RigidBodyType> for RigidBody {
     }
 }
 
-/// The velocity of a rigid-body.
+/// The velocity of a [`RigidBody`].
 ///
-/// Use this component to control and/or read the velocity of a dynamic or kinematic rigid-body.
-/// If this component isn’t present, a dynamic rigid-body will still be able to move (you will just
+/// Use this component to control and/or read the velocity of a dynamic or kinematic [`RigidBody`].
+/// If this component isn’t present, a dynamic [`RigidBody`] will still be able to move (you will just
 /// not be able to read/modify its velocity).
+///
+/// This only affects entities with a [`RigidBody`] component.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[reflect(Component, PartialEq)]
 pub struct Velocity {
-    /// The linear velocity of the rigid-body.
+    /// The linear velocity of the [`RigidBody`].
     pub linvel: Vect,
-    /// The angular velocity of the rigid-body.
+    /// The angular velocity of the [`RigidBody`] in radian per second.
     #[cfg(feature = "dim2")]
     pub angvel: f32,
-    /// The angular velocity of the rigid-body.
+    /// The angular velocity of the [`RigidBody`].
     #[cfg(feature = "dim3")]
     pub angvel: Vect,
 }
@@ -117,11 +134,11 @@ impl Velocity {
         }
     }
 
-    /// Get linear velocity of specific world-space point of a rigid-body.
+    /// Get linear velocity of specific world-space point of a [`RigidBody`].
     ///
     /// # Parameters
     /// - `point`: the point (world-space) to compute the velocity for.
-    /// - `center_of_mass`: the center-of-mass (world-space) of the rigid-body the velocity belongs to.
+    /// - `center_of_mass`: the center-of-mass (world-space) of the [`RigidBody`] the velocity belongs to.
     pub fn linear_velocity_at_point(&self, point: Vect, center_of_mass: Vect) -> Vect {
         #[cfg(feature = "dim2")]
         return self.linvel + self.angvel * (point - center_of_mass).perp();
@@ -131,15 +148,17 @@ impl Velocity {
     }
 }
 
-/// Mass-properties of a rigid-body, added to the contributions of its attached colliders.
+/// Mass-properties of a [`RigidBody`], added to the contributions of its attached colliders.
+///
+/// This only affects entities with a [`RigidBody`] component.
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub enum AdditionalMassProperties {
-    /// This mass will be added to the rigid-body. The rigid-body’s total
+    /// This mass will be added to the [`RigidBody`]. The rigid-body’s total
     /// angular inertia tensor (obtained from its attached colliders) will
     /// be scaled accordingly.
     Mass(f32),
-    /// These mass properties will be added to the rigid-body.
+    /// These mass properties will be added to the [`RigidBody`].
     MassProperties(MassProperties),
 }
 
@@ -152,15 +171,17 @@ impl Default for AdditionalMassProperties {
 /// Center-of-mass, mass, and angular inertia.
 ///
 /// When this is used as a component, this lets you read the total mass properties of
-/// a rigid-body (including the colliders contribution). Modifying this component won’t
-/// affect the mass-properties of the rigid-body (the attached colliders’ `ColliderMassProperties`
+/// a [`RigidBody`] (including the colliders contribution). Modifying this component won’t
+/// affect the mass-properties of the [`RigidBody`] (the attached colliders’ `ColliderMassProperties`
 /// and the `AdditionalMassProperties` should be modified instead).
+///
+/// This only reads the mass from entities with a [`RigidBody`] component.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct ReadMassProperties(MassProperties);
 
 impl ReadMassProperties {
-    /// Get the [`MassProperties`] of this rigid-body.
+    /// Get the [`MassProperties`] of this [`RigidBody`].
     pub fn get(&self) -> &MassProperties {
         &self.0
     }
@@ -189,22 +210,22 @@ impl From<Entity> for MassModifiedEvent {
 
 /// Center-of-mass, mass, and angular inertia.
 ///
-/// This cannot be used as a component. Use the components `ReadMassProperties` to read a rigid-body’s
+/// This cannot be used as a component. Use the components `ReadMassProperties` to read a [`RigidBody`]’s
 /// mass-properties or `AdditionalMassProperties` to set its additional mass-properties.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Reflect)]
 #[reflect(PartialEq)]
 pub struct MassProperties {
-    /// The center of mass of a rigid-body expressed in its local-space.
+    /// The center of mass of a [`RigidBody`] expressed in its local-space.
     pub local_center_of_mass: Vect,
-    /// The mass of a rigid-body.
+    /// The mass of a [`RigidBody`].
     pub mass: f32,
-    /// The principal angular inertia of the rigid-body.
+    /// The principal angular inertia of the [`RigidBody`].
     #[cfg(feature = "dim2")]
     pub principal_inertia: f32,
-    /// The principal vectors of the local angular inertia tensor of the rigid-body.
+    /// The principal vectors of the local angular inertia tensor of the [`RigidBody`].
     #[cfg(feature = "dim3")]
     pub principal_inertia_local_frame: crate::math::Rot,
-    /// The principal angular inertia of the rigid-body.
+    /// The principal angular inertia of the [`RigidBody`].
     #[cfg(feature = "dim3")]
     pub principal_inertia: Vect,
 }
@@ -253,21 +274,21 @@ pub struct LockedAxes(u8);
 
 bitflags::bitflags! {
     impl LockedAxes: u8 {
-        /// Flag indicating that the rigid-body cannot translate along the `X` axis.
+        /// Flag indicating that the [`RigidBody`] cannot translate along the `X` axis.
         const TRANSLATION_LOCKED_X = 1 << 0;
-        /// Flag indicating that the rigid-body cannot translate along the `Y` axis.
+        /// Flag indicating that the [`RigidBody`] cannot translate along the `Y` axis.
         const TRANSLATION_LOCKED_Y = 1 << 1;
-        /// Flag indicating that the rigid-body cannot translate along the `Z` axis.
+        /// Flag indicating that the [`RigidBody`] cannot translate along the `Z` axis.
         const TRANSLATION_LOCKED_Z = 1 << 2;
-        /// Flag indicating that the rigid-body cannot translate along any direction.
+        /// Flag indicating that the [`RigidBody`] cannot translate along any direction.
         const TRANSLATION_LOCKED = Self::TRANSLATION_LOCKED_X.bits() | Self::TRANSLATION_LOCKED_Y.bits() | Self::TRANSLATION_LOCKED_Z.bits();
-        /// Flag indicating that the rigid-body cannot rotate along the `X` axis.
+        /// Flag indicating that the [`RigidBody`] cannot rotate along the `X` axis.
         const ROTATION_LOCKED_X = 1 << 3;
-        /// Flag indicating that the rigid-body cannot rotate along the `Y` axis.
+        /// Flag indicating that the [`RigidBody`] cannot rotate along the `Y` axis.
         const ROTATION_LOCKED_Y = 1 << 4;
-        /// Flag indicating that the rigid-body cannot rotate along the `Z` axis.
+        /// Flag indicating that the [`RigidBody`] cannot rotate along the `Z` axis.
         const ROTATION_LOCKED_Z = 1 << 5;
-        /// Combination of flags indicating that the rigid-body cannot rotate along any axis.
+        /// Combination of flags indicating that the [`RigidBody`] cannot rotate along any axis.
         const ROTATION_LOCKED = Self::ROTATION_LOCKED_X.bits() | Self::ROTATION_LOCKED_Y.bits() | Self::ROTATION_LOCKED_Z.bits();
     }
 }
@@ -278,29 +299,29 @@ impl From<LockedAxes> for RapierLockedAxes {
     }
 }
 
-/// Constant external forces applied continuously to a rigid-body.
+/// Constant external forces applied continuously to a [`RigidBody`].
 ///
 /// This force is applied at each timestep.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct ExternalForce {
-    /// The linear force applied to the rigid-body.
+    /// The linear force applied to the [`RigidBody`].
     pub force: Vect,
-    /// The angular torque applied to the rigid-body.
+    /// The angular torque applied to the [`RigidBody`].
     #[cfg(feature = "dim2")]
     pub torque: f32,
-    /// The angular torque applied to the rigid-body.
+    /// The angular torque applied to the [`RigidBody`].
     #[cfg(feature = "dim3")]
     pub torque: Vect,
 }
 
 impl ExternalForce {
-    /// A force applied at a specific world-space point of a rigid-body.
+    /// A force applied at a specific world-space point of a [`RigidBody`].
     ///
     /// # Parameters
     /// - `force`: the force to apply.
     /// - `point`: the point (world-space) where the impulse must be applied.
-    /// - `center_of_mass`: the center-of-mass (world-space) of the rigid-body the impulse is being
+    /// - `center_of_mass`: the center-of-mass (world-space) of the [`RigidBody`] the impulse is being
     ///   applied to.
     pub fn at_point(force: Vect, point: Vect, center_of_mass: Vect) -> Self {
         Self {
@@ -349,30 +370,30 @@ impl SubAssign for ExternalForce {
     }
 }
 
-/// Instantaneous external impulse applied continuously to a rigid-body.
+/// Instantaneous external impulse applied continuously to a [`RigidBody`].
 ///
 /// The impulse is only applied once, and whenever it it modified (based
 /// on Bevy’s change detection).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct ExternalImpulse {
-    /// The linear impulse applied to the rigid-body.
+    /// The linear impulse applied to the [`RigidBody`].
     pub impulse: Vect,
-    /// The angular impulse applied to the rigid-body.
+    /// The angular impulse applied to the [`RigidBody`].
     #[cfg(feature = "dim2")]
     pub torque_impulse: f32,
-    /// The angular impulse applied to the rigid-body.
+    /// The angular impulse applied to the [`RigidBody`].
     #[cfg(feature = "dim3")]
     pub torque_impulse: Vect,
 }
 
 impl ExternalImpulse {
-    /// An impulse applied at a specific world-space point of a rigid-body.
+    /// An impulse applied at a specific world-space point of a [`RigidBody`].
     ///
     /// # Parameters
     /// - `impulse`: the impulse to apply.
     /// - `point`: the point (world-space) where the impulse must be applied.
-    /// - `center_of_mass`: the center-of-mass (world-space) of the rigid-body the impulse is being
+    /// - `center_of_mass`: the center-of-mass (world-space) of the [`RigidBody`] the impulse is being
     ///   applied to.
     pub fn at_point(impulse: Vect, point: Vect, center_of_mass: Vect) -> Self {
         Self {
@@ -427,7 +448,7 @@ impl SubAssign for ExternalImpulse {
 }
 
 /// Gravity is multiplied by this scaling factor before it's
-/// applied to this rigid-body.
+/// applied to this [`RigidBody`].
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct GravityScale(pub f32);
@@ -442,31 +463,31 @@ impl Default for GravityScale {
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct Ccd {
-    /// Is CCD enabled for this rigid-body?
+    /// Is CCD enabled for this [`RigidBody`]?
     pub enabled: bool,
 }
 
 impl Ccd {
-    /// Enable CCD for a rigid-body.
+    /// Enable CCD for a [`RigidBody`].
     pub fn enabled() -> Self {
         Self { enabled: true }
     }
 
-    /// Disable CCD for a rigid-body.
+    /// Disable CCD for a [`RigidBody`].
     ///
-    /// Note that a rigid-body without the Ccd component attached
+    /// Note that a [`RigidBody`] without the Ccd component attached
     /// has CCD disabled by default.
     pub fn disabled() -> Self {
         Self { enabled: false }
     }
 }
 
-/// The dominance groups of a rigid-body.
+/// The dominance groups of a [`RigidBody`].
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct Dominance {
     // FIXME: rename this to `group` (no `s`).
-    /// The dominance groups of a rigid-body.
+    /// The dominance groups of a [`RigidBody`].
     pub groups: i8,
 }
 
@@ -493,7 +514,7 @@ pub struct Sleeping {
 }
 
 impl Sleeping {
-    /// Creates a components that disables sleeping for the associated rigid-body.
+    /// Creates a components that disables sleeping for the associated [`RigidBody`].
     pub fn disabled() -> Self {
         Self {
             linear_threshold: -1.0,
@@ -513,14 +534,14 @@ impl Default for Sleeping {
     }
 }
 
-/// Damping factors to gradually slow down a rigid-body.
+/// Damping factors to gradually slow down a [`RigidBody`].
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct Damping {
     // TODO: rename these to "linear" and "angular"?
-    /// Damping factor for gradually slowing down the translational motion of the rigid-body.
+    /// Damping factor for gradually slowing down the translational motion of the [`RigidBody`].
     pub linear_damping: f32,
-    /// Damping factor for gradually slowing down the angular motion of the rigid-body.
+    /// Damping factor for gradually slowing down the angular motion of the [`RigidBody`].
     pub angular_damping: f32,
 }
 
@@ -534,8 +555,8 @@ impl Default for Damping {
 }
 
 /// If the `TimestepMode::Interpolated` mode is set and this component is present,
-/// the associated rigid-body will have its position automatically interpolated
-/// between the last two rigid-body positions set by the physics engine.
+/// the associated [`RigidBody`] will have its position automatically interpolated
+/// between the last two [`RigidBody`] positions set by the physics engine.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component)]
 pub struct TransformInterpolation {
     /// The starting point of the interpolation.
@@ -555,7 +576,7 @@ impl TransformInterpolation {
     }
 }
 
-/// Indicates whether or not the rigid-body is disabled explicitly by the user.
+/// Indicates whether or not the [`RigidBody`] is disabled explicitly by the user.
 #[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct RigidBodyDisabled;

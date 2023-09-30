@@ -32,6 +32,8 @@ mod spherical_joint;
 /// Each collider has its combination rule of type
 /// `CoefficientCombineRule`. And the rule
 /// actually used is given by `max(first_combine_rule as usize, second_combine_rule as usize)`.
+///
+/// This only affects entities with a [`RigidBody`] component.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Reflect, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub enum CoefficientCombineRule {
