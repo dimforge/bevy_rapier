@@ -139,7 +139,7 @@ impl RapierContext {
             .map(|c| Entity::from_bits(c.user_data as u64))
     }
 
-    /// Convert a [`QueryFilter`] into a `rapier::QueryFilter`.
+    /// Calls the closure `f` once after converting the given [`QueryFilter`] into a raw `rapier::QueryFilter`.
     pub fn with_query_filter<T>(
         &self,
         filter: QueryFilter,
