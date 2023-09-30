@@ -154,7 +154,8 @@ impl RapierContext {
             .map(|c| Entity::from_bits(c.user_data as u64))
     }
 
-    fn with_query_filter<T>(
+    /// Calls the closure `f` once after converting the given [`QueryFilter`] into a raw `rapier::QueryFilter`.
+    pub fn with_query_filter<T>(
         &self,
         filter: QueryFilter,
         f: impl FnOnce(RapierQueryFilter) -> T,
@@ -168,7 +169,9 @@ impl RapierContext {
         )
     }
 
-    fn with_query_filter_elts<T>(
+    /// Without borrowing the [`RapierContext`], calls the closure `f` once
+    /// after converting the given [`QueryFilter`] into a raw `rapier::QueryFilter`.
+    pub fn with_query_filter_elts<T>(
         entity2collider: &HashMap<Entity, ColliderHandle>,
         entity2body: &HashMap<Entity, RigidBodyHandle>,
         colliders: &ColliderSet,
