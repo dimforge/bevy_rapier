@@ -58,7 +58,7 @@ pub enum ComputedColliderShape {
 
 /// A geometric entity that can be attached to a [`RigidBody`] so it can be affected by contacts
 /// and intersection queries.
-/// 
+///
 /// Related components:
 /// - [`ColliderMassProperties`]
 /// - [`Friction`]
@@ -477,7 +477,7 @@ impl From<ActiveEvents> for rapier::pipeline::ActiveEvents {
 }
 
 /// The total force magnitude beyond which a [`ContactForceEvent`] can be emitted.
-/// 
+///
 /// This requires that the [`ActiveEvents::CONTACT_FORCE_EVENTS`] flag is set on the
 /// entity.
 #[derive(Copy, Clone, PartialEq, Component, Reflect)]

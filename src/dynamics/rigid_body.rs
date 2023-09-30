@@ -10,7 +10,7 @@ use std::ops::{Add, AddAssign, Sub, SubAssign};
 pub struct RapierRigidBodyHandle(pub RigidBodyHandle);
 
 /// A [`RigidBody`].
-/// 
+///
 /// Related components:
 /// - [`GlobalTransform`]: used as the ground truth for the bodies position.
 /// - [`Velocity`]
@@ -77,7 +77,7 @@ impl From<RigidBodyType> for RigidBody {
 /// Use this component to control and/or read the velocity of a dynamic or kinematic [`RigidBody`].
 /// If this component isn’t present, a dynamic [`RigidBody`] will still be able to move (you will just
 /// not be able to read/modify its velocity).
-/// 
+///
 /// This only affects entities with a [`RigidBody`] component.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -149,7 +149,7 @@ impl Velocity {
 }
 
 /// Mass-properties of a [`RigidBody`], added to the contributions of its attached colliders.
-/// 
+///
 /// This only affects entities with a [`RigidBody`] component.
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
@@ -174,7 +174,7 @@ impl Default for AdditionalMassProperties {
 /// a [`RigidBody`] (including the colliders contribution). Modifying this component won’t
 /// affect the mass-properties of the [`RigidBody`] (the attached colliders’ `ColliderMassProperties`
 /// and the `AdditionalMassProperties` should be modified instead).
-/// 
+///
 /// This only reads the mass from entities with a [`RigidBody`] component.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
