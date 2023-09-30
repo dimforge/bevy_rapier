@@ -206,13 +206,15 @@ impl Default for Restitution {
     }
 }
 
+#[derive(Component, Reflect, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[reflect(Component, Hash, PartialEq)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+/// Flags affecting whether or not collision-detection happens between two colliders
+/// depending on the type of rigid-bodies they are attached to.
+pub struct ActiveCollisionTypes(u16);
+
 bitflags::bitflags! {
-    #[derive(Component, Reflect)]
-    #[reflect(Component, Hash, PartialEq)]
-    #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-    /// Flags affecting whether or not collision-detection happens between two colliders
-    /// depending on the type of rigid-bodies they are attached to.
-    pub struct ActiveCollisionTypes: u16 {
+    impl ActiveCollisionTypes: u16 {
         /// Enable collision-detection between a collider attached to a dynamic body
         /// and another collider attached to a dynamic body.
         const DYNAMIC_DYNAMIC = 0b0000_0000_0000_0001;
@@ -245,17 +247,19 @@ impl Default for ActiveCollisionTypes {
 
 impl From<ActiveCollisionTypes> for rapier::geometry::ActiveCollisionTypes {
     fn from(collision_types: ActiveCollisionTypes) -> rapier::geometry::ActiveCollisionTypes {
-        rapier::geometry::ActiveCollisionTypes::from_bits(collision_types.bits)
+        rapier::geometry::ActiveCollisionTypes::from_bits(collision_types.bits())
             .expect("Internal error: invalid active events conversion.")
     }
 }
 
+/// A bit mask identifying groups for interaction.
+#[derive(Component, Reflect, Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[reflect(Component, Hash, PartialEq)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+pub struct Group(u32);
+
 bitflags::bitflags! {
-    /// A bit mask identifying groups for interaction.
-    #[derive(Component, Reflect)]
-    #[reflect(Component, Hash, PartialEq)]
-    #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-    pub struct Group: u32 {
+    impl Group: u32 {
         /// The group n°1.
         const GROUP_1 = 1 << 0;
         /// The group n°2.
@@ -410,12 +414,14 @@ impl From<SolverGroups> for InteractionGroups {
     }
 }
 
+#[derive(Default, Component, Reflect, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[reflect(Component)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+/// Flags affecting the behavior of the constraints solver for a given contact manifold.
+pub struct ActiveHooks(u32);
+
 bitflags::bitflags! {
-    #[derive(Default, Component, Reflect)]
-    #[reflect(Component)]
-    #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-    /// Flags affecting the behavior of the constraints solver for a given contact manifold.
-    pub struct ActiveHooks: u32 {
+    impl ActiveHooks: u32 {
         /// If set, Rapier will call `PhysicsHooks::filter_contact_pair` whenever relevant.
         const FILTER_CONTACT_PAIRS = 0b0001;
         /// If set, Rapier will call `PhysicsHooks::filter_intersection_pair` whenever relevant.
@@ -427,17 +433,19 @@ bitflags::bitflags! {
 
 impl From<ActiveHooks> for rapier::pipeline::ActiveHooks {
     fn from(active_hooks: ActiveHooks) -> rapier::pipeline::ActiveHooks {
-        rapier::pipeline::ActiveHooks::from_bits(active_hooks.bits)
+        rapier::pipeline::ActiveHooks::from_bits(active_hooks.bits())
             .expect("Internal error: invalid active events conversion.")
     }
 }
 
+#[derive(Default, Component, Reflect, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[reflect(Component)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+/// Flags affecting the events generated for this collider.
+pub struct ActiveEvents(u32);
+
 bitflags::bitflags! {
-    #[derive(Default, Component, Reflect)]
-    #[reflect(Component)]
-    #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-    /// Flags affecting the events generated for this collider.
-    pub struct ActiveEvents: u32 {
+    impl ActiveEvents: u32 {
         /// If set, Rapier will call `EventHandler::handle_collision_event`
         /// whenever relevant for this collider.
         const COLLISION_EVENTS = 0b0001;
@@ -449,7 +457,7 @@ bitflags::bitflags! {
 
 impl From<ActiveEvents> for rapier::pipeline::ActiveEvents {
     fn from(active_events: ActiveEvents) -> rapier::pipeline::ActiveEvents {
-        rapier::pipeline::ActiveEvents::from_bits(active_events.bits)
+        rapier::pipeline::ActiveEvents::from_bits(active_events.bits())
             .expect("Internal error: invalid active events conversion.")
     }
 }
