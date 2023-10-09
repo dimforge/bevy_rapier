@@ -97,6 +97,12 @@ impl<'a> From<&'a Collider> for &'a dyn Shape {
     }
 }
 
+impl AsRef<dyn Shape> for Collider {
+    fn as_ref(&self) -> &dyn Shape {
+        &*self.raw
+    }
+}
+
 impl fmt::Debug for Collider {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.as_typed_shape().fmt(f)
