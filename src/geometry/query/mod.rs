@@ -1,5 +1,9 @@
 use crate::{
-    parry::{self, shape::Shape, query::{Unsupported, Contact}},
+    parry::{
+        self,
+        query::{Contact, Unsupported},
+        shape::Shape,
+    },
     prelude::*,
     utils::pos_rot_to_iso,
 };
@@ -28,7 +32,7 @@ impl From<ParryClosestPoints> for ClosestPoints {
 }
 
 /// Computes the pair of closest points between two shapes.
-/// 
+///
 /// Returns `ClosestPoints::Disjoint` if the objects are separated by a distance greater than `max_dist`. The result points in `ClosestPoints::WithinMargin` are expressed in world-space.
 pub fn closest_points(
     pos1: Vect,
@@ -43,12 +47,11 @@ pub fn closest_points(
     let iso1 = pos_rot_to_iso(pos1, rot1, physics_scale);
     let iso2 = pos_rot_to_iso(pos2, rot2, physics_scale);
 
-    parry::query::closest_points(&iso1, shape1, &iso2, shape2, max_dist)
-        .map(|parry| parry.into())
+    parry::query::closest_points(&iso1, shape1, &iso2, shape2, max_dist).map(|parry| parry.into())
 }
 
 /// Computes the minimum distance separating two shapes.
-/// 
+///
 /// Returns 0.0 if the objects are touching or penetrating.
 pub fn distance(
     pos1: Vect,
