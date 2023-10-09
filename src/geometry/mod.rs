@@ -10,6 +10,8 @@ use rapier::prelude::FeatureId;
 
 mod collider;
 mod collider_impl;
+/// Wrappers around Parry shape queries.
+pub mod query;
 /// Wrappers around Rapier shapes to access their properties.
 pub mod shape_views;
 

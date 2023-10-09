@@ -66,6 +66,8 @@ pub mod render;
 /// Miscellaneous helper functions.
 pub mod utils;
 
+pub use crate::geometry::query;
+
 /// Groups the most often used types.
 pub mod prelude {
     pub use crate::control::*;
