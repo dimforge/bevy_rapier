@@ -90,7 +90,6 @@ where
                     bevy::transform::systems::propagate_transforms,
                 )
                     .chain()
-                    .after(systems::update_character_controls)
                     .in_set(RapierTransformPropagateSet),
                 #[cfg(all(feature = "dim3", feature = "async-collider"))]
                 systems::init_async_scene_colliders.after(bevy::scene::scene_spawner_system),
