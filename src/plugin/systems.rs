@@ -227,18 +227,39 @@ pub fn apply_collider_user_changes(
         let world = get_world(world_within, &mut context);
         let scale = world.physics_scale;
 
-        if world.collider_parent(entity).is_some() {
-            let (_, collider_position) =
-                collider_offset(entity, world, &parent_query, &transform_query);
+        if let Some(co) = world.colliders.get(handle.0) {
+            // This is true if the collider has a parent
+            if let Some(current_pos_wrt_parent) = co.position_wrt_parent() {
+                let (_, collider_position) =
+                    collider_offset(entity, world, &parent_query, &transform_query);
 
-            if let Some(co) = world.colliders.get_mut(handle.0) {
-                co.set_position_wrt_parent(utils::transform_to_iso(&collider_position, scale));
+                let new_pos_wrt_parent = utils::transform_to_iso(&collider_position, scale);
+
+                // Only trigger change detection if we have to
+                if *current_pos_wrt_parent != new_pos_wrt_parent {
+                    let co = world
+                        .colliders
+                        .get_mut(handle.0)
+                        .expect("Guarenteed from above get");
+
+                    co.set_position_wrt_parent(new_pos_wrt_parent);
+                }
+            } else {
+                let new_pos = utils::transform_to_iso(&transform.compute_transform(), scale);
+
+                // Only trigger change detection if we have to
+                if *co.position() != new_pos {
+                    let co = world
+                        .colliders
+                        .get_mut(handle.0)
+                        .expect("Guarenteed from above get");
+
+                    co.set_position(utils::transform_to_iso(
+                        &transform.compute_transform(),
+                        scale,
+                    ));
+                }
             }
-        } else if let Some(co) = world.colliders.get_mut(handle.0) {
-            co.set_position(utils::transform_to_iso(
-                &transform.compute_transform(),
-                scale,
-            ))
         }
     }
 
@@ -613,29 +634,29 @@ pub fn apply_rigid_body_user_changes(
             }
         }
 
-        if let Some(rb) = world.bodies.get_mut(handle.0) {
-            transform_changed = transform_changed.or_else(|| {
-                Some(transform_changed_fn(
-                    &handle.0,
-                    global_transform,
-                    &world.last_body_transform_set,
-                ))
-            });
+        transform_changed = transform_changed.or_else(|| {
+            Some(transform_changed_fn(
+                &handle.0,
+                global_transform,
+                &world.last_body_transform_set,
+            ))
+        });
 
-            match rb.body_type() {
-                RigidBodyType::KinematicPositionBased => {
-                    if transform_changed == Some(true) {
-                        rb.set_next_kinematic_position(utils::transform_to_iso(
-                            &global_transform.compute_transform(),
-                            world.physics_scale,
-                        ));
-                        world
-                            .last_body_transform_set
-                            .insert(handle.0, *global_transform);
+        if transform_changed == Some(true) {
+            if let Some(rb) = world.bodies.get_mut(handle.0) {
+                match rb.body_type() {
+                    RigidBodyType::KinematicPositionBased => {
+                        if transform_changed == Some(true) {
+                            rb.set_next_kinematic_position(utils::transform_to_iso(
+                                &global_transform.compute_transform(),
+                                world.physics_scale,
+                            ));
+                            world
+                                .last_body_transform_set
+                                .insert(handle.0, *global_transform);
+                        }
                     }
-                }
-                _ => {
-                    if transform_changed == Some(true) {
+                    _ => {
                         rb.set_position(
                             utils::transform_to_iso(
                                 &global_transform.compute_transform(),
@@ -655,10 +676,28 @@ pub fn apply_rigid_body_user_changes(
     for (handle, velocity, world_within) in changed_velocities.iter() {
         let world = get_world(world_within, &mut context);
 
-        if let Some(rb) = world.bodies.get_mut(handle.0) {
-            rb.set_linvel((velocity.linvel / world.physics_scale).into(), true);
+        // get here instead of get_mut to avoid change detection if it doesn't need to be changed
+        if let Some(rb) = world.bodies.get(handle.0) {
+            let new_linvel = (velocity.linvel / world.physics_scale).into();
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
-            rb.set_angvel(velocity.angvel.into(), true);
+            let new_angvel = velocity.angvel.into();
+
+            #[cfg(feature = "dim3")]
+            let cur_angvel = *rb.angvel();
+            #[cfg(feature = "dim2")]
+            let cur_angvel = rb.angvel();
+
+            let is_different = *rb.linvel() != new_linvel || cur_angvel != new_angvel;
+
+            if is_different {
+                let rb = world
+                    .bodies
+                    .get_mut(handle.0)
+                    .expect("Verified to exist in above world.bodies.get");
+
+                rb.set_linvel(new_linvel, true);
+                rb.set_angvel(new_angvel, true);
+            }
         }
     }
 
@@ -1178,13 +1217,13 @@ pub fn sync_vel(
 
         if let Ok(children) = children_query.get(ent) {
             for child in children.iter().copied() {
-                tp_and_sync_recurse(child, &query, &children_query, vel, &mut context);
+                sync_velocity_recursively(child, &query, &children_query, vel, &mut context);
             }
         }
     }
 }
 
-fn tp_and_sync_recurse(
+fn sync_velocity_recursively(
     ent: Entity,
     query: &Query<(&RapierRigidBodyHandle, Option<&PhysicsWorld>)>,
     children_query: &Query<&Children>,
@@ -1194,10 +1233,15 @@ fn tp_and_sync_recurse(
     let vel = if let Ok((handle, world_within)) = query.get(ent) {
         let world = get_world(world_within, context);
         if let Some(rb) = world.bodies.get_mut(handle.0) {
-            let old_linvel = *rb.linvel();
-            rb.set_linvel((parent_vel.linvel / world.physics_scale).into(), false);
-            rb.set_linvel(old_linvel + rb.linvel(), false);
-            // rb.set_angvel(rb.angvel() + velocity.angvel.into(), false);
+            #[cfg(feature = "dim3")]
+            let old_linvel = Vec3::from(*rb.linvel());
+            #[cfg(feature = "dim2")]
+            let old_linvel = Vec2::from(*rb.linvel());
+
+            rb.set_linvel(
+                (old_linvel + (parent_vel.linvel / world.physics_scale)).into(),
+                false,
+            );
 
             Velocity {
                 linvel: (rb.linvel() * world.physics_scale).into(),
@@ -1215,7 +1259,7 @@ fn tp_and_sync_recurse(
 
     if let Ok(children) = children_query.get(ent) {
         for child in children.iter().copied() {
-            tp_and_sync_recurse(child, query, children_query, vel, context);
+            sync_velocity_recursively(child, query, children_query, vel, context);
         }
     }
 }

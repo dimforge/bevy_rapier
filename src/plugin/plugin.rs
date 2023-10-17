@@ -82,8 +82,6 @@ where
     pub fn get_systems(set: PhysicsSet) -> SystemConfigs {
         match set {
             PhysicsSet::SyncBackend => (
-                // Change any worlds needed before doing any calculations
-                systems::apply_changing_worlds,
                 // Run the character controller before the manual transform propagation.
                 systems::update_character_controls,
                 // Run Bevy transform propagation additionally to sync [`GlobalTransform`]
@@ -100,15 +98,15 @@ where
                 systems::init_rigid_bodies,
                 systems::init_colliders,
                 systems::init_joints,
-                systems::sync_vel,
                 systems::sync_removals,
-                // Run this here so the folowwing systems do not have a 1 frame delay.
+                // Run this here so the following systems do not have a 1 frame delay.
                 apply_deferred,
                 systems::apply_scale,
                 systems::apply_collider_user_changes,
                 systems::apply_rigid_body_user_changes,
                 systems::apply_joint_user_changes,
                 systems::apply_initial_rigid_body_impulses,
+                systems::sync_vel,
             )
                 .chain()
                 .into_configs(),
@@ -224,7 +222,16 @@ where
             );
 
             // These *must* be in the main schedule currently so that they do not miss events.
-            app.add_systems(PostUpdate, (systems::sync_removals,));
+            app.add_systems(
+                PostUpdate,
+                (
+                    // Change any worlds needed before doing any calculations
+                    systems::apply_changing_worlds,
+                    // Make sure to remove any dead bodies after changing_worlds but before everything else
+                    // to avoid it deleting something right after adding it
+                    systems::sync_removals,
+                ),
+            );
 
             app.add_systems(
                 self.schedule.clone(),
