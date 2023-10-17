@@ -99,7 +99,7 @@ where
                 systems::init_colliders,
                 systems::init_joints,
                 systems::sync_removals,
-                // Run this here so the folowing systems do not have a 1 frame delay.
+                // Run this here so the following systems do not have a 1 frame delay.
                 apply_deferred,
                 systems::apply_scale,
                 systems::apply_collider_user_changes,
@@ -230,8 +230,7 @@ where
                     // Make sure to remove any dead bodies after changing_worlds but before everything else
                     // to avoid it deleting something right after adding it
                     systems::sync_removals,
-                )
-                    .chain(),
+                ),
             );
 
             app.add_systems(
