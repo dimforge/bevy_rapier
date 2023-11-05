@@ -738,8 +738,6 @@ impl RapierContext {
         mut callback: impl FnMut(Entity) -> bool,
     ) {
         #[cfg(feature = "dim2")]
-        use bevy::math::Vec3Swizzles;
-        #[cfg(feature = "dim2")]
         let scaled_aabb = rapier::prelude::Aabb {
             mins: (aabb.min().xy() / self.physics_scale).into(),
             maxs: (aabb.max().xy() / self.physics_scale).into(),
