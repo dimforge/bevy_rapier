@@ -32,7 +32,7 @@ headless = []
 async-collider = [ "bevy/bevy_asset", "bevy/bevy_scene" ]
 
 [dependencies]
-bevy = { version = "0.11", default-features = false }
+bevy = { version = "0.12", default-features = false }
 nalgebra = { version = "0.32.3", features = [ "convert-glam024" ] }
 # Don't enable the default features because we don't need the ColliderSet/RigidBodySet
 rapier2d = "0.17.0"
@@ -42,7 +42,7 @@ log = "0.4"
 serde = { version = "1", features = [ "derive" ], optional = true}
 
 [dev-dependencies]
-bevy = { version = "0.11", default-features = false, features = ["x11"]}
+bevy = { version = "0.12", default-features = false, features = ["x11"]}
 oorandom = "11"
 approx = "0.5.1"
 glam = { version = "0.24", features = [ "approx" ] }
