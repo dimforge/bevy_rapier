@@ -37,7 +37,7 @@ nalgebra = { version = "0.32.3", features = [ "convert-glam024" ] }
 # Don't enable the default features because we don't need the ColliderSet/RigidBodySet
 rapier2d = "0.17.0"
 bitflags = "2.4"
-#bevy_prototype_debug_lines = { version = "0.6", optional = true }
+# bevy_prototype_debug_lines = { version = "0.6", optional = true }
 log = "0.4"
 serde = { version = "1", features = [ "derive" ], optional = true}
 

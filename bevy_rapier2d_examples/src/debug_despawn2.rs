@@ -5,19 +5,24 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-fn main() {
-    App::new()
-        .init_resource::<Game>()
-        .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
-        .add_plugins((
-            DefaultPlugins,
-            RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0),
-            RapierDebugRenderPlugin::default(),
-        ))
-        .add_systems(Startup, setup_game)
-        .add_systems(Update, cube_sleep_detection)
-        .run();
+use crate::{cleanup_resource, ExampleResource, Examples};
+
+#[derive(Default)]
+pub struct ExamplePluginDebugDespawn2;
+
+impl Plugin for ExamplePluginDebugDespawn2 {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<Game>()
+            .add_systems(OnEnter(Examples::DebugDespawn2), setup_game)
+            .add_systems(
+                Update,
+                cube_sleep_detection.run_if(in_state(Examples::DebugDespawn2)),
+            )
+            .add_systems(OnExit(Examples::DebugDespawn2), cleanup_resource);
+    }
 }
+
+impl ExamplePluginDebugDespawn2 {}
 
 #[derive(Default)]
 struct Stats {
@@ -79,7 +84,9 @@ fn byte_rgb(r: u8, g: u8, b: u8) -> Color {
     Color::rgb(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0)
 }
 
-fn setup_game(mut commands: Commands, mut game: ResMut<Game>) {
+fn setup_game(mut commands: Commands, mut game: ResMut<Game>, mut res: ResMut<ExampleResource>) {
+    commands.insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)));
+
     game.cube_colors = vec![
         byte_rgb(0, 244, 243),
         byte_rgb(238, 243, 0),
@@ -90,12 +97,19 @@ fn setup_game(mut commands: Commands, mut game: ResMut<Game>) {
         byte_rgb(255, 0, 0),
     ];
 
-    commands.spawn(Camera2dBundle::default());
+    let camera = commands.spawn(Camera2dBundle::default()).id();
+    res.camera = Some(camera);
 
-    setup_board(&mut commands, &game);
+    let root = commands
+        .spawn((TransformBundle::default(), InheritedVisibility::default()))
+        .id();
+
+    res.root = Some(root);
+
+    setup_board(&mut commands, &game, root);
 
     // initial cube
-    spawn_cube(&mut commands, &mut game);
+    spawn_cube(&mut commands, &mut game, root);
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -124,26 +138,30 @@ struct CubeLayout {
 #[derive(Component)]
 struct Block;
 
-fn setup_board(commands: &mut Commands, game: &Game) {
+fn setup_board(commands: &mut Commands, game: &Game, root: Entity) {
     let floor_y = game.floor_y();
 
     // Add floor
-    commands.spawn((
-        SpriteBundle {
-            sprite: Sprite {
-                color: Color::rgb(0.5, 0.5, 0.5),
-                custom_size: Some(Vec2::new(game.n_lanes as f32 * 30.0, 60.0)),
+    let floor = commands
+        .spawn((
+            SpriteBundle {
+                sprite: Sprite {
+                    color: Color::rgb(0.5, 0.5, 0.5),
+                    custom_size: Some(Vec2::new(game.n_lanes as f32 * 30.0, 60.0)),
+                    ..Default::default()
+                },
+                transform: Transform::from_xyz(0.0, floor_y - 30.0 * 0.5, 0.0),
                 ..Default::default()
             },
-            transform: Transform::from_xyz(0.0, floor_y - 30.0 * 0.5, 0.0),
-            ..Default::default()
-        },
-        RigidBody::Fixed,
-        Collider::cuboid(game.n_lanes as f32 * 30.0 / 2.0, 60.0 / 2.0),
-    ));
+            RigidBody::Fixed,
+            Collider::cuboid(game.n_lanes as f32 * 30.0 / 2.0, 60.0 / 2.0),
+        ))
+        .id();
+
+    commands.get_entity(root).unwrap().add_child(floor);
 }
 
-fn spawn_cube(commands: &mut Commands, game: &mut Game) {
+fn spawn_cube(commands: &mut Commands, game: &mut Game, root: Entity) {
     let kind = CubeKind::random();
     let CubeLayout { coords, joints } = kind.layout();
 
@@ -155,6 +173,8 @@ fn spawn_cube(commands: &mut Commands, game: &mut Game) {
             spawn_block(commands, game, kind, lane, row)
         })
         .collect();
+
+    commands.entity(root).push_children(&block_entities);
 
     game.current_cube_joints.clear();
     for (i, j) in &joints {
@@ -223,18 +243,20 @@ fn cube_sleep_detection(
     mut commands: Commands,
     mut game: ResMut<Game>,
     block_query: Query<(Entity, &GlobalTransform)>,
+    res: Res<ExampleResource>,
 ) {
     let all_blocks_sleeping = true;
 
     if all_blocks_sleeping {
         for joint in &game.current_cube_joints {
+            commands.entity(*joint).remove_parent();
             commands.entity(*joint).despawn();
         }
 
         clear_filled_rows(&mut commands, &mut game, block_query);
 
         if game.stats.health() > 0.0 {
-            spawn_cube(&mut commands, &mut game);
+            spawn_cube(&mut commands, &mut game, res.root.unwrap());
         }
     }
 }
