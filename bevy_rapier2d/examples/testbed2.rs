@@ -4,6 +4,9 @@ mod despawn2;
 mod events2;
 mod joints2;
 mod joints_despawn2;
+mod locked_rotations2;
+mod multiple_colliders2;
+mod player_movement2;
 mod rope_joint2;
 
 use bevy::prelude::*;
@@ -20,6 +23,9 @@ pub enum Examples {
     Events2,
     Joints2,
     JointsDespawn2,
+    LockedRotation2,
+    MultipleColliders2,
+    PlayerMovement2,
 }
 
 #[derive(Resource, Default)]
@@ -106,6 +112,37 @@ fn main() {
         )
         .add_systems(OnExit(Examples::JointsDespawn2), cleanup)
         //
+        //locked rotations
+        .add_systems(
+            OnEnter(Examples::LockedRotation2),
+            (
+                locked_rotations2::setup_graphics,
+                locked_rotations2::setup_physics,
+            ),
+        )
+        .add_systems(OnExit(Examples::LockedRotation2), cleanup)
+        //
+        //multiple colliders
+        .add_systems(
+            OnEnter(Examples::MultipleColliders2),
+            (
+                multiple_colliders2::setup_graphics,
+                multiple_colliders2::setup_physics,
+            ),
+        )
+        .add_systems(OnExit(Examples::MultipleColliders2), cleanup)
+        //
+        //player movement
+        .add_systems(
+            OnEnter(Examples::PlayerMovement2),
+            player_movement2::spawn_player,
+        )
+        .add_systems(
+            Update,
+            (player_movement2::player_movement).run_if(in_state(Examples::PlayerMovement2)),
+        )
+        .add_systems(OnExit(Examples::PlayerMovement2), cleanup)
+        //
         //testbed
         .add_systems(
             OnEnter(Examples::None),
@@ -153,7 +190,10 @@ fn check_toggle(
             Examples::Despawn2 => Examples::Events2,
             Examples::Events2 => Examples::Joints2,
             Examples::Joints2 => Examples::JointsDespawn2,
-            Examples::JointsDespawn2 => Examples::Boxes2,
+            Examples::JointsDespawn2 => Examples::LockedRotation2,
+            Examples::LockedRotation2 => Examples::MultipleColliders2,
+            Examples::MultipleColliders2 => Examples::PlayerMovement2,
+            Examples::PlayerMovement2 => Examples::Boxes2,
         };
         next_state.set(next);
     }
