@@ -21,20 +21,31 @@ impl Plugin for ExamplePluginDespawn2 {
 
 #[derive(Resource, Default)]
 struct DespawnResource {
-    pub entities: Vec<Entity>,
+    entities: Vec<Entity>,
+    timer: Timer,
 }
 
 #[derive(Resource, Default)]
 struct ResizeResource {
-    pub entities: Vec<Entity>,
+    entities: Vec<Entity>,
+    timer: Timer,
 }
 
-fn cleanup(mut commands: Commands) {
-    commands.remove_resource::<DespawnResource>();
-    commands.remove_resource::<ResizeResource>();
+fn cleanup(mut despawn: ResMut<DespawnResource>, mut resize: ResMut<ResizeResource>) {
+    despawn.entities.clear();
+    resize.entities.clear();
 }
 
-fn setup_graphics(mut commands: Commands, mut res: ResMut<ExampleResource>) {
+fn setup_graphics(
+    mut commands: Commands,
+    mut res: ResMut<ExampleResource>,
+    mut despawn: ResMut<DespawnResource>,
+    mut resize: ResMut<ResizeResource>,
+) {
+    //reset timers
+    resize.timer = Timer::from_seconds(6.0, TimerMode::Once);
+    despawn.timer = Timer::from_seconds(5.0, TimerMode::Once);
+
     commands.insert_resource(ClearColor(Color::rgb(
         0xF9 as f32 / 255.0,
         0xF9 as f32 / 255.0,
@@ -112,18 +123,18 @@ fn setup_physics(
 }
 
 fn despawn(mut commands: Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
-    if time.elapsed_seconds() > 5.0 {
+    if despawn.timer.tick(time.delta()).finished() {
         for entity in &despawn.entities {
             println!("Despawning ground entity");
             commands.entity(*entity).remove_parent();
-            commands.entity(*entity).despawn();
+            commands.entity(*entity).despawn_recursive();
         }
         despawn.entities.clear();
     }
 }
 
 fn resize(mut commands: Commands, time: Res<Time>, mut resize: ResMut<ResizeResource>) {
-    if time.elapsed_seconds() > 6.0 {
+    if resize.timer.tick(time.delta()).finished() {
         for entity in &resize.entities {
             println!("Resizing a block");
             commands
