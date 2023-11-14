@@ -141,7 +141,12 @@ fn main() {
             Update,
             (player_movement2::player_movement).run_if(in_state(Examples::PlayerMovement2)),
         )
-        .add_systems(OnExit(Examples::PlayerMovement2), cleanup)
+        .add_systems(
+            OnExit(Examples::PlayerMovement2),
+            (cleanup, |mut rapier_config: ResMut<RapierConfiguration>| {
+                rapier_config.gravity = RapierConfiguration::default().gravity;
+            }),
+        )
         //
         //testbed
         .add_systems(
