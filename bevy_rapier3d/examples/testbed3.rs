@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod boxes3;
 mod despawn3;
 mod events3;
