@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod boxes2;
 mod debug_despawn2;
 mod despawn2;
