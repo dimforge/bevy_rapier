@@ -22,9 +22,9 @@ fn main() {
 
 // The float value is the player movement speed in 'pixels/second'.
 #[derive(Component)]
-struct Player(f32);
+pub struct Player(f32);
 
-fn spawn_player(mut commands: Commands, mut rapier_config: ResMut<RapierConfiguration>) {
+pub fn spawn_player(mut commands: Commands, mut rapier_config: ResMut<RapierConfiguration>) {
     // Set gravity to 0.0 and spawn camera.
     rapier_config.gravity = Vec2::ZERO;
     commands.spawn(Camera2dBundle::default());
@@ -48,7 +48,7 @@ fn spawn_player(mut commands: Commands, mut rapier_config: ResMut<RapierConfigur
     ));
 }
 
-fn player_movement(
+pub fn player_movement(
     keyboard_input: Res<Input<KeyCode>>,
     mut player_info: Query<(&Player, &mut Velocity)>,
 ) {
