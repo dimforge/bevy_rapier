@@ -21,10 +21,7 @@ use crate::prelude::{
 use crate::utils;
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
 use bevy::prelude::*;
-use rapier::prelude::{
-    ColliderBuilder, Isometry, QueryFilter, RigidBodyBuilder, RigidBodyHandle, RigidBodyType,
-};
-use rapier::{math::Real, prelude::*};
+use rapier::prelude::*;
 use std::collections::HashMap;
 
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
