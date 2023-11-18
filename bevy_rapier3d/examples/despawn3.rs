@@ -1,9 +1,12 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
+#[derive(Component)]
+pub struct Despawn;
+
 #[derive(Resource, Default)]
 pub struct DespawnResource {
-    pub entity: Option<Entity>,
+    timer: Timer,
 }
 
 fn main() {
@@ -24,7 +27,9 @@ fn main() {
         .run();
 }
 
-fn setup_graphics(mut commands: Commands) {
+pub fn setup_graphics(mut commands: Commands, mut res: ResMut<DespawnResource>) {
+    res.timer = Timer::from_seconds(5.0, TimerMode::Once);
+
     commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(-30.0, 30.0, 100.0)
             .looking_at(Vec3::new(0.0, 10.0, 0.0), Vec3::Y),
@@ -32,20 +37,19 @@ fn setup_graphics(mut commands: Commands) {
     });
 }
 
-pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource>) {
+pub fn setup_physics(mut commands: Commands) {
     /*
      * Ground
      */
     let ground_size = 200.1;
     let ground_height = 0.1;
 
-    let ground_entity = commands
-        .spawn((
-            TransformBundle::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
-            Collider::cuboid(ground_size, ground_height, ground_size),
-        ))
-        .id();
-    despawn.entity = Some(ground_entity);
+    commands.spawn((
+        TransformBundle::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
+        Collider::cuboid(ground_size, ground_height, ground_size),
+        Despawn,
+    ));
+
     /*
      * Create the cubes
      */
@@ -86,12 +90,16 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
     }
 }
 
-pub fn despawn(mut commands: Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
-    if time.elapsed_seconds() > 5.0 {
-        if let Some(entity) = despawn.entity {
+pub fn despawn(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut despawn: ResMut<DespawnResource>,
+    query: Query<Entity, With<Despawn>>,
+) {
+    if despawn.timer.tick(time.delta()).finished() {
+        for entity in &query {
             println!("Despawning ground entity");
             commands.entity(entity).despawn();
-            despawn.entity = None;
         }
     }
 }

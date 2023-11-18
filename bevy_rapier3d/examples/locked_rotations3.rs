@@ -17,7 +17,7 @@ fn main() {
         .run();
 }
 
-fn setup_graphics(mut commands: Commands) {
+pub fn setup_graphics(mut commands: Commands) {
     commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(10.0, 3.0, 0.0)
             .looking_at(Vec3::new(0.0, 3.0, 0.0), Vec3::Y),

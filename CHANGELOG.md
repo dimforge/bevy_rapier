@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.23.0
+### Modified
+- Update to Bevy 0.12
+
 ### Added
 - `ColliderView::as_typed_shape` and `::to_shared_shape` to convert a `ColliderView` to a parry’s
     `TypedShape` or `SharedShape`. The `From` trait has also been implemented accordingly.
@@ -8,8 +11,13 @@
 - Add `RapierContext::rigid_body_colliders` to retrieve all collider entities attached to this rigid-body.
 - Add `RapierPhysicsPlugin::in_fixed_schedule`/`::in_schedude` to add rapier’s systems to a fixed/custom
   schedule.
+- Re-export `JointAxesMask`, `JointAxis`, `MotorModel`.
+- Implement `Deref` for `ReadMassProperties`.
+- Expose the `stop_at_penetration` parameter of shape-casting, to enable or ignore overlaps at the initial position
+  of the shape.
 
 ### Fix
+- Fix `RapierContext::integration_parameters::dt` not being updated on non-fixed timestep modes.
 - Fix debug-renderer lagging one frame behind.
 - Fix Collider `Transform` rotation change not being taken into account by the physics engine.
 - Fix automatic update of `ReadMassProperties`.

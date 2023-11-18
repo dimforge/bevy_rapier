@@ -19,7 +19,7 @@ fn main() {
         .run();
 }
 
-fn setup_graphics(mut commands: Commands) {
+pub fn setup_graphics(mut commands: Commands) {
     commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(-30.0, 30.0, 100.0)
             .looking_at(Vec3::new(0.0, 10.0, 0.0), Vec3::Y),
@@ -72,7 +72,7 @@ pub fn setup_physics(mut commands: Commands) {
     }
 }
 
-fn cast_ray(
+pub fn cast_ray(
     mut commands: Commands,
     windows: Query<&Window, With<PrimaryWindow>>,
     rapier_context: Res<RapierContext>,
@@ -80,12 +80,16 @@ fn cast_ray(
 ) {
     let window = windows.single();
 
-    let Some(cursor_position) = window.cursor_position() else { return; };
+    let Some(cursor_position) = window.cursor_position() else {
+        return;
+    };
 
     // We will color in read the colliders hovered by the mouse.
     for (camera, camera_transform) in &cameras {
         // First, compute a ray from the mouse position.
-        let Some(ray) = camera.viewport_to_world(camera_transform, cursor_position) else { return; };
+        let Some(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
+            return;
+        };
 
         // Then cast the ray.
         let hit = rapier_context

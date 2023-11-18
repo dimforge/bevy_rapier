@@ -172,7 +172,9 @@ impl Collider {
     /// Returns `None` if the index buffer or vertex buffer of the mesh are in an incompatible format.
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     pub fn from_bevy_mesh(mesh: &Mesh, collider_shape: &ComputedColliderShape) -> Option<Self> {
-        let Some((vtx, idx)) = extract_mesh_vertices_indices(mesh) else { return None; };
+        let Some((vtx, idx)) = extract_mesh_vertices_indices(mesh) else {
+            return None;
+        };
         match collider_shape {
             ComputedColliderShape::TriMesh => Some(
                 SharedShape::trimesh_with_flags(vtx, idx, TriMeshFlags::MERGE_DUPLICATE_VERTICES)

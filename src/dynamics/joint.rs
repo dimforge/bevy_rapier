@@ -2,6 +2,8 @@ use crate::dynamics::GenericJoint;
 use bevy::prelude::*;
 use rapier::dynamics::{ImpulseJointHandle, MultibodyJointHandle};
 
+pub use rapier::dynamics::{JointAxesMask, JointAxis, MotorModel};
+
 /// The handle of an impulse joint added to the physics scene.
 #[derive(Copy, Clone, Debug, Component)]
 pub struct RapierImpulseJointHandle(pub ImpulseJointHandle);
