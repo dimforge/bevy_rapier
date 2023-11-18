@@ -46,7 +46,7 @@ impl Stats {
 }
 
 #[derive(Resource)]
-struct Game {
+pub struct Game {
     n_lanes: usize,
     n_rows: usize,
     stats: Stats,
@@ -79,7 +79,9 @@ fn byte_rgb(r: u8, g: u8, b: u8) -> Color {
     Color::rgb(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0)
 }
 
-fn setup_game(mut commands: Commands, mut game: ResMut<Game>) {
+pub fn setup_game(mut commands: Commands, mut game: ResMut<Game>) {
+    game.current_cube_joints = vec![];
+
     game.cube_colors = vec![
         byte_rgb(0, 244, 243),
         byte_rgb(238, 243, 0),
@@ -219,7 +221,7 @@ fn spawn_block(
         .id()
 }
 
-fn cube_sleep_detection(
+pub fn cube_sleep_detection(
     mut commands: Commands,
     mut game: ResMut<Game>,
     block_query: Query<(Entity, &GlobalTransform)>,

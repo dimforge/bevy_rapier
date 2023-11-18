@@ -17,7 +17,7 @@ fn main() {
         .run();
 }
 
-fn setup_graphics(mut commands: Commands) {
+pub fn setup_graphics(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
 }
 

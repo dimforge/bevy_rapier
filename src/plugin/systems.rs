@@ -24,6 +24,7 @@ use bevy::prelude::*;
 use rapier::prelude::{
     ColliderBuilder, Isometry, QueryFilter, RigidBodyBuilder, RigidBodyHandle, RigidBodyType,
 };
+use rapier::{math::Real, prelude::*};
 use std::collections::HashMap;
 
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
@@ -1276,7 +1277,7 @@ pub fn writeback_mass_properties(
         for (_, world) in context.worlds.iter() {
             let scale = world.physics_scale;
 
-            for entity in mass_modified.iter() {
+            for entity in mass_modified.read() {
                 if let Some(handle) = world.entity2body.get(entity).copied() {
                     if let Some(rb) = world.bodies.get(handle) {
                         if let Ok(mut mass_props) = mass_props.get_mut(**entity) {
@@ -1840,7 +1841,7 @@ pub fn sync_removals(
     /*
      * Rigid-bodies removal detection.
      */
-    for entity in removed_bodies.iter() {
+    for entity in removed_bodies.read() {
         if let Some((world, handle)) =
             find_item_and_world(&mut context, |world| world.entity2body.remove(&entity))
         {
@@ -1876,7 +1877,7 @@ pub fn sync_removals(
     /*
      * Collider removal detection.
      */
-    for entity in removed_colliders.iter() {
+    for entity in removed_colliders.read() {
         if let Some((world, handle)) =
             find_item_and_world(&mut context, |world| world.entity2collider.remove(&entity))
         {
@@ -1910,7 +1911,7 @@ pub fn sync_removals(
     /*
      * Impulse joint removal detection.
      */
-    for entity in removed_impulse_joints.iter() {
+    for entity in removed_impulse_joints.read() {
         if let Some((world, handle)) = find_item_and_world(&mut context, |world| {
             world.entity2impulse_joint.remove(&entity)
         }) {
@@ -1930,7 +1931,7 @@ pub fn sync_removals(
     /*
      * Multibody joint removal detection.
      */
-    for entity in removed_multibody_joints.iter() {
+    for entity in removed_multibody_joints.read() {
         if let Some((world, handle)) = find_item_and_world(&mut context, |world| {
             world.entity2multibody_joint.remove(&entity)
         }) {
@@ -1952,7 +1953,7 @@ pub fn sync_removals(
     /*
      * Marker components removal detection.
      */
-    for entity in removed_sensors.iter() {
+    for entity in removed_sensors.read() {
         if let Some((world, handle)) = find_item_and_world(&mut context, |world| {
             world.entity2collider.get(&entity).copied()
         }) {
@@ -1962,7 +1963,7 @@ pub fn sync_removals(
         }
     }
 
-    for entity in removed_colliders_disabled.iter() {
+    for entity in removed_colliders_disabled.read() {
         if let Some((world, handle)) = find_item_and_world(&mut context, |world| {
             world.entity2collider.get(&entity).copied()
         }) {
@@ -1972,7 +1973,7 @@ pub fn sync_removals(
         }
     }
 
-    for entity in removed_rigid_body_disabled.iter() {
+    for entity in removed_rigid_body_disabled.read() {
         if let Some((world, handle)) = find_item_and_world(&mut context, |world| {
             world.entity2body.get(&entity).copied()
         }) {
@@ -1991,7 +1992,7 @@ pub fn update_colliding_entities(
     mut collision_events: EventReader<CollisionEvent>,
     mut colliding_entities: Query<&mut CollidingEntities>,
 ) {
-    for event in collision_events.iter() {
+    for event in collision_events.read() {
         match event.to_owned() {
             CollisionEvent::Started(entity1, entity2, _) => {
                 if let Ok(mut entities) = colliding_entities.get_mut(entity1) {
@@ -2191,7 +2192,10 @@ mod tests {
     use bevy::{
         asset::AssetPlugin,
         ecs::event::Events,
-        render::{settings::WgpuSettings, RenderPlugin},
+        render::{
+            settings::{RenderCreation, WgpuSettings},
+            RenderPlugin,
+        },
         scene::ScenePlugin,
         time::TimePlugin,
         window::WindowPlugin,
@@ -2316,13 +2320,9 @@ mod tests {
     #[test]
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_scene_collider_initializes() {
-        use bevy::scene::scene_spawner_system;
-
         let mut app = App::new();
-        app.add_plugins(HeadlessRenderPlugin).add_systems(
-            Update,
-            init_async_scene_colliders.after(scene_spawner_system),
-        );
+        app.add_plugins(HeadlessRenderPlugin)
+            .add_systems(PostUpdate, init_async_scene_colliders);
 
         let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
         let cube_handle = meshes.add(Cube::default().into());
@@ -2518,10 +2518,10 @@ mod tests {
                 AssetPlugin::default(),
                 ScenePlugin,
                 RenderPlugin {
-                    wgpu_settings: WgpuSettings {
+                    render_creation: RenderCreation::Automatic(WgpuSettings {
                         backends: None,
                         ..Default::default()
-                    },
+                    }),
                 },
                 ImagePlugin::default(),
             ));

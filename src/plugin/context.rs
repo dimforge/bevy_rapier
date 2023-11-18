@@ -154,7 +154,8 @@ impl RapierWorld {
             .map(|c| Entity::from_bits(c.user_data as u64))
     }
 
-    fn with_query_filter<T>(
+    /// Calls the closure `f` once after converting the given [`QueryFilter`] into a raw `rapier::QueryFilter`.
+    pub fn with_query_filter<T>(
         &self,
         filter: QueryFilter,
         f: impl FnOnce(RapierQueryFilter) -> T,
@@ -168,7 +169,9 @@ impl RapierWorld {
         )
     }
 
-    fn with_query_filter_elts<T>(
+    /// Without borrowing the [`RapierContext`], calls the closure `f` once
+    /// after converting the given [`QueryFilter`] into a raw `rapier::QueryFilter`.
+    pub fn with_query_filter_elts<T>(
         entity2collider: &HashMap<Entity, ColliderHandle>,
         entity2body: &HashMap<Entity, RigidBodyHandle>,
         colliders: &ColliderSet,
@@ -236,6 +239,8 @@ impl RapierWorld {
                 time_scale,
                 substeps,
             } => {
+                self.integration_parameters.dt = dt;
+
                 sim_to_render_time.diff += time.delta_seconds();
 
                 while sim_to_render_time.diff > 0.0 {
@@ -284,9 +289,10 @@ impl RapierWorld {
                 time_scale,
                 substeps,
             } => {
+                self.integration_parameters.dt = (time.delta_seconds() * time_scale).min(max_dt);
+
                 let mut substep_integration_parameters = self.integration_parameters;
-                substep_integration_parameters.dt =
-                    (time.delta_seconds() * time_scale).min(max_dt) / (substeps as Real);
+                substep_integration_parameters.dt /= substeps as Real;
 
                 for _ in 0..substeps {
                     self.pipeline.step(
@@ -307,6 +313,8 @@ impl RapierWorld {
                 }
             }
             TimestepMode::Fixed { dt, substeps } => {
+                self.integration_parameters.dt = dt;
+
                 let mut substep_integration_parameters = self.integration_parameters;
                 substep_integration_parameters.dt = dt / (substeps as Real);
 
@@ -714,8 +722,6 @@ impl RapierWorld {
         mut callback: impl FnMut(Entity) -> bool,
     ) {
         #[cfg(feature = "dim2")]
-        use bevy::math::Vec3Swizzles;
-        #[cfg(feature = "dim2")]
         let scaled_aabb = rapier::prelude::Aabb {
             mins: (aabb.min().xy() / self.physics_scale).into(),
             maxs: (aabb.max().xy() / self.physics_scale).into(),
@@ -743,11 +749,19 @@ impl RapierWorld {
     /// collider, and are in world space.
     ///
     /// # Parameters
-    /// * `shape_pos` - The initial position of the shape to cast.
+    /// * `shape_pos` - The initial translation of the shape to cast.
+    /// * `shape_rot` - The rotation of the shape to cast.
     /// * `shape_vel` - The constant velocity of the shape to cast (i.e. the cast direction).
     /// * `shape` - The shape to cast.
     /// * `max_toi` - The maximum time-of-impact that can be reported by this cast. This effectively
     ///   limits the distance traveled by the shape to `shapeVel.norm() * maxToi`.
+    /// * `stop_at_penetration` - If the casted shape starts in a penetration state with any
+    ///    collider, two results are possible. If `stop_at_penetration` is `true` then, the
+    ///    result will have a `toi` equal to `start_time`. If `stop_at_penetration` is `false`
+    ///    then the nonlinear shape-casting will see if further motion wrt. the penetration normal
+    ///    would result in tunnelling. If it does not (i.e. we have a separating velocity along
+    ///    that normal) then the nonlinear shape-casting will attempt to find another impact,
+    ///    at a time `> start_time` that could result in tunnelling.
     /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     #[allow(clippy::too_many_arguments)]
     pub fn cast_shape(
@@ -757,6 +771,7 @@ impl RapierWorld {
         shape_vel: Vect,
         shape: &Collider,
         max_toi: Real,
+        stop_at_penetration: bool,
         filter: QueryFilter,
     ) -> Option<(Entity, Toi)> {
         let scaled_transform = (shape_pos / self.physics_scale, shape_rot).into();
@@ -773,7 +788,7 @@ impl RapierWorld {
                 &(shape_vel / self.physics_scale).into(),
                 &*scaled_shape.raw,
                 max_toi,
-                true,
+                stop_at_penetration,
                 filter,
             )
         })?;
@@ -1448,12 +1463,21 @@ impl RapierContext {
         shape_vel: Vect,
         shape: &Collider,
         max_toi: Real,
+        stop_at_penetration: bool,
         filter: QueryFilter,
     ) -> Result<Option<(Entity, Toi)>, WorldError> {
         self.worlds
             .get(&world_id)
             .map_or(Err(WorldError::WorldNotFound { world_id }), |world| {
-                Ok(world.cast_shape(shape_pos, shape_rot, shape_vel, shape, max_toi, filter))
+                Ok(world.cast_shape(
+                    shape_pos,
+                    shape_rot,
+                    shape_vel,
+                    shape,
+                    max_toi,
+                    stop_at_penetration,
+                    filter,
+                ))
             })
     }
 

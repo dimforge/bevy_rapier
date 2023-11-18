@@ -1,9 +1,12 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
+#[derive(Component, Default)]
+pub struct Despawn;
+
 #[derive(Resource, Default)]
 pub struct DespawnResource {
-    entities: Vec<Entity>,
+    timer: Timer,
 }
 
 fn main() {
@@ -24,7 +27,7 @@ fn main() {
         .run();
 }
 
-fn setup_graphics(mut commands: Commands) {
+pub fn setup_graphics(mut commands: Commands) {
     commands.spawn(Camera2dBundle {
         transform: Transform::from_xyz(0.0, -200.0, 0.0),
         ..default()
@@ -32,6 +35,8 @@ fn setup_graphics(mut commands: Commands) {
 }
 
 pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource>) {
+    despawn.timer = Timer::from_seconds(4.0, TimerMode::Once);
+
     // Build the rigid body.
     let rad = 4.0;
     let numi = 40; // Num vertical nodes.
@@ -67,9 +72,9 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
                     // NOTE: we want to attach multiple impulse joints to this entity, so
                     //       we need to add the components to children of the entity. Otherwise
                     //       the second joint component would just overwrite the first one.
-                    let entity = cmd.spawn(ImpulseJoint::new(parent_entity, joint)).id();
+                    let mut entity = cmd.spawn(ImpulseJoint::new(parent_entity, joint));
                     if i == (numi / 2) || (k % 4 == 0 || k == numk - 1) {
-                        despawn.entities.push(entity);
+                        entity.insert(Despawn);
                     }
                 });
             }
@@ -83,9 +88,9 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
                     // NOTE: we want to attach multiple impulse joints to this entity, so
                     //       we need to add the components to children of the entity. Otherwise
                     //       the second joint component would just overwrite the first one.
-                    let entity = cmd.spawn(ImpulseJoint::new(parent_entity, joint)).id();
+                    let mut entity = cmd.spawn(ImpulseJoint::new(parent_entity, joint));
                     if i == (numi / 2) || (k % 4 == 0 || k == numk - 1) {
-                        despawn.entities.push(entity);
+                        entity.insert(Despawn);
                     }
                 });
             }
@@ -95,12 +100,16 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
     }
 }
 
-pub fn despawn(mut commands: Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
-    if time.elapsed_seconds() > 4.0 {
-        for entity in &despawn.entities {
+pub fn despawn(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut despawn: ResMut<DespawnResource>,
+    query: Query<Entity, With<Despawn>>,
+) {
+    if despawn.timer.tick(time.delta()).just_finished() {
+        for e in &query {
             println!("Despawning joint entity");
-            commands.entity(*entity).despawn();
+            commands.entity(e).despawn();
         }
-        despawn.entities.clear();
     }
 }

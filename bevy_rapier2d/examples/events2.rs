@@ -18,19 +18,19 @@ fn main() {
         .run();
 }
 
-fn setup_graphics(mut commands: Commands) {
+pub fn setup_graphics(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
 }
 
-fn display_events(
+pub fn display_events(
     mut collision_events: EventReader<CollisionEvent>,
     mut contact_force_events: EventReader<ContactForceEvent>,
 ) {
-    for collision_event in collision_events.iter() {
+    for collision_event in collision_events.read() {
         println!("Received collision event: {collision_event:?}");
     }
 
-    for contact_force_event in contact_force_events.iter() {
+    for contact_force_event in contact_force_events.read() {
         println!("Received contact force event: {contact_force_event:?}");
     }
 }
