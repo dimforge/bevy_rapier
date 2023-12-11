@@ -851,6 +851,12 @@ pub fn init_colliders(
     let context = &mut *context;
     let physics_scale = context.physics_scale;
 
+    let colliders = colliders.iter();
+    #[cfg(feature = "enhanced-determinism")]
+    let mut colliders: Vec<(ColliderComponents, Option<&GlobalTransform>)> = colliders.collect();
+    #[cfg(feature = "enhanced-determinism")]
+    colliders.sort_unstable_by_key(|f| f.0 .0);
+
     for (
         (
             entity,
@@ -868,7 +874,7 @@ pub fn init_colliders(
             disabled,
         ),
         global_transform,
-    ) in colliders.iter()
+    ) in colliders
     {
         let mut scaled_shape = shape.clone();
         scaled_shape.set_scale(shape.scale / physics_scale, config.scaled_shape_subdivision);
@@ -968,6 +974,12 @@ pub fn init_rigid_bodies(
 ) {
     let physics_scale = context.physics_scale;
 
+    let rigid_bodies = rigid_bodies.iter();
+    #[cfg(feature = "enhanced-determinism")]
+    let mut rigid_bodies: Vec<RigidBodyComponents> = rigid_bodies.collect();
+    #[cfg(feature = "enhanced-determinism")]
+    rigid_bodies.sort_unstable_by_key(|f| f.0);
+
     for (
         entity,
         rb,
@@ -983,7 +995,7 @@ pub fn init_rigid_bodies(
         sleep,
         damping,
         disabled,
-    ) in rigid_bodies.iter()
+    ) in rigid_bodies
     {
         let mut builder = RigidBodyBuilder::new((*rb).into());
         builder = builder.enabled(disabled.is_none());
@@ -1114,7 +1126,13 @@ pub fn init_joints(
     let context = &mut *context;
     let scale = context.physics_scale;
 
-    for (entity, joint) in impulse_joints.iter() {
+    let impulse_joints = impulse_joints.iter();
+    #[cfg(feature = "enhanced-determinism")]
+    let mut impulse_joints: Vec<(Entity, &ImpulseJoint)> = impulse_joints.collect();
+    #[cfg(feature = "enhanced-determinism")]
+    impulse_joints.sort_unstable_by_key(|f| f.0);
+
+    for (entity, joint) in impulse_joints {
         let mut target = None;
         let mut body_entity = entity;
         while target.is_none() {
@@ -1138,7 +1156,13 @@ pub fn init_joints(
         }
     }
 
-    for (entity, joint) in multibody_joints.iter() {
+    let multibody_joints = multibody_joints.iter();
+    #[cfg(feature = "enhanced-determinism")]
+    let mut multibody_joints: Vec<(Entity, &MultibodyJoint)> = multibody_joints.collect();
+    #[cfg(feature = "enhanced-determinism")]
+    multibody_joints.sort_unstable_by_key(|f| f.0);
+
+    for (entity, joint) in multibody_joints {
         let target = context.entity2body.get(&entity);
 
         if let (Some(target), Some(source)) = (target, context.entity2body.get(&joint.parent)) {
@@ -1220,7 +1244,13 @@ pub fn sync_removals(
     /*
      * Collider removal detection.
      */
-    for entity in removed_colliders.read() {
+    let removed_colliders = removed_colliders.read();
+    #[cfg(feature = "enhanced-determinism")]
+    let mut removed_colliders: Vec<Entity> = removed_colliders.collect();
+    #[cfg(feature = "enhanced-determinism")]
+    removed_colliders.sort_unstable();
+
+    for entity in removed_colliders {
         if let Some(parent) = context.collider_parent(entity) {
             mass_modified.send(parent.into());
         }
@@ -1233,7 +1263,13 @@ pub fn sync_removals(
         }
     }
 
-    for entity in orphan_colliders.iter() {
+    let orphan_colliders = orphan_colliders.iter();
+    #[cfg(feature = "enhanced-determinism")]
+    let mut orphan_colliders: Vec<Entity> = orphan_colliders.collect();
+    #[cfg(feature = "enhanced-determinism")]
+    orphan_colliders.sort_unstable();
+
+    for entity in orphan_colliders {
         if let Some(parent) = context.collider_parent(entity) {
             mass_modified.send(parent.into());
         }
