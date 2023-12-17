@@ -1217,6 +1217,8 @@ pub fn sync_removals(
         commands.entity(entity).remove::<RapierRigidBodyHandle>();
     }
 
+    context.islands.cleanup_removed_rigid_bodies(&mut context.bodies);
+
     /*
      * Collider removal detection.
      */
