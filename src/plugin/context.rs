@@ -249,8 +249,8 @@ impl RapierContext {
                             // Update the previous state transforms
                             for (handle, mut interpolation) in interpolation_query.iter_mut() {
                                 if let Some(body) = self.bodies.get(handle.0) {
-                                    interpolation.start = Some(*body.position());
-                                    interpolation.end = None;
+                                    interpolation.start = interpolation.end;
+                                    interpolation.end = Some(*body.position());
                                 }
                             }
                         }
