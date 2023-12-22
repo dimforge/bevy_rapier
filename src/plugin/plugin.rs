@@ -1,5 +1,4 @@
 use crate::pipeline::{CollisionEvent, ContactForceEvent};
-use crate::plugin::configuration::SimulationToRenderTime;
 use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
 use bevy::{
@@ -195,51 +194,44 @@ where
         // the `RapierConfiguration` if it already exists.
         app.init_resource::<RapierConfiguration>();
 
-        app.insert_resource(SimulationToRenderTime::default())
-            .insert_resource(RapierContext {
-                physics_scale: self.physics_scale,
-                ..Default::default()
-            })
-            .insert_resource(Events::<CollisionEvent>::default())
-            .insert_resource(Events::<ContactForceEvent>::default())
-            .insert_resource(Events::<MassModifiedEvent>::default());
+        app.insert_resource(RapierContext {
+            physics_scale: self.physics_scale,
+            ..Default::default()
+        })
+        .insert_resource(Events::<CollisionEvent>::default())
+        .insert_resource(Events::<ContactForceEvent>::default())
+        .insert_resource(Events::<MassModifiedEvent>::default());
 
         // Add each set as necessary
         if self.default_system_setup {
             app.configure_sets(
-                self.schedule,
-                (
-                    PhysicsSet::SyncBackend,
-                    PhysicsSet::StepSimulation,
-                    PhysicsSet::Writeback,
-                )
-                    .chain()
-                    .before(TransformSystem::TransformPropagate),
+                PreUpdate,
+                PhysicsSet::SyncBackend.before(TransformSystem::TransformPropagate),
+            );
+            app.configure_sets(
+                FixedUpdate,
+                PhysicsSet::StepSimulation.before(TransformSystem::TransformPropagate),
+            );
+            app.configure_sets(
+                PostUpdate,
+                PhysicsSet::Writeback.before(TransformSystem::TransformPropagate),
             );
 
             // These *must* be in the main schedule currently so that they do not miss events.
             app.add_systems(PostUpdate, (systems::sync_removals,));
 
             app.add_systems(
-                self.schedule,
-                (
-                    Self::get_systems(PhysicsSet::SyncBackend).in_set(PhysicsSet::SyncBackend),
-                    Self::get_systems(PhysicsSet::StepSimulation)
-                        .in_set(PhysicsSet::StepSimulation),
-                    Self::get_systems(PhysicsSet::Writeback).in_set(PhysicsSet::Writeback),
-                ),
+                PreUpdate,
+                Self::get_systems(PhysicsSet::SyncBackend).in_set(PhysicsSet::SyncBackend),
             );
-
-            // Warn user if the timestep mode isn't in Fixed
-            if self.schedule.as_dyn_eq().dyn_eq(FixedUpdate.as_dyn_eq()) {
-                let config = app.world.resource::<RapierConfiguration>();
-                match config.timestep_mode {
-                    TimestepMode::Fixed { .. } => {}
-                    mode => {
-                        warn!("TimestepMode is set to `{:?}`, it is recommended to use `TimestepMode::Fixed` if you have the physics in `FixedUpdate`", mode);
-                    }
-                }
-            }
+            app.add_systems(
+                FixedUpdate,
+                Self::get_systems(PhysicsSet::StepSimulation).in_set(PhysicsSet::StepSimulation),
+            );
+            app.add_systems(
+                PostUpdate,
+                Self::get_systems(PhysicsSet::Writeback).in_set(PhysicsSet::Writeback),
+            );
         }
     }
 }

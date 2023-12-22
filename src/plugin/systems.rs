@@ -12,7 +12,6 @@ use crate::geometry::{
     RapierColliderHandle, Restitution, Sensor, SolverGroups,
 };
 use crate::pipeline::{CollisionEvent, ContactForceEvent};
-use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
     BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities, KinematicCharacterController,
@@ -535,7 +534,7 @@ pub fn apply_joint_user_changes(
 pub fn writeback_rigid_bodies(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
-    sim_to_render_time: Res<SimulationToRenderTime>,
+    time: Res<Time<Fixed>>,
     global_transforms: Query<&GlobalTransform>,
     mut writeback: Query<
         RigidBodyWritebackComponents,
@@ -556,17 +555,15 @@ pub fn writeback_rigid_bodies(
                 if let Some(rb) = context.bodies.get(handle) {
                     let mut interpolated_pos = utils::iso_to_transform(rb.position(), scale);
 
-                    if let TimestepMode::Interpolated { dt, .. } = config.timestep_mode {
-                        if let Some(interpolation) = interpolation.as_deref_mut() {
-                            if interpolation.end.is_none() {
-                                interpolation.end = Some(*rb.position());
-                            }
+                    if let Some(interpolation) = interpolation.as_deref_mut() {
+                        if interpolation.end.is_none() {
+                            interpolation.end = Some(*rb.position());
+                        }
 
-                            if let Some(interpolated) =
-                                interpolation.lerp_slerp((dt + sim_to_render_time.diff) / dt)
-                            {
-                                interpolated_pos = utils::iso_to_transform(&interpolated, scale);
-                            }
+                        if let Some(interpolated) =
+                            interpolation.lerp_slerp(time.overstep_percentage())
+                        {
+                            interpolated_pos = utils::iso_to_transform(&interpolated, scale);
                         }
                     }
 
@@ -716,7 +713,6 @@ pub fn step_simulation<Hooks>(
     config: Res<RapierConfiguration>,
     hooks: StaticSystemParam<Hooks>,
     time: Res<Time>,
-    mut sim_to_render_time: ResMut<SimulationToRenderTime>,
     collision_events: EventWriter<CollisionEvent>,
     contact_force_events: EventWriter<ContactForceEvent>,
     interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
@@ -730,12 +726,11 @@ pub fn step_simulation<Hooks>(
     if config.physics_pipeline_active {
         context.step_simulation(
             config.gravity,
-            config.timestep_mode,
             Some((collision_events, contact_force_events)),
             &hooks_adapter,
-            &time,
-            &mut sim_to_render_time,
-            Some(interpolation_query),
+            time.delta_seconds(),
+            config.substeps,
+            interpolation_query,
         );
         context.deleted_colliders.clear();
     } else {

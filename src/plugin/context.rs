@@ -16,7 +16,6 @@ use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query};
 
 use crate::control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput};
 use crate::dynamics::TransformInterpolation;
-use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
 use rapier::control::CharacterAutostep;
 
@@ -208,14 +207,11 @@ impl RapierContext {
     pub fn step_simulation(
         &mut self,
         gravity: Vect,
-        timestep_mode: TimestepMode,
         events: Option<(EventWriter<CollisionEvent>, EventWriter<ContactForceEvent>)>,
         hooks: &dyn PhysicsHooks,
-        time: &Time,
-        sim_to_render_time: &mut SimulationToRenderTime,
-        mut interpolation_query: Option<
-            Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
-        >,
+        delta_time: f32,
+        substeps: usize,
+        mut interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
     ) {
         let event_queue = events.map(|(ce, fe)| EventQueue {
             deleted_colliders: &self.deleted_colliders,
@@ -229,109 +225,51 @@ impl RapierContext {
             .or_else(|| event_queue.as_ref().map(|q| q as &dyn EventHandler))
             .unwrap_or(&() as &dyn EventHandler);
 
-        match timestep_mode {
-            TimestepMode::Interpolated {
-                dt,
-                time_scale,
-                substeps,
-            } => {
-                self.integration_parameters.dt = dt;
+        self.integration_parameters.dt = delta_time;
 
-                sim_to_render_time.diff += time.delta_seconds();
-
-                while sim_to_render_time.diff > 0.0 {
-                    // NOTE: in this comparison we do the same computations we
-                    // will do for the next `while` iteration test, to make sure we
-                    // don't get bit by potential float inaccuracy.
-                    if sim_to_render_time.diff - dt <= 0.0 {
-                        if let Some(interpolation_query) = interpolation_query.as_mut() {
-                            // This is the last simulation step to be executed in the loop
-                            // Update the previous state transforms
-                            for (handle, mut interpolation) in interpolation_query.iter_mut() {
-                                if let Some(body) = self.bodies.get(handle.0) {
-                                    interpolation.start = interpolation.end;
-                                    interpolation.end = Some(*body.position());
-                                }
-                            }
-                        }
-                    }
-
-                    let mut substep_integration_parameters = self.integration_parameters;
-                    substep_integration_parameters.dt = dt / (substeps as Real) * time_scale;
-
-                    for _ in 0..substeps {
-                        self.pipeline.step(
-                            &(gravity / self.physics_scale).into(),
-                            &substep_integration_parameters,
-                            &mut self.islands,
-                            &mut self.broad_phase,
-                            &mut self.narrow_phase,
-                            &mut self.bodies,
-                            &mut self.colliders,
-                            &mut self.impulse_joints,
-                            &mut self.multibody_joints,
-                            &mut self.ccd_solver,
-                            None,
-                            hooks,
-                            events,
-                        );
-                    }
-
-                    sim_to_render_time.diff -= dt;
-                }
+        for (handle, mut interpolation) in interpolation_query.iter_mut() {
+            if let Some(body) = self.bodies.get(handle.0) {
+                interpolation.start = interpolation.end;
+                interpolation.end = Some(*body.position());
             }
-            TimestepMode::Variable {
-                max_dt,
-                time_scale,
-                substeps,
-            } => {
-                self.integration_parameters.dt = (time.delta_seconds() * time_scale).min(max_dt);
+        }
 
-                let mut substep_integration_parameters = self.integration_parameters;
-                substep_integration_parameters.dt /= substeps as Real;
+        // NOTE: in this comparison we do the same computations we
+        // will do for the next `while` iteration test, to make sure we
+        // don't get bit by potential float inaccuracy.
+        // if sim_to_render_time.diff - dt <= 0.0 {
+        //     println!("interpolate");
+        //     if let Some(interpolation_query) = interpolation_query.as_mut() {
+        //         // This is the last simulation step to be executed in the loop
+        //         // Update the previous state transforms
+        //         for (handle, mut interpolation) in interpolation_query.iter_mut() {
+        //             if let Some(body) = self.bodies.get(handle.0) {
+        //                 interpolation.start = interpolation.end;
+        //                 interpolation.end = Some(*body.position());
+        //             }
+        //         }
+        //     }
+        // }
 
-                for _ in 0..substeps {
-                    self.pipeline.step(
-                        &(gravity / self.physics_scale).into(),
-                        &substep_integration_parameters,
-                        &mut self.islands,
-                        &mut self.broad_phase,
-                        &mut self.narrow_phase,
-                        &mut self.bodies,
-                        &mut self.colliders,
-                        &mut self.impulse_joints,
-                        &mut self.multibody_joints,
-                        &mut self.ccd_solver,
-                        None,
-                        hooks,
-                        events,
-                    );
-                }
-            }
-            TimestepMode::Fixed { dt, substeps } => {
-                self.integration_parameters.dt = dt;
+        let mut substep_integration_parameters = self.integration_parameters;
+        substep_integration_parameters.dt = delta_time / substeps as Real;
 
-                let mut substep_integration_parameters = self.integration_parameters;
-                substep_integration_parameters.dt = dt / (substeps as Real);
-
-                for _ in 0..substeps {
-                    self.pipeline.step(
-                        &(gravity / self.physics_scale).into(),
-                        &substep_integration_parameters,
-                        &mut self.islands,
-                        &mut self.broad_phase,
-                        &mut self.narrow_phase,
-                        &mut self.bodies,
-                        &mut self.colliders,
-                        &mut self.impulse_joints,
-                        &mut self.multibody_joints,
-                        &mut self.ccd_solver,
-                        None,
-                        hooks,
-                        events,
-                    );
-                }
-            }
+        for _ in 0..substeps {
+            self.pipeline.step(
+                &(gravity / self.physics_scale).into(),
+                &substep_integration_parameters,
+                &mut self.islands,
+                &mut self.broad_phase,
+                &mut self.narrow_phase,
+                &mut self.bodies,
+                &mut self.colliders,
+                &mut self.impulse_joints,
+                &mut self.multibody_joints,
+                &mut self.ccd_solver,
+                None,
+                hooks,
+                events,
+            );
         }
     }
 
