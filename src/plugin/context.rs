@@ -234,23 +234,6 @@ impl RapierContext {
             }
         }
 
-        // NOTE: in this comparison we do the same computations we
-        // will do for the next `while` iteration test, to make sure we
-        // don't get bit by potential float inaccuracy.
-        // if sim_to_render_time.diff - dt <= 0.0 {
-        //     println!("interpolate");
-        //     if let Some(interpolation_query) = interpolation_query.as_mut() {
-        //         // This is the last simulation step to be executed in the loop
-        //         // Update the previous state transforms
-        //         for (handle, mut interpolation) in interpolation_query.iter_mut() {
-        //             if let Some(body) = self.bodies.get(handle.0) {
-        //                 interpolation.start = interpolation.end;
-        //                 interpolation.end = Some(*body.position());
-        //             }
-        //         }
-        //     }
-        // }
-
         let mut substep_integration_parameters = self.integration_parameters;
         substep_integration_parameters.dt = delta_time / substeps as Real;
 
