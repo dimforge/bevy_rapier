@@ -15,8 +15,9 @@ use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
-    BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities, KinematicCharacterController,
-    KinematicCharacterControllerOutput, MassModifiedEvent, RigidBodyDisabled,
+    AdditionalSolverIterations, BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities,
+    KinematicCharacterController, KinematicCharacterControllerOutput, MassModifiedEvent,
+    RigidBodyDisabled,
 };
 use crate::utils;
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
@@ -60,6 +61,7 @@ pub type RigidBodyComponents<'a> = (
     Option<&'a Sleeping>,
     Option<&'a Damping>,
     Option<&'a RigidBodyDisabled>,
+    Option<&'a AdditionalSolverIterations>,
 );
 
 /// Components related to colliders.
@@ -299,11 +301,13 @@ pub fn apply_rigid_body_user_changes(
     changed_dominance: Query<(&RapierRigidBodyHandle, &Dominance), Changed<Dominance>>,
     changed_sleeping: Query<(&RapierRigidBodyHandle, &Sleeping), Changed<Sleeping>>,
     changed_damping: Query<(&RapierRigidBodyHandle, &Damping), Changed<Damping>>,
-    changed_disabled: Query<
-        (&RapierRigidBodyHandle, &RigidBodyDisabled),
-        Changed<RigidBodyDisabled>,
-    >,
-
+    (changed_disabled, changed_additional_solver_iterations): (
+        Query<(&RapierRigidBodyHandle, &RigidBodyDisabled), Changed<RigidBodyDisabled>>,
+        Query<
+            (&RapierRigidBodyHandle, &AdditionalSolverIterations),
+            Changed<AdditionalSolverIterations>,
+        >,
+    ),
     mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
     let context = &mut *context;
@@ -431,6 +435,12 @@ pub fn apply_rigid_body_user_changes(
             }
 
             mass_modified.send(entity.into());
+        }
+    }
+
+    for (handle, additional_solver_iters) in changed_additional_solver_iterations.iter() {
+        if let Some(rb) = context.bodies.get_mut(handle.0) {
+            rb.set_additional_solver_iterations(additional_solver_iters.0);
         }
     }
 
@@ -983,6 +993,7 @@ pub fn init_rigid_bodies(
         sleep,
         damping,
         disabled,
+        additional_solver_iters,
     ) in rigid_bodies.iter()
     {
         let mut builder = RigidBodyBuilder::new((*rb).into());
@@ -1035,6 +1046,10 @@ pub fn init_rigid_bodies(
                 }
                 AdditionalMassProperties::Mass(mass) => builder.additional_mass(*mass),
             };
+        }
+
+        if let Some(added_iters) = additional_solver_iters {
+            builder = builder.additional_solver_iterations(added_iters.0);
         }
 
         builder = builder.user_data(entity.to_bits() as u128);

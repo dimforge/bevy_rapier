@@ -77,9 +77,7 @@ fn create_rope_joints(commands: &mut Commands, origin: Vect, num: usize) {
     for i in 0..num {
         let dz = (i + 1) as f32 * shift;
 
-        let rope = RopeJointBuilder::new()
-            .local_anchor2(Vec3::new(0.0, 0.0, -shift))
-            .limits([0.0, 2.0]);
+        let rope = RopeJointBuilder::new(2.0).local_anchor2(Vec3::new(0.0, 0.0, -shift));
         let joint = ImpulseJoint::new(curr_parent, rope);
 
         curr_parent = commands
