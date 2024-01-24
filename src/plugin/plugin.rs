@@ -80,6 +80,13 @@ where
     /// See [`PhysicsSet`] for a description of these systems.
     pub fn get_systems(set: PhysicsSet) -> SystemConfigs {
         match set {
+            PhysicsSet::EveryFrame => (
+                systems::collect_collider_hierarchy_changes,
+                apply_deferred,
+                systems::sync_removals,
+            )
+                .chain()
+                .into_configs(),
             PhysicsSet::SyncBackend => (
                 // Run the character controller before the manual transform propagation.
                 systems::update_character_controls,
@@ -97,9 +104,10 @@ where
                 systems::init_rigid_bodies,
                 systems::init_colliders,
                 systems::init_joints,
-                systems::sync_removals,
-                // Run this here so the folowwing systems do not have a 1 frame delay.
+                systems::collect_collider_hierarchy_changes,
+                // Run this here so the following systems do not have a 1 frame delay.
                 apply_deferred,
+                systems::sync_removals,
                 systems::apply_scale,
                 systems::apply_collider_user_changes,
                 systems::apply_rigid_body_user_changes,
@@ -161,6 +169,9 @@ pub enum PhysicsSet {
     /// components and the [`GlobalTransform`] component.
     /// These systems typically run immediately after [`PhysicsSet::StepSimulation`].
     Writeback,
+    /// The systems responsible for responding to state like `Events` that get
+    /// cleared every 2 main schedule runs.
+    EveryFrame,
 }
 
 impl<PhysicsHooks> Plugin for RapierPhysicsPlugin<PhysicsHooks>
@@ -174,6 +185,10 @@ where
             .register_type::<Velocity>()
             .register_type::<AdditionalMassProperties>()
             .register_type::<MassProperties>()
+            .register_type::<ReadMassProperties>()
+            .register_type::<ColliderMassProperties>()
+            .register_type::<ColliderDisabled>()
+            .register_type::<RigidBodyDisabled>()
             .register_type::<LockedAxes>()
             .register_type::<ExternalForce>()
             .register_type::<ExternalImpulse>()
@@ -187,6 +202,7 @@ where
             .register_type::<Friction>()
             .register_type::<Restitution>()
             .register_type::<CollisionGroups>()
+            .register_type::<ColliderParent>()
             .register_type::<SolverGroups>()
             .register_type::<ContactForceEventThreshold>()
             .register_type::<Group>();
@@ -206,6 +222,7 @@ where
 
         // Add each set as necessary
         if self.default_system_setup {
+            app.configure_sets(PostUpdate, (PhysicsSet::EveryFrame,));
             app.configure_sets(
                 self.schedule,
                 (
@@ -218,7 +235,10 @@ where
             );
 
             // These *must* be in the main schedule currently so that they do not miss events.
-            app.add_systems(PostUpdate, (systems::sync_removals,));
+            app.add_systems(
+                PostUpdate,
+                Self::get_systems(PhysicsSet::EveryFrame).in_set(PhysicsSet::EveryFrame),
+            );
 
             app.add_systems(
                 self.schedule,

@@ -3,9 +3,15 @@ use std::fmt;
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 use {crate::geometry::VHACDParameters, bevy::utils::HashMap};
 
-use bevy::prelude::*;
+use bevy::{
+    ecs::{
+        entity::{EntityMapper, MapEntities},
+        reflect::ReflectMapEntities,
+    },
+    prelude::*,
+    utils::HashSet,
+};
 
-use bevy::utils::HashSet;
 use rapier::geometry::Shape;
 use rapier::prelude::{ColliderHandle, InteractionGroups, SharedShape};
 
@@ -529,6 +535,44 @@ impl CollidingEntities {
 #[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct ColliderDisabled;
+
+/// Rigid body parent of the collider.
+///
+/// This is not meant to be set directly, this is controlled by bevy's hierarchy.
+///
+/// To change a colliders parent, set the [`Parent`] of the entity to a
+/// different rigid body or remove the parent to leave the collider unattached.
+#[derive(Component, Debug, Eq, PartialEq, Reflect)]
+#[reflect(Component, MapEntities, PartialEq)]
+pub struct ColliderParent(pub(crate) Entity);
+
+impl ColliderParent {
+    /// Gets the [`Entity`] ID of the rigid-body parent this collider is attached to.
+    ///
+    /// This may be the same entity as the collider.
+    pub fn get(&self) -> Entity {
+        self.0
+    }
+}
+
+impl FromWorld for ColliderParent {
+    fn from_world(_world: &mut World) -> Self {
+        Self(Entity::PLACEHOLDER)
+    }
+}
+
+impl MapEntities for ColliderParent {
+    fn map_entities(&mut self, entity_mapper: &mut EntityMapper) {
+        self.0 = entity_mapper.get_or_reserve(self.0);
+    }
+}
+
+impl std::ops::Deref for ColliderParent {
+    type Target = Entity;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 /// We restrict the scaling increment to 1.0e-4, to avoid numerical jitter
 /// due to the extraction of scaling factor from the GlobalTransform matrix.

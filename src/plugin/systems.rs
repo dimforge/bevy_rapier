@@ -15,11 +15,13 @@ use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
-    BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities, KinematicCharacterController,
-    KinematicCharacterControllerOutput, MassModifiedEvent, RigidBodyDisabled,
+    BevyPhysicsHooks, BevyPhysicsHooksAdapter, ColliderParent, CollidingEntities,
+    KinematicCharacterController, KinematicCharacterControllerOutput, MassModifiedEvent,
+    RigidBodyDisabled,
 };
 use crate::utils;
-use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
+use bevy::ecs::system::{StaticSystemParam, SystemParam, SystemParamItem};
+use bevy::hierarchy::HierarchyEvent;
 use bevy::prelude::*;
 use rapier::{math::Real, prelude::*};
 use std::collections::HashMap;
@@ -117,47 +119,217 @@ pub fn apply_scale(
     }
 }
 
+fn find_child_colliders(
+    base_entity: Entity,
+    colliders: &Query<&Collider>,
+    rigid_bodies: &Query<&RigidBody>,
+    childrens: &Query<&Children>,
+
+    found: &mut Vec<Entity>,
+    possibilities: &mut Vec<Entity>,
+) {
+    found.clear();
+    possibilities.clear();
+    possibilities.push(base_entity);
+    while let Some(entity) = possibilities.pop() {
+        if rigid_bodies.contains(entity) {
+            continue;
+        }
+
+        if colliders.contains(entity) {
+            found.push(entity);
+        }
+
+        if let Ok(children) = childrens.get(entity) {
+            possibilities.extend(children.iter());
+        } else {
+            continue;
+        };
+    }
+}
+
+/// System responsible for detecting changes in the hierarchy that would
+/// affect the collider's parent rigid body.
+pub fn collect_collider_hierarchy_changes(
+    mut commands: Commands,
+
+    mut hierarchy_events: EventReader<HierarchyEvent>,
+    parents: Query<&Parent>,
+    childrens: Query<&Children>,
+    rigid_bodies: Query<&RigidBody>,
+    colliders: Query<&Collider>,
+    mut collider_parents: Query<&mut ColliderParent>,
+
+    mut found: Local<Vec<Entity>>,
+    mut possibilities: Local<Vec<Entity>>,
+) {
+    let parent_rigid_body = |mut entity: Entity| -> Option<Entity> {
+        loop {
+            if rigid_bodies.contains(entity) {
+                return Some(entity);
+            }
+
+            if let Ok(parent) = parents.get(entity) {
+                entity = parent.get();
+            } else {
+                return None;
+            }
+        }
+    };
+
+    for event in hierarchy_events.iter() {
+        match event {
+            HierarchyEvent::ChildAdded { child, .. } | HierarchyEvent::ChildMoved { child, .. } => {
+                let Some(rigid_body) = parent_rigid_body(*child) else {
+                    continue;
+                };
+                find_child_colliders(
+                    *child,
+                    &colliders,
+                    &rigid_bodies,
+                    &childrens,
+                    &mut found,
+                    &mut possibilities,
+                );
+
+                for collider in &found {
+                    let new_collider_parent = ColliderParent(rigid_body);
+                    if let Ok(mut collider_parent) = collider_parents.get_mut(*collider) {
+                        *collider_parent = new_collider_parent;
+                    } else {
+                        commands.entity(*collider).insert(new_collider_parent);
+                    }
+                }
+            }
+            HierarchyEvent::ChildRemoved { child, .. } => {
+                find_child_colliders(
+                    *child,
+                    &colliders,
+                    &rigid_bodies,
+                    &childrens,
+                    &mut found,
+                    &mut possibilities,
+                );
+                for collider in &found {
+                    if collider_parents.contains(*collider) {
+                        commands.entity(*collider).remove::<ColliderParent>();
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Collection of change queries for colliders.
+///
+/// Mainly used because bevy doesn't impl more than
+/// 16 parameters for a system.
+#[derive(SystemParam)]
+pub struct ColliderChanges<'w, 's> {
+    changed_collider_transforms: Query<
+        'w,
+        's,
+        (
+            Entity,
+            &'static RapierColliderHandle,
+            &'static GlobalTransform,
+        ),
+        (Without<RapierRigidBodyHandle>, Changed<GlobalTransform>),
+    >,
+    changed_collider_parents: Query<
+        'w,
+        's,
+        (&'static RapierColliderHandle, &'static ColliderParent),
+        Changed<ColliderParent>,
+    >,
+    changed_shapes:
+        Query<'w, 's, (&'static RapierColliderHandle, &'static Collider), Changed<Collider>>,
+    changed_active_events: Query<
+        'w,
+        's,
+        (&'static RapierColliderHandle, &'static ActiveEvents),
+        Changed<ActiveEvents>,
+    >,
+    changed_active_hooks:
+        Query<'w, 's, (&'static RapierColliderHandle, &'static ActiveHooks), Changed<ActiveHooks>>,
+    changed_active_collision_types: Query<
+        'w,
+        's,
+        (&'static RapierColliderHandle, &'static ActiveCollisionTypes),
+        Changed<ActiveCollisionTypes>,
+    >,
+    changed_friction:
+        Query<'w, 's, (&'static RapierColliderHandle, &'static Friction), Changed<Friction>>,
+    changed_restitution:
+        Query<'w, 's, (&'static RapierColliderHandle, &'static Restitution), Changed<Restitution>>,
+    changed_collision_groups: Query<
+        'w,
+        's,
+        (&'static RapierColliderHandle, &'static CollisionGroups),
+        Changed<CollisionGroups>,
+    >,
+    changed_solver_groups: Query<
+        'w,
+        's,
+        (&'static RapierColliderHandle, &'static SolverGroups),
+        Changed<SolverGroups>,
+    >,
+    changed_sensors:
+        Query<'w, 's, (&'static RapierColliderHandle, &'static Sensor), Changed<Sensor>>,
+    changed_disabled: Query<
+        'w,
+        's,
+        (&'static RapierColliderHandle, &'static ColliderDisabled),
+        Changed<ColliderDisabled>,
+    >,
+    changed_contact_force_threshold: Query<
+        'w,
+        's,
+        (
+            &'static RapierColliderHandle,
+            &'static ContactForceEventThreshold,
+        ),
+        Changed<ContactForceEventThreshold>,
+    >,
+    changed_collider_mass_props: Query<
+        'w,
+        's,
+        (
+            &'static RapierColliderHandle,
+            &'static ColliderMassProperties,
+        ),
+        Changed<ColliderMassProperties>,
+    >,
+}
+
 /// System responsible for applying changes the user made to a collider-related component.
 pub fn apply_collider_user_changes(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
-    (changed_collider_transforms, parent_query, transform_query): (
-        Query<
-            (Entity, &RapierColliderHandle, &GlobalTransform),
-            (Without<RapierRigidBodyHandle>, Changed<GlobalTransform>),
-        >,
-        Query<&Parent>,
-        Query<&Transform>,
-    ),
 
-    changed_shapes: Query<(&RapierColliderHandle, &Collider), Changed<Collider>>,
-    changed_active_events: Query<(&RapierColliderHandle, &ActiveEvents), Changed<ActiveEvents>>,
-    changed_active_hooks: Query<(&RapierColliderHandle, &ActiveHooks), Changed<ActiveHooks>>,
-    changed_active_collision_types: Query<
-        (&RapierColliderHandle, &ActiveCollisionTypes),
-        Changed<ActiveCollisionTypes>,
-    >,
-    changed_friction: Query<(&RapierColliderHandle, &Friction), Changed<Friction>>,
-    changed_restitution: Query<(&RapierColliderHandle, &Restitution), Changed<Restitution>>,
-    changed_collision_groups: Query<
-        (&RapierColliderHandle, &CollisionGroups),
-        Changed<CollisionGroups>,
-    >,
-    changed_solver_groups: Query<(&RapierColliderHandle, &SolverGroups), Changed<SolverGroups>>,
-    changed_sensors: Query<(&RapierColliderHandle, &Sensor), Changed<Sensor>>,
-    changed_disabled: Query<(&RapierColliderHandle, &ColliderDisabled), Changed<ColliderDisabled>>,
-    changed_contact_force_threshold: Query<
-        (&RapierColliderHandle, &ContactForceEventThreshold),
-        Changed<ContactForceEventThreshold>,
-    >,
-    changed_collider_mass_props: Query<
-        (&RapierColliderHandle, &ColliderMassProperties),
-        Changed<ColliderMassProperties>,
-    >,
+    collider_changes: ColliderChanges,
+    parent_query: Query<&Parent>,
+    transform_query: Query<&Transform>,
 
     mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
     let scale = context.physics_scale;
+    let ColliderChanges {
+        changed_collider_transforms,
+        changed_collider_parents,
+        changed_shapes,
+        changed_active_events,
+        changed_active_hooks,
+        changed_active_collision_types,
+        changed_friction,
+        changed_restitution,
+        changed_collision_groups,
+        changed_solver_groups,
+        changed_sensors,
+        changed_disabled,
+        changed_contact_force_threshold,
+        changed_collider_mass_props,
+    } = collider_changes;
 
     for (entity, handle, transform) in changed_collider_transforms.iter() {
         if context.collider_parent(entity).is_some() {
@@ -172,6 +344,17 @@ pub fn apply_collider_user_changes(
                 &transform.compute_transform(),
                 scale,
             ))
+        }
+    }
+
+    for (handle, collider_parent) in changed_collider_parents.iter() {
+        if let Some(body_handle) = context.entity2body.get(&collider_parent.0).copied() {
+            let RapierContext {
+                ref mut colliders,
+                ref mut bodies,
+                ..
+            } = *context;
+            colliders.set_parent(handle.0, Some(body_handle), bodies);
         }
     }
 
@@ -745,9 +928,10 @@ pub fn step_simulation<Hooks>(
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 pub fn init_async_colliders(
     mut commands: Commands,
-    meshes: Res<Assets<Mesh>>,
+    meshes: Option<Res<Assets<Mesh>>>,
     async_colliders: Query<(Entity, &Handle<Mesh>, &AsyncCollider)>,
 ) {
+    let Some(meshes) = meshes else { return };
     for (entity, mesh_handle, async_collider) in async_colliders.iter() {
         if let Some(mesh) = meshes.get(mesh_handle) {
             match Collider::from_bevy_mesh(mesh, &async_collider.0) {
@@ -768,12 +952,16 @@ pub fn init_async_colliders(
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 pub fn init_async_scene_colliders(
     mut commands: Commands,
-    meshes: Res<Assets<Mesh>>,
-    scene_spawner: Res<SceneSpawner>,
+    meshes: Option<Res<Assets<Mesh>>>,
+    scene_spawner: Option<Res<SceneSpawner>>,
     async_colliders: Query<(Entity, &SceneInstance, &AsyncSceneCollider)>,
     children: Query<&Children>,
     mesh_handles: Query<(&Name, &Handle<Mesh>)>,
 ) {
+    let Some(meshes) = meshes else { return };
+    let Some(scene_spawner) = scene_spawner else {
+        return;
+    };
     for (scene_entity, scene_instance, async_collider) in async_colliders.iter() {
         if scene_spawner.instance_is_ready(**scene_instance) {
             for child_entity in children.iter_descendants(scene_entity) {
@@ -935,6 +1123,8 @@ pub fn init_colliders(
                 context
                     .colliders
                     .insert_with_parent(builder, body_handle, &mut context.bodies);
+            commands.entity(entity).insert(ColliderParent(body_entity));
+
             if let Ok(mut mprops) = rigid_body_mprops.get_mut(body_entity) {
                 // Inserting the collider changed the rigid-body’s mass properties.
                 // Read them back from the engine.
@@ -956,6 +1146,7 @@ pub fn init_colliders(
         };
 
         commands.entity(entity).insert(RapierColliderHandle(handle));
+
         context.entity2collider.insert(entity, handle);
     }
 }
@@ -1180,6 +1371,7 @@ pub fn sync_removals(
     mut removed_sensors: RemovedComponents<Sensor>,
     mut removed_rigid_body_disabled: RemovedComponents<RigidBodyDisabled>,
     mut removed_colliders_disabled: RemovedComponents<ColliderDisabled>,
+    mut removed_collider_parents: RemovedComponents<ColliderParent>,
 
     mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
@@ -1305,6 +1497,17 @@ pub fn sync_removals(
             if let Some(rb) = context.bodies.get_mut(*handle) {
                 rb.set_enabled(true);
             }
+        }
+    }
+
+    for entity in removed_collider_parents.iter() {
+        if let Some(handle) = context.entity2collider.get(&entity) {
+            let RapierContext {
+                ref mut colliders,
+                ref mut bodies,
+                ..
+            } = *context;
+            colliders.set_parent(*handle, None, bodies);
         }
     }
 
@@ -1683,6 +1886,7 @@ mod tests {
         app.add_plugins((
             HeadlessRenderPlugin,
             TransformPlugin,
+            HierarchyPlugin,
             TimePlugin,
             RapierPhysicsPlugin::<NoUserData>::default(),
         ));
@@ -1740,6 +1944,7 @@ mod tests {
         app.add_plugins((
             HeadlessRenderPlugin,
             TransformPlugin,
+            HierarchyPlugin,
             TimePlugin,
             RapierPhysicsPlugin::<NoUserData>::default(),
         ));
@@ -1812,6 +2017,149 @@ mod tests {
             );
             approx::assert_relative_eq!(body_transform.scale, child_transform.scale,);
         }
+    }
+
+    #[test]
+    fn collider_parent() {
+        let mut app = App::new();
+        app.add_plugins((
+            TransformPlugin,
+            HierarchyPlugin,
+            TimePlugin,
+            RapierPhysicsPlugin::<NoUserData>::default(),
+        ));
+
+        fn verify_collider_parent(
+            ctx: Res<RapierContext>,
+            colliders: Query<(Entity, Option<&ColliderParent>), With<Collider>>,
+            parents: Query<&Parent>,
+            bodies: Query<(), With<RigidBody>>,
+            names: Query<&Name>,
+        ) {
+            let row_length = 60;
+            let column_length = row_length / 4;
+            let column = |collider: &str, rapier: &str, component: &str, hierarchal: &str| {
+                println!(
+                    "{:<column_length$}| {:<column_length$}| {:<column_length$}| {:<column_length$}",
+                    collider, rapier, component, hierarchal,
+                );
+            };
+
+            column("collider", "rapier", "component", "hierarchal");
+            println!("{}", "-".repeat(row_length));
+            for (collider_entity, collider_parent) in &colliders {
+                let rapier_parent = ctx.collider_parent(collider_entity);
+                let collider_parent = collider_parent.map(|parent| parent.get());
+
+                let mut entity = collider_entity;
+                let mut hierarchal_parent = None;
+                loop {
+                    if bodies.contains(entity) {
+                        hierarchal_parent = Some(entity);
+                        break;
+                    }
+
+                    let Ok(parent) = parents.get(entity) else {
+                        break;
+                    };
+                    entity = parent.get();
+                }
+
+                let named = |entity: Option<Entity>| -> String {
+                    entity
+                        .map(|entity| {
+                            names
+                                .get(entity)
+                                .map(|name| name.as_str().to_owned())
+                                .unwrap_or(format!("{:?}", entity))
+                        })
+                        .unwrap_or("None".to_owned())
+                };
+                column(
+                    &named(Some(collider_entity)),
+                    &named(rapier_parent),
+                    &named(collider_parent),
+                    &named(hierarchal_parent),
+                );
+
+                assert_eq!(rapier_parent, collider_parent);
+                assert_eq!(rapier_parent, hierarchal_parent);
+            }
+        }
+
+        fn frame(mut frame: Local<u32>) {
+            *frame += 1;
+            println!("-- frame {} -----------", *frame);
+            println!();
+        }
+
+        app.add_systems(Last, (frame, verify_collider_parent).chain());
+
+        let self_parented = app
+            .world
+            .spawn((
+                Name::new("Self-parented"),
+                TransformBundle::default(),
+                RigidBody::Dynamic,
+                Collider::default(),
+            ))
+            .id();
+
+        let parent1 = app
+            .world
+            .spawn((
+                Name::new("Parent 1"),
+                TransformBundle::default(),
+                RigidBody::Dynamic,
+            ))
+            .id();
+
+        let parent2 = app
+            .world
+            .spawn((
+                Name::new("Parent 2"),
+                TransformBundle::default(),
+                RigidBody::Dynamic,
+            ))
+            .id();
+
+        let inbetween = app
+            .world
+            .spawn((Name::new("Inbetween"), TransformBundle::default()))
+            .id();
+
+        let child = app
+            .world
+            .spawn((
+                Name::new("Child collider"),
+                TransformBundle::default(),
+                Collider::default(),
+            ))
+            .id();
+
+        // Unnested
+        app.update();
+        app.world.entity_mut(self_parented).despawn_recursive();
+        app.world.entity_mut(child).set_parent(parent1);
+        app.update();
+        app.world.entity_mut(child).set_parent(parent2);
+        app.update();
+        app.world.entity_mut(child).remove_parent();
+        app.update();
+
+        // Nested
+        app.world.entity_mut(child).set_parent(inbetween);
+        app.update();
+        app.world.entity_mut(inbetween).set_parent(parent1);
+        app.update();
+        app.world.entity_mut(inbetween).set_parent(parent2);
+        app.update();
+        app.world.entity_mut(inbetween).remove_parent();
+        app.update();
+
+        app.world.entity_mut(inbetween).set_parent(parent1);
+        app.world.entity_mut(child).remove_parent();
+        app.update();
     }
 
     // Allows run tests for systems containing rendering related things without GPU
