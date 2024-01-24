@@ -12,11 +12,13 @@ pub struct RopeJoint {
 
 impl RopeJoint {
     /// Creates a new rope joint limiting the max distance between to bodies
-    pub fn new() -> Self {
-        let data = GenericJointBuilder::new(JointAxesMask::FREE_FIXED_AXES)
+    pub fn new(max_dist: Real) -> Self {
+        let data = GenericJointBuilder::new(JointAxesMask::empty())
             .coupled_axes(JointAxesMask::LIN_AXES)
             .build();
-        Self { data }
+        let mut result = Self { data };
+        result.set_max_distance(max_dist);
+        result
     }
 
     /// The underlying generic joint.
@@ -92,9 +94,6 @@ impl RopeJoint {
     /// Set the spring-like model used by the motor to reach the desired target velocity and position.
     pub fn set_motor_model(&mut self, model: MotorModel) -> &mut Self {
         self.data.set_motor_model(JointAxis::X, model);
-        self.data.set_motor_model(JointAxis::Y, model);
-        #[cfg(feature = "dim3")]
-        self.data.set_motor_model(JointAxis::Z, model);
         self
     }
 
@@ -102,11 +101,6 @@ impl RopeJoint {
     pub fn set_motor_velocity(&mut self, target_vel: Real, factor: Real) -> &mut Self {
         self.data
             .set_motor_velocity(JointAxis::X, target_vel, factor);
-        self.data
-            .set_motor_velocity(JointAxis::Y, target_vel, factor);
-        #[cfg(feature = "dim3")]
-        self.data
-            .set_motor_velocity(JointAxis::Z, target_vel, factor);
         self
     }
 
@@ -119,11 +113,6 @@ impl RopeJoint {
     ) -> &mut Self {
         self.data
             .set_motor_position(JointAxis::X, target_pos, stiffness, damping);
-        self.data
-            .set_motor_position(JointAxis::Y, target_pos, stiffness, damping);
-        #[cfg(feature = "dim3")]
-        self.data
-            .set_motor_position(JointAxis::Z, target_pos, stiffness, damping);
         self
     }
 
@@ -137,20 +126,12 @@ impl RopeJoint {
     ) -> &mut Self {
         self.data
             .set_motor(JointAxis::X, target_pos, target_vel, stiffness, damping);
-        self.data
-            .set_motor(JointAxis::Y, target_pos, target_vel, stiffness, damping);
-        #[cfg(feature = "dim3")]
-        self.data
-            .set_motor(JointAxis::Y, target_pos, target_vel, stiffness, damping);
         self
     }
 
     /// Sets the maximum force the motor can deliver.
     pub fn set_motor_max_force(&mut self, max_force: Real) -> &mut Self {
         self.data.set_motor_max_force(JointAxis::X, max_force);
-        self.data.set_motor_max_force(JointAxis::Y, max_force);
-        #[cfg(feature = "dim3")]
-        self.data.set_motor_max_force(JointAxis::Z, max_force);
         self
     }
 
@@ -160,19 +141,20 @@ impl RopeJoint {
         self.data.limits(axis)
     }
 
-    /// Sets the `[min,max]` limit distances attached bodies can translate.
-    pub fn set_limits(&mut self, limits: [Real; 2]) -> &mut Self {
-        self.data.set_limits(JointAxis::X, limits);
-        self.data.set_limits(JointAxis::Y, limits);
-        #[cfg(feature = "dim3")]
-        self.data.set_limits(JointAxis::Z, limits);
+    /// Sets the maximum allowed distance between the attached bodies.
+    ///
+    /// The `max_dist` must be strictly greater than 0.0.
+    pub fn set_max_distance(&mut self, max_dist: Real) -> &mut Self {
+        self.data.set_limits(JointAxis::X, [0.0, max_dist]);
         self
     }
-}
 
-impl Default for RopeJoint {
-    fn default() -> Self {
-        Self::new()
+    /// The maximum distance between the attached bodies.
+    pub fn max_distance(&self) -> Real {
+        self.data
+            .limits(JointAxis::X)
+            .map(|l| l.max)
+            .unwrap_or(Real::MAX)
     }
 }
 
@@ -191,10 +173,8 @@ pub struct RopeJointBuilder(RopeJoint);
 
 impl RopeJointBuilder {
     /// Creates a new builder for rope joints.
-    ///
-    /// This axis is expressed in the local-space of both rigid-bodies.
-    pub fn new() -> Self {
-        Self(RopeJoint::new())
+    pub fn new(max_dist: Real) -> Self {
+        Self(RopeJoint::new(max_dist))
     }
 
     /// Sets the joint’s anchor, expressed in the local-space of the first rigid-body.
@@ -266,10 +246,12 @@ impl RopeJointBuilder {
         self
     }
 
-    /// Sets the `[min,max]` limit distances attached bodies can translate.
+    /// Sets the maximum allowed distance between the attached bodies.
+    ///
+    /// The `max_dist` must be strictly greater than 0.0.    
     #[must_use]
-    pub fn limits(mut self, limits: [Real; 2]) -> Self {
-        self.0.set_limits(limits);
+    pub fn max_distance(mut self, max_dist: Real) -> Self {
+        self.0.set_max_distance(max_dist);
         self
     }
 
@@ -277,12 +259,6 @@ impl RopeJointBuilder {
     #[must_use]
     pub fn build(self) -> RopeJoint {
         self.0
-    }
-}
-
-impl Default for RopeJointBuilder {
-    fn default() -> Self {
-        Self::new()
     }
 }
 

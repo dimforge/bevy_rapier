@@ -1,6 +1,5 @@
 use bevy::prelude::Entity;
 
-pub use rapier::geometry::InteractionGroups;
 pub use rapier::pipeline::QueryFilterFlags;
 
 use crate::geometry::CollisionGroups;

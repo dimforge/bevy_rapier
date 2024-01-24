@@ -6,6 +6,7 @@ pub use self::fixed_joint::*;
 pub use self::prismatic_joint::*;
 pub use self::revolute_joint::*;
 pub use self::rope_joint::*;
+pub use self::spring_joint::*;
 
 use bevy::reflect::Reflect;
 use rapier::dynamics::CoefficientCombineRule as RapierCoefficientCombineRule;
@@ -24,6 +25,7 @@ mod rope_joint;
 
 #[cfg(feature = "dim3")]
 mod spherical_joint;
+mod spring_joint;
 
 /// Rules used to combine two coefficients.
 ///
