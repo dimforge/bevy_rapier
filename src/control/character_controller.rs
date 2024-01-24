@@ -180,7 +180,7 @@ impl Default for KinematicCharacterController {
             min_slope_slide_angle: def.min_slope_slide_angle,
             apply_impulse_to_dynamic_bodies: true,
             snap_to_ground: def.snap_to_ground,
-            filter_flags: QueryFilterFlags::default(),
+            filter_flags: QueryFilterFlags::default() | QueryFilterFlags::EXCLUDE_SENSORS,
             filter_groups: None,
         }
     }
