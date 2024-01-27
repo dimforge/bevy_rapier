@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.24.0 (27 Jan. 2024)
+The main highlight of this release is the implementation of a new non-linear constraints solver for better stability
+and increased convergence rates. See [#579](https://github.com/dimforge/rapier/pull/579) for additional information.
+
+In order to adjust the number of iterations of the new solver, simply adjust `IntegrationParameters::num_solver_iterations`.
+If recovering the old solver behavior is useful to you, call `IntegrationParameters::switch_to_standard_pgs_solver()`.
+
+It is now possible to specify some additional solver iteration for specific rigid-bodies (and everything interacting
+with it directly or indirectly through contacts and joints) by adding the `AdditionalSolverIterations` component to the
+same entity as the rigid-body. This allows for higher-accuracy on subsets of the physics scene without affecting
+performance of the other parts of the simulation.
+
+### Fix
+- Fix bug causing angular joint limits and motor to sometimes only take into account half of the angles specified by the user.
+- Fix bug where collisions would not be re-computed after a collider was re-enabled.
+
+### Added
+- Add a `SpringJoint` and `SpringJointBuilder` for simulating springs with customizable stiffness and damping coefficients.
+- Fix incorrect update of angular degrees-of-freedoms on spherical multibody joints.
+- Fix debug-renderer showing moved kinematic rigid-bodies only at their initial position.
+
+### Modified
+- Rename `RapierContext::contacts_with` to `RapierContext::contact_pairs_with`.
+- Rename `RapierContext::intersections_with` to `RapierContext::intersection_pairs_with`.
+- Collisions between the character controller and sensors are now disabled by default.
+
 ## 0.23.0
 ### Modified
 - Update to Bevy 0.12
