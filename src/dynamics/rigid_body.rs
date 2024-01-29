@@ -566,7 +566,6 @@ pub struct TransformInterpolation {
     pub start: Option<Isometry<f32>>,
     /// The end point of the interpolation.
     pub end: Option<Isometry<f32>>,
-    pub elapsed_time: f32,
 }
 
 impl TransformInterpolation {

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use std::sync::RwLock;
 
 use rapier::prelude::{
@@ -18,6 +18,8 @@ use crate::control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput};
 use crate::dynamics::TransformInterpolation;
 use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
 use rapier::control::CharacterAutostep;
+
+use super::interpolation_context::RapierInterpolationContext;
 
 /// The Rapier context, containing all the state of the physics engine.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -49,7 +51,7 @@ pub struct RapierContext {
     /// The integration parameters, controlling various low-level coefficient of the simulation.
     pub integration_parameters: IntegrationParameters,
     pub(crate) physics_scale: Real,
-    pub(crate) temporal_presentation_time: VecDeque<f32>,
+    pub(crate) interpolation: RapierInterpolationContext,
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub(crate) event_handler: Option<Box<dyn EventHandler>>,
     // For transform change detection.
@@ -86,8 +88,8 @@ impl Default for RapierContext {
             pipeline: PhysicsPipeline::new(),
             query_pipeline: QueryPipeline::new(),
             integration_parameters: IntegrationParameters::default(),
-            temporal_presentation_time: vec![0.0; 8].into(),
             physics_scale: 1.0,
+            interpolation: RapierInterpolationContext::default(),
             event_handler: None,
             last_body_transform_set: HashMap::new(),
             entity2body: HashMap::new(),
@@ -250,19 +252,17 @@ impl RapierContext {
             );
         }
 
+        // NOTE: Update the interpolation data must be after all substeps.
         for (handle, mut interpolation) in interpolation_query.iter_mut() {
             if let Some(body) = self.bodies.get(handle.0) {
-                if interpolation.elapsed_time > 0.0 {
+                if self.interpolation.is_after_update() {
                     interpolation.start = interpolation.end;
-                    interpolation.elapsed_time = 0.0;
                 }
-                //bevy::log::info!("interpolated: {}", body.position().translation.z);
                 interpolation.end = Some(*body.position());
-
-                //interpolation.start = Some(*body.position());
-                //interpolation.end = None;
             }
         }
+
+        self.interpolation.notice_fixed_update_frame();
     }
 
     /// This method makes sure tha the rigid-body positions have been propagated to

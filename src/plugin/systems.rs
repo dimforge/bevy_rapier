@@ -404,11 +404,10 @@ pub fn apply_rigid_body_user_changes(
                 }
                 _ => {
                     if transform_changed == Some(true) {
-                        //bevy::log::info!("pos: {}", rb.position().translation.z);
-                        /*rb.set_position(
+                        rb.set_position(
                             utils::transform_to_iso(&global_transform.compute_transform(), scale),
                             true,
-                        );*/
+                        );
                         context
                             .last_body_transform_set
                             .insert(handle.0, *global_transform);
@@ -535,8 +534,8 @@ pub fn apply_joint_user_changes(
 pub fn writeback_rigid_bodies(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
-    time: Res<Time<Fixed>>,
-    presentation_time: Res<Time>,
+    fixed_time: Res<Time<Fixed>>,
+    presentation_time: Res<Time<bevy::time::Real>>,
     global_transforms: Query<&GlobalTransform>,
     mut writeback: Query<
         RigidBodyWritebackComponents,
@@ -545,13 +544,9 @@ pub fn writeback_rigid_bodies(
 ) {
     let context = &mut *context;
     let scale = context.physics_scale;
-
-    context.temporal_presentation_time.pop_front();
-    context
-        .temporal_presentation_time
-        .push_back(presentation_time.delta_seconds());
-    let temporal_presentation_time_delta = context.temporal_presentation_time.iter().sum::<f32>()
-        / context.temporal_presentation_time.len() as f32;
+    let lerp_percentage = context
+        .interpolation
+        .get_lerp_percentage_for_frame(&fixed_time, &presentation_time);
 
     if config.physics_pipeline_active {
         for (entity, parent, transform, mut interpolation, mut velocity, mut sleeping) in
@@ -569,25 +564,7 @@ pub fn writeback_rigid_bodies(
                             interpolation.end = Some(*rb.position());
                         }
 
-                        //bevy::log::info!("{}", time.overstep().as_secs_f32());
-                        //let lerp = (interpolation.elapsed_time / time.delta_seconds()).min(1.0);
-                        //bevy::log::info!("lerp: {}", temporal_presentation_time_delta);
-                        interpolation.elapsed_time += presentation_time.delta_seconds();
-                        let lerp = match time.delta_seconds() + 0.001
-                            >= temporal_presentation_time_delta
-                        {
-                            true => time.overstep_percentage(),
-                            false => (interpolation.elapsed_time
-                                / presentation_time.delta_seconds())
-                            .min(1.0),
-                        };
-                        if let Some(interpolated) =
-                            //interpolation.lerp_slerp(time.overstep_percentage())
-                            interpolation.lerp_slerp(lerp)
-                        {
-                            //interpolation.start = Some(interpolated);
-                            //bevy::log::info!("lerp: {}", time.overstep_percentage());
-                            //interpolated_pos = Transform::default(); //utils::iso_to_transform(&interpolated, scale);
+                        if let Some(interpolated) = interpolation.lerp_slerp(lerp_percentage) {
                             interpolated_pos = utils::iso_to_transform(&interpolated, scale);
                         }
                     }
@@ -1474,7 +1451,6 @@ pub fn update_character_controls(
                 filter,
                 |c| collisions.push(c),
             );
-            //bevy::log::info!("whaat: {}", movement.translation.z);
 
             if controller.apply_impulse_to_dynamic_bodies {
                 for collision in &*collisions {
@@ -1491,7 +1467,16 @@ pub fn update_character_controls(
                 }
             }
 
-            /*if let Ok(mut transform) = transforms.get_mut(entity_to_move) {
+            // NOTE: Update the translation of the Rapier's rigid body without editing the Bevy's transform for
+            //       preventing noticing change in the [`systems::apply_rigid_body_user_changes`] for kinematic bodies.
+            if let Some(body) = body_handle.and_then(|h| context.bodies.get_mut(h.0)) {
+                // TODO: Use `set_next_kinematic_translation` for position based kinematic bodies? - Vixenka 29.01.2024
+                body.set_translation(
+                    body.translation() + movement.translation * physics_scale,
+                    true,
+                );
+            } else if let Ok(mut transform) = transforms.get_mut(entity_to_move) {
+                // I do not know if this else case is still needed, but it was existing in the original code. - Vixenka 29.01.2024
                 // TODO: take the parent’s GlobalTransform rotation into account?
                 transform.translation.x += movement.translation.x * physics_scale;
                 transform.translation.y += movement.translation.y * physics_scale;
@@ -1499,13 +1484,6 @@ pub fn update_character_controls(
                 {
                     transform.translation.z += movement.translation.z * physics_scale;
                 }
-            }*/
-
-            if let Some(body) = body_handle.and_then(|h| context.bodies.get_mut(h.0)) {
-                body.set_translation(
-                    body.translation() + movement.translation * physics_scale,
-                    true,
-                );
             }
 
             let converted_collisions = context
