@@ -1,6 +1,7 @@
 use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
+use bevy::app::RunFixedUpdateLoop;
 use bevy::{
     ecs::{
         event::{event_update_system, Events},
@@ -205,7 +206,7 @@ where
         // Add each set as necessary
         if self.default_system_setup {
             app.configure_sets(
-                PreUpdate,
+                RunFixedUpdateLoop,
                 PhysicsSet::SyncBackend.before(TransformSystem::TransformPropagate),
             );
             app.configure_sets(
@@ -213,7 +214,7 @@ where
                 PhysicsSet::StepSimulation.before(TransformSystem::TransformPropagate),
             );
             app.configure_sets(
-                PostUpdate,
+                Update,
                 PhysicsSet::Writeback.before(TransformSystem::TransformPropagate),
             );
 
@@ -221,7 +222,7 @@ where
             app.add_systems(PostUpdate, (systems::sync_removals,));
 
             app.add_systems(
-                PreUpdate,
+                RunFixedUpdateLoop,
                 Self::get_systems(PhysicsSet::SyncBackend).in_set(PhysicsSet::SyncBackend),
             );
             app.add_systems(
@@ -229,7 +230,7 @@ where
                 Self::get_systems(PhysicsSet::StepSimulation).in_set(PhysicsSet::StepSimulation),
             );
             app.add_systems(
-                PostUpdate,
+                Update,
                 Self::get_systems(PhysicsSet::Writeback).in_set(PhysicsSet::Writeback),
             );
         }

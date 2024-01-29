@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::sync::RwLock;
 
 use rapier::prelude::{
@@ -49,6 +49,7 @@ pub struct RapierContext {
     /// The integration parameters, controlling various low-level coefficient of the simulation.
     pub integration_parameters: IntegrationParameters,
     pub(crate) physics_scale: Real,
+    pub(crate) temporal_presentation_time: VecDeque<f32>,
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub(crate) event_handler: Option<Box<dyn EventHandler>>,
     // For transform change detection.
@@ -85,6 +86,7 @@ impl Default for RapierContext {
             pipeline: PhysicsPipeline::new(),
             query_pipeline: QueryPipeline::new(),
             integration_parameters: IntegrationParameters::default(),
+            temporal_presentation_time: vec![0.0; 8].into(),
             physics_scale: 1.0,
             event_handler: None,
             last_body_transform_set: HashMap::new(),
@@ -227,13 +229,6 @@ impl RapierContext {
 
         self.integration_parameters.dt = delta_time;
 
-        for (handle, mut interpolation) in interpolation_query.iter_mut() {
-            if let Some(body) = self.bodies.get(handle.0) {
-                interpolation.start = interpolation.end;
-                interpolation.end = Some(*body.position());
-            }
-        }
-
         let mut substep_integration_parameters = self.integration_parameters;
         substep_integration_parameters.dt = delta_time / substeps as Real;
 
@@ -253,6 +248,20 @@ impl RapierContext {
                 hooks,
                 events,
             );
+        }
+
+        for (handle, mut interpolation) in interpolation_query.iter_mut() {
+            if let Some(body) = self.bodies.get(handle.0) {
+                if interpolation.elapsed_time > 0.0 {
+                    interpolation.start = interpolation.end;
+                    interpolation.elapsed_time = 0.0;
+                }
+                //bevy::log::info!("interpolated: {}", body.position().translation.z);
+                interpolation.end = Some(*body.position());
+
+                //interpolation.start = Some(*body.position());
+                //interpolation.end = None;
+            }
         }
     }
 

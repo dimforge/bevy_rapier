@@ -3,7 +3,10 @@ use bevy::prelude::*;
 use rapier::prelude::{
     Isometry, LockedAxes as RapierLockedAxes, RigidBodyActivation, RigidBodyHandle, RigidBodyType,
 };
-use std::ops::{Add, AddAssign, Sub, SubAssign};
+use std::{
+    ops::{Add, AddAssign, Sub, SubAssign},
+    path::Display,
+};
 
 /// The Rapier handle of a [`RigidBody`] that was inserted to the physics scene.
 #[derive(Copy, Clone, Debug, Component)]
@@ -563,6 +566,7 @@ pub struct TransformInterpolation {
     pub start: Option<Isometry<f32>>,
     /// The end point of the interpolation.
     pub end: Option<Isometry<f32>>,
+    pub elapsed_time: f32,
 }
 
 impl TransformInterpolation {
@@ -582,6 +586,20 @@ impl TransformInterpolation {
             Some(start.lerp_slerp(&end, t))
         } else {
             None
+        }
+    }
+}
+
+impl std::fmt::Display for TransformInterpolation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let (Some(start), Some(end)) = (self.start, self.end) {
+            write!(
+                f,
+                "TransformInterpolation({}, {})",
+                start.translation.z, end.translation.z
+            )
+        } else {
+            write!(f, "TransformInterpolation(None, None)")
         }
     }
 }
