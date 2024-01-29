@@ -44,6 +44,7 @@ serde = { version = "1", features = [ "derive" ], optional = true}
 bevy = { version = "0.12", default-features = false, features = ["x11", "tonemapping_luts"]}
 approx = "0.5.1"
 glam = { version = "0.24", features = [ "approx" ] }
+bevy-inspector-egui = "0.19"
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs

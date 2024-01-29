@@ -12,6 +12,7 @@ fn main() {
             DefaultPlugins,
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
+            bevy_inspector_egui::quick::WorldInspectorPlugin::default(),
         ))
         .add_systems(Startup, (setup_graphics, setup_physics))
         .run();
@@ -33,6 +34,7 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_height = 0.1;
 
     commands.spawn((
+        Name::new("Ground"),
         TransformBundle::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
         Collider::cuboid(ground_size, ground_height, ground_size),
     ));
