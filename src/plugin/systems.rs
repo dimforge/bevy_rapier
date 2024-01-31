@@ -535,7 +535,6 @@ pub fn writeback_rigid_bodies(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
     fixed_time: Res<Time<Fixed>>,
-    presentation_time: Res<Time<bevy::time::Real>>,
     global_transforms: Query<&GlobalTransform>,
     mut writeback: Query<
         RigidBodyWritebackComponents,
@@ -544,9 +543,7 @@ pub fn writeback_rigid_bodies(
 ) {
     let context = &mut *context;
     let scale = context.physics_scale;
-    let lerp_percentage = context
-        .interpolation
-        .get_lerp_percentage_for_frame(&fixed_time, &presentation_time);
+    let lerp_percentage = fixed_time.overstep_percentage();
 
     if config.physics_pipeline_active {
         for (entity, parent, transform, mut interpolation, mut velocity, mut sleeping) in
@@ -714,7 +711,7 @@ pub fn step_simulation<Hooks>(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
     hooks: StaticSystemParam<Hooks>,
-    time: Res<Time>,
+    time: Res<Time<Fixed>>,
     collision_events: EventWriter<CollisionEvent>,
     contact_force_events: EventWriter<ContactForceEvent>,
     interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
