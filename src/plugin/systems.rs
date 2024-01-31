@@ -279,7 +279,6 @@ pub fn apply_rigid_body_user_changes(
             &RapierRigidBodyHandle,
             &GlobalTransform,
             Option<&mut TransformInterpolation>,
-            Option<&KinematicCharacterController>,
         ),
         Changed<GlobalTransform>,
     >,
@@ -354,30 +353,24 @@ pub fn apply_rigid_body_user_changes(
             }
         };
 
-    for (handle, global_transform, mut interpolation, kinematic_character_controller) in
-        changed_transforms.iter_mut()
-    {
+    for (handle, global_transform, mut interpolation) in changed_transforms.iter_mut() {
         // Use an Option<bool> to avoid running the check twice.
         let mut transform_changed = None;
 
-        // Kinematic character controllers update outside of our tick loop, and therefore we must
-        // exclude them from interpolation.
-        if kinematic_character_controller.is_none() {
-            if let Some(interpolation) = interpolation.as_deref_mut() {
-                transform_changed = transform_changed.or_else(|| {
-                    Some(transform_changed_fn(
-                        &handle.0,
-                        global_transform,
-                        &context.last_body_transform_set,
-                    ))
-                });
+        if let Some(interpolation) = interpolation.as_deref_mut() {
+            transform_changed = transform_changed.or_else(|| {
+                Some(transform_changed_fn(
+                    &handle.0,
+                    global_transform,
+                    &context.last_body_transform_set,
+                ))
+            });
 
-                if transform_changed == Some(true) {
-                    // Reset the interpolation so we don’t overwrite
-                    // the user’s input.
-                    interpolation.start = None;
-                    interpolation.end = None;
-                }
+            if transform_changed == Some(true) {
+                // Reset the interpolation so we don’t overwrite
+                // the user’s input.
+                interpolation.start = None;
+                interpolation.end = None;
             }
         }
 
@@ -557,10 +550,6 @@ pub fn writeback_rigid_bodies(
                     let mut interpolated_pos = utils::iso_to_transform(rb.position(), scale);
 
                     if let Some(interpolation) = interpolation.as_deref_mut() {
-                        if interpolation.end.is_none() {
-                            interpolation.end = Some(*rb.position());
-                        }
-
                         if let Some(interpolated) = interpolation.lerp_slerp(lerp_percentage) {
                             interpolated_pos = utils::iso_to_transform(&interpolated, scale);
                         }

@@ -148,7 +148,7 @@ impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystem
 pub enum PhysicsSet {
     /// This set runs the systems responsible for synchronizing (and
     /// initializing) backend data structures with current component state.
-    /// These systems typically run at the after [`CoreSet::Update`].
+    /// These systems typically run at every [`FixedUpdate`].
     SyncBackend,
     /// The systems responsible for advancing the physics simulation, and
     /// updating the internal state for scene queries.
@@ -156,9 +156,9 @@ pub enum PhysicsSet {
     StepSimulation,
     /// The systems responsible for updating
     /// [`crate::geometry::collider::CollidingEntities`] and writing
-    /// the result of the last simulation step into our `bevy_rapier`
+    /// the interpolated result of the last simulation step into our `bevy_rapier`
     /// components and the [`GlobalTransform`] component.
-    /// These systems typically run immediately after [`PhysicsSet::StepSimulation`].
+    /// These systems typically run at every [`Update`].
     Writeback,
 }
 
