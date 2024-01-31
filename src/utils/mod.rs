@@ -48,6 +48,49 @@ pub(crate) fn transform_to_iso(transform: &Transform, physics_scale: Real) -> Is
     )
 }
 
+/// Steps the Bevy app until FixedUpdate is reached.
+/// # Remarks
+/// This function can execute any number of Updates and FixedUpdates.
+#[cfg(test)]
+pub(crate) fn step_fixed_update(app: &mut bevy::app::App) {
+    // This can not be set to small values like one nanosecond, because it will cause nearly infinite loop.
+    const FIXED_DELTA_TIME: f64 = 0.01;
+    const MAX_WAIT_STEPS: usize = 32;
+
+    #[derive(bevy::ecs::system::Resource)]
+    struct FixedUpdateReacherResource {
+        reached: bool,
+    }
+
+    fn fixed_update_reacher(mut resource: bevy::ecs::system::ResMut<FixedUpdateReacherResource>) {
+        resource.reached = true;
+    }
+
+    app.add_systems(bevy::app::FixedUpdate, fixed_update_reacher)
+        .insert_resource(FixedUpdateReacherResource { reached: false })
+        .insert_resource(bevy::time::Time::<bevy::time::Fixed>::from_seconds(
+            FIXED_DELTA_TIME,
+        ));
+
+    for _ in 0..MAX_WAIT_STEPS {
+        app.update();
+
+        if app
+            .world
+            .get_resource::<FixedUpdateReacherResource>()
+            .unwrap()
+            .reached
+        {
+            return;
+        }
+
+        std::thread::sleep(std::time::Duration::from_secs_f64(FIXED_DELTA_TIME))
+    }
+
+    // Do not wait for test break due to timeout if FixedUpdate is not reachable.
+    panic!("FixedUpdate did not reach in {MAX_WAIT_STEPS} steps.");
+}
+
 #[cfg(test)]
 #[cfg(feature = "dim3")]
 mod tests {

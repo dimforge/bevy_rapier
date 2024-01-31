@@ -1,13 +1,10 @@
 use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
-use bevy::{
-    ecs::{
-        event::{event_update_system, Events},
-        schedule::{ScheduleLabel, SystemConfigs},
-        system::SystemParamItem,
-    },
-    utils::intern::Interned,
+use bevy::ecs::{
+    event::{event_update_system, Events},
+    schedule::SystemConfigs,
+    system::SystemParamItem,
 };
 use bevy::{prelude::*, transform::TransformSystem};
 use std::marker::PhantomData;
@@ -20,7 +17,6 @@ pub type NoUserData = ();
 /// This will automatically setup all the resources needed to run a physics simulation with the
 /// Rapier physics engine.
 pub struct RapierPhysicsPlugin<PhysicsHooks = ()> {
-    schedule: Interned<dyn ScheduleLabel>,
     physics_scale: f32,
     default_system_setup: bool,
     _phantom: PhantomData<PhysicsHooks>,
@@ -61,17 +57,6 @@ where
             default_system_setup: true,
             ..default()
         }
-    }
-
-    /// Adds the physics systems to the `FixedUpdate` schedule rather than `PostUpdate`.
-    pub fn in_fixed_schedule(self) -> Self {
-        self.in_schedule(FixedUpdate)
-    }
-
-    /// Adds the physics systems to the provided schedule rather than `PostUpdate`.
-    pub fn in_schedule(mut self, schedule: impl ScheduleLabel) -> Self {
-        self.schedule = schedule.intern();
-        self
     }
 
     /// Provided for use when staging systems outside of this plugin using
@@ -135,7 +120,6 @@ pub struct RapierTransformPropagateSet;
 impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystemParam> {
     fn default() -> Self {
         Self {
-            schedule: PostUpdate.intern(),
             physics_scale: 1.0,
             default_system_setup: true,
             _phantom: PhantomData,
@@ -143,7 +127,7 @@ impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystem
     }
 }
 
-/// [`StageLabel`] for each phase of the plugin.
+/// [`SystemSet`] for each phase of the plugin.
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum PhysicsSet {
     /// This set runs the systems responsible for synchronizing (and

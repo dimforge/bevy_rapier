@@ -1717,7 +1717,7 @@ mod tests {
                 .spawn(TransformBundle::from(parent_transform))
                 .push_children(&[child]);
 
-            app.update();
+            utils::step_fixed_update(&mut app);
 
             let child_transform = app.world.entity(child).get::<GlobalTransform>().unwrap();
             let context = app.world.resource::<RapierContext>();
@@ -1775,7 +1775,7 @@ mod tests {
                 .push_children(&[child])
                 .id();
 
-            app.update();
+            utils::step_fixed_update(&mut app);
 
             let child_transform = app
                 .world
