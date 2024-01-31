@@ -1517,7 +1517,10 @@ mod tests {
     use std::f32::consts::PI;
 
     use super::*;
-    use crate::plugin::{NoUserData, RapierPhysicsPlugin};
+    use crate::{
+        plugin::{NoUserData, RapierPhysicsPlugin},
+        utils::testing,
+    };
 
     #[test]
     fn colliding_entities_updates() {
@@ -1717,7 +1720,7 @@ mod tests {
                 .spawn(TransformBundle::from(parent_transform))
                 .push_children(&[child]);
 
-            utils::step_fixed_update(&mut app);
+            testing::step_fixed_update(&mut app);
 
             let child_transform = app.world.entity(child).get::<GlobalTransform>().unwrap();
             let context = app.world.resource::<RapierContext>();
@@ -1775,7 +1778,7 @@ mod tests {
                 .push_children(&[child])
                 .id();
 
-            utils::step_fixed_update(&mut app);
+            testing::step_fixed_update(&mut app);
 
             let child_transform = app
                 .world
