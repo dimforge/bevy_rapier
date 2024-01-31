@@ -21,6 +21,7 @@ pub struct RapierConfiguration {
     pub scaled_shape_subdivision: u32,
     /// Specifies if backend sync should always accept tranform changes, which may be from the writeback stage.
     pub force_update_from_transform_changes: bool,
+    /// The number of substeps that will be performed at each tick.
     pub substeps: usize,
 }
 
