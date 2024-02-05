@@ -12,11 +12,11 @@ const GRAVITY: f32 = -9.81;
 
 fn main() {
     App::new()
-        // .insert_resource(ClearColor(Color::rgb(
-        //     0xF9 as f32 / 255.0,
-        //     0xF9 as f32 / 255.0,
-        //     0xFF as f32 / 255.0,
-        // )))
+        .insert_resource(ClearColor(Color::rgb(
+            0xF9 as f32 / 255.0,
+            0xF9 as f32 / 255.0,
+            0xFF as f32 / 255.0,
+        )))
         .init_resource::<MovementInput>()
         .init_resource::<LookInput>()
         .add_plugins((
@@ -59,6 +59,7 @@ pub fn setup_player(mut commands: Commands) {
             },
         ))
         .with_children(|b| {
+            // FPS Camera
             b.spawn(Camera3dBundle {
                 transform: Transform::from_xyz(0.0, 0.2, -0.1),
                 ..Default::default()
@@ -120,9 +121,11 @@ fn setup_map(mut commands: Commands) {
     }
 }
 
+/// Keyboard input vector
 #[derive(Default, Resource, Deref, DerefMut)]
 struct MovementInput(Vec3);
 
+/// Mouse input vector
 #[derive(Default, Resource, Deref, DerefMut)]
 struct LookInput(Vec2);
 
@@ -174,9 +177,6 @@ fn player_movement(
         return;
     };
     let delta_time = time.delta_seconds();
-    if *grounded_timer > 0.0 {
-        *grounded_timer -= delta_time;
-    }
     // Retrieve input
     let mut movement = Vec3::new(input.x, 0.0, input.z) * MOVEMENT_SPEED;
     let jump_speed = input.y * JUMP_SPEED;
@@ -190,6 +190,7 @@ fn player_movement(
     // If we are grounded we can jump
     if *grounded_timer > 0.0 {
         *grounded_timer -= delta_time;
+        // If we jump we clear the grounded tolerance
         if jump_speed > 0.0 {
             *vertical_movement = jump_speed;
             *grounded_timer = 0.0;
