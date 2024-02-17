@@ -10,6 +10,9 @@ opt-level = 1
 codegen-units = 1
 
 [patch.crates-io]
+bevy = { git = "https://github.com/bevyengine/bevy" }
+nalgebra = { git = "https://github.com/dimforge/nalgebra" }
+
 #nalgebra = { path = "../nalgebra" }
 #parry2d = { path = "../parry/crates/parry2d" }
 #parry3d = { path = "../parry/crates/parry3d" }

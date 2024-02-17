@@ -1518,7 +1518,7 @@ pub fn update_character_controls(
 #[cfg(test)]
 mod tests {
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
-    use bevy::prelude::shape::{Capsule, Cube};
+    use bevy::prelude::{Capsule3d, Cuboid};
     use bevy::{
         asset::AssetPlugin,
         ecs::event::Events,
@@ -1629,7 +1629,7 @@ mod tests {
             .add_systems(Update, init_async_colliders);
 
         let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
-        let cube = meshes.add(Cube::default().into());
+        let cube = meshes.add(Cuboid::default());
 
         let entity = app.world.spawn((cube, AsyncCollider::default())).id();
 
@@ -1654,8 +1654,8 @@ mod tests {
             .add_systems(PostUpdate, init_async_scene_colliders);
 
         let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
-        let cube_handle = meshes.add(Cube::default().into());
-        let capsule_handle = meshes.add(Capsule::default().into());
+        let cube_handle = meshes.add(Cuboid::default());
+        let capsule_handle = meshes.add(Capsule3d::default());
         let cube = app.world.spawn((Name::new("Cube"), cube_handle)).id();
         let capsule = app.world.spawn((Name::new("Capsule"), capsule_handle)).id();
 
@@ -1843,6 +1843,7 @@ mod tests {
                         backends: None,
                         ..Default::default()
                     }),
+                    ..Default::default()
                 },
                 ImagePlugin::default(),
             ));

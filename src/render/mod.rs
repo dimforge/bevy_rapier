@@ -98,7 +98,7 @@ struct BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
     physics_scale: f32,
     custom_colors: Query<'world, 'state, &'a ColliderDebugColor>,
     context: &'b RapierContext,
-    gizmos: Gizmos<'state>,
+    gizmos: Gizmos<'world, 'state>,
 }
 
 impl<'world, 'state, 'a, 'b> BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
