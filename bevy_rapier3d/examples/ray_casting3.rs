@@ -94,7 +94,7 @@ pub fn cast_ray(
         // Then cast the ray.
         let hit = rapier_context.cast_ray(
             ray.origin,
-            ray.direction,
+            ray.direction.into(),
             f32::MAX,
             true,
             QueryFilter::only_dynamic(),
