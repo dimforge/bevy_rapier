@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.25.0 (19 Feb. 2024)
+
+### Modified
+- Update to bevy `0.13`.
+
 ## v0.24.0 (27 Jan. 2024)
 The main highlight of this release is the implementation of a new non-linear constraints solver for better stability
 and increased convergence rates. See [#579](https://github.com/dimforge/rapier/pull/579) for additional information.
