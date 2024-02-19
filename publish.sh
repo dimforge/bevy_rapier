@@ -1,4 +1,5 @@
-#! /bin/bash
+#!/bin/sh
+set -e
 
 tmp=$(mktemp -d)
 
