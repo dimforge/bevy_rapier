@@ -1,14 +1,10 @@
 use crate::pipeline::{CollisionEvent, ContactForceEvent};
-use crate::plugin::configuration::SimulationToRenderTime;
 use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
-use bevy::{
-    ecs::{
-        event::{event_update_system, Events},
-        schedule::{ScheduleLabel, SystemConfigs},
-        system::SystemParamItem,
-    },
-    utils::intern::Interned,
+use bevy::ecs::{
+    event::{event_update_system, Events},
+    schedule::SystemConfigs,
+    system::SystemParamItem,
 };
 use bevy::{prelude::*, transform::TransformSystem};
 use std::marker::PhantomData;
@@ -21,7 +17,6 @@ pub type NoUserData = ();
 /// This will automatically setup all the resources needed to run a physics simulation with the
 /// Rapier physics engine.
 pub struct RapierPhysicsPlugin<PhysicsHooks = ()> {
-    schedule: Interned<dyn ScheduleLabel>,
     physics_scale: f32,
     default_system_setup: bool,
     _phantom: PhantomData<PhysicsHooks>,
@@ -62,17 +57,6 @@ where
             default_system_setup: true,
             ..default()
         }
-    }
-
-    /// Adds the physics systems to the `FixedUpdate` schedule rather than `PostUpdate`.
-    pub fn in_fixed_schedule(self) -> Self {
-        self.in_schedule(FixedUpdate)
-    }
-
-    /// Adds the physics systems to the provided schedule rather than `PostUpdate`.
-    pub fn in_schedule(mut self, schedule: impl ScheduleLabel) -> Self {
-        self.schedule = schedule.intern();
-        self
     }
 
     /// Provided for use when staging systems outside of this plugin using
@@ -136,7 +120,6 @@ pub struct RapierTransformPropagateSet;
 impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystemParam> {
     fn default() -> Self {
         Self {
-            schedule: PostUpdate.intern(),
             physics_scale: 1.0,
             default_system_setup: true,
             _phantom: PhantomData,
@@ -144,12 +127,12 @@ impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystem
     }
 }
 
-/// [`StageLabel`] for each phase of the plugin.
+/// [`SystemSet`] for each phase of the plugin.
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum PhysicsSet {
     /// This set runs the systems responsible for synchronizing (and
     /// initializing) backend data structures with current component state.
-    /// These systems typically run at the after [`CoreSet::Update`].
+    /// These systems typically run at every [`FixedUpdate`].
     SyncBackend,
     /// The systems responsible for advancing the physics simulation, and
     /// updating the internal state for scene queries.
@@ -157,9 +140,9 @@ pub enum PhysicsSet {
     StepSimulation,
     /// The systems responsible for updating
     /// [`crate::geometry::collider::CollidingEntities`] and writing
-    /// the result of the last simulation step into our `bevy_rapier`
+    /// the interpolated result of the last simulation step into our `bevy_rapier`
     /// components and the [`GlobalTransform`] component.
-    /// These systems typically run immediately after [`PhysicsSet::StepSimulation`].
+    /// These systems typically run at every [`Update`].
     Writeback,
 }
 
@@ -195,51 +178,47 @@ where
         // the `RapierConfiguration` if it already exists.
         app.init_resource::<RapierConfiguration>();
 
-        app.insert_resource(SimulationToRenderTime::default())
-            .insert_resource(RapierContext {
-                physics_scale: self.physics_scale,
-                ..Default::default()
-            })
-            .insert_resource(Events::<CollisionEvent>::default())
-            .insert_resource(Events::<ContactForceEvent>::default())
-            .insert_resource(Events::<MassModifiedEvent>::default());
+        app.insert_resource(RapierContext {
+            physics_scale: self.physics_scale,
+            ..Default::default()
+        })
+        .insert_resource(Events::<CollisionEvent>::default())
+        .insert_resource(Events::<ContactForceEvent>::default())
+        .insert_resource(Events::<MassModifiedEvent>::default());
 
         // Add each set as necessary
         if self.default_system_setup {
+            // NOTE: SyncBackend must be run before any StepSimulation.
             app.configure_sets(
-                self.schedule,
-                (
-                    PhysicsSet::SyncBackend,
-                    PhysicsSet::StepSimulation,
-                    PhysicsSet::Writeback,
-                )
-                    .chain()
+                FixedUpdate,
+                PhysicsSet::SyncBackend.before(PhysicsSet::StepSimulation),
+            );
+            app.configure_sets(
+                FixedUpdate,
+                PhysicsSet::StepSimulation
+                    .after(PhysicsSet::SyncBackend)
                     .before(TransformSystem::TransformPropagate),
+            );
+            app.configure_sets(
+                Update,
+                PhysicsSet::Writeback.before(TransformSystem::TransformPropagate),
             );
 
             // These *must* be in the main schedule currently so that they do not miss events.
-            app.add_systems(PostUpdate, (systems::sync_removals,));
+            app.add_systems(PostUpdate, systems::sync_removals);
 
             app.add_systems(
-                self.schedule,
-                (
-                    Self::get_systems(PhysicsSet::SyncBackend).in_set(PhysicsSet::SyncBackend),
-                    Self::get_systems(PhysicsSet::StepSimulation)
-                        .in_set(PhysicsSet::StepSimulation),
-                    Self::get_systems(PhysicsSet::Writeback).in_set(PhysicsSet::Writeback),
-                ),
+                FixedUpdate,
+                Self::get_systems(PhysicsSet::SyncBackend).in_set(PhysicsSet::SyncBackend),
             );
-
-            // Warn user if the timestep mode isn't in Fixed
-            if self.schedule.as_dyn_eq().dyn_eq(FixedUpdate.as_dyn_eq()) {
-                let config = app.world.resource::<RapierConfiguration>();
-                match config.timestep_mode {
-                    TimestepMode::Fixed { .. } => {}
-                    mode => {
-                        warn!("TimestepMode is set to `{:?}`, it is recommended to use `TimestepMode::Fixed` if you have the physics in `FixedUpdate`", mode);
-                    }
-                }
-            }
+            app.add_systems(
+                FixedUpdate,
+                Self::get_systems(PhysicsSet::StepSimulation).in_set(PhysicsSet::StepSimulation),
+            );
+            app.add_systems(
+                Update,
+                Self::get_systems(PhysicsSet::Writeback).in_set(PhysicsSet::Writeback),
+            );
         }
     }
 }
