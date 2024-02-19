@@ -267,7 +267,7 @@ impl MassProperties {
     }
 }
 
-#[derive(Default, Component, Reflect, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[derive(Default, Debug, Component, Reflect, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 #[reflect(Component, PartialEq)]
 /// Flags affecting the behavior of the constraints solver for a given contact manifold.
 pub struct LockedAxes(u8);
