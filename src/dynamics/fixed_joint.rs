@@ -81,6 +81,11 @@ impl FixedJoint {
         self.data.set_local_anchor2(anchor2);
         self
     }
+
+    /// Returns the locked axes that are set for the fixed joint.
+    pub fn locked_axes(&self) -> JointAxesMask {
+        self.data.locked_axes()
+    }
 }
 
 impl From<FixedJoint> for GenericJoint {
