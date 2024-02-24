@@ -7,7 +7,6 @@ use crate::geometry::{Collider, PointProjection, RayIntersection, Toi};
 use crate::math::{Rot, Vect};
 use crate::pipeline::{CollisionEvent, ContactForceEvent, QueryFilter};
 use crate::prelude::events::EventQueue;
-use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query};
 use rapier::control::CharacterAutostep;
 use rapier::prelude::{
     BroadPhase, CCDSolver, ColliderHandle, ColliderSet, EventHandler, FeatureId,

@@ -589,3 +589,16 @@ impl TransformInterpolation {
 #[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct RigidBodyDisabled;
+
+/// Set the additional number of solver iterations run for a rigid-body and
+/// everything interacting with it.
+///
+/// Increasing this number will help improve simulation accuracy on this rigid-body
+/// and every rigid-body interacting directly or indirectly with it (through joints
+/// or contacts). This implies a performance hit.
+///
+/// The default value is 0, meaning exactly [`IntegrationParameters::num_solver_iterations`] will
+/// be used as number of solver iterations for this body.
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Component, Reflect)]
+#[reflect(Component, PartialEq)]
+pub struct AdditionalSolverIterations(pub usize);

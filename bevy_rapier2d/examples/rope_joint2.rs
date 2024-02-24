@@ -36,9 +36,7 @@ pub fn setup_physics(mut commands: Commands) {
         ))
         .id();
 
-    let joint = RopeJointBuilder::new()
-        .local_anchor2(Vec2::new(rope_length, 0.0))
-        .limits([0.0, rope_length]);
+    let joint = RopeJointBuilder::new(rope_length).local_anchor2(Vec2::new(rope_length, 0.0));
 
     commands
         .spawn((
