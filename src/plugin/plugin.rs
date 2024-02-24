@@ -13,6 +13,10 @@ use bevy::{
 use bevy::{prelude::*, transform::TransformSystem};
 use std::marker::PhantomData;
 
+pub use super::context::RapierWorld;
+pub use super::context::WorldId;
+pub use super::context::DEFAULT_WORLD_ID;
+
 /// No specific user-data is associated to the hooks.
 pub type NoUserData = ();
 
@@ -98,13 +102,14 @@ where
                 systems::init_colliders,
                 systems::init_joints,
                 systems::sync_removals,
-                // Run this here so the folowwing systems do not have a 1 frame delay.
+                // Run this here so the following systems do not have a 1 frame delay.
                 apply_deferred,
                 systems::apply_scale,
                 systems::apply_collider_user_changes,
                 systems::apply_rigid_body_user_changes,
                 systems::apply_joint_user_changes,
                 systems::apply_initial_rigid_body_impulses,
+                systems::sync_vel,
             )
                 .chain()
                 .into_configs(),
@@ -189,17 +194,18 @@ where
             .register_type::<CollisionGroups>()
             .register_type::<SolverGroups>()
             .register_type::<ContactForceEventThreshold>()
-            .register_type::<Group>();
+            .register_type::<Group>()
+            .register_type::<PhysicsWorld>();
 
         // Insert all of our required resources. Don’t overwrite
         // the `RapierConfiguration` if it already exists.
         app.init_resource::<RapierConfiguration>();
 
         app.insert_resource(SimulationToRenderTime::default())
-            .insert_resource(RapierContext {
+            .insert_resource(RapierContext::new(RapierWorld {
                 physics_scale: self.physics_scale,
                 ..Default::default()
-            })
+            }))
             .insert_resource(Events::<CollisionEvent>::default())
             .insert_resource(Events::<ContactForceEvent>::default())
             .insert_resource(Events::<MassModifiedEvent>::default());
@@ -218,7 +224,16 @@ where
             );
 
             // These *must* be in the main schedule currently so that they do not miss events.
-            app.add_systems(PostUpdate, (systems::sync_removals,));
+            app.add_systems(
+                PostUpdate,
+                (
+                    // Change any worlds needed before doing any calculations
+                    systems::apply_changing_worlds,
+                    // Make sure to remove any dead bodies after changing_worlds but before everything else
+                    // to avoid it deleting something right after adding it
+                    systems::sync_removals,
+                ),
+            );
 
             app.add_systems(
                 self.schedule,

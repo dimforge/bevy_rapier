@@ -1,5 +1,5 @@
 use crate::math::{Real, Vect};
-use bevy::prelude::{Entity, Event, EventWriter};
+use bevy::prelude::{Entity, Event};
 use rapier::dynamics::RigidBodySet;
 use rapier::geometry::{
     ColliderHandle, ColliderSet, CollisionEvent as RapierCollisionEvent, CollisionEventFlags,
@@ -52,20 +52,19 @@ pub struct ContactForceEvent {
 // issue).
 /// A set of queues collecting events emitted by the physics engine.
 pub(crate) struct EventQueue<'a> {
-    // Used ot retrieve the entity of colliders that have been removed from the simulation
+    // Used to retrieve the entity of colliders that have been removed from the simulation
     // since the last physics step.
     pub deleted_colliders: &'a HashMap<ColliderHandle, Entity>,
-    pub collision_events: RwLock<EventWriter<'a, CollisionEvent>>,
-    pub contact_force_events: RwLock<EventWriter<'a, ContactForceEvent>>,
+    pub collision_events: &'a mut RwLock<Vec<CollisionEvent>>,
+    pub contact_force_events: &'a mut RwLock<Vec<ContactForceEvent>>,
 }
 
 impl<'a> EventQueue<'a> {
-    fn collider2entity(&self, colliders: &ColliderSet, handle: ColliderHandle) -> Entity {
+    fn collider2entity(&self, colliders: &ColliderSet, handle: ColliderHandle) -> Option<Entity> {
         colliders
             .get(handle)
             .map(|co| Entity::from_bits(co.user_data as u64))
             .or_else(|| self.deleted_colliders.get(&handle).copied())
-            .expect("Internal error: entity not found for collision event.")
     }
 }
 
@@ -79,19 +78,29 @@ impl<'a> EventHandler for EventQueue<'a> {
     ) {
         let event = match event {
             RapierCollisionEvent::Started(h1, h2, flags) => {
-                let e1 = self.collider2entity(colliders, h1);
-                let e2 = self.collider2entity(colliders, h2);
+                let Some(e1) = self.collider2entity(colliders, h1) else {
+                    return;
+                };
+                let Some(e2) = self.collider2entity(colliders, h2) else {
+                    return;
+                };
+
                 CollisionEvent::Started(e1, e2, flags)
             }
             RapierCollisionEvent::Stopped(h1, h2, flags) => {
-                let e1 = self.collider2entity(colliders, h1);
-                let e2 = self.collider2entity(colliders, h2);
+                let Some(e1) = self.collider2entity(colliders, h1) else {
+                    return;
+                };
+                let Some(e2) = self.collider2entity(colliders, h2) else {
+                    return;
+                };
+
                 CollisionEvent::Stopped(e1, e2, flags)
             }
         };
 
         if let Ok(mut events) = self.collision_events.write() {
-            events.send(event);
+            events.push(event);
         }
     }
 
@@ -105,9 +114,17 @@ impl<'a> EventHandler for EventQueue<'a> {
     ) {
         let rapier_event =
             RapierContactForceEvent::from_contact_pair(dt, contact_pair, total_force_magnitude);
+
+        let Some(collider1) = self.collider2entity(colliders, rapier_event.collider1) else {
+            return;
+        };
+        let Some(collider2) = self.collider2entity(colliders, rapier_event.collider2) else {
+            return;
+        };
+
         let event = ContactForceEvent {
-            collider1: self.collider2entity(colliders, rapier_event.collider1),
-            collider2: self.collider2entity(colliders, rapier_event.collider2),
+            collider1,
+            collider2,
             total_force: rapier_event.total_force.into(),
             total_force_magnitude: rapier_event.total_force_magnitude,
             max_force_direction: rapier_event.max_force_direction.into(),
@@ -115,7 +132,7 @@ impl<'a> EventHandler for EventQueue<'a> {
         };
 
         if let Ok(mut events) = self.contact_force_events.write() {
-            events.send(event);
+            events.push(event);
         }
     }
 }

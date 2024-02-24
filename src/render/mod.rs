@@ -1,3 +1,4 @@
+use crate::plugin::context::RapierWorld;
 use crate::plugin::RapierContext;
 use bevy::prelude::*;
 use bevy::transform::TransformSystem;
@@ -97,19 +98,24 @@ impl Plugin for RapierDebugRenderPlugin {
 struct BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
     physics_scale: f32,
     custom_colors: Query<'world, 'state, &'a ColliderDebugColor>,
-    context: &'b RapierContext,
+    world: Option<&'b RapierWorld>,
     gizmos: Gizmos<'world, 'state>,
 }
 
 impl<'world, 'state, 'a, 'b> BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
     fn object_color(&self, object: DebugRenderObject, default: [f32; 4]) -> [f32; 4] {
         let color = match object {
-            DebugRenderObject::Collider(h, ..) => self.context.colliders.get(h).and_then(|co| {
-                self.custom_colors
-                    .get(Entity::from_bits(co.user_data as u64))
-                    .map(|co| co.0)
-                    .ok()
-            }),
+            DebugRenderObject::Collider(h, ..) => self
+                .world
+                .expect("World not set before triggering debug render")
+                .colliders
+                .get(h)
+                .and_then(|co| {
+                    self.custom_colors
+                        .get(Entity::from_bits(co.user_data as u64))
+                        .map(|co| co.0)
+                        .ok()
+                }),
             _ => None,
         };
 
@@ -164,21 +170,26 @@ fn debug_render_scene(
     }
 
     let mut backend = BevyLinesRenderBackend {
-        physics_scale: rapier_context.physics_scale,
+        physics_scale: 0.0,
         custom_colors,
-        context: &rapier_context,
+        world: None,
         gizmos,
     };
 
-    let unscaled_style = render_context.pipeline.style;
-    render_context.pipeline.style.rigid_body_axes_length /= rapier_context.physics_scale;
-    render_context.pipeline.render(
-        &mut backend,
-        &rapier_context.bodies,
-        &rapier_context.colliders,
-        &rapier_context.impulse_joints,
-        &rapier_context.multibody_joints,
-        &rapier_context.narrow_phase,
-    );
-    render_context.pipeline.style = unscaled_style;
+    for (_, world) in rapier_context.worlds.iter() {
+        backend.world = Some(world);
+        backend.physics_scale = world.physics_scale;
+
+        let unscaled_style = render_context.pipeline.style;
+        render_context.pipeline.style.rigid_body_axes_length /= world.physics_scale;
+        render_context.pipeline.render(
+            &mut backend,
+            &world.bodies,
+            &world.colliders,
+            &world.impulse_joints,
+            &world.multibody_joints,
+            &world.narrow_phase,
+        );
+        render_context.pipeline.style = unscaled_style;
+    }
 }
