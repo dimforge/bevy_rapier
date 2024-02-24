@@ -47,7 +47,7 @@ async-collider = ["bevy/bevy_asset", "bevy/bevy_scene"]
 [dependencies]
 bevy = { version = "0.13", default-features = false }
 nalgebra = { version = "0.32.3", features = [ "convert-glam025" ] }
-rapier3d = "0.18"
+rapier3d = { git = "https://github.com/AnthonyTornetta/rapier", version = "0.18.0" }
 bitflags = "2.4"
 log = "0.4"
 serde = { version = "1", features = ["derive"], optional = true }
