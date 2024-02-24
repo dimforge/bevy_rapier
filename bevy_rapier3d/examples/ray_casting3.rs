@@ -96,7 +96,7 @@ pub fn cast_ray(
             .cast_ray(
                 DEFAULT_WORLD_ID,
                 ray.origin,
-                ray.direction,
+                *ray.direction,
                 f32::MAX,
                 true,
                 QueryFilter::only_dynamic(),

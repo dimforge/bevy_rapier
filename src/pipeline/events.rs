@@ -100,7 +100,7 @@ impl<'a> EventHandler for EventQueue<'a> {
         };
 
         if let Ok(mut events) = self.collision_events.write() {
-            events.push(event)
+            events.push(event);
         }
     }
 

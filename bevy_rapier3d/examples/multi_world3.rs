@@ -30,10 +30,18 @@ fn setup_graphics(mut commands: Commands) {
     });
 }
 
-fn move_middle_world(time: Res<Time>, mut query: Query<(&mut Transform, &PhysicsWorld)>) {
-    for (mut transform, world) in query.iter_mut() {
+#[derive(Component)]
+struct Platform {
+    starting_y: f32,
+}
+
+fn move_middle_world(
+    time: Res<Time>,
+    mut query: Query<(&mut Transform, &PhysicsWorld, &Platform)>,
+) {
+    for (mut transform, world, platform) in query.iter_mut() {
         if world.world_id == N_WORLDS / 2 {
-            transform.translation.y = -time.elapsed_seconds().sin();
+            transform.translation.y = platform.starting_y + -time.elapsed_seconds().sin();
         }
     }
 }
@@ -74,14 +82,13 @@ pub fn setup_physics(mut context: ResMut<RapierContext>, mut commands: Commands)
         let ground_size = 5.1;
         let ground_height = 0.1;
 
+        let starting_y = (world_id as f32) * -0.5 - ground_height;
+
         commands.spawn((
-            TransformBundle::from(Transform::from_xyz(
-                0.0,
-                (world_id as f32) * -0.5 - ground_height,
-                0.0,
-            )),
+            TransformBundle::from(Transform::from_xyz(0.0, starting_y, 0.0)),
             Collider::cuboid(ground_size, ground_height, ground_size),
             ColliderDebugColor(color),
+            Platform { starting_y },
             PhysicsWorld { world_id },
         ));
 

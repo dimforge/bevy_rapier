@@ -15,14 +15,16 @@ use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
-    BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities, KinematicCharacterController,
-    KinematicCharacterControllerOutput, MassModifiedEvent, PhysicsWorld, Real, RigidBodyDisabled,
+    AdditionalSolverIterations, BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities,
+    KinematicCharacterController, KinematicCharacterControllerOutput, MassModifiedEvent,
+    PhysicsWorld, RapierWorld, Real, RigidBodyDisabled, WorldId, DEFAULT_WORLD_ID,
 };
 use crate::utils;
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
 use bevy::prelude::*;
 use rapier::prelude::*;
 use std::collections::HashMap;
+use crate::control::CharacterCollision;
 
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 use {
@@ -30,12 +32,6 @@ use {
     bevy::scene::SceneInstance,
 };
 
-use crate::control::CharacterCollision;
-#[cfg(feature = "dim2")]
-use bevy::math::Vec3Swizzles;
-
-use super::context::{RapierWorld, DEFAULT_WORLD_ID};
-use super::WorldId;
 
 /// Components that will be updated after a physics step.
 pub type RigidBodyWritebackComponents<'a> = (
@@ -62,9 +58,12 @@ pub type RigidBodyComponents<'a> = (
     Option<&'a Ccd>,
     Option<&'a Dominance>,
     Option<&'a Sleeping>,
-    Option<&'a Damping>,
-    Option<&'a RigidBodyDisabled>,
-    Option<&'a PhysicsWorld>,
+    (
+        Option<&'a Damping>,
+        Option<&'a RigidBodyDisabled>,
+        Option<&'a PhysicsWorld>,
+        Option<&'a AdditionalSolverIterations>,
+    ),
 );
 
 /// Components related to colliders.
@@ -548,14 +547,24 @@ pub fn apply_rigid_body_user_changes(
         (&RapierRigidBodyHandle, &Damping, Option<&PhysicsWorld>),
         Changed<Damping>,
     >,
-    changed_disabled: Query<
-        (
-            &RapierRigidBodyHandle,
-            &RigidBodyDisabled,
-            Option<&PhysicsWorld>,
-        ),
-        Changed<RigidBodyDisabled>,
-    >,
+    (changed_disabled, changed_additional_solver_iterations): (
+        Query<
+            (
+                &RapierRigidBodyHandle,
+                &RigidBodyDisabled,
+                Option<&PhysicsWorld>,
+            ),
+            Changed<RigidBodyDisabled>,
+        >,
+        Query<
+            (
+                &RapierRigidBodyHandle,
+                &AdditionalSolverIterations,
+                Option<&PhysicsWorld>,
+            ),
+            Changed<AdditionalSolverIterations>,
+        >,
+    ),
 
     mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
@@ -716,6 +725,16 @@ pub fn apply_rigid_body_user_changes(
             }
 
             mass_modified.send(entity.into());
+        }
+    }
+
+    for (handle, additional_solver_iters, world_within) in
+        changed_additional_solver_iterations.iter()
+    {
+        let world = get_world(world_within, &mut context);
+
+        if let Some(rb) = world.bodies.get_mut(handle.0) {
+            rb.set_additional_solver_iterations(additional_solver_iters.0);
         }
     }
 
@@ -1589,9 +1608,7 @@ pub fn init_rigid_bodies(
         ccd,
         dominance,
         sleep,
-        damping,
-        disabled,
-        world_within,
+        (damping, disabled, world_within, additional_solver_iters),
     ) in rigid_bodies.iter()
     {
         let world = get_world(world_within, &mut context);
@@ -1648,6 +1665,10 @@ pub fn init_rigid_bodies(
                 }
                 AdditionalMassProperties::Mass(mass) => builder.additional_mass(*mass),
             };
+        }
+
+        if let Some(added_iters) = additional_solver_iters {
+            builder = builder.additional_solver_iterations(added_iters.0);
         }
 
         builder = builder.user_data(entity.to_bits() as u128);
@@ -1822,11 +1843,7 @@ pub fn sync_removals(
     orphan_impulse_joints: Query<Entity, (With<RapierImpulseJointHandle>, Without<ImpulseJoint>)>,
     orphan_multibody_joints: Query<
         Entity,
-        (
-            With<RapierMultibodyJointHandle>,
-            Without<MultibodyJoint>,
-            Option<&PhysicsWorld>,
-        ),
+        (With<RapierMultibodyJointHandle>, Without<MultibodyJoint>),
     >,
 
     mut removed_sensors: RemovedComponents<Sensor>,
@@ -2185,7 +2202,7 @@ pub fn update_character_controls(
 #[cfg(test)]
 mod tests {
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
-    use bevy::prelude::shape::{Capsule, Cube};
+    use bevy::prelude::{Capsule3d, Cuboid};
     use bevy::{
         asset::AssetPlugin,
         ecs::event::Events,
@@ -2297,7 +2314,7 @@ mod tests {
             .add_systems(Update, init_async_colliders);
 
         let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
-        let cube = meshes.add(Cube::default().into());
+        let cube = meshes.add(Cuboid::default());
 
         let entity = app.world.spawn((cube, AsyncCollider::default())).id();
 
@@ -2322,8 +2339,8 @@ mod tests {
             .add_systems(PostUpdate, init_async_scene_colliders);
 
         let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
-        let cube_handle = meshes.add(Cube::default().into());
-        let capsule_handle = meshes.add(Capsule::default().into());
+        let cube_handle = meshes.add(Cuboid::default());
+        let capsule_handle = meshes.add(Capsule3d::default());
         let cube = app.world.spawn((Name::new("Cube"), cube_handle)).id();
         let capsule = app.world.spawn((Name::new("Capsule"), capsule_handle)).id();
 
@@ -2519,6 +2536,7 @@ mod tests {
                         backends: None,
                         ..Default::default()
                     }),
+                    ..Default::default()
                 },
                 ImagePlugin::default(),
             ));
