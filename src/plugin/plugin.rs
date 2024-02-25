@@ -1,10 +1,7 @@
-use crate::pipeline::{CollisionEvent, ContactForceEvent};
-use crate::plugin::configuration::SimulationToRenderTime;
-use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
 use bevy::{
     ecs::{
-        event::{event_update_system, Events},
+        event::event_update_system,
         schedule::{ScheduleLabel, SystemConfigs},
         system::SystemParamItem,
     },
@@ -101,7 +98,6 @@ where
                 systems::init_rigid_bodies,
                 systems::init_colliders,
                 systems::init_joints,
-                systems::sync_removals,
                 // Run this here so the following systems do not have a 1 frame delay.
                 apply_deferred,
                 systems::apply_scale,
@@ -232,7 +228,8 @@ where
                     // Make sure to remove any dead bodies after changing_worlds but before everything else
                     // to avoid it deleting something right after adding it
                     systems::sync_removals,
-                ),
+                )
+                    .chain(),
             );
 
             app.add_systems(

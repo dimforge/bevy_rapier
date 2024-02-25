@@ -1,5 +1,6 @@
 //! Systems responsible for interfacing our Bevy components with the Rapier physics engine.
 
+use crate::control::CharacterCollision;
 use crate::dynamics::{
     AdditionalMassProperties, Ccd, Damping, Dominance, ExternalForce, ExternalImpulse,
     GravityScale, ImpulseJoint, LockedAxes, MassProperties, MultibodyJoint,
@@ -24,14 +25,12 @@ use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
 use bevy::prelude::*;
 use rapier::prelude::*;
 use std::collections::HashMap;
-use crate::control::CharacterCollision;
 
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 use {
     crate::prelude::{AsyncCollider, AsyncSceneCollider},
     bevy::scene::SceneInstance,
 };
-
 
 /// Components that will be updated after a physics step.
 pub type RigidBodyWritebackComponents<'a> = (
@@ -382,18 +381,18 @@ pub fn apply_collider_user_changes(
 
 // Changes the world something is in.
 // This will also change the children of that entity to reflect the new world.
-fn apply_world_update(
+fn recursively_apply_world_update(
     children_query: &Query<&Children>,
-    body_world_query: &Query<(Entity, &PhysicsWorld, Ref<PhysicsWorld>)>,
-    context: &mut RapierContext,
+    physics_world_query: &Query<(Entity, Ref<PhysicsWorld>)>,
+    context: &RapierContext,
     entity: Entity,
     commands: &mut Commands,
     new_world: WorldId,
 ) {
-    if let Ok((_, bw, _)) = body_world_query.get(entity) {
-        if bw.world_id != new_world {
-            // Needs to insert instead of changing a mut bw because
-            // the ChangeTrackers<PhysicsWorld> requires bw to not be mut.
+    if let Ok((_, physics_world)) = physics_world_query.get(entity) {
+        if physics_world.world_id != new_world {
+            // Needs to insert instead of changing a mut physics_world because
+            // the Ref<PhysicsWorld> requires physics_world to not be mut.
             commands.entity(entity).insert(PhysicsWorld {
                 world_id: new_world,
             });
@@ -401,30 +400,17 @@ fn apply_world_update(
 
         // This currently loops through every world to find it, which
         // isn't the most efficient but gets the job done.
-        for (world_id, world) in context.worlds.iter_mut() {
-            if *world_id == new_world && world.entity2body.contains_key(&entity) {
-                // The value of the component did not change, no need to bubble it down or remove it from the world
-                return;
-            }
-
-            if let Some(handle) = world.entity2body.remove(&entity) {
-                let _ = world.last_body_transform_set.remove(&handle);
-
-                world.bodies.remove(
-                    handle,
-                    &mut world.islands,
-                    &mut world.colliders,
-                    &mut world.impulse_joints,
-                    &mut world.multibody_joints,
-                    true,
-                );
-
-                break;
-            }
+        if context
+            .get_world(new_world)
+            .map(|world| world.entity2body.contains_key(&entity))
+            .unwrap_or(false)
+        {
+            // The value of the component did not change, no need to bubble it down or remove it from the world
+            return;
         }
 
         // This entity will be picked up by the "init_colliders" systems and added
-        // to the correct world if it is missing this component.
+        // to the correct world if it is missing these components.
         commands
             .entity(entity)
             .remove::<RapierColliderHandle>()
@@ -432,17 +418,23 @@ fn apply_world_update(
             .remove::<RapierMultibodyJointHandle>()
             .remove::<RapierImpulseJointHandle>();
     } else {
-        commands.entity(entity).insert(PhysicsWorld {
-            world_id: new_world,
-        });
+        commands
+            .entity(entity)
+            .insert(PhysicsWorld {
+                world_id: new_world,
+            })
+            .remove::<RapierColliderHandle>()
+            .remove::<RapierRigidBodyHandle>()
+            .remove::<RapierMultibodyJointHandle>()
+            .remove::<RapierImpulseJointHandle>();
     }
 
     // Carries down world changes to children
     if let Ok(children) = children_query.get(entity) {
         for child in children.iter() {
-            apply_world_update(
+            recursively_apply_world_update(
                 children_query,
-                body_world_query,
+                physics_world_query,
                 context,
                 *child,
                 commands,
@@ -462,19 +454,19 @@ fn apply_world_update(
 /// This system will carry this change down to the children of that entity.
 pub fn apply_changing_worlds(
     mut commands: Commands,
-    body_world_query: Query<(Entity, &PhysicsWorld, Ref<PhysicsWorld>)>,
+    physics_world_query: Query<(Entity, Ref<PhysicsWorld>)>,
     children_query: Query<&Children>,
-    mut context: ResMut<RapierContext>,
+    context: Res<RapierContext>,
 ) {
-    for (entity, bw, trackers) in body_world_query.iter() {
-        if trackers.is_added() || trackers.is_changed() {
-            apply_world_update(
+    for (entity, physics_world) in physics_world_query.iter() {
+        if physics_world.is_added() || physics_world.is_changed() {
+            recursively_apply_world_update(
                 &children_query,
-                &body_world_query,
-                &mut context,
+                &physics_world_query,
+                &context,
                 entity,
                 &mut commands,
-                bw.world_id,
+                physics_world.world_id,
             );
         }
     }
@@ -2202,23 +2194,19 @@ pub fn update_character_controls(
 #[cfg(test)]
 mod tests {
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
-    use bevy::prelude::{Capsule3d, Cuboid};
+    use bevy::prelude::Cuboid;
     use bevy::{
-        asset::AssetPlugin,
-        ecs::event::Events,
         render::{
             settings::{RenderCreation, WgpuSettings},
             RenderPlugin,
         },
         scene::ScenePlugin,
         time::TimePlugin,
-        window::WindowPlugin,
     };
-    use rapier::prelude::CollisionEventFlags;
     use std::f32::consts::PI;
 
     use super::*;
-    use crate::plugin::{context::DEFAULT_WORLD_ID, NoUserData, RapierPhysicsPlugin};
+    use crate::plugin::{NoUserData, RapierPhysicsPlugin};
 
     #[test]
     fn colliding_entities_updates() {
