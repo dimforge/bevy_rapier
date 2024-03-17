@@ -92,13 +92,7 @@ pub fn cast_ray(
         };
 
         // Then cast the ray.
-        let hit = rapier_context.cast_ray(
-            ray.origin,
-            ray.direction.into(),
-            f32::MAX,
-            true,
-            QueryFilter::only_dynamic(),
-        );
+        let hit = rapier_context.cast_ray(ray, f32::MAX, true, QueryFilter::only_dynamic());
 
         if let Some((entity, _toi)) = hit {
             // Color in blue the entity we just hit.

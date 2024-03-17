@@ -1,50 +1,12 @@
 use crate::math::{Real, Vect};
 use bevy::prelude::{Entity, Event, EventWriter};
 use rapier::dynamics::RigidBodySet;
-use rapier::geometry::{
-    ColliderHandle, ColliderSet, CollisionEvent as RapierCollisionEvent, CollisionEventFlags,
-    ContactForceEvent as RapierContactForceEvent, ContactPair,
-};
+use rapier::geometry::{ColliderHandle, ColliderSet, CollisionEventFlags, ContactPair};
 use rapier::pipeline::EventHandler;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::RwLock;
 
-/// Events occurring when two colliders start or stop colliding
-///
-/// This will only get triggered if the entity has the
-/// [`ActiveEvent::COLLISION_EVENTS`] flag enabled.
-#[derive(Event, Copy, Clone, Debug, PartialEq, Eq)]
-pub enum CollisionEvent {
-    /// Event occurring when two colliders start colliding
-    Started(Entity, Entity, CollisionEventFlags),
-    /// Event occurring when two colliders stop colliding
-    Stopped(Entity, Entity, CollisionEventFlags),
-}
-
-/// Event occurring when the sum of the magnitudes of the contact forces
-/// between two colliders exceed a threshold ([`ContactForceEventThreshold`]).
-///
-/// This will only get triggered if the entity has the
-/// [`ActiveEvent::CONTACT_FORCE_EVENTS`] flag enabled.
-#[derive(Event, Copy, Clone, Debug, PartialEq)]
-pub struct ContactForceEvent {
-    /// The first collider involved in the contact.
-    pub collider1: Entity,
-    /// The second collider involved in the contact.
-    pub collider2: Entity,
-    /// The sum of all the forces between the two colliders.
-    pub total_force: Vect,
-    /// The sum of the magnitudes of each force between the two colliders.
-    ///
-    /// Note that this is **not** the same as the magnitude of `self.total_force`.
-    /// Here we are summing the magnitude of all the forces, instead of taking
-    /// the magnitude of their sum.
-    pub total_force_magnitude: Real,
-    /// The world-space (unit) direction of the force with strongest magnitude.
-    pub max_force_direction: Vect,
-    /// The magnitude of the largest force at a contact point of this contact pair.
-    pub max_force_magnitude: Real,
-}
+pub use rapier::geometry::{CollisionEvent, ContactForceEvent};
 
 // TODO: it may be more efficient to use crossbeam channel.
 // However crossbeam channels cause a Segfault (I have not
@@ -54,19 +16,9 @@ pub struct ContactForceEvent {
 pub(crate) struct EventQueue<'a> {
     // Used ot retrieve the entity of colliders that have been removed from the simulation
     // since the last physics step.
-    pub deleted_colliders: &'a HashMap<ColliderHandle, Entity>,
+    pub deleted_colliders: &'a HashSet<Entity>,
     pub collision_events: RwLock<EventWriter<'a, CollisionEvent>>,
     pub contact_force_events: RwLock<EventWriter<'a, ContactForceEvent>>,
-}
-
-impl<'a> EventQueue<'a> {
-    fn collider2entity(&self, colliders: &ColliderSet, handle: ColliderHandle) -> Entity {
-        colliders
-            .get(handle)
-            .map(|co| Entity::from_bits(co.user_data as u64))
-            .or_else(|| self.deleted_colliders.get(&handle).copied())
-            .expect("Internal error: entity not found for collision event.")
-    }
 }
 
 impl<'a> EventHandler for EventQueue<'a> {
@@ -74,22 +26,9 @@ impl<'a> EventHandler for EventQueue<'a> {
         &self,
         _bodies: &RigidBodySet,
         colliders: &ColliderSet,
-        event: RapierCollisionEvent,
+        event: CollisionEvent,
         _: Option<&ContactPair>,
     ) {
-        let event = match event {
-            RapierCollisionEvent::Started(h1, h2, flags) => {
-                let e1 = self.collider2entity(colliders, h1);
-                let e2 = self.collider2entity(colliders, h2);
-                CollisionEvent::Started(e1, e2, flags)
-            }
-            RapierCollisionEvent::Stopped(h1, h2, flags) => {
-                let e1 = self.collider2entity(colliders, h1);
-                let e2 = self.collider2entity(colliders, h2);
-                CollisionEvent::Stopped(e1, e2, flags)
-            }
-        };
-
         if let Ok(mut events) = self.collision_events.write() {
             events.send(event);
         }
@@ -103,17 +42,7 @@ impl<'a> EventHandler for EventQueue<'a> {
         contact_pair: &ContactPair,
         total_force_magnitude: Real,
     ) {
-        let rapier_event =
-            RapierContactForceEvent::from_contact_pair(dt, contact_pair, total_force_magnitude);
-        let event = ContactForceEvent {
-            collider1: self.collider2entity(colliders, rapier_event.collider1),
-            collider2: self.collider2entity(colliders, rapier_event.collider2),
-            total_force: rapier_event.total_force.into(),
-            total_force_magnitude: rapier_event.total_force_magnitude,
-            max_force_direction: rapier_event.max_force_direction.into(),
-            max_force_magnitude: rapier_event.max_force_magnitude,
-        };
-
+        let event = ContactForceEvent::from_contact_pair(dt, contact_pair, total_force_magnitude);
         if let Ok(mut events) = self.contact_force_events.write() {
             events.send(event);
         }

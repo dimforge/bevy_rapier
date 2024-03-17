@@ -21,13 +21,18 @@ pub extern crate nalgebra as na;
 pub extern crate rapier2d as rapier;
 #[cfg(feature = "dim3")]
 pub extern crate rapier3d as rapier;
+
 pub use rapier::parry;
 
 /// Type aliases to select the right vector/rotation types based
 /// on the dimension used by the engine.
 #[cfg(feature = "dim2")]
 pub mod math {
+    pub use rapier::math::Isometry;
+
     use bevy::math::Vec2;
+    use rapier::parry;
+
     /// The real type (f32 or f64).
     pub type Real = rapier::math::Real;
     /// The vector type.
@@ -41,6 +46,9 @@ pub mod math {
 #[cfg(feature = "dim3")]
 pub mod math {
     use bevy::math::{Quat, Vec3};
+
+    pub use rapier::math::Isometry;
+
     /// The real type (f32 or f64).
     pub type Real = rapier::math::Real;
     /// The vector type.
@@ -68,6 +76,15 @@ pub mod utils;
 
 /// Groups the most often used types.
 pub mod prelude {
+    pub use rapier::dynamics::{
+        FixedJoint, FixedJointBuilder, GenericJoint, GenericJointBuilder, PrismaticJoint,
+        PrismaticJointBuilder, RevoluteJoint, RevoluteJointBuilder, RopeJoint, RopeJointBuilder,
+        SpringJoint, SpringJointBuilder,
+    };
+
+    #[cfg(feature = "dim3")]
+    pub use rapier::dynamics::{SphericalJoint, SphericalJointBuilder};
+
     pub use crate::control::*;
     pub use crate::dynamics::*;
     pub use crate::geometry::*;

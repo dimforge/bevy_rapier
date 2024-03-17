@@ -1,16 +1,9 @@
-use crate::dynamics::GenericJoint;
 use bevy::prelude::*;
-use rapier::dynamics::{ImpulseJointHandle, MultibodyJointHandle};
+use rapier::dynamics::GenericJoint;
 
-pub use rapier::dynamics::{JointAxesMask, JointAxis, MotorModel};
-
-/// The handle of an impulse joint added to the physics scene.
-#[derive(Copy, Clone, Debug, Component)]
-pub struct RapierImpulseJointHandle(pub ImpulseJointHandle);
-
-/// The handle of a multibody joint added to the physics scene.
-#[derive(Copy, Clone, Debug, Component)]
-pub struct RapierMultibodyJointHandle(pub MultibodyJointHandle);
+pub use rapier::dynamics::{
+    ImpulseJointHandle, JointAxesMask, JointAxis, MotorModel, MultibodyJointHandle,
+};
 
 /// An impulse-based joint attached to two entities.
 ///
@@ -59,7 +52,7 @@ pub struct MultibodyJoint {
 }
 
 impl MultibodyJoint {
-    /// Initializes an joint based on reduced coordinates from its first endpoint and
+    /// Initializes a joint based on reduced coordinates from its first endpoint and
     /// the joint description.
     pub fn new(parent: Entity, data: impl Into<GenericJoint>) -> Self {
         Self {
@@ -68,3 +61,13 @@ impl MultibodyJoint {
         }
     }
 }
+
+/// Indicates whether the impulse joint was created in the physics backend.
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Component, Reflect)]
+#[reflect(Component, PartialEq)]
+pub struct ImpulseJointCreated;
+
+/// Indicates whether the multibody joint was created in the physics backend.
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Component, Reflect)]
+#[reflect(Component, PartialEq)]
+pub struct MultibodyJointCreated;

@@ -8,6 +8,5 @@ pub mod systems;
 
 mod configuration;
 mod context;
-mod narrow_phase;
 #[allow(clippy::module_inception)]
 mod plugin;

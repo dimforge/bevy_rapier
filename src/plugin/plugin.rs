@@ -22,7 +22,6 @@ pub type NoUserData = ();
 /// Rapier physics engine.
 pub struct RapierPhysicsPlugin<PhysicsHooks = ()> {
     schedule: Interned<dyn ScheduleLabel>,
-    physics_scale: f32,
     default_system_setup: bool,
     _phantom: PhantomData<PhysicsHooks>,
 }
@@ -32,17 +31,6 @@ where
     PhysicsHooks: 'static + BevyPhysicsHooks,
     for<'w, 's> SystemParamItem<'w, 's, PhysicsHooks>: BevyPhysicsHooks,
 {
-    /// Specifies a scale ratio between the physics world and the bevy transforms.
-    ///
-    /// This affects the size of every elements in the physics engine, by multiplying
-    /// all the length-related quantities by the `physics_scale` factor. This should
-    /// likely always be 1.0 in 3D. In 2D, this is useful to specify a "pixels-per-meter"
-    /// conversion ratio.
-    pub fn with_physics_scale(mut self, physics_scale: f32) -> Self {
-        self.physics_scale = physics_scale;
-        self
-    }
-
     /// Specifies whether the plugin should setup each of its [`PhysicsStages`]
     /// (`true`), or if the user will set them up later (`false`).
     ///
@@ -50,18 +38,6 @@ where
     pub fn with_default_system_setup(mut self, default_system_setup: bool) -> Self {
         self.default_system_setup = default_system_setup;
         self
-    }
-
-    /// Specifies how many pixels on the 2D canvas equal one meter on the physics world.
-    ///
-    /// This conversion unit assumes that the 2D camera uses an unscaled projection.
-    #[cfg(feature = "dim2")]
-    pub fn pixels_per_meter(pixels_per_meter: f32) -> Self {
-        Self {
-            physics_scale: pixels_per_meter,
-            default_system_setup: true,
-            ..default()
-        }
     }
 
     /// Adds the physics systems to the `FixedUpdate` schedule rather than `PostUpdate`.
@@ -98,7 +74,7 @@ where
                 systems::init_colliders,
                 systems::init_joints,
                 systems::sync_removals,
-                // Run this here so the folowwing systems do not have a 1 frame delay.
+                // Run this here so the following systems do not have a 1 frame delay.
                 apply_deferred,
                 systems::apply_scale,
                 systems::apply_collider_user_changes,
@@ -137,7 +113,6 @@ impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystem
     fn default() -> Self {
         Self {
             schedule: PostUpdate.intern(),
-            physics_scale: 1.0,
             default_system_setup: true,
             _phantom: PhantomData,
         }
@@ -177,7 +152,7 @@ where
             .register_type::<LockedAxes>()
             .register_type::<ExternalForce>()
             .register_type::<ExternalImpulse>()
-            .register_type::<Sleeping>()
+            .register_type::<SleepState>()
             .register_type::<Damping>()
             .register_type::<Dominance>()
             .register_type::<Ccd>()
@@ -196,10 +171,7 @@ where
         app.init_resource::<RapierConfiguration>();
 
         app.insert_resource(SimulationToRenderTime::default())
-            .insert_resource(RapierContext {
-                physics_scale: self.physics_scale,
-                ..Default::default()
-            })
+            .insert_resource(RapierContext::default())
             .insert_resource(Events::<CollisionEvent>::default())
             .insert_resource(Events::<ContactForceEvent>::default())
             .insert_resource(Events::<MassModifiedEvent>::default());

@@ -1,84 +1,7 @@
 use bevy::{ecs::system::SystemParam, prelude::*};
-use rapier::{
-    pipeline::{ContactModificationContext, PairFilterContext},
-    prelude::{PhysicsHooks, SolverFlags},
-};
+use rapier::prelude::{PhysicsHooks, SolverFlags};
 
-/// Read-only access to the properties of a collision pair filter context.
-pub struct PairFilterContextView<'a> {
-    /// The raw context from Rapier.
-    pub raw: &'a PairFilterContext<'a>,
-}
-
-impl<'a> PairFilterContextView<'a> {
-    /// The entity of the first collider involved in the potential collision.
-    pub fn collider1(&self) -> Entity {
-        let co1 = &self.raw.colliders[self.raw.collider1];
-        Entity::from_bits(co1.user_data as u64)
-    }
-
-    /// The entity of the second collider involved in the potential collision.
-    pub fn collider2(&self) -> Entity {
-        let co2 = &self.raw.colliders[self.raw.collider2];
-        Entity::from_bits(co2.user_data as u64)
-    }
-
-    /// The entity of the first rigid-body (if `self.collider1()` is attached to a rigid-body)
-    /// involved in the potential collision.
-    pub fn rigid_body1(&self) -> Option<Entity> {
-        self.raw.rigid_body1.map(|h| {
-            let co1 = &self.raw.bodies[h];
-            Entity::from_bits(co1.user_data as u64)
-        })
-    }
-
-    /// The entity of the second rigid-body (if `self.collider1()` is attached to a rigid-body)
-    /// involved in the potential collision.
-    pub fn rigid_body2(&self) -> Option<Entity> {
-        self.raw.rigid_body2.map(|h| {
-            let co2 = &self.raw.bodies[h];
-            Entity::from_bits(co2.user_data as u64)
-        })
-    }
-}
-
-/// Read-write access to the properties of a contact modification context.
-pub struct ContactModificationContextView<'a, 'b> {
-    /// The raw context from Rapier.
-    pub raw: &'a mut ContactModificationContext<'b>,
-}
-
-impl<'a, 'b> ContactModificationContextView<'a, 'b> {
-    /// The entity of the first collider involved in the potential collision.
-    pub fn collider1(&self) -> Entity {
-        let co1 = &self.raw.colliders[self.raw.collider1];
-        Entity::from_bits(co1.user_data as u64)
-    }
-
-    /// The entity of the second collider involved in the potential collision.
-    pub fn collider2(&self) -> Entity {
-        let co2 = &self.raw.colliders[self.raw.collider2];
-        Entity::from_bits(co2.user_data as u64)
-    }
-
-    /// The entity of the first rigid-body (if `self.collider1()` is attached to a rigid-body)
-    /// involved in the potential collision.
-    pub fn rigid_body1(&self) -> Option<Entity> {
-        self.raw.rigid_body1.map(|h| {
-            let co1 = &self.raw.bodies[h];
-            Entity::from_bits(co1.user_data as u64)
-        })
-    }
-
-    /// The entity of the second rigid-body (if `self.collider1()` is attached to a rigid-body)
-    /// involved in the potential collision.
-    pub fn rigid_body2(&self) -> Option<Entity> {
-        self.raw.rigid_body2.map(|h| {
-            let co2 = &self.raw.bodies[h];
-            Entity::from_bits(co2.user_data as u64)
-        })
-    }
-}
+pub use rapier::pipeline::{ContactModificationContext, PairFilterContext};
 
 /// User-defined functions called by the physics engines during one timestep in order to customize its behavior.
 pub trait BevyPhysicsHooks: SystemParam + Send + Sync {
@@ -106,7 +29,7 @@ pub trait BevyPhysicsHooks: SystemParam + Send + Sync {
     /// will be taken into account by the constraints solver. If this returns
     /// `Some(SolverFlags::empty())` then the constraints solver will ignore these
     /// contacts.
-    fn filter_contact_pair(&self, _context: PairFilterContextView) -> Option<SolverFlags> {
+    fn filter_contact_pair(&self, _context: &PairFilterContext) -> Option<SolverFlags> {
         None
     }
 
@@ -130,7 +53,7 @@ pub trait BevyPhysicsHooks: SystemParam + Send + Sync {
     /// not compute any intersection information for it.
     /// If this return `true` then the narrow-phase will compute intersection
     /// information for this pair.
-    fn filter_intersection_pair(&self, _context: PairFilterContextView) -> bool {
+    fn filter_intersection_pair(&self, _context: &PairFilterContext) -> bool {
         false
     }
 
@@ -159,7 +82,7 @@ pub trait BevyPhysicsHooks: SystemParam + Send + Sync {
     /// as 0 and can be modified in `context.user_data`.
     ///
     /// The world-space contact normal can be modified in `context.normal`.
-    fn modify_solver_contacts(&self, _context: ContactModificationContextView) {}
+    fn modify_solver_contacts(&self, _context: &mut ContactModificationContext) {}
 }
 
 impl<T> BevyPhysicsHooks for T
@@ -167,16 +90,16 @@ where
     T: 'static + PhysicsHooks + SystemParam + Send + Sync,
     for<'w, 's> T: SystemParam<Item<'w, 's> = T>,
 {
-    fn filter_contact_pair(&self, context: PairFilterContextView) -> Option<SolverFlags> {
-        PhysicsHooks::filter_contact_pair(self, context.raw)
+    fn filter_contact_pair(&self, context: &PairFilterContext) -> Option<SolverFlags> {
+        PhysicsHooks::filter_contact_pair(self, context)
     }
 
-    fn filter_intersection_pair(&self, context: PairFilterContextView) -> bool {
-        PhysicsHooks::filter_intersection_pair(self, context.raw)
+    fn filter_intersection_pair(&self, context: &PairFilterContext) -> bool {
+        PhysicsHooks::filter_intersection_pair(self, context)
     }
 
-    fn modify_solver_contacts(&self, context: ContactModificationContextView) {
-        PhysicsHooks::modify_solver_contacts(self, context.raw)
+    fn modify_solver_contacts(&self, context: &mut ContactModificationContext) {
+        PhysicsHooks::modify_solver_contacts(self, context)
     }
 }
 
@@ -202,17 +125,14 @@ where
     Hooks: BevyPhysicsHooks,
 {
     fn filter_contact_pair(&self, context: &PairFilterContext) -> Option<SolverFlags> {
-        let context_view = PairFilterContextView { raw: context };
-        self.hooks.filter_contact_pair(context_view)
+        self.hooks.filter_contact_pair(context)
     }
 
     fn filter_intersection_pair(&self, context: &PairFilterContext) -> bool {
-        let context_view = PairFilterContextView { raw: context };
-        self.hooks.filter_intersection_pair(context_view)
+        self.hooks.filter_intersection_pair(context)
     }
 
     fn modify_solver_contacts(&self, context: &mut ContactModificationContext) {
-        let context_view = ContactModificationContextView { raw: context };
-        self.hooks.modify_solver_contacts(context_view)
+        self.hooks.modify_solver_contacts(context)
     }
 }

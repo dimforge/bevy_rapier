@@ -1,31 +1,11 @@
-pub use self::generic_joint::*;
 pub use self::joint::*;
 pub use self::rigid_body::*;
-
-pub use self::fixed_joint::*;
-pub use self::prismatic_joint::*;
-pub use self::revolute_joint::*;
-pub use self::rope_joint::*;
-pub use self::spring_joint::*;
 
 use bevy::reflect::Reflect;
 use rapier::dynamics::CoefficientCombineRule as RapierCoefficientCombineRule;
 
-#[cfg(feature = "dim3")]
-pub use self::spherical_joint::*;
-
-mod generic_joint;
 mod joint;
 mod rigid_body;
-
-mod fixed_joint;
-mod prismatic_joint;
-mod revolute_joint;
-mod rope_joint;
-
-#[cfg(feature = "dim3")]
-mod spherical_joint;
-mod spring_joint;
 
 /// Rules used to combine two coefficients.
 ///

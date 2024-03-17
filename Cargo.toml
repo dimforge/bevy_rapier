@@ -3,21 +3,25 @@ members = ["bevy_rapier2d", "bevy_rapier3d"]
 resolver = "2"
 
 [profile.dev]
- # Use slightly better optimization by default, as examples otherwise seem laggy.
+# Use slightly better optimization by default, as examples otherwise seem laggy.
 opt-level = 1
 
 [profile.release]
 codegen-units = 1
 
 [patch.crates-io]
+#simba = { path = "../simba" }
 #nalgebra = { path = "../nalgebra" }
 #parry2d = { path = "../parry/crates/parry2d" }
 #parry3d = { path = "../parry/crates/parry3d" }
 #rapier2d = { path = "../rapier/crates/rapier2d" }
 #rapier3d = { path = "../rapier/crates/rapier3d" }
 
-#nalgebra = { git = "https://github.com/dimforge/nalgebra", branch = "dev" }
-#parry2d = { git = "https://github.com/dimforge/parry", branch = "master" }
-#parry3d = { git = "https://github.com/dimforge/parry", branch = "master" }
-#rapier2d = { git = "https://github.com/dimforge/rapier", branch = "character-controller" }
-#rapier3d = { git = "https://github.com/dimforge/rapier", branch = "character-controller" }
+
+
+simba = { git = "https://github.com/dimforge/simba", rev = "7b50b3eb568e9c551431286a95c913a7057de58f" }
+nalgebra = { git = "https://github.com/dimforge/nalgebra", rev = "25032f089bb2e8a8bd2c1d419f1613911a042895" }
+parry2d = { git = "https://github.com/dimforge/parry", rev = "c0e6f8032396396f93b5ad687504bed9d676aaee" }
+parry3d = { git = "https://github.com/dimforge/parry", rev = "c0e6f8032396396f93b5ad687504bed9d676aaee" }
+rapier2d = { git = "https://github.com/dimforge/rapier", rev = "ecd308338b189ab569816a38a03e3f8b89669dde" }
+rapier3d = { git = "https://github.com/dimforge/rapier", rev = "ecd308338b189ab569816a38a03e3f8b89669dde" }

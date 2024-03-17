@@ -1,18 +1,30 @@
-#[cfg(feature = "dim2")]
-use na::DVector;
+use rapier::geometry::{
+    Ball, Capsule, Compound, Cuboid, HalfSpace, HeightField, Polyline, RoundShape, Segment,
+    TriMesh, Triangle, TypedShape,
+};
+#[cfg(feature = "dim3")]
+use rapier::geometry::{ConvexPolyhedron, Cylinder};
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 use {
     bevy::prelude::*,
     bevy::render::mesh::{Indices, VertexAttributeValues},
 };
+#[cfg(feature = "dim2")]
+use {na::DVector, rapier::geometry::ConvexPolygon};
 
-use rapier::prelude::{FeatureId, Point, Ray, SharedShape, Vector, DIM};
+#[cfg(feature = "dim3")]
+use rapier::geometry::Cone;
 
-use super::{get_snapped_scale, shape_views::*};
+use rapier::prelude::{
+    FeatureId, Point, PointProjection, Ray, RayIntersection, SharedShape, Vector, DIM,
+};
+
+use super::get_snapped_scale;
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 use crate::geometry::ComputedColliderShape;
-use crate::geometry::{Collider, PointProjection, RayIntersection, TriMeshFlags, VHACDParameters};
-use crate::math::{Real, Rot, Vect};
+use crate::geometry::{Collider, TriMeshFlags, VHACDParameters};
+use crate::math::{Isometry, Real, Vect};
+use rapier::parry::either::Either;
 
 impl Collider {
     /// The scaling factor that was applied to this collider.
@@ -28,11 +40,8 @@ impl Collider {
     }
 
     /// Initialize a new collider with a compound shape.
-    pub fn compound(shapes: Vec<(Vect, Rot, Collider)>) -> Self {
-        let shapes = shapes
-            .into_iter()
-            .map(|(t, r, s)| ((t, r).into(), s.raw))
-            .collect();
+    pub fn compound(shapes: Vec<(Isometry, Collider)>) -> Self {
+        let shapes = shapes.into_iter().map(|(iso, s)| (iso, s.raw)).collect();
         SharedShape::compound(shapes).into()
     }
 
@@ -44,9 +53,8 @@ impl Collider {
     /// Initialize a new collider build with a half-space shape defined by the outward normal
     /// of its planar boundary.
     pub fn halfspace(outward_normal: Vect) -> Option<Self> {
-        use rapier::na::Unit;
-        let normal = Vector::from(outward_normal);
-        Unit::try_new(normal, 1.0e-6).map(|n| SharedShape::halfspace(n).into())
+        let normalized = outward_normal.try_normalize()?;
+        Some(SharedShape::halfspace(normalized).into())
     }
 
     /// Initialize a new collider with a cylindrical shape defined by its half-height
@@ -94,25 +102,25 @@ impl Collider {
 
     /// Initialize a new collider with a capsule shape.
     pub fn capsule(start: Vect, end: Vect, radius: Real) -> Self {
-        SharedShape::capsule(start.into(), end.into(), radius).into()
+        SharedShape::capsule(start, end, radius).into()
     }
 
     /// Initialize a new collider with a capsule shape aligned with the `x` axis.
     pub fn capsule_x(half_height: Real, radius: Real) -> Self {
-        let p = Point::from(Vector::x() * half_height);
+        let p = Point::from(Vector::X * half_height);
         SharedShape::capsule(-p, p, radius).into()
     }
 
     /// Initialize a new collider with a capsule shape aligned with the `y` axis.
     pub fn capsule_y(half_height: Real, radius: Real) -> Self {
-        let p = Point::from(Vector::y() * half_height);
+        let p = Point::from(Vector::Y * half_height);
         SharedShape::capsule(-p, p, radius).into()
     }
 
     /// Initialize a new collider with a capsule shape aligned with the `z` axis.
     #[cfg(feature = "dim3")]
     pub fn capsule_z(half_height: Real, radius: Real) -> Self {
-        let p = Point::from(Vector::z() * half_height);
+        let p = Point::from(Vector::Z * half_height);
         SharedShape::capsule(-p, p, radius).into()
     }
 
@@ -131,28 +139,26 @@ impl Collider {
 
     /// Initializes a collider with a segment shape.
     pub fn segment(a: Vect, b: Vect) -> Self {
-        SharedShape::segment(a.into(), b.into()).into()
+        SharedShape::segment(a, b).into()
     }
 
     /// Initializes a collider with a triangle shape.
     pub fn triangle(a: Vect, b: Vect, c: Vect) -> Self {
-        SharedShape::triangle(a.into(), b.into(), c.into()).into()
+        SharedShape::triangle(a, b, c).into()
     }
 
     /// Initializes a collider with a triangle shape with round corners.
     pub fn round_triangle(a: Vect, b: Vect, c: Vect, border_radius: Real) -> Self {
-        SharedShape::round_triangle(a.into(), b.into(), c.into(), border_radius).into()
+        SharedShape::round_triangle(a, b, c, border_radius).into()
     }
 
     /// Initializes a collider with a polyline shape defined by its vertex and index buffers.
     pub fn polyline(vertices: Vec<Vect>, indices: Option<Vec<[u32; 2]>>) -> Self {
-        let vertices = vertices.into_iter().map(|v| v.into()).collect();
         SharedShape::polyline(vertices, indices).into()
     }
 
     /// Initializes a collider with a triangle mesh shape defined by its vertex and index buffers.
     pub fn trimesh(vertices: Vec<Vect>, indices: Vec<[u32; 3]>) -> Self {
-        let vertices = vertices.into_iter().map(|v| v.into()).collect();
         SharedShape::trimesh(vertices, indices).into()
     }
 
@@ -163,7 +169,6 @@ impl Collider {
         indices: Vec<[u32; 3]>,
         flags: TriMeshFlags,
     ) -> Self {
-        let vertices = vertices.into_iter().map(|v| v.into()).collect();
         SharedShape::trimesh_with_flags(vertices, indices, flags).into()
     }
 
@@ -312,206 +317,144 @@ impl Collider {
     }
 
     /// Takes a strongly typed reference of this collider.
-    pub fn as_typed_shape(&self) -> ColliderView {
-        self.raw.as_typed_shape().into()
+    pub fn as_typed_shape(&self) -> TypedShape {
+        self.raw.as_typed_shape()
     }
 
     /// Takes a strongly typed reference of the unscaled version of this collider.
-    pub fn as_unscaled_typed_shape(&self) -> ColliderView {
-        self.unscaled.as_typed_shape().into()
+    pub fn as_unscaled_typed_shape(&self) -> TypedShape {
+        self.unscaled.as_typed_shape()
     }
 
     /// Downcast this collider to a ball, if it is one.
-    pub fn as_ball(&self) -> Option<BallView> {
-        self.raw.as_ball().map(|s| BallView { raw: s })
+    pub fn as_ball(&self) -> Option<&Ball> {
+        self.raw.as_ball()
     }
 
     /// Downcast this collider to a cuboid, if it is one.
-    pub fn as_cuboid(&self) -> Option<CuboidView> {
-        self.raw.as_cuboid().map(|s| CuboidView { raw: s })
+    pub fn as_cuboid(&self) -> Option<&Cuboid> {
+        self.raw.as_cuboid()
     }
 
     /// Downcast this collider to a capsule, if it is one.
-    pub fn as_capsule(&self) -> Option<CapsuleView> {
-        self.raw.as_capsule().map(|s| CapsuleView { raw: s })
+    pub fn as_capsule(&self) -> Option<&Capsule> {
+        self.raw.as_capsule()
     }
 
     /// Downcast this collider to a segment, if it is one.
-    pub fn as_segment(&self) -> Option<SegmentView> {
-        self.raw.as_segment().map(|s| SegmentView { raw: s })
+    pub fn as_segment(&self) -> Option<&Segment> {
+        self.raw.as_segment()
     }
 
     /// Downcast this collider to a triangle, if it is one.
-    pub fn as_triangle(&self) -> Option<TriangleView> {
-        self.raw.as_triangle().map(|s| TriangleView { raw: s })
+    pub fn as_triangle(&self) -> Option<&Triangle> {
+        self.raw.as_triangle()
     }
 
     /// Downcast this collider to a triangle mesh, if it is one.
-    pub fn as_trimesh(&self) -> Option<TriMeshView> {
-        self.raw.as_trimesh().map(|s| TriMeshView { raw: s })
+    pub fn as_trimesh(&self) -> Option<&TriMesh> {
+        self.raw.as_trimesh()
     }
 
     /// Downcast this collider to a polyline, if it is one.
-    pub fn as_polyline(&self) -> Option<PolylineView> {
-        self.raw.as_polyline().map(|s| PolylineView { raw: s })
+    pub fn as_polyline(&self) -> Option<&Polyline> {
+        self.raw.as_polyline()
     }
 
     /// Downcast this collider to a half-space, if it is one.
-    pub fn as_halfspace(&self) -> Option<HalfSpaceView> {
-        self.raw.as_halfspace().map(|s| HalfSpaceView { raw: s })
+    pub fn as_halfspace(&self) -> Option<&HalfSpace> {
+        self.raw.as_halfspace()
     }
 
     /// Downcast this collider to a heightfield, if it is one.
-    pub fn as_heightfield(&self) -> Option<HeightFieldView> {
-        self.raw
-            .as_heightfield()
-            .map(|s| HeightFieldView { raw: s })
+    pub fn as_heightfield(&self) -> Option<&HeightField> {
+        self.raw.as_heightfield()
     }
 
     /// Downcast this collider to a compound shape, if it is one.
-    pub fn as_compound(&self) -> Option<CompoundView> {
-        self.raw.as_compound().map(|s| CompoundView { raw: s })
+    pub fn as_compound(&self) -> Option<&Compound> {
+        self.raw.as_compound()
     }
 
     /// Downcast this collider to a convex polygon, if it is one.
     #[cfg(feature = "dim2")]
-    pub fn as_convex_polygon(&self) -> Option<ConvexPolygonView> {
-        self.raw
-            .as_convex_polygon()
-            .map(|s| ConvexPolygonView { raw: s })
+    pub fn as_convex_polygon(&self) -> Option<&ConvexPolygon> {
+        self.raw.as_convex_polygon()
     }
 
     /// Downcast this collider to a convex polyhedron, if it is one.
     #[cfg(feature = "dim3")]
-    pub fn as_convex_polyhedron(&self) -> Option<ConvexPolyhedronView> {
-        self.raw
-            .as_convex_polyhedron()
-            .map(|s| ConvexPolyhedronView { raw: s })
+    pub fn as_convex_polyhedron(&self) -> Option<&ConvexPolyhedron> {
+        self.raw.as_convex_polyhedron()
     }
 
     /// Downcast this collider to a cylinder, if it is one.
     #[cfg(feature = "dim3")]
-    pub fn as_cylinder(&self) -> Option<CylinderView> {
-        self.raw.as_cylinder().map(|s| CylinderView { raw: s })
+    pub fn as_cylinder(&self) -> Option<&Cylinder> {
+        self.raw.as_cylinder()
     }
 
     /// Downcast this collider to a cone, if it is one.
     #[cfg(feature = "dim3")]
-    pub fn as_cone(&self) -> Option<ConeView> {
-        self.raw.as_cone().map(|s| ConeView { raw: s })
+    pub fn as_cone(&self) -> Option<&Cone> {
+        self.raw.as_cone()
     }
 
     /// Downcast this collider to a mutable ball, if it is one.
-    pub fn as_ball_mut(&mut self) -> Option<BallViewMut> {
-        self.raw
-            .make_mut()
-            .as_ball_mut()
-            .map(|s| BallViewMut { raw: s })
+    pub fn as_ball_mut(&mut self) -> Option<&mut Ball> {
+        self.raw.make_mut().as_ball_mut()
     }
 
     /// Downcast this collider to a mutable cuboid, if it is one.
-    pub fn as_cuboid_mut(&mut self) -> Option<CuboidViewMut> {
-        self.raw
-            .make_mut()
-            .as_cuboid_mut()
-            .map(|s| CuboidViewMut { raw: s })
+    pub fn as_cuboid_mut(&mut self) -> Option<&mut Cuboid> {
+        self.raw.make_mut().as_cuboid_mut()
     }
 
     /// Downcast this collider to a mutable capsule, if it is one.
-    pub fn as_capsule_mut(&mut self) -> Option<CapsuleViewMut> {
-        self.raw
-            .make_mut()
-            .as_capsule_mut()
-            .map(|s| CapsuleViewMut { raw: s })
+    pub fn as_capsule_mut(&mut self) -> Option<&mut Capsule> {
+        self.raw.make_mut().as_capsule_mut()
     }
 
     /// Downcast this collider to a mutable segment, if it is one.
-    pub fn as_segment_mut(&mut self) -> Option<SegmentViewMut> {
-        self.raw
-            .make_mut()
-            .as_segment_mut()
-            .map(|s| SegmentViewMut { raw: s })
+    pub fn as_segment_mut(&mut self) -> Option<&mut Segment> {
+        self.raw.make_mut().as_segment_mut()
     }
 
     /// Downcast this collider to a mutable triangle, if it is one.
-    pub fn as_triangle_mut(&mut self) -> Option<TriangleViewMut> {
-        self.raw
-            .make_mut()
-            .as_triangle_mut()
-            .map(|s| TriangleViewMut { raw: s })
+    pub fn as_triangle_mut(&mut self) -> Option<&mut Triangle> {
+        self.raw.make_mut().as_triangle_mut()
     }
 
     /// Downcast this collider to a mutable triangle mesh, if it is one.
-    pub fn as_trimesh_mut(&mut self) -> Option<TriMeshViewMut> {
-        self.raw
-            .make_mut()
-            .as_trimesh_mut()
-            .map(|s| TriMeshViewMut { raw: s })
+    pub fn as_trimesh_mut(&mut self) -> Option<&mut TriMesh> {
+        self.raw.make_mut().as_trimesh_mut()
     }
 
     /// Downcast this collider to a mutable polyline, if it is one.
-    pub fn as_polyline_mut(&mut self) -> Option<PolylineViewMut> {
-        self.raw
-            .make_mut()
-            .as_polyline_mut()
-            .map(|s| PolylineViewMut { raw: s })
+    pub fn as_polyline_mut(&mut self) -> Option<&mut Polyline> {
+        self.raw.make_mut().as_polyline_mut()
     }
 
     /// Downcast this collider to a mutable half-space, if it is one.
-    pub fn as_halfspace_mut(&mut self) -> Option<HalfSpaceViewMut> {
-        self.raw
-            .make_mut()
-            .as_halfspace_mut()
-            .map(|s| HalfSpaceViewMut { raw: s })
+    pub fn as_halfspace_mut(&mut self) -> Option<&mut HalfSpace> {
+        self.raw.make_mut().as_halfspace_mut()
     }
 
     /// Downcast this collider to a mutable heightfield, if it is one.
-    pub fn as_heightfield_mut(&mut self) -> Option<HeightFieldViewMut> {
-        self.raw
-            .make_mut()
-            .as_heightfield_mut()
-            .map(|s| HeightFieldViewMut { raw: s })
+    pub fn as_heightfield_mut(&mut self) -> Option<&mut HeightField> {
+        self.raw.make_mut().as_heightfield_mut()
     }
-
-    // /// Downcast this collider to a mutable compound shape, if it is one.
-    // pub fn as_compound_mut(&mut self) -> Option<CompoundViewMut> {
-    //     self.raw.make_mut()
-    //         .as_compound_mut()
-    //         .map(|s| CompoundViewMut { raw: s })
-    // }
-
-    // /// Downcast this collider to a mutable convex polygon, if it is one.
-    // #[cfg(feature = "dim2")]
-    // pub fn as_convex_polygon_mut(&mut self) -> Option<ConvexPolygonViewMut> {
-    //     self.raw.make_mut()
-    //         .as_convex_polygon_mut()
-    //         .map(|s| ConvexPolygonViewMut { raw: s })
-    // }
-
-    // /// Downcast this collider to a mutable convex polyhedron, if it is one.
-    // #[cfg(feature = "dim3")]
-    // pub fn as_convex_polyhedron_mut(&mut self) -> Option<ConvexPolyhedronViewMut> {
-    //     self.raw.make_mut()
-    //         .as_convex_polyhedron_mut()
-    //         .map(|s| ConvexPolyhedronViewMut { raw: s })
-    // }
 
     /// Downcast this collider to a mutable cylinder, if it is one.
     #[cfg(feature = "dim3")]
-    pub fn as_cylinder_mut(&mut self) -> Option<CylinderViewMut> {
-        self.raw
-            .make_mut()
-            .as_cylinder_mut()
-            .map(|s| CylinderViewMut { raw: s })
+    pub fn as_cylinder_mut(&mut self) -> Option<&mut Cylinder> {
+        self.raw.make_mut().as_cylinder_mut()
     }
 
     /// Downcast this collider to a mutable cone, if it is one.
     #[cfg(feature = "dim3")]
-    pub fn as_cone_mut(&mut self) -> Option<ConeViewMut> {
-        self.raw
-            .make_mut()
-            .as_cone_mut()
-            .map(|s| ConeViewMut { raw: s })
+    pub fn as_cone_mut(&mut self) -> Option<&mut Cone> {
+        self.raw.make_mut().as_cone_mut()
     }
 
     /// Set the scaling factor of this shape.
@@ -536,9 +479,8 @@ impl Collider {
             return;
         }
 
-        if let Some(scaled) = self
-            .as_unscaled_typed_shape()
-            .raw_scale_by(scale, num_subdivisions)
+        if let Some(scaled) =
+            scale_typed_shape(self.as_unscaled_typed_shape(), scale, num_subdivisions)
         {
             self.raw = scaled;
             self.scale = scale;
@@ -561,18 +503,16 @@ impl Collider {
             .map(Into::into)
     }
 
-    /// Projects a point on `self` transformed by `m`, unless the projection lies further than the given max distance.
+    /// Projects a point on `self` transformed by `collider_pos`, unless the projection lies further than the given max distance.
     pub fn project_point_with_max_dist(
         &self,
-        translation: Vect,
-        rotation: Rot,
+        collider_pos: Isometry,
         point: Vect,
         solid: bool,
         max_dist: Real,
     ) -> Option<PointProjection> {
-        let pos = (translation, rotation).into();
         self.raw
-            .project_point_with_max_dist(&pos, &point.into(), solid, max_dist)
+            .project_point_with_max_dist(&collider_pos, &point.into(), solid, max_dist)
             .map(Into::into)
     }
 
@@ -600,131 +540,97 @@ impl Collider {
         self.raw.contains_local_point(&point.into())
     }
 
-    /// Projects a point on `self` transformed by `m`.
+    /// Projects a point on `self` transformed by `collider_pos`.
     pub fn project_point(
         &self,
-        translation: Vect,
-        rotation: Rot,
+        collider_pos: Isometry,
         point: Vect,
         solid: bool,
     ) -> PointProjection {
-        let pos = (translation, rotation).into();
-        self.raw.project_point(&pos, &point.into(), solid).into()
+        self.raw
+            .project_point(&collider_pos, &point.into(), solid)
+            .into()
     }
 
-    /// Computes the minimal distance between a point and `self` transformed by `m`.
+    /// Computes the minimal distance between a point and `self` transformed by `collider_pos`.
     #[inline]
-    pub fn distance_to_point(
-        &self,
-        translation: Vect,
-        rotation: Rot,
-        point: Vect,
-        solid: bool,
-    ) -> Real {
-        let pos = (translation, rotation).into();
-        self.raw.distance_to_point(&pos, &point.into(), solid)
+    pub fn distance_to_point(&self, collider_pos: Isometry, point: Vect, solid: bool) -> Real {
+        self.raw
+            .distance_to_point(&collider_pos, &point.into(), solid)
     }
 
-    /// Projects a point on the boundary of `self` transformed by `m` and returns the id of the
+    /// Projects a point on the boundary of `self` transformed by `collider_pos` and returns the id of the
     /// feature the point was projected on.
     pub fn project_point_and_get_feature(
         &self,
-        translation: Vect,
-        rotation: Rot,
+        collider_pos: Isometry,
         point: Vect,
     ) -> (PointProjection, FeatureId) {
-        let pos = (translation, rotation).into();
-        let (proj, feat) = self.raw.project_point_and_get_feature(&pos, &point.into());
+        let (proj, feat) = self
+            .raw
+            .project_point_and_get_feature(&collider_pos, &point.into());
         (proj.into(), feat)
     }
 
-    /// Tests if the given point is inside of `self` transformed by `m`.
-    pub fn contains_point(&self, translation: Vect, rotation: Rot, point: Vect) -> bool {
-        let pos = (translation, rotation).into();
-        self.raw.contains_point(&pos, &point.into())
+    /// Tests if the given point is inside of `self` transformed by `collider_&os`.
+    pub fn contains_point(&self, collider_pos: Isometry, point: Vect) -> bool {
+        self.raw.contains_point(&collider_pos, &point.into())
     }
 
     /// Computes the time of impact between this transform shape and a ray.
-    pub fn cast_local_ray(
-        &self,
-        ray_origin: Vect,
-        ray_dir: Vect,
-        max_time_of_impact: Real,
-        solid: bool,
-    ) -> Option<Real> {
-        let ray = Ray::new(ray_origin.into(), ray_dir.into());
+    pub fn cast_local_ray(&self, ray: Ray, max_time_of_impact: Real, solid: bool) -> Option<Real> {
         self.raw.cast_local_ray(&ray, max_time_of_impact, solid)
     }
 
     /// Computes the time of impact, and normal between this transformed shape and a ray.
     pub fn cast_local_ray_and_get_normal(
         &self,
-        ray_origin: Vect,
-        ray_dir: Vect,
+        ray: Ray,
         max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
-        let ray = Ray::new(ray_origin.into(), ray_dir.into());
         self.raw
             .cast_local_ray_and_get_normal(&ray, max_time_of_impact, solid)
-            .map(|inter| RayIntersection::from_rapier(inter, ray_origin, ray_dir))
     }
 
     /// Tests whether a ray intersects this transformed shape.
-    pub fn intersects_local_ray(
-        &self,
-        ray_origin: Vect,
-        ray_dir: Vect,
-        max_time_of_impact: Real,
-    ) -> bool {
-        let ray = Ray::new(ray_origin.into(), ray_dir.into());
+    pub fn intersects_local_ray(&self, ray: Ray, max_time_of_impact: Real) -> bool {
         self.raw.intersects_local_ray(&ray, max_time_of_impact)
     }
 
-    /// Computes the time of impact between this transform shape and a ray.
+    /// Computes the time of impact between this transformed shape and a ray.
     pub fn cast_ray(
         &self,
-        translation: Vect,
-        rotation: Rot,
-        ray_origin: Vect,
-        ray_dir: Vect,
+        collider_pos: Isometry,
+        ray: Ray,
         max_time_of_impact: Real,
         solid: bool,
     ) -> Option<Real> {
-        let pos = (translation, rotation).into();
-        let ray = Ray::new(ray_origin.into(), ray_dir.into());
-        self.raw.cast_ray(&pos, &ray, max_time_of_impact, solid)
+        self.raw
+            .cast_ray(&collider_pos, &ray, max_time_of_impact, solid)
     }
 
     /// Computes the time of impact, and normal between this transformed shape and a ray.
     pub fn cast_ray_and_get_normal(
         &self,
-        translation: Vect,
-        rotation: Rot,
-        ray_origin: Vect,
-        ray_dir: Vect,
+        collider_pos: Isometry,
+        ray: Ray,
         max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
-        let pos = (translation, rotation).into();
-        let ray = Ray::new(ray_origin.into(), ray_dir.into());
         self.raw
-            .cast_ray_and_get_normal(&pos, &ray, max_time_of_impact, solid)
-            .map(|inter| RayIntersection::from_rapier(inter, ray_origin, ray_dir))
+            .cast_ray_and_get_normal(&collider_pos, &ray, max_time_of_impact, solid)
     }
 
     /// Tests whether a ray intersects this transformed shape.
     pub fn intersects_ray(
         &self,
-        translation: Vect,
-        rotation: Rot,
-        ray_origin: Vect,
-        ray_dir: Vect,
+        collider_pos: Isometry,
+        ray: Ray,
         max_time_of_impact: Real,
     ) -> bool {
-        let pos = (translation, rotation).into();
-        let ray = Ray::new(ray_origin.into(), ray_dir.into());
-        self.raw.intersects_ray(&pos, &ray, max_time_of_impact)
+        self.raw
+            .intersects_ray(&collider_pos, &ray, max_time_of_impact)
     }
 }
 
@@ -736,21 +642,19 @@ impl Default for Collider {
 
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 #[allow(clippy::type_complexity)]
-fn extract_mesh_vertices_indices(mesh: &Mesh) -> Option<(Vec<na::Point3<Real>>, Vec<[u32; 3]>)> {
-    use rapier::na::point;
-
+fn extract_mesh_vertices_indices(mesh: &Mesh) -> Option<(Vec<Point>, Vec<[u32; 3]>)> {
     let vertices = mesh.attribute(Mesh::ATTRIBUTE_POSITION)?;
     let indices = mesh.indices()?;
 
     let vtx: Vec<_> = match vertices {
         VertexAttributeValues::Float32(vtx) => Some(
             vtx.chunks(3)
-                .map(|v| point![v[0] as Real, v[1] as Real, v[2] as Real])
+                .map(|v| Point::new(v[0] as Real, v[1] as Real, v[2] as Real))
                 .collect(),
         ),
         VertexAttributeValues::Float32x3(vtx) => Some(
             vtx.iter()
-                .map(|v| point![v[0] as Real, v[1] as Real, v[2] as Real])
+                .map(|v| Point::new(v[0] as Real, v[1] as Real, v[2] as Real))
                 .collect(),
         ),
         _ => None,
@@ -765,4 +669,119 @@ fn extract_mesh_vertices_indices(mesh: &Mesh) -> Option<(Vec<na::Point3<Real>>, 
     };
 
     Some((vtx, idx))
+}
+
+/// Compute the scaled version of thi given shape.
+///
+/// If the scaling factor is non-uniform, and the scaled shape can’t be
+/// represented as a supported smooth shape (for example scalling a Ball
+/// with a non-uniform scale results in an ellipse which isn’t supported),
+/// the shape is approximated by a convex polygon/convex polyhedron using
+// TODO: would this be worth upstreaming to parry?
+pub fn scale_typed_shape(
+    shape: TypedShape,
+    scale: Vect,
+    num_subdivisions: u32,
+) -> Option<SharedShape> {
+    let result = match shape {
+        TypedShape::Custom(_) => return None,
+        TypedShape::Cuboid(s) => SharedShape::new(s.scaled(&scale.into())),
+        TypedShape::RoundCuboid(s) => SharedShape::new(RoundShape {
+            border_radius: s.border_radius,
+            inner_shape: s.inner_shape.scaled(&scale.into()),
+        }),
+        TypedShape::Capsule(c) => match c.scaled(&scale.into(), num_subdivisions)? {
+            Either::Left(b) => SharedShape::new(b),
+            Either::Right(b) => SharedShape::new(b),
+        },
+        TypedShape::Ball(b) => match b.scaled(&scale.into(), num_subdivisions)? {
+            Either::Left(b) => SharedShape::new(b),
+            Either::Right(b) => SharedShape::new(b),
+        },
+        TypedShape::Segment(s) => SharedShape::new(s.scaled(&scale.into())),
+        // TypedShape::RoundSegment(s) => SharedShape::new(RoundShape {
+        //     border_radius: s.border_radius,
+        //     inner_shape: s.inner_shape.scaled(&scale.into()),
+        // }),
+        TypedShape::Triangle(t) => SharedShape::new(t.scaled(&scale.into())),
+        TypedShape::RoundTriangle(t) => SharedShape::new(RoundShape {
+            border_radius: t.border_radius,
+            inner_shape: t.inner_shape.scaled(&scale.into()),
+        }),
+        TypedShape::TriMesh(t) => SharedShape::new(t.clone().scaled(&scale.into())),
+        TypedShape::Polyline(p) => SharedShape::new(p.clone().scaled(&scale.into())),
+        TypedShape::HalfSpace(h) => SharedShape::new(h.scaled(&scale.into())?),
+        TypedShape::HeightField(h) => SharedShape::new(h.clone().scaled(&scale.into())),
+        #[cfg(feature = "dim2")]
+        TypedShape::ConvexPolygon(cp) => SharedShape::new(cp.clone().scaled(&scale.into())?),
+        #[cfg(feature = "dim2")]
+        TypedShape::RoundConvexPolygon(cp) => {
+            let scaled = cp.inner_shape.clone().scaled(&scale.into())?;
+            SharedShape::new(RoundShape {
+                border_radius: cp.border_radius,
+                inner_shape: scaled,
+            })
+        }
+        #[cfg(feature = "dim3")]
+        TypedShape::ConvexPolyhedron(cp) => SharedShape::new(cp.clone().scaled(&scale.into())?),
+        #[cfg(feature = "dim3")]
+        TypedShape::RoundConvexPolyhedron(cp) => {
+            let scaled = cp.clone().inner_shape.scaled(&scale.into())?;
+            SharedShape::new(RoundShape {
+                border_radius: cp.border_radius,
+                inner_shape: scaled,
+            })
+        }
+        #[cfg(feature = "dim3")]
+        TypedShape::Cylinder(c) => match c.scaled(&scale.into(), num_subdivisions)? {
+            Either::Left(b) => SharedShape::new(b),
+            Either::Right(b) => SharedShape::new(b),
+        },
+        #[cfg(feature = "dim3")]
+        TypedShape::RoundCylinder(c) => {
+            match c.inner_shape.scaled(&scale.into(), num_subdivisions)? {
+                Either::Left(scaled) => SharedShape::new(RoundShape {
+                    border_radius: c.border_radius,
+                    inner_shape: scaled,
+                }),
+                Either::Right(scaled) => SharedShape::new(RoundShape {
+                    border_radius: c.border_radius,
+                    inner_shape: scaled,
+                }),
+            }
+        }
+        #[cfg(feature = "dim3")]
+        TypedShape::Cone(c) => match c.scaled(&scale.into(), num_subdivisions)? {
+            Either::Left(b) => SharedShape::new(b),
+            Either::Right(b) => SharedShape::new(b),
+        },
+        #[cfg(feature = "dim3")]
+        TypedShape::RoundCone(c) => match c.inner_shape.scaled(&scale.into(), num_subdivisions)? {
+            Either::Left(scaled) => SharedShape::new(RoundShape {
+                border_radius: c.border_radius,
+                inner_shape: scaled,
+            }),
+            Either::Right(scaled) => SharedShape::new(RoundShape {
+                border_radius: c.border_radius,
+                inner_shape: scaled,
+            }),
+        },
+        TypedShape::Compound(c) => {
+            let mut scaled = Vec::with_capacity(c.shapes().len());
+
+            for (pos, shape) in c.shapes() {
+                let mut scaled_pos = *pos;
+                scaled_pos.translation *= scale;
+
+                if let Some(scaled_shape) =
+                    scale_typed_shape(shape.as_typed_shape(), scale, num_subdivisions)
+                {
+                    scaled.push((scaled_pos, scaled_shape));
+                }
+            }
+            SharedShape::compound(scaled)
+        }
+    };
+
+    Some(result)
 }

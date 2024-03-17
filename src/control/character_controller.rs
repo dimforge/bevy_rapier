@@ -1,57 +1,12 @@
-use crate::geometry::{Collider, CollisionGroups, Toi};
-use crate::math::{Real, Rot, Vect};
+use crate::geometry::{Collider, CollisionGroups};
+use crate::math::{Isometry, Real, Vect};
 use bevy::prelude::*;
 
 use crate::plugin::RapierContext;
 pub use rapier::control::CharacterAutostep;
+pub use rapier::control::CharacterCollision;
 pub use rapier::control::CharacterLength;
-use rapier::prelude::{ColliderSet, QueryFilterFlags};
-
-/// A collision between the character and its environment during its movement.
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub struct CharacterCollision {
-    /// The entity hit by the character.
-    pub entity: Entity,
-    /// The position of the character when the collider was hit.
-    pub character_translation: Vect,
-    /// The rotation of the character when the collider was hit.
-    pub character_rotation: Rot,
-    /// The translation that was already applied to the character when the hit happens.
-    pub translation_applied: Vect,
-    /// The translations that was still waiting to be applied to the character when the hit happens.
-    pub translation_remaining: Vect,
-    /// Geometric information about the hit.
-    pub toi: Toi,
-}
-
-impl CharacterCollision {
-    pub(crate) fn from_raw(
-        ctxt: &RapierContext,
-        c: &rapier::control::CharacterCollision,
-    ) -> Option<Self> {
-        Self::from_raw_with_set(ctxt.physics_scale, &ctxt.colliders, c)
-    }
-
-    pub(crate) fn from_raw_with_set(
-        physics_scale: Real,
-        colliders: &ColliderSet,
-        c: &rapier::control::CharacterCollision,
-    ) -> Option<Self> {
-        RapierContext::collider_entity_with_set(colliders, c.handle).map(|entity| {
-            CharacterCollision {
-                entity,
-                character_translation: (c.character_pos.translation.vector * physics_scale).into(),
-                #[cfg(feature = "dim2")]
-                character_rotation: c.character_pos.rotation.angle(),
-                #[cfg(feature = "dim3")]
-                character_rotation: c.character_pos.rotation.into(),
-                translation_applied: (c.translation_applied * physics_scale).into(),
-                translation_remaining: (c.translation_remaining * physics_scale).into(),
-                toi: Toi::from_rapier(physics_scale, c.toi),
-            }
-        })
-    }
-}
+use rapier::prelude::{ColliderSet, QueryFilterFlags, TOI};
 
 /// Options for moving a shape using `RapierContext::move_shape`.
 #[derive(Clone, Debug, Copy, PartialEq)]
@@ -84,7 +39,7 @@ impl Default for MoveShapeOptions {
     fn default() -> Self {
         let def = rapier::control::KinematicCharacterController::default();
         Self {
-            up: def.up.into(),
+            up: def.up,
             offset: def.offset,
             slide: def.slide,
             autostep: def.autostep,
@@ -103,7 +58,7 @@ pub struct KinematicCharacterController {
     pub translation: Option<Vect>,
     /// The shape, and its position, to be used instead of the shape of the collider attached to
     /// the same entity is this `KinematicCharacterController`.
-    pub custom_shape: Option<(Collider, Vect, Rot)>,
+    pub custom_shape: Option<(Collider, Isometry)>,
     /// The mass to be used for impulse of dynamic bodies. This replaces the mass of the rigid-body
     /// potentially associated to the collider attached to the same entity as this
     /// `KinematicCharacterController`.
@@ -141,26 +96,17 @@ pub struct KinematicCharacterController {
 }
 
 impl KinematicCharacterController {
-    pub(crate) fn to_raw(
-        &self,
-        physics_scale: Real,
-    ) -> Option<rapier::control::KinematicCharacterController> {
-        let autostep = self.autostep.map(|autostep| CharacterAutostep {
-            max_height: autostep.max_height.map_absolute(|x| x / physics_scale),
-            min_width: autostep.min_width.map_absolute(|x| x / physics_scale),
-            include_dynamic_bodies: autostep.include_dynamic_bodies,
-        });
+    pub(crate) fn to_raw(&self) -> Option<rapier::control::KinematicCharacterController> {
+        let autostep = self.autostep;
 
         Some(rapier::control::KinematicCharacterController {
             up: self.up.try_into().ok()?,
-            offset: self.offset.map_absolute(|x| x / physics_scale),
+            offset: self.offset,
             slide: self.slide,
             autostep,
             max_slope_climb_angle: self.max_slope_climb_angle,
             min_slope_slide_angle: self.min_slope_slide_angle,
-            snap_to_ground: self
-                .snap_to_ground
-                .map(|x| x.map_absolute(|x| x / physics_scale)),
+            snap_to_ground: self.snap_to_ground,
         })
     }
 }
@@ -172,7 +118,7 @@ impl Default for KinematicCharacterController {
             translation: None,
             custom_shape: None,
             custom_mass: None,
-            up: def.up.into(),
+            up: def.up,
             offset: def.offset,
             slide: def.slide,
             autostep: def.autostep,

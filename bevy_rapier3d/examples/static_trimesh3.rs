@@ -137,7 +137,7 @@ pub fn ball_spawner(mut commands: Commands, time: Res<Time>, mut ball_state: Res
             )),
             RigidBody::Dynamic,
             Collider::ball(rad),
-            Restitution::new(0.5),
+            Restitution::coefficient(0.5),
         ));
 
         ball_state.balls_spawned += 1;
