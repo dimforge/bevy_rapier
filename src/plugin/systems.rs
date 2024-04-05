@@ -456,7 +456,7 @@ pub fn apply_rigid_body_user_changes(
             rb.reset_torques(true);
             rb.add_force((forces.force / scale).into(), true);
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
-            rb.add_torque((forces.torque / scale / scale).into(), true);
+            rb.add_torque((forces.torque / (scale * scale)).into(), true);
         }
     }
 
@@ -464,7 +464,7 @@ pub fn apply_rigid_body_user_changes(
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.apply_impulse((impulses.impulse / scale).into(), true);
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
-            rb.apply_torque_impulse((impulses.torque_impulse / scale / scale).into(), true);
+            rb.apply_torque_impulse((impulses.torque_impulse / (scale * scale)).into(), true);
             impulses.reset();
         }
     }
