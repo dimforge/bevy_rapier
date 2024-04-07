@@ -37,7 +37,7 @@ struct ExamplesRes {
 
 fn main() {
     let mut app = App::new();
-    app.add_state::<Examples>()
+    app.init_state::<Examples>()
         .init_resource::<ExamplesRes>()
         .add_plugins((
             DefaultPlugins,
@@ -186,7 +186,7 @@ fn cleanup(world: &mut World) {
 fn check_toggle(
     state: Res<State<Examples>>,
     mut next_state: ResMut<NextState<Examples>>,
-    mouse_input: Res<Input<MouseButton>>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
 ) {
     if mouse_input.just_pressed(MouseButton::Left) {
         let next = match *state.get() {
