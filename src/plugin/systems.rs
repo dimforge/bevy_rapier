@@ -12,7 +12,6 @@ use crate::geometry::{
     RapierColliderHandle, Restitution, Sensor, SolverGroups,
 };
 use crate::pipeline::{CollisionEvent, ContactForceEvent};
-use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
     AdditionalSolverIterations, BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities,
@@ -538,7 +537,7 @@ pub fn apply_joint_user_changes(
 pub fn writeback_rigid_bodies(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
-    sim_to_render_time: Res<SimulationToRenderTime>,
+    fixed_time: Res<Time<Fixed>>,
     global_transforms: Query<&GlobalTransform>,
     mut writeback: Query<
         RigidBodyWritebackComponents,
@@ -547,6 +546,7 @@ pub fn writeback_rigid_bodies(
 ) {
     let context = &mut *context;
     let scale = context.physics_scale;
+    let lerp_fraction = fixed_time.overstep_fraction();
 
     if config.physics_pipeline_active {
         for (entity, parent, transform, mut interpolation, mut velocity, mut sleeping) in
@@ -559,17 +559,9 @@ pub fn writeback_rigid_bodies(
                 if let Some(rb) = context.bodies.get(handle) {
                     let mut interpolated_pos = utils::iso_to_transform(rb.position(), scale);
 
-                    if let TimestepMode::Interpolated { dt, .. } = config.timestep_mode {
-                        if let Some(interpolation) = interpolation.as_deref_mut() {
-                            if interpolation.end.is_none() {
-                                interpolation.end = Some(*rb.position());
-                            }
-
-                            if let Some(interpolated) =
-                                interpolation.lerp_slerp((dt + sim_to_render_time.diff) / dt)
-                            {
-                                interpolated_pos = utils::iso_to_transform(&interpolated, scale);
-                            }
+                    if let Some(interpolation) = interpolation.as_deref_mut() {
+                        if let Some(interpolated) = interpolation.lerp_slerp(lerp_fraction) {
+                            interpolated_pos = utils::iso_to_transform(&interpolated, scale);
                         }
                     }
 
@@ -718,8 +710,7 @@ pub fn step_simulation<Hooks>(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
     hooks: StaticSystemParam<Hooks>,
-    time: Res<Time>,
-    mut sim_to_render_time: ResMut<SimulationToRenderTime>,
+    time: Res<Time<Fixed>>,
     collision_events: EventWriter<CollisionEvent>,
     contact_force_events: EventWriter<ContactForceEvent>,
     interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
@@ -733,12 +724,11 @@ pub fn step_simulation<Hooks>(
     if config.physics_pipeline_active {
         context.step_simulation(
             config.gravity,
-            config.timestep_mode,
             Some((collision_events, contact_force_events)),
             &hooks_adapter,
-            &time,
-            &mut sim_to_render_time,
-            Some(interpolation_query),
+            time.delta_seconds(),
+            config.substeps,
+            interpolation_query,
         );
         context.deleted_colliders.clear();
     } else {
@@ -1478,7 +1468,16 @@ pub fn update_character_controls(
                 }
             }
 
-            if let Ok(mut transform) = transforms.get_mut(entity_to_move) {
+            // NOTE: Update the translation of the Rapier's rigid body without editing the Bevy's transform for
+            //       preventing noticing change in the [`systems::apply_rigid_body_user_changes`] for kinematic bodies.
+            if let Some(body) = body_handle.and_then(|h| context.bodies.get_mut(h.0)) {
+                // TODO: Use `set_next_kinematic_translation` for position based kinematic bodies? - Vixenka 29.01.2024
+                body.set_translation(
+                    body.translation() + movement.translation * physics_scale,
+                    true,
+                );
+            } else if let Ok(mut transform) = transforms.get_mut(entity_to_move) {
+                // I do not know if this else case is still needed, but it was existing in the original code. - Vixenka 29.01.2024
                 // TODO: take the parent’s GlobalTransform rotation into account?
                 transform.translation.x += movement.translation.x * physics_scale;
                 transform.translation.y += movement.translation.y * physics_scale;
@@ -1533,7 +1532,10 @@ mod tests {
     use std::f32::consts::PI;
 
     use super::*;
-    use crate::plugin::{NoUserData, RapierPhysicsPlugin};
+    use crate::{
+        plugin::{NoUserData, RapierPhysicsPlugin},
+        utils::testing,
+    };
 
     #[test]
     fn colliding_entities_updates() {
@@ -1733,7 +1735,7 @@ mod tests {
                 .spawn(TransformBundle::from(parent_transform))
                 .push_children(&[child]);
 
-            app.update();
+            testing::step_fixed_update(&mut app);
 
             let child_transform = app.world.entity(child).get::<GlobalTransform>().unwrap();
             let context = app.world.resource::<RapierContext>();
@@ -1791,7 +1793,7 @@ mod tests {
                 .push_children(&[child])
                 .id();
 
-            app.update();
+            testing::step_fixed_update(&mut app);
 
             let child_transform = app
                 .world
@@ -1837,7 +1839,7 @@ mod tests {
             app.add_plugins((
                 WindowPlugin::default(),
                 AssetPlugin::default(),
-                ScenePlugin::default(),
+                ScenePlugin,
                 RenderPlugin {
                     render_creation: RenderCreation::Automatic(WgpuSettings {
                         backends: None,

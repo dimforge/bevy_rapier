@@ -1,6 +1,9 @@
 use bevy::prelude::Transform;
 use rapier::math::{Isometry, Real};
 
+#[cfg(test)]
+pub(crate) mod testing;
+
 /// Converts a Rapier isometry to a Bevy transform.
 ///
 /// The translation is multiplied by the `physics_scale`.
