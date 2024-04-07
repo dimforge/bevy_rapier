@@ -546,7 +546,7 @@ pub fn writeback_rigid_bodies(
 ) {
     let context = &mut *context;
     let scale = context.physics_scale;
-    let lerp_percentage = fixed_time.overstep_percentage();
+    let lerp_fraction = fixed_time.overstep_fraction();
 
     if config.physics_pipeline_active {
         for (entity, parent, transform, mut interpolation, mut velocity, mut sleeping) in
@@ -560,7 +560,7 @@ pub fn writeback_rigid_bodies(
                     let mut interpolated_pos = utils::iso_to_transform(rb.position(), scale);
 
                     if let Some(interpolation) = interpolation.as_deref_mut() {
-                        if let Some(interpolated) = interpolation.lerp_slerp(lerp_percentage) {
+                        if let Some(interpolated) = interpolation.lerp_slerp(lerp_fraction) {
                             interpolated_pos = utils::iso_to_transform(&interpolated, scale);
                         }
                     }
