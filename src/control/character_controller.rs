@@ -78,6 +78,15 @@ pub struct MoveShapeOptions {
     /// Should the character be automatically snapped to the ground if the distance between
     /// the ground and its feet are smaller than the specified threshold?
     pub snap_to_ground: Option<CharacterLength>,
+    /// Increase this number if your character appears to get stuck when sliding against surfaces.
+    ///
+    /// This is a small distance applied to the movement toward the contact normals of shapes hit
+    /// by the character controller. This helps shape-casting not getting stuck in an alway-penetrating
+    /// state during the sliding calculation.
+    ///
+    /// This value should remain fairly small since it can introduce artificial "bumps" when sliding
+    /// along a flat surface.
+    pub normal_nudge_factor: Real,
 }
 
 impl Default for MoveShapeOptions {
@@ -92,6 +101,7 @@ impl Default for MoveShapeOptions {
             min_slope_slide_angle: def.min_slope_slide_angle,
             apply_impulse_to_dynamic_bodies: true,
             snap_to_ground: def.snap_to_ground,
+            normal_nudge_factor: def.normal_nudge_factor,
         }
     }
 }
@@ -138,6 +148,15 @@ pub struct KinematicCharacterController {
     /// Groups for filtering-out some colliders from the environment seen by the character
     /// controller.
     pub filter_groups: Option<CollisionGroups>,
+    /// Increase this number if your character appears to get stuck when sliding against surfaces.
+    ///
+    /// This is a small distance applied to the movement toward the contact normals of shapes hit
+    /// by the character controller. This helps shape-casting not getting stuck in an alway-penetrating
+    /// state during the sliding calculation.
+    ///
+    /// This value should remain fairly small since it can introduce artificial "bumps" when sliding
+    /// along a flat surface.
+    pub normal_nudge_factor: Real,
 }
 
 impl KinematicCharacterController {
@@ -161,6 +180,7 @@ impl KinematicCharacterController {
             snap_to_ground: self
                 .snap_to_ground
                 .map(|x| x.map_absolute(|x| x / physics_scale)),
+            normal_nudge_factor: self.normal_nudge_factor,
         })
     }
 }
@@ -182,6 +202,7 @@ impl Default for KinematicCharacterController {
             snap_to_ground: def.snap_to_ground,
             filter_flags: QueryFilterFlags::default() | QueryFilterFlags::EXCLUDE_SENSORS,
             filter_groups: None,
+            normal_nudge_factor: def.normal_nudge_factor,
         }
     }
 }

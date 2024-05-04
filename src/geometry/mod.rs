@@ -1,7 +1,7 @@
 pub use self::collider::*;
 pub use self::shape_views::ColliderView;
 pub use rapier::geometry::SolverFlags;
-pub use rapier::parry::query::TOIStatus;
+pub use rapier::parry::query::{ShapeCastOptions, ShapeCastStatus};
 pub use rapier::parry::shape::TriMeshFlags;
 pub use rapier::parry::transformation::{vhacd::VHACDParameters, voxelization::FillMode};
 
@@ -69,8 +69,8 @@ impl RayIntersection {
         unscaled_dir: Vect,
     ) -> Self {
         Self {
-            toi: inter.toi,
-            point: unscaled_origin + unscaled_dir * inter.toi,
+            toi: inter.time_of_impact,
+            point: unscaled_origin + unscaled_dir * inter.time_of_impact,
             normal: inter.normal.into(),
             feature: inter.feature,
         }
@@ -87,7 +87,7 @@ pub struct Toi {
     /// `None` if `status` is `Penetrating`.
     pub details: Option<ToiDetails>,
     /// The way the time-of-impact computation algorithm terminated.
-    pub status: TOIStatus,
+    pub status: ShapeCastStatus,
 }
 
 /// In depth information about a time-of-impact (TOI) computation.
@@ -105,8 +105,8 @@ pub struct ToiDetails {
 
 impl Toi {
     /// Convert from internal `rapier::Toi`.
-    pub fn from_rapier(physics_scale: Real, toi: rapier::parry::query::TOI) -> Self {
-        let details = if toi.status != TOIStatus::Penetrating {
+    pub fn from_rapier(physics_scale: Real, toi: rapier::parry::query::ShapeCastHit) -> Self {
+        let details = if toi.status != ShapeCastStatus::PenetratingOrWithinTargetDist {
             Some(ToiDetails {
                 witness1: (toi.witness1 * physics_scale).into(),
                 witness2: (toi.witness2 * physics_scale).into(),
@@ -117,7 +117,7 @@ impl Toi {
             None
         };
         Self {
-            toi: toi.toi,
+            toi: toi.time_of_impact,
             status: toi.status,
             details,
         }

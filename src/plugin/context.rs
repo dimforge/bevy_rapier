@@ -16,9 +16,11 @@ use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query};
 
 use crate::control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput};
 use crate::dynamics::TransformInterpolation;
+use crate::parry::query::details::ShapeCastOptions;
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
 use rapier::control::CharacterAutostep;
+use rapier::geometry::DefaultBroadPhase;
 
 /// The Rapier context, containing all the state of the physics engine.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -28,7 +30,7 @@ pub struct RapierContext {
     /// (not moving much) to reduce computations.
     pub islands: IslandManager,
     /// The broad-phase, which detects potential contact pairs.
-    pub broad_phase: BroadPhase,
+    pub broad_phase: Box<dyn BroadPhase>,
     /// The narrow-phase, which computes contact points, tests intersections,
     /// and maintain the contact and intersection graphs.
     pub narrow_phase: NarrowPhase,
@@ -76,7 +78,7 @@ impl Default for RapierContext {
     fn default() -> Self {
         Self {
             islands: IslandManager::new(),
-            broad_phase: BroadPhase::new(),
+            broad_phase: Box::new(DefaultBroadPhase::new()),
             narrow_phase: NarrowPhase::new(),
             bodies: RigidBodySet::new(),
             colliders: ColliderSet::new(),
@@ -264,7 +266,7 @@ impl RapierContext {
                             &(gravity / self.physics_scale).into(),
                             &substep_integration_parameters,
                             &mut self.islands,
-                            &mut self.broad_phase,
+                            &mut *self.broad_phase,
                             &mut self.narrow_phase,
                             &mut self.bodies,
                             &mut self.colliders,
@@ -295,7 +297,7 @@ impl RapierContext {
                         &(gravity / self.physics_scale).into(),
                         &substep_integration_parameters,
                         &mut self.islands,
-                        &mut self.broad_phase,
+                        &mut *self.broad_phase,
                         &mut self.narrow_phase,
                         &mut self.bodies,
                         &mut self.colliders,
@@ -319,7 +321,7 @@ impl RapierContext {
                         &(gravity / self.physics_scale).into(),
                         &substep_integration_parameters,
                         &mut self.islands,
-                        &mut self.broad_phase,
+                        &mut *self.broad_phase,
                         &mut self.narrow_phase,
                         &mut self.bodies,
                         &mut self.colliders,
@@ -417,6 +419,7 @@ impl RapierContext {
             snap_to_ground: options
                 .snap_to_ground
                 .map(|x| x.map_absolute(|x| x / physics_scale)),
+            normal_nudge_factor: options.normal_nudge_factor,
         };
 
         self.character_collisions_collector.clear();
@@ -786,8 +789,7 @@ impl RapierContext {
         shape_rot: Rot,
         shape_vel: Vect,
         shape: &Collider,
-        max_toi: Real,
-        stop_at_penetration: bool,
+        options: ShapeCastOptions,
         filter: QueryFilter,
     ) -> Option<(Entity, Toi)> {
         let scaled_transform = (shape_pos / self.physics_scale, shape_rot).into();
@@ -803,8 +805,7 @@ impl RapierContext {
                 &scaled_transform,
                 &(shape_vel / self.physics_scale).into(),
                 &*scaled_shape.raw,
-                max_toi,
-                stop_at_penetration,
+                options,
                 filter,
             )
         })?;
