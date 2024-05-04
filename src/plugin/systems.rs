@@ -318,7 +318,7 @@ pub fn apply_rigid_body_user_changes(
     for (handle, sleeping) in changed_sleeping.iter() {
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             let activation = rb.activation_mut();
-            activation.linear_threshold = sleeping.linear_threshold;
+            activation.normalized_linear_threshold = sleeping.normalized_linear_threshold;
             activation.angular_threshold = sleeping.angular_threshold;
 
             if !sleeping.sleeping && activation.sleeping {
@@ -1068,7 +1068,7 @@ pub fn init_rigid_bodies(
 
         if let Some(sleep) = sleep {
             let activation = rb.activation_mut();
-            activation.linear_threshold = sleep.linear_threshold;
+            activation.normalized_linear_threshold = sleep.normalized_linear_threshold;
             activation.angular_threshold = sleep.angular_threshold;
         }
 

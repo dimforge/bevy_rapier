@@ -506,7 +506,10 @@ impl Dominance {
 #[reflect(Component, PartialEq)]
 pub struct Sleeping {
     /// The linear velocity below which the body can fall asleep.
-    pub linear_threshold: f32,
+    ///
+    /// The effictive threshold is obtained by multpilying this value by the
+    /// [`IntegrationParameters::length_unit`].
+    pub normalized_linear_threshold: f32,
     /// The angular velocity below which the body can fall asleep.
     pub angular_threshold: f32,
     /// Is this body sleeping?
@@ -517,7 +520,7 @@ impl Sleeping {
     /// Creates a components that disables sleeping for the associated [`RigidBody`].
     pub fn disabled() -> Self {
         Self {
-            linear_threshold: -1.0,
+            normalized_linear_threshold: -1.0,
             angular_threshold: -1.0,
             sleeping: false,
         }
@@ -527,7 +530,7 @@ impl Sleeping {
 impl Default for Sleeping {
     fn default() -> Self {
         Self {
-            linear_threshold: RigidBodyActivation::default_linear_threshold(),
+            normalized_linear_threshold: RigidBodyActivation::default_normalized_linear_threshold(),
             angular_threshold: RigidBodyActivation::default_angular_threshold(),
             sleeping: false,
         }
