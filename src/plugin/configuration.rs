@@ -1,6 +1,7 @@
-use bevy::prelude::Resource;
+use bevy::prelude::{FromWorld, Resource, World};
 
-use crate::math::Vect;
+use crate::math::{Real, Vect};
+use crate::plugin::RapierContext;
 
 /// Difference between simulation and rendering time
 #[derive(Resource, Default)]
@@ -68,17 +69,27 @@ pub struct RapierConfiguration {
     /// discretized into a convex polyhedron, using `scaled_shape_subdivision` as the number of subdivisions
     /// along each spherical coordinates angle.
     pub scaled_shape_subdivision: u32,
-    /// Specifies if backend sync should always accept tranform changes, which may be from the writeback stage.
+    /// Specifies if backend sync should always accept transform changes, which may be from the writeback stage.
     pub force_update_from_transform_changes: bool,
 }
 
-impl Default for RapierConfiguration {
-    fn default() -> Self {
+impl FromWorld for RapierConfiguration {
+    fn from_world(world: &mut World) -> Self {
+        let length_unit = world
+            .get_resource::<RapierContext>()
+            .map(|ctxt| ctxt.integration_parameters.length_unit)
+            .unwrap_or(1.0);
+        println!("Heree: {}", length_unit);
+
+        Self::new(length_unit)
+    }
+}
+
+impl RapierConfiguration {
+    pub fn new(length_unit: Real) -> Self {
+        println!("Here: {}", length_unit);
         Self {
-            #[cfg(feature = "dim2")]
-            gravity: Vect::Y * -9.81 * 10.0,
-            #[cfg(feature = "dim3")]
-            gravity: Vect::Y * -9.81,
+            gravity: Vect::Y * -9.81 * length_unit,
             physics_pipeline_active: true,
             query_pipeline_active: true,
             timestep_mode: TimestepMode::Variable {
