@@ -41,7 +41,7 @@ fn main() {
         .init_resource::<ExamplesRes>()
         .add_plugins((
             DefaultPlugins,
-            RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0),
+            RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(10.0),
             RapierDebugRenderPlugin::default(),
         ))
         //
@@ -145,9 +145,13 @@ fn main() {
         )
         .add_systems(
             OnExit(Examples::PlayerMovement2),
-            (cleanup, |mut rapier_config: ResMut<RapierConfiguration>| {
-                rapier_config.gravity = RapierConfiguration::default().gravity;
-            }),
+            (
+                cleanup,
+                |mut rapier_config: ResMut<RapierConfiguration>, ctxt: Res<RapierContext>| {
+                    rapier_config.gravity =
+                        RapierConfiguration::new(ctxt.integration_parameters.length_unit).gravity;
+                },
+            ),
         )
         //
         //testbed

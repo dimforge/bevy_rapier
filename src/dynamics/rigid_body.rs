@@ -233,34 +233,33 @@ pub struct MassProperties {
 impl MassProperties {
     /// Converts these mass-properties to Rapier’s `MassProperties` structure.
     #[cfg(feature = "dim2")]
-    pub fn into_rapier(self, physics_scale: f32) -> rapier::dynamics::MassProperties {
+    pub fn into_rapier(self) -> rapier::dynamics::MassProperties {
         rapier::dynamics::MassProperties::new(
-            (self.local_center_of_mass / physics_scale).into(),
+            self.local_center_of_mass.into(),
             self.mass,
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
-            (self.principal_inertia / (physics_scale * physics_scale)).into(),
+            self.principal_inertia.into(),
         )
     }
 
     /// Converts these mass-properties to Rapier’s `MassProperties` structure.
     #[cfg(feature = "dim3")]
-    pub fn into_rapier(self, physics_scale: f32) -> rapier::dynamics::MassProperties {
+    pub fn into_rapier(self) -> rapier::dynamics::MassProperties {
         rapier::dynamics::MassProperties::with_principal_inertia_frame(
-            (self.local_center_of_mass / physics_scale).into(),
+            self.local_center_of_mass.into(),
             self.mass,
-            (self.principal_inertia / (physics_scale * physics_scale)).into(),
+            self.principal_inertia.into(),
             self.principal_inertia_local_frame.into(),
         )
     }
 
     /// Converts Rapier’s `MassProperties` structure to `Self`.
-    pub fn from_rapier(mprops: rapier::dynamics::MassProperties, physics_scale: f32) -> Self {
+    pub fn from_rapier(mprops: rapier::dynamics::MassProperties) -> Self {
         #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
         Self {
             mass: mprops.mass(),
-            local_center_of_mass: (mprops.local_com * physics_scale).into(),
-            principal_inertia: (mprops.principal_inertia() * (physics_scale * physics_scale))
-                .into(),
+            local_center_of_mass: mprops.local_com.into(),
+            principal_inertia: mprops.principal_inertia().into(),
             #[cfg(feature = "dim3")]
             principal_inertia_local_frame: mprops.principal_inertia_local_frame.into(),
         }

@@ -159,28 +159,23 @@ pub fn apply_collider_user_changes(
 
     mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
-    let scale = context.physics_scale;
-
     for (entity, handle, transform) in changed_collider_transforms.iter() {
         if context.collider_parent(entity).is_some() {
             let (_, collider_position) =
                 collider_offset(entity, &context, &parent_query, &transform_query);
 
             if let Some(co) = context.colliders.get_mut(handle.0) {
-                co.set_position_wrt_parent(utils::transform_to_iso(&collider_position, scale));
+                co.set_position_wrt_parent(utils::transform_to_iso(&collider_position));
             }
         } else if let Some(co) = context.colliders.get_mut(handle.0) {
-            co.set_position(utils::transform_to_iso(
-                &transform.compute_transform(),
-                scale,
-            ))
+            co.set_position(utils::transform_to_iso(&transform.compute_transform()))
         }
     }
 
     for (handle, shape) in changed_shapes.iter() {
         if let Some(co) = context.colliders.get_mut(handle.0) {
             let mut scaled_shape = shape.clone();
-            scaled_shape.set_scale(shape.scale / scale, config.scaled_shape_subdivision);
+            scaled_shape.set_scale(shape.scale, config.scaled_shape_subdivision);
             co.set_shape(scaled_shape.raw.clone());
 
             if let Some(body) = co.parent() {
@@ -259,7 +254,7 @@ pub fn apply_collider_user_changes(
                 ColliderMassProperties::Density(density) => co.set_density(*density),
                 ColliderMassProperties::Mass(mass) => co.set_mass(*mass),
                 ColliderMassProperties::MassProperties(mprops) => {
-                    co.set_mass_properties(mprops.into_rapier(scale))
+                    co.set_mass_properties(mprops.into_rapier())
                 }
             }
 
@@ -311,7 +306,6 @@ pub fn apply_rigid_body_user_changes(
     mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
     let context = &mut *context;
-    let scale = context.physics_scale;
 
     // Deal with sleeping first, because other changes may then wake-up the
     // rigid-body again.
@@ -393,7 +387,6 @@ pub fn apply_rigid_body_user_changes(
                     if transform_changed == Some(true) {
                         rb.set_next_kinematic_position(utils::transform_to_iso(
                             &global_transform.compute_transform(),
-                            scale,
                         ));
                         context
                             .last_body_transform_set
@@ -403,7 +396,7 @@ pub fn apply_rigid_body_user_changes(
                 _ => {
                     if transform_changed == Some(true) {
                         rb.set_position(
-                            utils::transform_to_iso(&global_transform.compute_transform(), scale),
+                            utils::transform_to_iso(&global_transform.compute_transform()),
                             true,
                         );
                         context
@@ -417,7 +410,7 @@ pub fn apply_rigid_body_user_changes(
 
     for (handle, velocity) in changed_velocities.iter() {
         if let Some(rb) = context.bodies.get_mut(handle.0) {
-            rb.set_linvel((velocity.linvel / scale).into(), true);
+            rb.set_linvel(velocity.linvel.into(), true);
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             rb.set_angvel(velocity.angvel.into(), true);
         }
@@ -427,7 +420,7 @@ pub fn apply_rigid_body_user_changes(
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             match mprops {
                 AdditionalMassProperties::MassProperties(mprops) => {
-                    rb.set_additional_mass_properties(mprops.into_rapier(scale), true);
+                    rb.set_additional_mass_properties(mprops.into_rapier(), true);
                 }
                 AdditionalMassProperties::Mass(mass) => {
                     rb.set_additional_mass(*mass, true);
@@ -454,7 +447,7 @@ pub fn apply_rigid_body_user_changes(
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.reset_forces(true);
             rb.reset_torques(true);
-            rb.add_force((forces.force / scale).into(), true);
+            rb.add_force(forces.force.into(), true);
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             rb.add_torque(forces.torque.into(), true);
         }
@@ -462,7 +455,7 @@ pub fn apply_rigid_body_user_changes(
 
     for (handle, mut impulses) in changed_impulses.iter_mut() {
         if let Some(rb) = context.bodies.get_mut(handle.0) {
-            rb.apply_impulse((impulses.impulse / scale).into(), true);
+            rb.apply_impulse(impulses.impulse.into(), true);
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             rb.apply_torque_impulse(impulses.torque_impulse.into(), true);
             impulses.reset();
@@ -513,13 +506,11 @@ pub fn apply_joint_user_changes(
         Changed<MultibodyJoint>,
     >,
 ) {
-    let scale = context.physics_scale;
-
     // TODO: right now, we only support propagating changes made to the joint data.
     //       Re-parenting the joint isn’t supported yet.
     for (handle, changed_joint) in changed_impulse_joints.iter() {
         if let Some(joint) = context.impulse_joints.get_mut(handle.0) {
-            joint.data = changed_joint.data.into_rapier(scale);
+            joint.data = changed_joint.data.into_rapier();
         }
     }
 
@@ -527,7 +518,7 @@ pub fn apply_joint_user_changes(
         // TODO: not sure this will always work properly, e.g., if the number of Dofs is changed.
         if let Some((mb, link_id)) = context.multibody_joints.get_mut(handle.0) {
             if let Some(link) = mb.link_mut(link_id) {
-                link.joint.data = changed_joint.data.into_rapier(scale);
+                link.joint.data = changed_joint.data.into_rapier();
             }
         }
     }
@@ -546,7 +537,6 @@ pub fn writeback_rigid_bodies(
     >,
 ) {
     let context = &mut *context;
-    let scale = context.physics_scale;
 
     if config.physics_pipeline_active {
         for (entity, parent, transform, mut interpolation, mut velocity, mut sleeping) in
@@ -557,7 +547,7 @@ pub fn writeback_rigid_bodies(
             // by physics (for example because they are sleeping).
             if let Some(handle) = context.entity2body.get(&entity).copied() {
                 if let Some(rb) = context.bodies.get(handle) {
-                    let mut interpolated_pos = utils::iso_to_transform(rb.position(), scale);
+                    let mut interpolated_pos = utils::iso_to_transform(rb.position());
 
                     if let TimestepMode::Interpolated { dt, .. } = config.timestep_mode {
                         if let Some(interpolation) = interpolation.as_deref_mut() {
@@ -568,7 +558,7 @@ pub fn writeback_rigid_bodies(
                             if let Some(interpolated) =
                                 interpolation.lerp_slerp((dt + sim_to_render_time.diff) / dt)
                             {
-                                interpolated_pos = utils::iso_to_transform(&interpolated, scale);
+                                interpolated_pos = utils::iso_to_transform(&interpolated);
                             }
                         }
                     }
@@ -651,7 +641,7 @@ pub fn writeback_rigid_bodies(
 
                     if let Some(velocity) = &mut velocity {
                         let new_vel = Velocity {
-                            linvel: (rb.linvel() * scale).into(),
+                            linvel: (*rb.linvel()).into(),
                             #[cfg(feature = "dim3")]
                             angvel: (*rb.angvel()).into(),
                             #[cfg(feature = "dim2")]
@@ -689,7 +679,6 @@ pub fn writeback_mass_properties(
     mut mass_modified: EventReader<MassModifiedEvent>,
 ) {
     let context = &mut *context;
-    let scale = context.physics_scale;
 
     if config.physics_pipeline_active {
         for entity in mass_modified.read() {
@@ -697,7 +686,7 @@ pub fn writeback_mass_properties(
                 if let Some(rb) = context.bodies.get(handle) {
                     if let Ok(mut mass_props) = mass_props.get_mut(**entity) {
                         let new_mass_props =
-                            MassProperties::from_rapier(rb.mass_properties().local_mprops, scale);
+                            MassProperties::from_rapier(rb.mass_properties().local_mprops);
 
                         // NOTE: we write the new value only if there was an
                         //       actual change, in order to not trigger bevy’s
@@ -859,7 +848,6 @@ pub fn init_colliders(
     transform_query: Query<&Transform>,
 ) {
     let context = &mut *context;
-    let physics_scale = context.physics_scale;
 
     for (
         (
@@ -881,7 +869,7 @@ pub fn init_colliders(
     ) in colliders.iter()
     {
         let mut scaled_shape = shape.clone();
-        scaled_shape.set_scale(shape.scale / physics_scale, config.scaled_shape_subdivision);
+        scaled_shape.set_scale(shape.scale, config.scaled_shape_subdivision);
         let mut builder = ColliderBuilder::new(scaled_shape.raw.clone());
 
         builder = builder.sensor(sensor.is_some());
@@ -892,7 +880,7 @@ pub fn init_colliders(
                 ColliderMassProperties::Density(density) => builder.density(*density),
                 ColliderMassProperties::Mass(mass) => builder.mass(*mass),
                 ColliderMassProperties::MassProperties(mprops) => {
-                    builder.mass_properties(mprops.into_rapier(physics_scale))
+                    builder.mass_properties(mprops.into_rapier())
                 }
             };
         }
@@ -940,7 +928,7 @@ pub fn init_colliders(
         builder = builder.user_data(entity.to_bits() as u128);
 
         let handle = if let Some(body_handle) = body_handle {
-            builder = builder.position(utils::transform_to_iso(&child_transform, physics_scale));
+            builder = builder.position(utils::transform_to_iso(&child_transform));
             let handle =
                 context
                     .colliders
@@ -951,7 +939,6 @@ pub fn init_colliders(
                 if let Some(parent_body) = context.bodies.get(body_handle) {
                     mprops.set(MassProperties::from_rapier(
                         parent_body.mass_properties().local_mprops,
-                        physics_scale,
                     ));
                 }
             }
@@ -960,7 +947,6 @@ pub fn init_colliders(
             let global_transform = global_transform.cloned().unwrap_or_default();
             builder = builder.position(utils::transform_to_iso(
                 &global_transform.compute_transform(),
-                physics_scale,
             ));
             context.colliders.insert(builder)
         };
@@ -976,8 +962,6 @@ pub fn init_rigid_bodies(
     mut context: ResMut<RapierContext>,
     rigid_bodies: Query<RigidBodyComponents, Without<RapierRigidBodyHandle>>,
 ) {
-    let physics_scale = context.physics_scale;
-
     for (
         entity,
         rb,
@@ -1000,17 +984,12 @@ pub fn init_rigid_bodies(
         builder = builder.enabled(disabled.is_none());
 
         if let Some(transform) = transform {
-            builder = builder.position(utils::transform_to_iso(
-                &transform.compute_transform(),
-                physics_scale,
-            ));
+            builder = builder.position(utils::transform_to_iso(&transform.compute_transform()));
         }
 
         #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
         if let Some(vel) = vel {
-            builder = builder
-                .linvel((vel.linvel / physics_scale).into())
-                .angvel(vel.angvel.into());
+            builder = builder.linvel(vel.linvel.into()).angvel(vel.angvel.into());
         }
 
         if let Some(locked_axes) = locked_axes {
@@ -1042,7 +1021,7 @@ pub fn init_rigid_bodies(
         if let Some(mprops) = additional_mass_props {
             builder = match mprops {
                 AdditionalMassProperties::MassProperties(mprops) => {
-                    builder.additional_mass_properties(mprops.into_rapier(physics_scale))
+                    builder.additional_mass_properties(mprops.into_rapier())
                 }
                 AdditionalMassProperties::Mass(mass) => builder.additional_mass(*mass),
             };
@@ -1058,7 +1037,7 @@ pub fn init_rigid_bodies(
 
         #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
         if let Some(force) = force {
-            rb.add_force((force.force / physics_scale).into(), false);
+            rb.add_force(force.force.into(), false);
             rb.add_torque(force.torque.into(), false);
         }
 
@@ -1096,7 +1075,6 @@ pub fn apply_initial_rigid_body_impulses(
     mut init_impulses: Query<(Entity, &mut ExternalImpulse), Without<RapierRigidBodyHandle>>,
 ) {
     let context = &mut *context;
-    let scale = context.physics_scale;
 
     for (entity, mut impulse) in init_impulses.iter_mut() {
         let bodies = &mut context.bodies;
@@ -1108,7 +1086,7 @@ pub fn apply_initial_rigid_body_impulses(
             // Make sure the mass-properties are computed.
             rb.recompute_mass_properties_from_colliders(&context.colliders);
             // Apply the impulse.
-            rb.apply_impulse((impulse.impulse / scale).into(), false);
+            rb.apply_impulse(impulse.impulse.into(), false);
 
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             rb.apply_torque_impulse(impulse.torque_impulse.into(), false);
@@ -1127,7 +1105,6 @@ pub fn init_joints(
     parent_query: Query<&Parent>,
 ) {
     let context = &mut *context;
-    let scale = context.physics_scale;
 
     for (entity, joint) in impulse_joints.iter() {
         let mut target = None;
@@ -1145,7 +1122,7 @@ pub fn init_joints(
             let handle =
                 context
                     .impulse_joints
-                    .insert(*source, target, joint.data.into_rapier(scale), true);
+                    .insert(*source, target, joint.data.into_rapier(), true);
             commands
                 .entity(entity)
                 .insert(RapierImpulseJointHandle(handle));
@@ -1157,12 +1134,11 @@ pub fn init_joints(
         let target = context.entity2body.get(&entity);
 
         if let (Some(target), Some(source)) = (target, context.entity2body.get(&joint.parent)) {
-            if let Some(handle) = context.multibody_joints.insert(
-                *source,
-                *target,
-                joint.data.into_rapier(scale),
-                true,
-            ) {
+            if let Some(handle) =
+                context
+                    .multibody_joints
+                    .insert(*source, *target, joint.data.into_rapier(), true)
+            {
                 commands
                     .entity(entity)
                     .insert(RapierMultibodyJointHandle(handle));
@@ -1370,13 +1346,12 @@ pub fn update_character_controls(
     )>,
     mut transforms: Query<&mut Transform>,
 ) {
-    let physics_scale = context.physics_scale;
     let context = &mut *context;
     for (entity, mut controller, output, collider_handle, body_handle, glob_transform) in
         character_controllers.iter_mut()
     {
         if let (Some(raw_controller), Some(translation)) =
-            (controller.to_raw(physics_scale), controller.translation)
+            (controller.to_raw(), controller.translation)
         {
             let scaled_custom_shape =
                 controller
@@ -1385,12 +1360,9 @@ pub fn update_character_controls(
                     .map(|(custom_shape, tra, rot)| {
                         // TODO: avoid the systematic scale somehow?
                         let mut scaled_shape = custom_shape.clone();
-                        scaled_shape.set_scale(
-                            custom_shape.scale / physics_scale,
-                            config.scaled_shape_subdivision,
-                        );
+                        scaled_shape.set_scale(custom_shape.scale, config.scaled_shape_subdivision);
 
-                        (scaled_shape, *tra / physics_scale, *rot)
+                        (scaled_shape, *tra, *rot)
                     });
 
             let parent_rigid_body = body_handle.map(|h| h.0).or_else(|| {
@@ -1410,9 +1382,7 @@ pub fn update_character_controls(
                 if let Some(body) = body_handle.and_then(|h| context.bodies.get(h.0)) {
                     shape_pos = body.position() * shape_pos
                 } else if let Some(gtransform) = glob_transform {
-                    shape_pos =
-                        utils::transform_to_iso(&gtransform.compute_transform(), physics_scale)
-                            * shape_pos
+                    shape_pos = utils::transform_to_iso(&gtransform.compute_transform()) * shape_pos
                 }
 
                 (&*scaled_shape.raw, shape_pos)
@@ -1458,7 +1428,7 @@ pub fn update_character_controls(
                 &context.query_pipeline,
                 character_shape,
                 &character_pos,
-                (translation / physics_scale).into(),
+                translation.into(),
                 filter,
                 |c| collisions.push(c),
             );
@@ -1480,11 +1450,11 @@ pub fn update_character_controls(
 
             if let Ok(mut transform) = transforms.get_mut(entity_to_move) {
                 // TODO: take the parent’s GlobalTransform rotation into account?
-                transform.translation.x += movement.translation.x * physics_scale;
-                transform.translation.y += movement.translation.y * physics_scale;
+                transform.translation.x += movement.translation.x;
+                transform.translation.y += movement.translation.y;
                 #[cfg(feature = "dim3")]
                 {
-                    transform.translation.z += movement.translation.z * physics_scale;
+                    transform.translation.z += movement.translation.z;
                 }
             }
 
@@ -1495,7 +1465,7 @@ pub fn update_character_controls(
 
             if let Some(mut output) = output {
                 output.desired_translation = controller.translation.unwrap(); // Already takes the physics_scale into account.
-                output.effective_translation = (movement.translation * physics_scale).into();
+                output.effective_translation = movement.translation.into();
                 output.grounded = movement.grounded;
                 output.collisions.clear();
                 output.collisions.extend(converted_collisions);
@@ -1504,7 +1474,7 @@ pub fn update_character_controls(
                     .entity(entity)
                     .insert(KinematicCharacterControllerOutput {
                         desired_translation: controller.translation.unwrap(), // Already takes the physics_scale into account.
-                        effective_translation: (movement.translation * physics_scale).into(),
+                        effective_translation: movement.translation.into(),
                         grounded: movement.grounded,
                         collisions: converted_collisions.collect(),
                     });

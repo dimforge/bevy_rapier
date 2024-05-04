@@ -249,7 +249,7 @@ impl<'a> ContactView<'a> {
     /// collider's rigid-body.
     #[cfg(feature = "dim2")]
     pub fn tangent_impulse(&self) -> Real {
-        self.raw.data.tangent_impulse
+        self.raw.data.tangent_impulse.x
     }
 
     /// The friction impulse along the vector orthonormal to the contact normal, applied to the first

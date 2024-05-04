@@ -29,25 +29,24 @@ impl CharacterCollision {
         ctxt: &RapierContext,
         c: &rapier::control::CharacterCollision,
     ) -> Option<Self> {
-        Self::from_raw_with_set(ctxt.physics_scale, &ctxt.colliders, c)
+        Self::from_raw_with_set(&ctxt.colliders, c)
     }
 
     pub(crate) fn from_raw_with_set(
-        physics_scale: Real,
         colliders: &ColliderSet,
         c: &rapier::control::CharacterCollision,
     ) -> Option<Self> {
         RapierContext::collider_entity_with_set(colliders, c.handle).map(|entity| {
             CharacterCollision {
                 entity,
-                character_translation: (c.character_pos.translation.vector * physics_scale).into(),
+                character_translation: c.character_pos.translation.vector.into(),
                 #[cfg(feature = "dim2")]
                 character_rotation: c.character_pos.rotation.angle(),
                 #[cfg(feature = "dim3")]
                 character_rotation: c.character_pos.rotation.into(),
-                translation_applied: (c.translation_applied * physics_scale).into(),
-                translation_remaining: (c.translation_remaining * physics_scale).into(),
-                toi: Toi::from_rapier(physics_scale, c.toi),
+                translation_applied: c.translation_applied.into(),
+                translation_remaining: c.translation_remaining.into(),
+                toi: Toi::from_rapier(c.toi),
             }
         })
     }
@@ -160,26 +159,21 @@ pub struct KinematicCharacterController {
 }
 
 impl KinematicCharacterController {
-    pub(crate) fn to_raw(
-        &self,
-        physics_scale: Real,
-    ) -> Option<rapier::control::KinematicCharacterController> {
+    pub(crate) fn to_raw(&self) -> Option<rapier::control::KinematicCharacterController> {
         let autostep = self.autostep.map(|autostep| CharacterAutostep {
-            max_height: autostep.max_height.map_absolute(|x| x / physics_scale),
-            min_width: autostep.min_width.map_absolute(|x| x / physics_scale),
+            max_height: autostep.max_height,
+            min_width: autostep.min_width,
             include_dynamic_bodies: autostep.include_dynamic_bodies,
         });
 
         Some(rapier::control::KinematicCharacterController {
             up: self.up.try_into().ok()?,
-            offset: self.offset.map_absolute(|x| x / physics_scale),
+            offset: self.offset,
             slide: self.slide,
             autostep,
             max_slope_climb_angle: self.max_slope_climb_angle,
             min_slope_slide_angle: self.min_slope_slide_angle,
-            snap_to_ground: self
-                .snap_to_ground
-                .map(|x| x.map_absolute(|x| x / physics_scale)),
+            snap_to_ground: self.snap_to_ground,
             normal_nudge_factor: self.normal_nudge_factor,
         })
     }

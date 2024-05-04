@@ -23,13 +23,10 @@ pub struct PointProjection {
 }
 
 impl PointProjection {
-    pub(crate) fn from_rapier(
-        physics_scale: Real,
-        raw: rapier::parry::query::PointProjection,
-    ) -> Self {
+    pub(crate) fn from_rapier(raw: rapier::parry::query::PointProjection) -> Self {
         Self {
             is_inside: raw.is_inside,
-            point: (raw.point * physics_scale).into(),
+            point: raw.point.into(),
         }
     }
 }
@@ -105,11 +102,11 @@ pub struct ToiDetails {
 
 impl Toi {
     /// Convert from internal `rapier::Toi`.
-    pub fn from_rapier(physics_scale: Real, toi: rapier::parry::query::ShapeCastHit) -> Self {
+    pub fn from_rapier(toi: rapier::parry::query::ShapeCastHit) -> Self {
         let details = if toi.status != ShapeCastStatus::PenetratingOrWithinTargetDist {
             Some(ToiDetails {
-                witness1: (toi.witness1 * physics_scale).into(),
-                witness2: (toi.witness2 * physics_scale).into(),
+                witness1: toi.witness1.into(),
+                witness2: toi.witness2.into(),
                 normal1: toi.normal1.into(),
                 normal2: toi.normal2.into(),
             })

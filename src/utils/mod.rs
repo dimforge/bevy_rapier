@@ -5,9 +5,9 @@ use rapier::math::{Isometry, Real};
 ///
 /// The translation is multiplied by the `physics_scale`.
 #[cfg(feature = "dim2")]
-pub fn iso_to_transform(iso: &Isometry<Real>, physics_scale: Real) -> Transform {
+pub fn iso_to_transform(iso: &Isometry<Real>) -> Transform {
     Transform {
-        translation: (iso.translation.vector.push(0.0) * physics_scale).into(),
+        translation: iso.translation.vector.push(0.0).into(),
         rotation: bevy::prelude::Quat::from_rotation_z(iso.rotation.angle()),
         ..Default::default()
     }
@@ -17,9 +17,9 @@ pub fn iso_to_transform(iso: &Isometry<Real>, physics_scale: Real) -> Transform 
 ///
 /// The translation is multiplied by the `physics_scale`.
 #[cfg(feature = "dim3")]
-pub fn iso_to_transform(iso: &Isometry<Real>, physics_scale: Real) -> Transform {
+pub fn iso_to_transform(iso: &Isometry<Real>) -> Transform {
     Transform {
-        translation: (iso.translation.vector * physics_scale).into(),
+        translation: iso.translation.vector.into(),
         rotation: iso.rotation.into(),
         ..Default::default()
     }
@@ -29,10 +29,10 @@ pub fn iso_to_transform(iso: &Isometry<Real>, physics_scale: Real) -> Transform 
 ///
 /// The translation is divided by the `physics_scale`.
 #[cfg(feature = "dim2")]
-pub(crate) fn transform_to_iso(transform: &Transform, physics_scale: Real) -> Isometry<Real> {
+pub(crate) fn transform_to_iso(transform: &Transform) -> Isometry<Real> {
     use bevy::math::Vec3Swizzles;
     Isometry::new(
-        (transform.translation / physics_scale).xy().into(),
+        transform.translation.xy().into(),
         transform.rotation.to_scaled_axis().z,
     )
 }
@@ -41,11 +41,8 @@ pub(crate) fn transform_to_iso(transform: &Transform, physics_scale: Real) -> Is
 ///
 /// The translation is divided by the `physics_scale`.
 #[cfg(feature = "dim3")]
-pub(crate) fn transform_to_iso(transform: &Transform, physics_scale: Real) -> Isometry<Real> {
-    Isometry::from_parts(
-        (transform.translation / physics_scale).into(),
-        transform.rotation.into(),
-    )
+pub(crate) fn transform_to_iso(transform: &Transform) -> Isometry<Real> {
+    Isometry::from_parts(transform.translation.into(), transform.rotation.into())
 }
 
 #[cfg(test)]
