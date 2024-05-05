@@ -1,4 +1,4 @@
-use crate::geometry::{Collider, CollisionGroups, Toi};
+use crate::geometry::{Collider, CollisionGroups, ShapeCastHit};
 use crate::math::{Real, Rot, Vect};
 use bevy::prelude::*;
 
@@ -21,7 +21,7 @@ pub struct CharacterCollision {
     /// The translations that was still waiting to be applied to the character when the hit happens.
     pub translation_remaining: Vect,
     /// Geometric information about the hit.
-    pub toi: Toi,
+    pub hit: ShapeCastHit,
 }
 
 impl CharacterCollision {
@@ -29,12 +29,13 @@ impl CharacterCollision {
         ctxt: &RapierContext,
         c: &rapier::control::CharacterCollision,
     ) -> Option<Self> {
-        Self::from_raw_with_set(&ctxt.colliders, c)
+        Self::from_raw_with_set(&ctxt.colliders, c, true)
     }
 
     pub(crate) fn from_raw_with_set(
         colliders: &ColliderSet,
         c: &rapier::control::CharacterCollision,
+        details_always_computed: bool,
     ) -> Option<Self> {
         RapierContext::collider_entity_with_set(colliders, c.handle).map(|entity| {
             CharacterCollision {
@@ -46,7 +47,7 @@ impl CharacterCollision {
                 character_rotation: c.character_pos.rotation.into(),
                 translation_applied: c.translation_applied.into(),
                 translation_remaining: c.translation_remaining.into(),
-                toi: Toi::from_rapier(c.toi),
+                hit: ShapeCastHit::from_rapier(c.hit, details_always_computed),
             }
         })
     }
