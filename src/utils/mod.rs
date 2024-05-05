@@ -51,7 +51,7 @@ mod tests {
                 .normalize(),
             ..Default::default()
         };
-        let converted_transform = iso_to_transform(&transform_to_iso(&transform, 1.0), 1.0);
+        let converted_transform = iso_to_transform(&transform_to_iso(&transform));
         assert_eq!(converted_transform, transform);
     }
 }
