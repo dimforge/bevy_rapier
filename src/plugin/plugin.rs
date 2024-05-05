@@ -182,6 +182,7 @@ where
             .register_type::<Damping>()
             .register_type::<Dominance>()
             .register_type::<Ccd>()
+            .register_type::<SoftCcd>()
             .register_type::<GravityScale>()
             .register_type::<CollidingEntities>()
             .register_type::<Sensor>()
@@ -190,6 +191,7 @@ where
             .register_type::<CollisionGroups>()
             .register_type::<SolverGroups>()
             .register_type::<ContactForceEventThreshold>()
+            .register_type::<ContactSkin>()
             .register_type::<Group>();
 
         app.insert_resource(SimulationToRenderTime::default())

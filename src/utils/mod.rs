@@ -2,8 +2,6 @@ use bevy::prelude::Transform;
 use rapier::math::{Isometry, Real};
 
 /// Converts a Rapier isometry to a Bevy transform.
-///
-/// The translation is multiplied by the `physics_scale`.
 #[cfg(feature = "dim2")]
 pub fn iso_to_transform(iso: &Isometry<Real>) -> Transform {
     Transform {
@@ -14,8 +12,6 @@ pub fn iso_to_transform(iso: &Isometry<Real>) -> Transform {
 }
 
 /// Converts a Rapier isometry to a Bevy transform.
-///
-/// The translation is multiplied by the `physics_scale`.
 #[cfg(feature = "dim3")]
 pub fn iso_to_transform(iso: &Isometry<Real>) -> Transform {
     Transform {
@@ -26,8 +22,6 @@ pub fn iso_to_transform(iso: &Isometry<Real>) -> Transform {
 }
 
 /// Converts a Bevy transform to a Rapier isometry.
-///
-/// The translation is divided by the `physics_scale`.
 #[cfg(feature = "dim2")]
 pub(crate) fn transform_to_iso(transform: &Transform) -> Isometry<Real> {
     use bevy::math::Vec3Swizzles;
@@ -38,8 +32,6 @@ pub(crate) fn transform_to_iso(transform: &Transform) -> Isometry<Real> {
 }
 
 /// Converts a Bevy transform to a Rapier isometry.
-///
-/// The translation is divided by the `physics_scale`.
 #[cfg(feature = "dim3")]
 pub(crate) fn transform_to_iso(transform: &Transform) -> Isometry<Real> {
     Isometry::from_parts(transform.translation.into(), transform.rotation.into())

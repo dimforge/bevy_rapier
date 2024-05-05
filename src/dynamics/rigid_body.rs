@@ -481,6 +481,23 @@ impl Ccd {
     }
 }
 
+/// Sets the maximum prediction distance Soft Continuous Collision-Detection.
+///
+/// When set to 0, soft-CCD is disabled. Soft-CCD helps prevent tunneling especially of
+/// slow-but-thin to moderately fast objects. The soft CCD prediction distance indicates how
+/// far in the object’s path the CCD algorithm is allowed to inspect. Large values can impact
+/// performance badly by increasing the work needed from the broad-phase.
+///
+/// It is a generally cheaper variant of regular CCD (that can be enabled with
+/// [`rapier::dynamics::RigidBody::enable_ccd`] since it relies on predictive constraints instead of
+/// shape-cast and substeps.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
+#[reflect(Component, PartialEq)]
+pub struct SoftCcd {
+    /// The soft CCD prediction distance.
+    pub prediction: f32,
+}
+
 /// The dominance groups of a [`RigidBody`].
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
