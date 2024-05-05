@@ -79,15 +79,18 @@ impl FromWorld for RapierConfiguration {
             .get_resource::<RapierContext>()
             .map(|ctxt| ctxt.integration_parameters.length_unit)
             .unwrap_or(1.0);
-        println!("Heree: {}", length_unit);
-
         Self::new(length_unit)
     }
 }
 
 impl RapierConfiguration {
+    /// Configures rapier with the specified length unit.
+    ///
+    /// See the documentation of [`IntegrationParameters::length_unit`] for additional details
+    /// on that argument.
+    ///
+    /// The default gravity is automatically scaled by that length unit.
     pub fn new(length_unit: Real) -> Self {
-        println!("Here: {}", length_unit);
         Self {
             gravity: Vect::Y * -9.81 * length_unit,
             physics_pipeline_active: true,

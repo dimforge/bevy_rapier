@@ -4,7 +4,7 @@ use crate::dynamics::{
     AdditionalMassProperties, Ccd, Damping, Dominance, ExternalForce, ExternalImpulse,
     GravityScale, ImpulseJoint, LockedAxes, MassProperties, MultibodyJoint,
     RapierImpulseJointHandle, RapierMultibodyJointHandle, RapierRigidBodyHandle,
-    ReadMassProperties, RigidBody, Sleeping, TransformInterpolation, Velocity,
+    ReadMassProperties, RigidBody, Sleeping, SoftCcd, TransformInterpolation, Velocity,
 };
 use crate::geometry::{
     ActiveCollisionTypes, ActiveEvents, ActiveHooks, Collider, ColliderDisabled,
@@ -16,8 +16,8 @@ use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
     AdditionalSolverIterations, BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities,
-    KinematicCharacterController, KinematicCharacterControllerOutput, MassModifiedEvent,
-    RigidBodyDisabled,
+    ContactSkin, KinematicCharacterController, KinematicCharacterControllerOutput,
+    MassModifiedEvent, RigidBodyDisabled,
 };
 use crate::utils;
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
@@ -56,7 +56,7 @@ pub type RigidBodyComponents<'a> = (
     Option<&'a LockedAxes>,
     Option<&'a ExternalForce>,
     Option<&'a GravityScale>,
-    Option<&'a Ccd>,
+    (Option<&'a Ccd>, Option<&'a SoftCcd>),
     Option<&'a Dominance>,
     Option<&'a Sleeping>,
     Option<&'a Damping>,
@@ -75,6 +75,7 @@ pub type ColliderComponents<'a> = (
     Option<&'a ActiveCollisionTypes>,
     Option<&'a Friction>,
     Option<&'a Restitution>,
+    Option<&'a ContactSkin>,
     Option<&'a CollisionGroups>,
     Option<&'a SolverGroups>,
     Option<&'a ContactForceEventThreshold>,
@@ -94,9 +95,6 @@ pub fn apply_scale(
         )>,
     >,
 ) {
-    // NOTE: we don’t have to apply the RapierConfiguration::physics_scale here because
-    //       we are applying the scale to the user-facing shape here, not the ones inside
-    //       colliders (yet).
     for (mut shape, transform, custom_scale) in changed_collider_scales.iter_mut() {
         #[cfg(feature = "dim2")]
         let effective_scale = match custom_scale {
@@ -139,8 +137,11 @@ pub fn apply_collider_user_changes(
         (&RapierColliderHandle, &ActiveCollisionTypes),
         Changed<ActiveCollisionTypes>,
     >,
-    changed_friction: Query<(&RapierColliderHandle, &Friction), Changed<Friction>>,
-    changed_restitution: Query<(&RapierColliderHandle, &Restitution), Changed<Restitution>>,
+    (changed_friction, changed_restitution, changed_contact_skin): (
+        Query<(&RapierColliderHandle, &Friction), Changed<Friction>>,
+        Query<(&RapierColliderHandle, &Restitution), Changed<Restitution>>,
+        Query<(&RapierColliderHandle, &ContactSkin), Changed<ContactSkin>>,
+    ),
     changed_collision_groups: Query<
         (&RapierColliderHandle, &CollisionGroups),
         Changed<CollisionGroups>,
@@ -218,6 +219,12 @@ pub fn apply_collider_user_changes(
         }
     }
 
+    for (handle, contact_skin) in changed_contact_skin.iter() {
+        if let Some(co) = context.colliders.get_mut(handle.0) {
+            co.set_contact_skin(contact_skin.0);
+        }
+    }
+
     for (handle, collision_groups) in changed_collision_groups.iter() {
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_collision_groups((*collision_groups).into());
@@ -292,7 +299,10 @@ pub fn apply_rigid_body_user_changes(
         Changed<ExternalImpulse>,
     >,
     changed_gravity_scale: Query<(&RapierRigidBodyHandle, &GravityScale), Changed<GravityScale>>,
-    changed_ccd: Query<(&RapierRigidBodyHandle, &Ccd), Changed<Ccd>>,
+    (changed_ccd, changed_soft_ccd): (
+        Query<(&RapierRigidBodyHandle, &Ccd), Changed<Ccd>>,
+        Query<(&RapierRigidBodyHandle, &SoftCcd), Changed<SoftCcd>>,
+    ),
     changed_dominance: Query<(&RapierRigidBodyHandle, &Dominance), Changed<Dominance>>,
     changed_sleeping: Query<(&RapierRigidBodyHandle, &Sleeping), Changed<Sleeping>>,
     changed_damping: Query<(&RapierRigidBodyHandle, &Damping), Changed<Damping>>,
@@ -471,6 +481,12 @@ pub fn apply_rigid_body_user_changes(
     for (handle, ccd) in changed_ccd.iter() {
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.enable_ccd(ccd.enabled);
+        }
+    }
+
+    for (handle, soft_ccd) in changed_soft_ccd.iter() {
+        if let Some(rb) = context.bodies.get_mut(handle.0) {
+            rb.set_soft_ccd_prediction(soft_ccd.prediction);
         }
     }
 
@@ -860,6 +876,7 @@ pub fn init_colliders(
             active_collision_types,
             friction,
             restitution,
+            contact_skin,
             collision_groups,
             solver_groups,
             contact_force_event_threshold,
@@ -907,6 +924,10 @@ pub fn init_colliders(
             builder = builder
                 .restitution(restitution.coefficient)
                 .restitution_combine_rule(restitution.combine_rule.into());
+        }
+
+        if let Some(contact_skin) = contact_skin {
+            builder = builder.contact_skin(contact_skin.0);
         }
 
         if let Some(collision_groups) = collision_groups {
@@ -972,7 +993,7 @@ pub fn init_rigid_bodies(
         locked_axes,
         force,
         gravity_scale,
-        ccd,
+        (ccd, soft_ccd),
         dominance,
         sleep,
         damping,
@@ -1002,6 +1023,10 @@ pub fn init_rigid_bodies(
 
         if let Some(ccd) = ccd {
             builder = builder.ccd_enabled(ccd.enabled)
+        }
+
+        if let Some(soft_ccd) = soft_ccd {
+            builder = builder.soft_ccd_prediction(soft_ccd.prediction)
         }
 
         if let Some(dominance) = dominance {
@@ -1464,7 +1489,7 @@ pub fn update_character_controls(
                 .filter_map(|c| CharacterCollision::from_raw(context, c));
 
             if let Some(mut output) = output {
-                output.desired_translation = controller.translation.unwrap(); // Already takes the physics_scale into account.
+                output.desired_translation = controller.translation.unwrap();
                 output.effective_translation = movement.translation.into();
                 output.grounded = movement.grounded;
                 output.collisions.clear();
@@ -1473,7 +1498,7 @@ pub fn update_character_controls(
                 commands
                     .entity(entity)
                     .insert(KinematicCharacterControllerOutput {
-                        desired_translation: controller.translation.unwrap(), // Already takes the physics_scale into account.
+                        desired_translation: controller.translation.unwrap(),
                         effective_translation: movement.translation.into(),
                         grounded: movement.grounded,
                         collisions: converted_collisions.collect(),
@@ -1709,8 +1734,7 @@ mod tests {
             let context = app.world.resource::<RapierContext>();
             let child_handle = context.entity2body[&child];
             let child_body = context.bodies.get(child_handle).unwrap();
-            let body_transform =
-                utils::iso_to_transform(child_body.position(), context.physics_scale);
+            let body_transform = utils::iso_to_transform(child_body.position());
             assert_eq!(
                 GlobalTransform::from(body_transform),
                 *child_transform,
@@ -1774,8 +1798,7 @@ mod tests {
             let parent_body = context.bodies.get(parent_handle).unwrap();
             let child_collider_handle = parent_body.colliders()[0];
             let child_collider = context.colliders.get(child_collider_handle).unwrap();
-            let body_transform =
-                utils::iso_to_transform(child_collider.position(), context.physics_scale);
+            let body_transform = utils::iso_to_transform(child_collider.position());
             approx::assert_relative_eq!(
                 body_transform.translation,
                 child_transform.translation,

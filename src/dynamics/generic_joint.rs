@@ -4,7 +4,6 @@ use rapier::dynamics::{
     GenericJoint as RapierGenericJoint, JointAxesMask, JointAxis, JointLimits, JointMotor,
     MotorModel,
 };
-use rapier::math::DIM;
 
 #[cfg(feature = "dim3")]
 use crate::dynamics::SphericalJoint;
