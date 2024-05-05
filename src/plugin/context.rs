@@ -3,10 +3,10 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 use rapier::prelude::{
-    BroadPhase, CCDSolver, ColliderHandle, ColliderSet, EventHandler, FeatureId,
-    ImpulseJointHandle, ImpulseJointSet, IntegrationParameters, IslandManager,
-    MultibodyJointHandle, MultibodyJointSet, NarrowPhase, PhysicsHooks, PhysicsPipeline,
-    QueryFilter as RapierQueryFilter, QueryPipeline, Ray, Real, RigidBodyHandle, RigidBodySet,
+    CCDSolver, ColliderHandle, ColliderSet, EventHandler, FeatureId, ImpulseJointHandle,
+    ImpulseJointSet, IntegrationParameters, IslandManager, MultibodyJointHandle, MultibodyJointSet,
+    NarrowPhase, PhysicsHooks, PhysicsPipeline, QueryFilter as RapierQueryFilter, QueryPipeline,
+    Ray, Real, RigidBodyHandle, RigidBodySet,
 };
 
 use crate::geometry::{Collider, PointProjection, RayIntersection, ShapeCastHit};
@@ -30,7 +30,7 @@ pub struct RapierContext {
     /// (not moving much) to reduce computations.
     pub islands: IslandManager,
     /// The broad-phase, which detects potential contact pairs.
-    pub broad_phase: Box<dyn BroadPhase>,
+    pub broad_phase: DefaultBroadPhase,
     /// The narrow-phase, which computes contact points, tests intersections,
     /// and maintain the contact and intersection graphs.
     pub narrow_phase: NarrowPhase,
@@ -77,7 +77,7 @@ impl Default for RapierContext {
     fn default() -> Self {
         Self {
             islands: IslandManager::new(),
-            broad_phase: Box::new(DefaultBroadPhase::new()),
+            broad_phase: DefaultBroadPhase::new(),
             narrow_phase: NarrowPhase::new(),
             bodies: RigidBodySet::new(),
             colliders: ColliderSet::new(),
@@ -257,7 +257,7 @@ impl RapierContext {
                             &gravity.into(),
                             &substep_integration_parameters,
                             &mut self.islands,
-                            &mut *self.broad_phase,
+                            &mut self.broad_phase,
                             &mut self.narrow_phase,
                             &mut self.bodies,
                             &mut self.colliders,
@@ -288,7 +288,7 @@ impl RapierContext {
                         &gravity.into(),
                         &substep_integration_parameters,
                         &mut self.islands,
-                        &mut *self.broad_phase,
+                        &mut self.broad_phase,
                         &mut self.narrow_phase,
                         &mut self.bodies,
                         &mut self.colliders,
@@ -312,7 +312,7 @@ impl RapierContext {
                         &gravity.into(),
                         &substep_integration_parameters,
                         &mut self.islands,
-                        &mut *self.broad_phase,
+                        &mut self.broad_phase,
                         &mut self.narrow_phase,
                         &mut self.bodies,
                         &mut self.colliders,
