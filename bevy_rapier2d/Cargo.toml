@@ -1,13 +1,13 @@
 [package]
 name = "bevy_rapier2d"
-version = "0.25.0"
+version = "0.26.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 description = "2-dimensional physics engine in Rust, official Bevy plugin."
 documentation = "http://docs.rs/bevy_rapier2d"
 homepage = "http://rapier.rs"
 repository = "https://github.com/dimforge/bevy_rapier"
 readme = "../README.md"
-keywords = [ "physics", "dynamics", "rigid", "real-time", "joints" ]
+keywords = ["physics", "dynamics", "rigid", "real-time", "joints"]
 license = "Apache-2.0"
 edition = "2021"
 
@@ -15,36 +15,36 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 path = "../src/lib.rs"
-required-features = [ "dim2" ]
+required-features = ["dim2"]
 
 [features]
-default = [ "dim2", "async-collider", "debug-render-2d" ]
+default = ["dim2", "async-collider", "debug-render-2d"]
 dim2 = []
-debug-render-2d = [ "bevy/bevy_core_pipeline", "bevy/bevy_sprite", "bevy/bevy_gizmos", "rapier2d/debug-render", "bevy/bevy_asset" ]
-debug-render-3d = [ "bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_gizmos", "rapier2d/debug-render", "bevy/bevy_asset" ]
-parallel = [ "rapier2d/parallel" ]
-simd-stable = [ "rapier2d/simd-stable" ]
-simd-nightly = [ "rapier2d/simd-nightly" ]
-wasm-bindgen = [ "rapier2d/wasm-bindgen" ]
-serde-serialize = [ "rapier2d/serde-serialize", "bevy/serialize", "serde" ]
-enhanced-determinism = [ "rapier2d/enhanced-determinism" ]
+debug-render-2d = ["bevy/bevy_core_pipeline", "bevy/bevy_sprite", "bevy/bevy_gizmos", "rapier2d/debug-render", "bevy/bevy_asset"]
+debug-render-3d = ["bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_gizmos", "rapier2d/debug-render", "bevy/bevy_asset"]
+parallel = ["rapier2d/parallel"]
+simd-stable = ["rapier2d/simd-stable"]
+simd-nightly = ["rapier2d/simd-nightly"]
+wasm-bindgen = ["rapier2d/wasm-bindgen"]
+serde-serialize = ["rapier2d/serde-serialize", "bevy/serialize", "serde"]
+enhanced-determinism = ["rapier2d/enhanced-determinism"]
 headless = []
-async-collider = [ "bevy/bevy_asset", "bevy/bevy_scene" ]
+async-collider = ["bevy/bevy_asset", "bevy/bevy_scene"]
 
 [dependencies]
 bevy = { version = "0.13", default-features = false }
-nalgebra = { version = "0.32.3", features = [ "convert-glam025" ] }
-rapier2d = "0.18.0"
+nalgebra = { version = "0.32.3", features = ["convert-glam025"] }
+rapier2d = "0.19.0"
 bitflags = "2.4"
 log = "0.4"
-serde = { version = "1", features = [ "derive" ], optional = true}
+serde = { version = "1", features = ["derive"], optional = true }
 
 [dev-dependencies]
 bevy = { version = "0.13", default-features = false, features = ["x11"] }
 oorandom = "11"
 approx = "0.5.1"
-glam = { version = "0.25", features = [ "approx" ] }
+glam = { version = "0.25", features = ["approx"] }
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
-features = [ "debug-render-2d", "serde-serialize" ]
+features = ["debug-render-2d", "serde-serialize"]
