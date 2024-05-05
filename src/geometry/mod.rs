@@ -43,9 +43,9 @@ impl From<rapier::parry::query::PointProjection> for PointProjection {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct RayIntersection {
     /// The time of impact of the ray with the object.  The exact contact point can be computed
-    /// with `origin + dir * toi` where `origin` is the origin of the ray;
-    /// `dir` is its direction and `toi` is the value of this field.
-    pub toi: Real,
+    /// with `origin + dir * time_of_impact` where `origin` is the origin of the ray;
+    /// `dir` is its direction and `time_of_impact` is the value of this field.
+    pub time_of_impact: Real,
 
     /// The intersection point between the ray and the object.
     pub point: Vect,
@@ -66,7 +66,7 @@ impl RayIntersection {
         unscaled_dir: Vect,
     ) -> Self {
         Self {
-            toi: inter.time_of_impact,
+            time_of_impact: inter.time_of_impact,
             point: unscaled_origin + unscaled_dir * inter.time_of_impact,
             normal: inter.normal.into(),
             feature: inter.feature,
