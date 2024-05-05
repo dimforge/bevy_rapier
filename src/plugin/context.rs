@@ -9,7 +9,7 @@ use rapier::prelude::{
     QueryFilter as RapierQueryFilter, QueryPipeline, Ray, Real, RigidBodyHandle, RigidBodySet,
 };
 
-use crate::geometry::{Collider, PointProjection, RayIntersection, Toi};
+use crate::geometry::{Collider, PointProjection, RayIntersection, ShapeCastHit};
 use crate::math::{Rot, Vect};
 use crate::pipeline::{CollisionEvent, ContactForceEvent, EventQueue, QueryFilter};
 use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query};
@@ -438,7 +438,7 @@ impl RapierContext {
                     filter,
                     |c| {
                         if let Some(collision) =
-                            CharacterCollision::from_raw_with_set(colliders, &c)
+                            CharacterCollision::from_raw_with_set(colliders, &c, true)
                         {
                             events(collision);
                         }
@@ -738,7 +738,7 @@ impl RapierContext {
     /// Casts a shape at a constant linear velocity and retrieve the first collider it hits.
     ///
     /// This is similar to ray-casting except that we are casting a whole shape instead of just a
-    /// point (the ray origin). In the resulting `TOI`, witness and normal 1 refer to the world
+    /// point (the ray origin). In the resulting `ShapeCastHit`, witness and normal 1 refer to the world
     /// collider, and are in world space.
     ///
     /// # Parameters
@@ -765,7 +765,7 @@ impl RapierContext {
         shape: &Collider,
         options: ShapeCastOptions,
         filter: QueryFilter,
-    ) -> Option<(Entity, Toi)> {
+    ) -> Option<(Entity, ShapeCastHit)> {
         let scaled_transform = (shape_pos, shape_rot).into();
         let mut scaled_shape = shape.clone();
         // TODO: how to set a good number of subdivisions, we don’t have access to the
@@ -784,16 +784,20 @@ impl RapierContext {
             )
         })?;
 
-        self.collider_entity(h)
-            .map(|e| (e, Toi::from_rapier(result)))
+        self.collider_entity(h).map(|e| {
+            (
+                e,
+                ShapeCastHit::from_rapier(result, options.compute_impact_geometry_on_penetration),
+            )
+        })
     }
 
     /* TODO: we need to wrap the NonlinearRigidMotion somehow.
      *
     /// Casts a shape with an arbitrary continuous motion and retrieve the first collider it hits.
     ///
-    /// In the resulting `TOI`, witness and normal 1 refer to the world collider, and are in world
-    /// space.
+    /// In the resulting `ShapeCastHit`, witness and normal 1 refer to the world collider, and are
+    /// in world space.
     ///
     /// # Parameters
     /// * `shape_motion` - The motion of the shape.
