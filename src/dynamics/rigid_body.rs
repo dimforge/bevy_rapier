@@ -585,6 +585,16 @@ pub struct TransformInterpolation {
 }
 
 impl TransformInterpolation {
+    /// Skips interpolation, effectively causing the body to immediately teleport to its current
+    /// transform.
+    ///
+    /// This is most useful with kinematic character controllers, which always interpolate and do
+    /// not perform transform change detection like rigid bodies do.
+    pub fn teleport(&mut self) {
+        self.start = None;
+        self.end = None;
+    }
+
     /// Interpolates between the start and end positions with `t` in the range `[0..1]`.
     pub fn lerp_slerp(&self, t: f32) -> Option<Isometry<f32>> {
         if let (Some(start), Some(end)) = (self.start, self.end) {
