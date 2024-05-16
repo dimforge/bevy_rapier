@@ -20,8 +20,7 @@ use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::configuration::SimulationToRenderTime;
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
-    BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities, MassModifiedEvent,
-    RigidBodyDisabled,
+    BevyPhysicsHooks, BevyPhysicsHooksAdapter, MassModifiedEvent, RigidBodyDisabled,
 };
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
 use bevy::prelude::*;
@@ -247,34 +246,6 @@ pub fn sync_removals(
     // TODO: what about removing forces?
 }
 
-/// Adds entity to [`CollidingEntities`] on starting collision and removes from it when the
-/// collision ends.
-pub fn update_colliding_entities(
-    mut collision_events: EventReader<CollisionEvent>,
-    mut colliding_entities: Query<&mut CollidingEntities>,
-) {
-    for event in collision_events.read() {
-        match event.to_owned() {
-            CollisionEvent::Started(entity1, entity2, _) => {
-                if let Ok(mut entities) = colliding_entities.get_mut(entity1) {
-                    entities.0.insert(entity2);
-                }
-                if let Ok(mut entities) = colliding_entities.get_mut(entity2) {
-                    entities.0.insert(entity1);
-                }
-            }
-            CollisionEvent::Stopped(entity1, entity2, _) => {
-                if let Ok(mut entities) = colliding_entities.get_mut(entity1) {
-                    entities.0.remove(&entity2);
-                }
-                if let Ok(mut entities) = colliding_entities.get_mut(entity2) {
-                    entities.0.remove(&entity1);
-                }
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use bevy::{
@@ -294,6 +265,7 @@ mod tests {
     use super::*;
     use crate::{
         plugin::{NoUserData, RapierPhysicsPlugin},
+        prelude::CollidingEntities,
         utils,
     };
 

@@ -3,9 +3,9 @@ use crate::geometry::Collider;
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
     ActiveCollisionTypes, ActiveEvents, ActiveHooks, ColliderDisabled, ColliderMassProperties,
-    ColliderScale, CollisionGroups, ContactForceEventThreshold, ContactSkin, Friction,
-    MassModifiedEvent, MassProperties, RapierColliderHandle, RapierRigidBodyHandle, Restitution,
-    Sensor, SolverGroups,
+    ColliderScale, CollidingEntities, CollisionEvent, CollisionGroups, ContactForceEventThreshold,
+    ContactSkin, Friction, MassModifiedEvent, MassProperties, RapierColliderHandle,
+    RapierRigidBodyHandle, Restitution, Sensor, SolverGroups,
 };
 use crate::utils;
 use bevy::prelude::*;
@@ -448,6 +448,34 @@ pub fn init_async_scene_colliders(
             }
 
             commands.entity(scene_entity).remove::<AsyncSceneCollider>();
+        }
+    }
+}
+
+/// Adds entity to [`CollidingEntities`] on starting collision and removes from it when the
+/// collision ends.
+pub fn update_colliding_entities(
+    mut collision_events: EventReader<CollisionEvent>,
+    mut colliding_entities: Query<&mut CollidingEntities>,
+) {
+    for event in collision_events.read() {
+        match event.to_owned() {
+            CollisionEvent::Started(entity1, entity2, _) => {
+                if let Ok(mut entities) = colliding_entities.get_mut(entity1) {
+                    entities.0.insert(entity2);
+                }
+                if let Ok(mut entities) = colliding_entities.get_mut(entity2) {
+                    entities.0.insert(entity1);
+                }
+            }
+            CollisionEvent::Stopped(entity1, entity2, _) => {
+                if let Ok(mut entities) = colliding_entities.get_mut(entity1) {
+                    entities.0.remove(&entity2);
+                }
+                if let Ok(mut entities) = colliding_entities.get_mut(entity2) {
+                    entities.0.remove(&entity1);
+                }
+            }
         }
     }
 }
