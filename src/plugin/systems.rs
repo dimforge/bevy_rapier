@@ -3,58 +3,24 @@
 mod character_controller;
 mod collider;
 mod joint;
+mod remove;
 mod rigid_body;
+mod writeback;
 
 pub use character_controller::*;
 pub use collider::*;
 pub use joint::*;
+pub use remove::*;
 pub use rigid_body::*;
+pub use writeback::*;
 
-use crate::dynamics::{
-    ImpulseJoint, MassProperties, MultibodyJoint, RapierImpulseJointHandle,
-    RapierMultibodyJointHandle, RapierRigidBodyHandle, ReadMassProperties, RigidBody,
-    TransformInterpolation,
-};
-use crate::geometry::{Collider, ColliderDisabled, RapierColliderHandle, Sensor};
+use crate::dynamics::{RapierRigidBodyHandle, TransformInterpolation};
 use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::configuration::SimulationToRenderTime;
 use crate::plugin::{RapierConfiguration, RapierContext};
-use crate::prelude::{
-    BevyPhysicsHooks, BevyPhysicsHooksAdapter, MassModifiedEvent, RigidBodyDisabled,
-};
+use crate::prelude::{BevyPhysicsHooks, BevyPhysicsHooksAdapter};
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
 use bevy::prelude::*;
-
-/// System responsible for writing updated mass properties back into the [`ReadMassProperties`] component.
-pub fn writeback_mass_properties(
-    mut context: ResMut<RapierContext>,
-    config: Res<RapierConfiguration>,
-
-    mut mass_props: Query<&mut ReadMassProperties>,
-    mut mass_modified: EventReader<MassModifiedEvent>,
-) {
-    let context = &mut *context;
-
-    if config.physics_pipeline_active {
-        for entity in mass_modified.read() {
-            if let Some(handle) = context.entity2body.get(entity).copied() {
-                if let Some(rb) = context.bodies.get(handle) {
-                    if let Ok(mut mass_props) = mass_props.get_mut(**entity) {
-                        let new_mass_props =
-                            MassProperties::from_rapier(rb.mass_properties().local_mprops);
-
-                        // NOTE: we write the new value only if there was an
-                        //       actual change, in order to not trigger bevy’s
-                        //       change tracking when the values didn’t change.
-                        if mass_props.get() != &new_mass_props {
-                            mass_props.set(new_mass_props);
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
 
 /// System responsible for advancing the physics simulation, and updating the internal state
 /// for scene queries.
@@ -94,158 +60,6 @@ pub fn step_simulation<Hooks>(
     }
 }
 
-/// System responsible for removing from Rapier the rigid-bodies/colliders/joints which had
-/// their related `bevy_rapier` components removed by the user (through component removal or
-/// despawn).
-pub fn sync_removals(
-    mut commands: Commands,
-    mut context: ResMut<RapierContext>,
-    mut removed_bodies: RemovedComponents<RapierRigidBodyHandle>,
-    mut removed_colliders: RemovedComponents<RapierColliderHandle>,
-    mut removed_impulse_joints: RemovedComponents<RapierImpulseJointHandle>,
-    mut removed_multibody_joints: RemovedComponents<RapierMultibodyJointHandle>,
-    orphan_bodies: Query<Entity, (With<RapierRigidBodyHandle>, Without<RigidBody>)>,
-    orphan_colliders: Query<Entity, (With<RapierColliderHandle>, Without<Collider>)>,
-    orphan_impulse_joints: Query<Entity, (With<RapierImpulseJointHandle>, Without<ImpulseJoint>)>,
-    orphan_multibody_joints: Query<
-        Entity,
-        (With<RapierMultibodyJointHandle>, Without<MultibodyJoint>),
-    >,
-
-    mut removed_sensors: RemovedComponents<Sensor>,
-    mut removed_rigid_body_disabled: RemovedComponents<RigidBodyDisabled>,
-    mut removed_colliders_disabled: RemovedComponents<ColliderDisabled>,
-
-    mut mass_modified: EventWriter<MassModifiedEvent>,
-) {
-    /*
-     * Rigid-bodies removal detection.
-     */
-    let context = &mut *context;
-    for entity in removed_bodies.read() {
-        if let Some(handle) = context.entity2body.remove(&entity) {
-            let _ = context.last_body_transform_set.remove(&handle);
-            context.bodies.remove(
-                handle,
-                &mut context.islands,
-                &mut context.colliders,
-                &mut context.impulse_joints,
-                &mut context.multibody_joints,
-                false,
-            );
-        }
-    }
-
-    let context = &mut *context;
-    for entity in orphan_bodies.iter() {
-        if let Some(handle) = context.entity2body.remove(&entity) {
-            let _ = context.last_body_transform_set.remove(&handle);
-            context.bodies.remove(
-                handle,
-                &mut context.islands,
-                &mut context.colliders,
-                &mut context.impulse_joints,
-                &mut context.multibody_joints,
-                false,
-            );
-        }
-        commands.entity(entity).remove::<RapierRigidBodyHandle>();
-    }
-
-    /*
-     * Collider removal detection.
-     */
-    for entity in removed_colliders.read() {
-        if let Some(parent) = context.collider_parent(entity) {
-            mass_modified.send(parent.into());
-        }
-
-        if let Some(handle) = context.entity2collider.remove(&entity) {
-            context
-                .colliders
-                .remove(handle, &mut context.islands, &mut context.bodies, true);
-            context.deleted_colliders.insert(handle, entity);
-        }
-    }
-
-    for entity in orphan_colliders.iter() {
-        if let Some(parent) = context.collider_parent(entity) {
-            mass_modified.send(parent.into());
-        }
-
-        if let Some(handle) = context.entity2collider.remove(&entity) {
-            context
-                .colliders
-                .remove(handle, &mut context.islands, &mut context.bodies, true);
-            context.deleted_colliders.insert(handle, entity);
-        }
-        commands.entity(entity).remove::<RapierColliderHandle>();
-    }
-
-    /*
-     * Impulse joint removal detection.
-     */
-    for entity in removed_impulse_joints.read() {
-        if let Some(handle) = context.entity2impulse_joint.remove(&entity) {
-            context.impulse_joints.remove(handle, true);
-        }
-    }
-
-    for entity in orphan_impulse_joints.iter() {
-        if let Some(handle) = context.entity2impulse_joint.remove(&entity) {
-            context.impulse_joints.remove(handle, true);
-        }
-        commands.entity(entity).remove::<RapierImpulseJointHandle>();
-    }
-
-    /*
-     * Multibody joint removal detection.
-     */
-    for entity in removed_multibody_joints.read() {
-        if let Some(handle) = context.entity2multibody_joint.remove(&entity) {
-            context.multibody_joints.remove(handle, true);
-        }
-    }
-
-    for entity in orphan_multibody_joints.iter() {
-        if let Some(handle) = context.entity2multibody_joint.remove(&entity) {
-            context.multibody_joints.remove(handle, true);
-        }
-        commands
-            .entity(entity)
-            .remove::<RapierMultibodyJointHandle>();
-    }
-
-    /*
-     * Marker components removal detection.
-     */
-    for entity in removed_sensors.read() {
-        if let Some(handle) = context.entity2collider.get(&entity) {
-            if let Some(co) = context.colliders.get_mut(*handle) {
-                co.set_sensor(false);
-            }
-        }
-    }
-
-    for entity in removed_colliders_disabled.read() {
-        if let Some(handle) = context.entity2collider.get(&entity) {
-            if let Some(co) = context.colliders.get_mut(*handle) {
-                co.set_enabled(true);
-            }
-        }
-    }
-
-    for entity in removed_rigid_body_disabled.read() {
-        if let Some(handle) = context.entity2body.get(&entity) {
-            if let Some(rb) = context.bodies.get_mut(*handle) {
-                rb.set_enabled(true);
-            }
-        }
-    }
-
-    // TODO: what about removing forces?
-}
-
 #[cfg(test)]
 mod tests {
     use bevy::{
@@ -265,7 +79,7 @@ mod tests {
     use super::*;
     use crate::{
         plugin::{NoUserData, RapierPhysicsPlugin},
-        prelude::CollidingEntities,
+        prelude::{Collider, CollidingEntities, RigidBody},
         utils,
     };
 
