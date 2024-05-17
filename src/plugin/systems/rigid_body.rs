@@ -311,6 +311,11 @@ pub fn writeback_rigid_bodies(
                     }
 
                     if let Some(mut transform) = transform {
+                        // NOTE: Rapier's `RigidBody` doesn't know its own scale as it is encoded
+                        //       directly within its collider, so we have to retrieve it from
+                        //       the scale of its bevy transform.
+                        interpolated_pos = interpolated_pos.with_scale(transform.scale);
+
                         // NOTE: we query the parent’s global transform here, which is a bit
                         //       unfortunate (performance-wise). An alternative would be to
                         //       deduce the parent’s global transform from the current entity’s
