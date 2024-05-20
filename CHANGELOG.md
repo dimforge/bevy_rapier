@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fix
+
+- Fix rigidbodies to never go to sleep when a scale was applied to their `Transform`.
+
 ## v0.26.0 (05 May 2024)
 
 **This is an update to Rapier 0.19 which includes several stability improvements
