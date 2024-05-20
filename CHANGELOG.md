@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Derive `Debug` for `LockedAxes`.
+
 ## v0.26.0 (05 May 2024)
 
 **This is an update to Rapier 0.19 which includes several stability improvements
