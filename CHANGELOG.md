@@ -2,8 +2,9 @@
 
 ## Unreleased
 
-## Added
+### Added
 
+- Derive `Debug` for `LockedAxes`.
 - Expose `is_sliding_down_slope` to both `MoveShapeOutput` and `KinematicCharacterControllerOutput`
 
 ## v0.26.0 (05 May 2024)
