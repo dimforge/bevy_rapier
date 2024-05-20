@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+## Added
+
+- Expose `is_sliding_down_slope` to both `MoveShapeOutput` and `KinematicCharacterControllerOutput`
+
 ## v0.26.0 (05 May 2024)
 
 **This is an update to Rapier 0.19 which includes several stability improvements
