@@ -9,7 +9,7 @@
 
 ### Fix
 
-- Fix rigidbodies to never go to sleep when a scale was applied to their `Transform`.
+- Fix rigidbodies never going to sleep when a scale was applied to their `Transform`.
 
 ## v0.26.0 (05 May 2024)
 
