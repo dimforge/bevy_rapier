@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Added
+
+- Derive `Debug` for `LockedAxes`.
+- Expose `is_sliding_down_slope` to both `MoveShapeOutput` and `KinematicCharacterControllerOutput`.
+
 ### Fix
 
 - Fix rigidbodies to never go to sleep when a scale was applied to their `Transform`.

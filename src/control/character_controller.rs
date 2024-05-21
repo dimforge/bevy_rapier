@@ -217,6 +217,8 @@ pub struct KinematicCharacterControllerOutput {
     pub effective_translation: Vect,
     /// Collisions between the character and obstacles found in its path.
     pub collisions: Vec<CharacterCollision>,
+    /// Indicates whether the shape is sliding down a slope after its kinematic movement.
+    pub is_sliding_down_slope: bool,
 }
 
 /// The allowed movement computed by `RapierContext::move_shape`.
@@ -225,4 +227,6 @@ pub struct MoveShapeOutput {
     pub grounded: bool,
     /// The translation calculated by the last character control step taking obstacles into account.
     pub effective_translation: Vect,
+    /// Indicates whether the shape is sliding down a slope after its kinematic movement.
+    pub is_sliding_down_slope: bool,
 }

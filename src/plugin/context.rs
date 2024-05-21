@@ -468,6 +468,7 @@ impl RapierContext {
         MoveShapeOutput {
             effective_translation: result.translation.into(),
             grounded: result.grounded,
+            is_sliding_down_slope: result.is_sliding_down_slope,
         }
     }
 
