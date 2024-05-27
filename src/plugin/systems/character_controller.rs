@@ -31,6 +31,19 @@ pub fn update_character_controls(
     for (entity, mut controller, output, collider_handle, body_handle, glob_transform) in
         character_controllers.iter_mut()
     {
+        if controller.translation.is_none() {
+            let Some(glob_transform) = glob_transform else {
+                continue;
+            };
+            #[cfg(feature = "dim2")]
+            {
+                controller.translation = Some(glob_transform.translation().truncate());
+            }
+            #[cfg(feature = "dim3")]
+            {
+                controller.translation = Some(glob_transform.translation());
+            }
+        };
         if let (Some(raw_controller), Some(translation)) =
             (controller.to_raw(), controller.translation)
         {

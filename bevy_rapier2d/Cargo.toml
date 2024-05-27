@@ -20,8 +20,20 @@ required-features = ["dim2"]
 [features]
 default = ["dim2", "async-collider", "debug-render-2d"]
 dim2 = []
-debug-render-2d = ["bevy/bevy_core_pipeline", "bevy/bevy_sprite", "bevy/bevy_gizmos", "rapier2d/debug-render", "bevy/bevy_asset"]
-debug-render-3d = ["bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_gizmos", "rapier2d/debug-render", "bevy/bevy_asset"]
+debug-render-2d = [
+    "bevy/bevy_core_pipeline",
+    "bevy/bevy_sprite",
+    "bevy/bevy_gizmos",
+    "rapier2d/debug-render",
+    "bevy/bevy_asset",
+]
+debug-render-3d = [
+    "bevy/bevy_core_pipeline",
+    "bevy/bevy_pbr",
+    "bevy/bevy_gizmos",
+    "rapier2d/debug-render",
+    "bevy/bevy_asset",
+]
 parallel = ["rapier2d/parallel"]
 simd-stable = ["rapier2d/simd-stable"]
 simd-nightly = ["rapier2d/simd-nightly"]
@@ -44,6 +56,7 @@ bevy = { version = "0.13", default-features = false, features = ["x11"] }
 oorandom = "11"
 approx = "0.5.1"
 glam = { version = "0.25", features = ["approx"] }
+bevy-inspector-egui = "0.24.0"
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
