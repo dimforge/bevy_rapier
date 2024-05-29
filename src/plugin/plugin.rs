@@ -111,19 +111,19 @@ where
                 .chain()
                 .into_configs(),
             PhysicsSet::StepSimulation => (
+                event_update_system::<CollisionEvent>,
+                event_update_system::<ContactForceEvent>,
                 systems::step_simulation::<PhysicsHooks>,
-                event_update_system::<CollisionEvent>
-                    .before(systems::step_simulation::<PhysicsHooks>),
-                event_update_system::<ContactForceEvent>
-                    .before(systems::step_simulation::<PhysicsHooks>),
             )
+                .chain()
                 .into_configs(),
             PhysicsSet::Writeback => (
                 systems::update_colliding_entities,
                 systems::writeback_rigid_bodies,
                 systems::writeback_mass_properties,
-                event_update_system::<MassModifiedEvent>.after(systems::writeback_mass_properties),
+                event_update_system::<MassModifiedEvent>,
             )
+                .chain()
                 .into_configs(),
         }
     }
@@ -225,7 +225,8 @@ where
                     PhysicsSet::Writeback,
                 )
                     .chain()
-                    .before(TransformSystem::TransformPropagate),
+                    .before(TransformSystem::TransformPropagate)
+                    .after(systems::sync_removals),
             );
 
             // These *must* be in the main schedule currently so that they do not miss events.

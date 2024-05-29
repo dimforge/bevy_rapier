@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
-const N_WORLDS: WorldId = 5;
+const N_WORLDS: usize = 5;
 const WORLD_CHANGE_DELAY_SEC: f32 = 3.0;
 
 #[derive(Component)]
@@ -27,12 +27,12 @@ fn main() {
 
 fn change_world(mut query: Query<&mut PhysicsWorld, With<ChangeWorld>>, time: Res<Time>) {
     for mut bw in query.iter_mut() {
-        if time.elapsed_seconds() > (bw.world_id as f32 + 1.0) * WORLD_CHANGE_DELAY_SEC {
-            let new_world_id = bw.world_id + 1;
+        if time.elapsed_seconds() > (bw.world_id.0 as f32 + 1.0) * WORLD_CHANGE_DELAY_SEC {
+            let new_world_id = bw.world_id.0 + 1;
 
             if new_world_id != N_WORLDS {
                 println!("Changing world to {new_world_id}.");
-                bw.world_id = new_world_id;
+                bw.world_id = WorldId::new(new_world_id);
             }
         }
     }
@@ -73,25 +73,31 @@ pub fn setup_physics(mut context: ResMut<RapierContext>, mut commands: Commands)
             Collider::cuboid(ground_size, ground_height, ground_size),
             ColliderDebugColor(color),
             RigidBody::Fixed,
-            PhysicsWorld { world_id },
+            PhysicsWorld {
+                world_id: WorldId::new(world_id),
+            },
         ));
     }
 
     /*
      * Create the cube
+     *
+     * The child is just there to show that physics world changes will also change the children.
      */
-    commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, 3.0, 0.0)),
-        RigidBody::Dynamic,
-        PhysicsWorld {
-            world_id: DEFAULT_WORLD_ID,
-        },
-        ChangeWorld,
-    )).with_children(|p| {
-        p.spawn((
-            TransformBundle::from_transform(Transform::from_xyz(0.0, 0.0, 0.0)),
-            Collider::cuboid(0.5, 0.5, 0.5),
-            ColliderDebugColor(Color::hsl(260.0, 1.0, 0.7)),
-        ));
-    });
+    commands
+        .spawn((
+            TransformBundle::from(Transform::from_xyz(0.0, 3.0, 0.0)),
+            RigidBody::Dynamic,
+            PhysicsWorld {
+                world_id: DEFAULT_WORLD_ID,
+            },
+            ChangeWorld,
+        ))
+        .with_children(|p| {
+            p.spawn((
+                TransformBundle::from_transform(Transform::from_xyz(0.0, 0.0, 0.0)),
+                Collider::cuboid(0.5, 0.5, 0.5),
+                ColliderDebugColor(Color::hsl(260.0, 1.0, 0.7)),
+            ));
+        });
 }

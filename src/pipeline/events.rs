@@ -1,4 +1,5 @@
 use crate::math::{Real, Vect};
+use crate::plugin::WorldId;
 use bevy::prelude::{Entity, Event};
 use rapier::dynamics::RigidBodySet;
 use rapier::geometry::{
@@ -16,9 +17,9 @@ use std::sync::RwLock;
 #[derive(Event, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum CollisionEvent {
     /// Event occurring when two colliders start colliding
-    Started(Entity, Entity, CollisionEventFlags),
+    Started(Entity, Entity, CollisionEventFlags, WorldId),
     /// Event occurring when two colliders stop colliding
-    Stopped(Entity, Entity, CollisionEventFlags),
+    Stopped(Entity, Entity, CollisionEventFlags, WorldId),
 }
 
 /// Event occurring when the sum of the magnitudes of the contact forces
@@ -52,6 +53,8 @@ pub struct ContactForceEvent {
 // issue).
 /// A set of queues collecting events emitted by the physics engine.
 pub(crate) struct EventQueue<'a> {
+    pub world_id: WorldId,
+
     // Used to retrieve the entity of colliders that have been removed from the simulation
     // since the last physics step.
     pub deleted_colliders: &'a HashMap<ColliderHandle, Entity>,
@@ -85,7 +88,7 @@ impl<'a> EventHandler for EventQueue<'a> {
                     return;
                 };
 
-                CollisionEvent::Started(e1, e2, flags)
+                CollisionEvent::Started(e1, e2, flags, self.world_id)
             }
             RapierCollisionEvent::Stopped(h1, h2, flags) => {
                 let Some(e1) = self.collider2entity(colliders, h1) else {
@@ -95,7 +98,7 @@ impl<'a> EventHandler for EventQueue<'a> {
                     return;
                 };
 
-                CollisionEvent::Stopped(e1, e2, flags)
+                CollisionEvent::Stopped(e1, e2, flags, self.world_id)
             }
         };
 

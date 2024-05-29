@@ -538,7 +538,7 @@ pub fn update_colliding_entities(
 ) {
     for event in collision_events.read() {
         match event.to_owned() {
-            CollisionEvent::Started(entity1, entity2, _) => {
+            CollisionEvent::Started(entity1, entity2, _, _) => {
                 if let Ok(mut entities) = colliding_entities.get_mut(entity1) {
                     entities.0.insert(entity2);
                 }
@@ -546,7 +546,7 @@ pub fn update_colliding_entities(
                     entities.0.insert(entity1);
                 }
             }
-            CollisionEvent::Stopped(entity1, entity2, _) => {
+            CollisionEvent::Stopped(entity1, entity2, _, _) => {
                 if let Ok(mut entities) = colliding_entities.get_mut(entity1) {
                     entities.0.remove(&entity2);
                 }

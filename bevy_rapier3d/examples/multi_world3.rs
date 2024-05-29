@@ -40,7 +40,7 @@ fn move_middle_world(
     mut query: Query<(&mut Transform, &PhysicsWorld, &Platform)>,
 ) {
     for (mut transform, world, platform) in query.iter_mut() {
-        if world.world_id == N_WORLDS / 2 {
+        if world.world_id.0 == N_WORLDS / 2 {
             transform.translation.y = platform.starting_y + -time.elapsed_seconds().sin();
         }
     }
@@ -70,11 +70,13 @@ pub fn setup_physics(mut context: ResMut<RapierContext>, mut commands: Commands)
     }
 
     for world_id in 0..N_WORLDS {
+        let world_id = WorldId::new(world_id);
+
         let color = [
             Color::hsl(220.0, 1.0, 0.3),
             Color::hsl(180.0, 1.0, 0.3),
             Color::hsl(260.0, 1.0, 0.7),
-        ][world_id % 3];
+        ][world_id.0 % 3];
 
         /*
          * Ground
@@ -82,7 +84,7 @@ pub fn setup_physics(mut context: ResMut<RapierContext>, mut commands: Commands)
         let ground_size = 5.1;
         let ground_height = 0.1;
 
-        let starting_y = (world_id as f32) * -0.5 - ground_height;
+        let starting_y = (world_id.0 as f32) * -0.5 - ground_height;
 
         commands.spawn((
             TransformBundle::from(Transform::from_xyz(0.0, starting_y, 0.0)),
@@ -97,7 +99,7 @@ pub fn setup_physics(mut context: ResMut<RapierContext>, mut commands: Commands)
          */
 
         commands.spawn((
-            TransformBundle::from(Transform::from_xyz(0.0, 1.0 + world_id as f32 * 5.0, 0.0)),
+            TransformBundle::from(Transform::from_xyz(0.0, 1.0 + world_id.0 as f32 * 5.0, 0.0)),
             RigidBody::Dynamic,
             Collider::cuboid(0.5, 0.5, 0.5),
             ColliderDebugColor(color),

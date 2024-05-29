@@ -4,6 +4,7 @@ use crate::dynamics::{
     RapierImpulseJointHandle, RapierMultibodyJointHandle, RapierRigidBodyHandle,
 };
 use crate::geometry::RapierColliderHandle;
+use crate::plugin::RapierContext;
 use crate::prelude::PhysicsWorld;
 use bevy::prelude::*;
 
@@ -47,17 +48,32 @@ pub fn on_change_world(
     q_changed_worlds: Query<(Entity, &PhysicsWorld), Changed<PhysicsWorld>>,
     q_children: Query<&Children>,
     q_physics_world: Query<&PhysicsWorld>,
+    context: Res<RapierContext>,
     mut commands: Commands,
 ) {
     for (entity, new_physics_world) in &q_changed_worlds {
-        remove_old_physics(entity, &mut commands);
-        bubble_down_world_change(
-            &mut commands,
-            entity,
-            &q_children,
-            *new_physics_world,
-            &q_physics_world,
-        );
+        // Ensure the world actually changed before removing them from the world
+        if !context
+            .get_world(new_physics_world.world_id)
+            .map(|x| {
+                // They are already apart of this world if any of these are true
+                x.entity2impulse_joint.contains_key(&entity)
+                    || x.entity2multibody_joint.contains_key(&entity)
+                    || x.entity2collider.contains_key(&entity)
+                    || x.entity2body.contains_key(&entity)
+            })
+            .unwrap_or(false)
+        {
+            remove_old_physics(entity, &mut commands);
+
+            bubble_down_world_change(
+                &mut commands,
+                entity,
+                &q_children,
+                *new_physics_world,
+                &q_physics_world,
+            );
+        }
     }
 }
 

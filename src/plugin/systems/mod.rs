@@ -42,10 +42,10 @@ pub fn step_simulation<Hooks>(
 {
     let hooks_adapter = BevyPhysicsHooksAdapter::new(hooks.into_inner());
 
-    for (_, world) in context.worlds.iter_mut() {
+    for (world_id, world) in context.worlds.iter_mut() {
         if config.physics_pipeline_active {
             world.step_simulation(
-                world.gravity,
+                *world_id,
                 config.timestep_mode,
                 true,
                 &hooks_adapter,
@@ -107,6 +107,7 @@ mod tests {
             entity1,
             entity2,
             CollisionEventFlags::SENSOR,
+            DEFAULT_WORLD_ID,
         ));
 
         app.update();
@@ -151,6 +152,7 @@ mod tests {
             entity1,
             entity2,
             CollisionEventFlags::SENSOR,
+            DEFAULT_WORLD_ID,
         ));
 
         app.update();

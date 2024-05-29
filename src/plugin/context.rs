@@ -25,11 +25,31 @@ use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
 use rapier::geometry::DefaultBroadPhase;
 
-/// Represents the world in the rapier context
-pub type WorldId = usize;
+/// Points to the [`RapierWorld`] within the [`RapierContext`].
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Reflect)]
+pub struct WorldId(pub usize);
 
-/// This world id is the default world that is created.
-pub const DEFAULT_WORLD_ID: WorldId = 0;
+impl std::fmt::Display for WorldId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(format!("{}", self.0).as_str())
+    }
+}
+
+impl WorldId {
+    /// This references a [`RapierWorld`] within the [`RapierContext`]
+    ///
+    /// This id is not checked for validity.
+    pub fn new(id: usize) -> Self {
+        Self(id)
+    }
+}
+
+/// This world id is the default world that is created when the physics plugin is initialized.
+///
+/// This world CAN be removed from the simulation if [`RapierContext::remove_world`] is called with this ID,
+/// so it may not always be valid.
+pub const DEFAULT_WORLD_ID: WorldId = WorldId(0);
 
 /// The Rapier context, containing all the state of the physics engine.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -248,7 +268,7 @@ impl RapierWorld {
     #[allow(clippy::too_many_arguments)]
     pub fn step_simulation(
         &mut self,
-        gravity: Vect,
+        world_id: WorldId,
         timestep_mode: TimestepMode,
         create_bevy_events: bool,
         hooks: &dyn PhysicsHooks,
@@ -258,8 +278,11 @@ impl RapierWorld {
             &mut Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
         >,
     ) {
+        let gravity = self.gravity;
+
         let event_queue = if create_bevy_events {
             Some(EventQueue {
+                world_id,
                 deleted_colliders: &self.deleted_colliders,
                 collision_events: &mut self.collision_events_to_send,
                 contact_force_events: &mut self.contact_force_events_to_send,
@@ -957,7 +980,7 @@ impl RapierContext {
 
         Self {
             worlds,
-            next_world_id: 1,
+            next_world_id: WorldId::new(1),
         }
     }
 
@@ -969,7 +992,7 @@ impl RapierContext {
 
         self.worlds.insert(world_id, world);
 
-        self.next_world_id += 1;
+        self.next_world_id.0 += 1;
 
         world_id
     }
@@ -1077,7 +1100,6 @@ impl RapierContext {
     #[allow(clippy::too_many_arguments)]
     pub fn step_simulation(
         mut self,
-        gravity: Vect,
         timestep_mode: TimestepMode,
         mut events: Option<(EventWriter<CollisionEvent>, EventWriter<ContactForceEvent>)>,
         hooks: &dyn PhysicsHooks,
@@ -1087,9 +1109,9 @@ impl RapierContext {
             &mut Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
         >,
     ) {
-        for (_, world) in self.worlds.iter_mut() {
+        for (world_id, world) in self.worlds.iter_mut() {
             world.step_simulation(
-                gravity,
+                *world_id,
                 timestep_mode,
                 events.is_some(),
                 hooks,
