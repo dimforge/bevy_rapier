@@ -168,6 +168,15 @@ impl RapierWorld {
         self.gravity = gravity * self.integration_parameters.length_unit;
     }
 
+    /// Sets the gravity of this world with respect to its integration parameters.
+    ///
+    /// Prefer using this over setting gravity manually
+    pub fn with_gravity(mut self, gravity: Vect) -> Self {
+        self.set_gravity(gravity);
+
+        self
+    }
+
     /// If the collider attached to `entity` is attached to a rigid-body, this
     /// returns the `Entity` containing that rigid-body.
     pub fn collider_parent(&self, entity: Entity) -> Option<Entity> {
