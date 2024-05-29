@@ -610,6 +610,7 @@ fn recurse_child_transforms(
                         // We need to compute the new local transform such that:
                         // curr_parent_global_transform * new_transform * parent_delta_pos = interpolated_pos
                         // new_transform = curr_parent_global_transform.inverse() * interpolated_pos
+                        interpolated_pos = interpolated_pos.with_scale(transform.scale);
 
                         let inverse_parent_rotation = parent_global_transform.rotation.inverse();
 
