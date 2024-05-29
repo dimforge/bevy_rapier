@@ -1,90 +1,12 @@
 //! Systems responsible for interfacing our Bevy components with the Rapier physics engine.
 
-use crate::control::CharacterCollision;
 use crate::dynamics::{
-    AdditionalMassProperties, Ccd, Damping, Dominance, ExternalForce, ExternalImpulse,
-    GravityScale, ImpulseJoint, LockedAxes, MassProperties, MultibodyJoint,
     RapierImpulseJointHandle, RapierMultibodyJointHandle, RapierRigidBodyHandle,
-    ReadMassProperties, RigidBody, Sleeping, TransformInterpolation, Velocity,
 };
-use crate::geometry::{
-    ActiveCollisionTypes, ActiveEvents, ActiveHooks, Collider, ColliderDisabled,
-    ColliderMassProperties, ColliderScale, CollisionGroups, ContactForceEventThreshold, Friction,
-    RapierColliderHandle, Restitution, Sensor, SolverGroups,
-};
-use crate::pipeline::{CollisionEvent, ContactForceEvent};
-use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
-use crate::plugin::{RapierConfiguration, RapierContext};
-use crate::prelude::{
-    AdditionalSolverIterations, BevyPhysicsHooks, BevyPhysicsHooksAdapter, CollidingEntities,
-    ContactSkin, KinematicCharacterController, KinematicCharacterControllerOutput,
-    MassModifiedEvent, PhysicsWorld, RapierWorld, Real, RigidBodyDisabled, SoftCcd, WorldId,
-    DEFAULT_WORLD_ID,
-};
-use crate::utils;
-use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
+use crate::geometry::RapierColliderHandle;
+use crate::plugin::RapierContext;
+use crate::prelude::{PhysicsWorld, WorldId};
 use bevy::prelude::*;
-use rapier::prelude::*;
-use std::collections::HashMap;
-
-use super::{find_item_and_world, get_world};
-
-#[cfg(all(feature = "dim3", feature = "async-collider"))]
-use {
-    crate::prelude::{AsyncCollider, AsyncSceneCollider},
-    bevy::scene::SceneInstance,
-};
-
-/// Components that will be updated after a physics step.
-pub type RigidBodyWritebackComponents<'a> = (
-    Entity,
-    Option<&'a mut Transform>,
-    Option<&'a mut TransformInterpolation>,
-    Option<&'a mut Velocity>,
-    Option<&'a mut Sleeping>,
-    Option<&'a PhysicsWorld>,
-    Option<&'a RigidBody>,
-);
-
-/// Components related to rigid-bodies.
-pub type RigidBodyComponents<'a> = (
-    Entity,
-    &'a RigidBody,
-    Option<&'a GlobalTransform>,
-    Option<&'a Velocity>,
-    Option<&'a AdditionalMassProperties>,
-    Option<&'a ReadMassProperties>,
-    Option<&'a LockedAxes>,
-    Option<&'a ExternalForce>,
-    Option<&'a GravityScale>,
-    (Option<&'a Ccd>, Option<&'a SoftCcd>),
-    Option<&'a Dominance>,
-    Option<&'a Sleeping>,
-    (
-        Option<&'a Damping>,
-        Option<&'a RigidBodyDisabled>,
-        Option<&'a PhysicsWorld>,
-        Option<&'a AdditionalSolverIterations>,
-    ),
-);
-
-/// Components related to colliders.
-pub type ColliderComponents<'a> = (
-    Entity,
-    &'a Collider,
-    Option<&'a Sensor>,
-    Option<&'a ColliderMassProperties>,
-    Option<&'a ActiveEvents>,
-    Option<&'a ActiveHooks>,
-    Option<&'a ActiveCollisionTypes>,
-    Option<&'a Friction>,
-    Option<&'a Restitution>,
-    Option<&'a ContactSkin>,
-    Option<&'a CollisionGroups>,
-    Option<&'a SolverGroups>,
-    Option<&'a ContactForceEventThreshold>,
-    Option<&'a ColliderDisabled>,
-);
 
 // Changes the world something is in.
 // This will also change the children of that entity to reflect the new world.

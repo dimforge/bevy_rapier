@@ -24,9 +24,13 @@ fn main() {
 #[derive(Component)]
 pub struct Player(f32);
 
-pub fn spawn_player(mut commands: Commands, mut rapier_config: ResMut<RapierConfiguration>) {
+pub fn spawn_player(mut commands: Commands, mut rapier_context: ResMut<RapierContext>) {
     // Set gravity to 0.0 and spawn camera.
-    rapier_config.gravity = Vec2::ZERO;
+    rapier_context
+        .get_world_mut(DEFAULT_WORLD_ID)
+        .expect("Default world should exist")
+        .set_gravity(Vec2::ZERO);
+
     commands.spawn(Camera2dBundle::default());
 
     let sprite_size = 100.0;

@@ -34,6 +34,8 @@ pub const DEFAULT_WORLD_ID: WorldId = 0;
 /// The Rapier context, containing all the state of the physics engine.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct RapierWorld {
+    /// Specifying the gravity of the physics simulation.
+    pub gravity: Vect,
     /// The island manager, which detects what object is sleeping
     /// (not moving much) to reduce computations.
     pub islands: IslandManager,
@@ -109,6 +111,7 @@ impl Default for RapierWorld {
             character_collisions_collector: vec![],
             collision_events_to_send: RwLock::new(Vec::new()),
             contact_force_events_to_send: RwLock::new(Vec::new()),
+            gravity: Vect::Y * -9.81,
         }
     }
 }
@@ -136,6 +139,13 @@ impl RapierWorld {
 
             contact_force_events_to_send.clear();
         }
+    }
+
+    /// Sets the gravity of this world with respect to its integration parameters.
+    ///
+    /// Prefer using this over setting gravity manually
+    pub fn set_gravity(&mut self, gravity: Vect) {
+        self.gravity = gravity * self.integration_parameters.length_unit;
     }
 
     /// If the collider attached to `entity` is attached to a rigid-body, this

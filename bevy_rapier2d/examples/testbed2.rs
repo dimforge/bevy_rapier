@@ -145,13 +145,12 @@ fn main() {
         )
         .add_systems(
             OnExit(Examples::PlayerMovement2),
-            (
-                cleanup,
-                |mut rapier_config: ResMut<RapierConfiguration>, ctxt: Res<RapierContext>| {
-                    rapier_config.gravity =
-                        RapierConfiguration::new(ctxt.integration_parameters.length_unit).gravity;
-                },
-            ),
+            (cleanup, |mut rapier_context: ResMut<RapierContext>| {
+                rapier_context
+                    .get_world_mut(DEFAULT_WORLD_ID)
+                    .expect("Default world should exist")
+                    .set_gravity(Vect::Y * -9.81)
+            }),
         )
         //
         //testbed

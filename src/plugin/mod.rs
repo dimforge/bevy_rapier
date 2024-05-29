@@ -10,7 +10,6 @@ pub use self::plugin::{
 #[allow(clippy::type_complexity)]
 #[allow(clippy::too_many_arguments)]
 pub mod systems;
-mod systems_old;
 
 mod configuration;
 pub(crate) mod context;

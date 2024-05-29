@@ -5,6 +5,7 @@ mod collider;
 mod joint;
 mod remove;
 mod rigid_body;
+mod worlds;
 mod writeback;
 
 pub use character_controller::*;
@@ -12,6 +13,7 @@ pub use collider::*;
 pub use joint::*;
 pub use remove::*;
 pub use rigid_body::*;
+pub use worlds::*;
 pub use writeback::*;
 
 use crate::dynamics::{RapierRigidBodyHandle, TransformInterpolation};
@@ -43,7 +45,7 @@ pub fn step_simulation<Hooks>(
     for (_, world) in context.worlds.iter_mut() {
         if config.physics_pipeline_active {
             world.step_simulation(
-                config.gravity,
+                world.gravity,
                 config.timestep_mode,
                 true,
                 &hooks_adapter,
