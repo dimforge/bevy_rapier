@@ -1,4 +1,5 @@
 use crate::dynamics::RapierRigidBodyHandle;
+use crate::plugin::get_world;
 use crate::plugin::{configuration::TimestepMode, RapierConfiguration, RapierContext};
 use crate::{dynamics::RigidBody, plugin::configuration::SimulationToRenderTime};
 use crate::{prelude::*, utils};
@@ -9,11 +10,12 @@ use std::collections::HashMap;
 /// Components that will be updated after a physics step.
 pub type RigidBodyWritebackComponents<'a> = (
     Entity,
-    Option<&'a Parent>,
     Option<&'a mut Transform>,
     Option<&'a mut TransformInterpolation>,
     Option<&'a mut Velocity>,
     Option<&'a mut Sleeping>,
+    Option<&'a PhysicsWorld>,
+    Option<&'a RigidBody>,
 );
 
 /// Components related to rigid-bodies.
@@ -30,58 +32,111 @@ pub type RigidBodyComponents<'a> = (
     (Option<&'a Ccd>, Option<&'a SoftCcd>),
     Option<&'a Dominance>,
     Option<&'a Sleeping>,
-    Option<&'a Damping>,
-    Option<&'a RigidBodyDisabled>,
-    Option<&'a AdditionalSolverIterations>,
+    (
+        Option<&'a Damping>,
+        Option<&'a RigidBodyDisabled>,
+        Option<&'a PhysicsWorld>,
+        Option<&'a AdditionalSolverIterations>,
+    ),
 );
 
 /// System responsible for applying changes the user made to a rigid-body-related component.
 pub fn apply_rigid_body_user_changes(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
-    changed_rb_types: Query<(&RapierRigidBodyHandle, &RigidBody), Changed<RigidBody>>,
+    changed_rb_types: Query<
+        (&RapierRigidBodyHandle, &RigidBody, Option<&PhysicsWorld>),
+        Changed<RigidBody>,
+    >,
     mut changed_transforms: Query<
         (
             &RapierRigidBodyHandle,
             &GlobalTransform,
             Option<&mut TransformInterpolation>,
+            Option<&PhysicsWorld>,
         ),
         Changed<GlobalTransform>,
     >,
-    changed_velocities: Query<(&RapierRigidBodyHandle, &Velocity), Changed<Velocity>>,
+    changed_velocities: Query<
+        (&RapierRigidBodyHandle, &Velocity, Option<&PhysicsWorld>),
+        Changed<Velocity>,
+    >,
     changed_additional_mass_props: Query<
-        (Entity, &RapierRigidBodyHandle, &AdditionalMassProperties),
+        (
+            Entity,
+            &RapierRigidBodyHandle,
+            &AdditionalMassProperties,
+            Option<&PhysicsWorld>,
+        ),
         Changed<AdditionalMassProperties>,
     >,
-    changed_locked_axes: Query<(&RapierRigidBodyHandle, &LockedAxes), Changed<LockedAxes>>,
-    changed_forces: Query<(&RapierRigidBodyHandle, &ExternalForce), Changed<ExternalForce>>,
+    changed_locked_axes: Query<
+        (&RapierRigidBodyHandle, &LockedAxes, Option<&PhysicsWorld>),
+        Changed<LockedAxes>,
+    >,
+    changed_forces: Query<
+        (
+            &RapierRigidBodyHandle,
+            &ExternalForce,
+            Option<&PhysicsWorld>,
+        ),
+        Changed<ExternalForce>,
+    >,
     mut changed_impulses: Query<
-        (&RapierRigidBodyHandle, &mut ExternalImpulse),
+        (
+            &RapierRigidBodyHandle,
+            &mut ExternalImpulse,
+            Option<&PhysicsWorld>,
+        ),
         Changed<ExternalImpulse>,
     >,
-    changed_gravity_scale: Query<(&RapierRigidBodyHandle, &GravityScale), Changed<GravityScale>>,
+    changed_gravity_scale: Query<
+        (&RapierRigidBodyHandle, &GravityScale, Option<&PhysicsWorld>),
+        Changed<GravityScale>,
+    >,
     (changed_ccd, changed_soft_ccd): (
-        Query<(&RapierRigidBodyHandle, &Ccd), Changed<Ccd>>,
-        Query<(&RapierRigidBodyHandle, &SoftCcd), Changed<SoftCcd>>,
+        Query<(&RapierRigidBodyHandle, &Ccd, Option<&PhysicsWorld>), Changed<Ccd>>,
+        Query<(&RapierRigidBodyHandle, &SoftCcd, Option<&PhysicsWorld>), Changed<SoftCcd>>,
     ),
-    changed_dominance: Query<(&RapierRigidBodyHandle, &Dominance), Changed<Dominance>>,
-    changed_sleeping: Query<(&RapierRigidBodyHandle, &Sleeping), Changed<Sleeping>>,
-    changed_damping: Query<(&RapierRigidBodyHandle, &Damping), Changed<Damping>>,
+    changed_dominance: Query<
+        (&RapierRigidBodyHandle, &Dominance, Option<&PhysicsWorld>),
+        Changed<Dominance>,
+    >,
+    changed_sleeping: Query<
+        (&RapierRigidBodyHandle, &Sleeping, Option<&PhysicsWorld>),
+        Changed<Sleeping>,
+    >,
+    changed_damping: Query<
+        (&RapierRigidBodyHandle, &Damping, Option<&PhysicsWorld>),
+        Changed<Damping>,
+    >,
     (changed_disabled, changed_additional_solver_iterations): (
-        Query<(&RapierRigidBodyHandle, &RigidBodyDisabled), Changed<RigidBodyDisabled>>,
         Query<
-            (&RapierRigidBodyHandle, &AdditionalSolverIterations),
+            (
+                &RapierRigidBodyHandle,
+                &RigidBodyDisabled,
+                Option<&PhysicsWorld>,
+            ),
+            Changed<RigidBodyDisabled>,
+        >,
+        Query<
+            (
+                &RapierRigidBodyHandle,
+                &AdditionalSolverIterations,
+                Option<&PhysicsWorld>,
+            ),
             Changed<AdditionalSolverIterations>,
         >,
     ),
+
     mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
-    let context = &mut *context;
-
     // Deal with sleeping first, because other changes may then wake-up the
     // rigid-body again.
-    for (handle, sleeping) in changed_sleeping.iter() {
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+    for (handle, sleeping, world_within) in changed_sleeping.iter() {
+        let world = get_world(world_within, &mut context);
+
+        if let Some(rb) = world.bodies.get_mut(handle.0) {
             let activation = rb.activation_mut();
             activation.normalized_linear_threshold = sleeping.normalized_linear_threshold;
             activation.angular_threshold = sleeping.angular_threshold;
@@ -100,8 +155,10 @@ pub fn apply_rigid_body_user_changes(
     //       Similarly, if the rigid-body was kinematic position-based before and
     //       changed to anything else, a transform change would modify the next
     //       position instead of the current one.
-    for (handle, rb_type) in changed_rb_types.iter() {
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+    for (handle, rb_type, world_within) in changed_rb_types.iter() {
+        let world = get_world(world_within, &mut context);
+
+        if let Some(rb) = world.bodies.get_mut(handle.0) {
             rb.set_body_type((*rb_type).into(), true);
         }
     }
@@ -123,7 +180,10 @@ pub fn apply_rigid_body_user_changes(
             }
         };
 
-    for (handle, global_transform, mut interpolation) in changed_transforms.iter_mut() {
+    for (handle, global_transform, mut interpolation, world_within) in changed_transforms.iter_mut()
+    {
+        let world = get_world(world_within, &mut context);
+
         // Use an Option<bool> to avoid running the check twice.
         let mut transform_changed = None;
 
@@ -132,7 +192,7 @@ pub fn apply_rigid_body_user_changes(
                 Some(transform_changed_fn(
                     &handle.0,
                     global_transform,
-                    &context.last_body_transform_set,
+                    &world.last_body_transform_set,
                 ))
             });
 
@@ -144,33 +204,31 @@ pub fn apply_rigid_body_user_changes(
             }
         }
 
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+        if let Some(rb) = world.bodies.get_mut(handle.0) {
             transform_changed = transform_changed.or_else(|| {
                 Some(transform_changed_fn(
                     &handle.0,
                     global_transform,
-                    &context.last_body_transform_set,
+                    &world.last_body_transform_set,
                 ))
             });
 
-            match rb.body_type() {
-                RigidBodyType::KinematicPositionBased => {
-                    if transform_changed == Some(true) {
+            if transform_changed == Some(true) {
+                match rb.body_type() {
+                    RigidBodyType::KinematicPositionBased => {
                         rb.set_next_kinematic_position(utils::transform_to_iso(
                             &global_transform.compute_transform(),
                         ));
-                        context
+                        world
                             .last_body_transform_set
                             .insert(handle.0, *global_transform);
                     }
-                }
-                _ => {
-                    if transform_changed == Some(true) {
+                    _ => {
                         rb.set_position(
                             utils::transform_to_iso(&global_transform.compute_transform()),
                             true,
                         );
-                        context
+                        world
                             .last_body_transform_set
                             .insert(handle.0, *global_transform);
                     }
@@ -179,16 +237,38 @@ pub fn apply_rigid_body_user_changes(
         }
     }
 
-    for (handle, velocity) in changed_velocities.iter() {
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
-            rb.set_linvel(velocity.linvel.into(), true);
+    for (handle, velocity, world_within) in changed_velocities.iter() {
+        let world = get_world(world_within, &mut context);
+
+        // get here instead of get_mut to avoid change detection if it doesn't need to be changed
+        if let Some(rb) = world.bodies.get(handle.0) {
+            let new_linvel = velocity.linvel.into();
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
-            rb.set_angvel(velocity.angvel.into(), true);
+            let new_angvel = velocity.angvel.into();
+
+            #[cfg(feature = "dim3")]
+            let cur_angvel = *rb.angvel();
+            #[cfg(feature = "dim2")]
+            let cur_angvel = rb.angvel();
+
+            let is_different = *rb.linvel() != new_linvel || cur_angvel != new_angvel;
+
+            if is_different {
+                let rb = world
+                    .bodies
+                    .get_mut(handle.0)
+                    .expect("Verified to exist in above world.bodies.get");
+
+                rb.set_linvel(new_linvel, true);
+                rb.set_angvel(new_angvel, true);
+            }
         }
     }
 
-    for (entity, handle, mprops) in changed_additional_mass_props.iter() {
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+    for (entity, handle, mprops, world_within) in changed_additional_mass_props.iter() {
+        let world = get_world(world_within, &mut context);
+
+        if let Some(rb) = world.bodies.get_mut(handle.0) {
             match mprops {
                 AdditionalMassProperties::MassProperties(mprops) => {
                     rb.set_additional_mass_properties(mprops.into_rapier(), true);
@@ -202,20 +282,28 @@ pub fn apply_rigid_body_user_changes(
         }
     }
 
-    for (handle, additional_solver_iters) in changed_additional_solver_iterations.iter() {
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+    for (handle, additional_solver_iters, world_within) in
+        changed_additional_solver_iterations.iter()
+    {
+        let world = get_world(world_within, &mut context);
+
+        if let Some(rb) = world.bodies.get_mut(handle.0) {
             rb.set_additional_solver_iterations(additional_solver_iters.0);
         }
     }
 
-    for (handle, locked_axes) in changed_locked_axes.iter() {
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+    for (handle, locked_axes, world_within) in changed_locked_axes.iter() {
+        let world = get_world(world_within, &mut context);
+
+        if let Some(rb) = world.bodies.get_mut(handle.0) {
             rb.set_locked_axes((*locked_axes).into(), true);
         }
     }
 
-    for (handle, forces) in changed_forces.iter() {
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+    for (handle, forces, world_within) in changed_forces.iter() {
+        let world = get_world(world_within, &mut context);
+
+        if let Some(rb) = world.bodies.get_mut(handle.0) {
             rb.reset_forces(true);
             rb.reset_torques(true);
             rb.add_force(forces.force.into(), true);
@@ -224,8 +312,10 @@ pub fn apply_rigid_body_user_changes(
         }
     }
 
-    for (handle, mut impulses) in changed_impulses.iter_mut() {
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+    for (handle, mut impulses, world_within) in changed_impulses.iter_mut() {
+        let world = get_world(world_within, &mut context);
+
+        if let Some(rb) = world.bodies.get_mut(handle.0) {
             rb.apply_impulse(impulses.impulse.into(), true);
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             rb.apply_torque_impulse(impulses.torque_impulse.into(), true);
@@ -233,39 +323,51 @@ pub fn apply_rigid_body_user_changes(
         }
     }
 
-    for (handle, gravity_scale) in changed_gravity_scale.iter() {
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+    for (handle, gravity_scale, world_within) in changed_gravity_scale.iter() {
+        let world = get_world(world_within, &mut context);
+
+        if let Some(rb) = world.bodies.get_mut(handle.0) {
             rb.set_gravity_scale(gravity_scale.0, true);
         }
     }
 
-    for (handle, ccd) in changed_ccd.iter() {
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+    for (handle, ccd, world_within) in changed_ccd.iter() {
+        let world = get_world(world_within, &mut context);
+
+        if let Some(rb) = world.bodies.get_mut(handle.0) {
             rb.enable_ccd(ccd.enabled);
         }
     }
 
-    for (handle, soft_ccd) in changed_soft_ccd.iter() {
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+    for (handle, soft_ccd, world_within) in changed_soft_ccd.iter() {
+        let world = get_world(world_within, &mut context);
+
+        if let Some(rb) = world.bodies.get_mut(handle.0) {
             rb.set_soft_ccd_prediction(soft_ccd.prediction);
         }
     }
 
-    for (handle, dominance) in changed_dominance.iter() {
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+    for (handle, dominance, world_within) in changed_dominance.iter() {
+        let world = get_world(world_within, &mut context);
+
+        if let Some(rb) = world.bodies.get_mut(handle.0) {
             rb.set_dominance_group(dominance.groups);
         }
     }
 
-    for (handle, damping) in changed_damping.iter() {
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+    for (handle, damping, world_within) in changed_damping.iter() {
+        let world = get_world(world_within, &mut context);
+
+        if let Some(rb) = world.bodies.get_mut(handle.0) {
             rb.set_linear_damping(damping.linear_damping);
             rb.set_angular_damping(damping.angular_damping);
         }
     }
 
-    for (handle, _) in changed_disabled.iter() {
-        if let Some(co) = context.bodies.get_mut(handle.0) {
+    for (handle, _, world_within) in changed_disabled.iter() {
+        let world = get_world(world_within, &mut context);
+
+        if let Some(co) = world.bodies.get_mut(handle.0) {
             co.set_enabled(false);
         }
     }
@@ -277,23 +379,37 @@ pub fn writeback_rigid_bodies(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
     sim_to_render_time: Res<SimulationToRenderTime>,
-    global_transforms: Query<&GlobalTransform>,
-    mut writeback: Query<
-        RigidBodyWritebackComponents,
-        (With<RigidBody>, Without<RigidBodyDisabled>),
-    >,
+    top_entities: Query<Entity, Without<Parent>>,
+    mut writeback: Query<RigidBodyWritebackComponents, Without<RigidBodyDisabled>>,
+    children_query: Query<&Children>,
 ) {
-    let context = &mut *context;
+    if !config.physics_pipeline_active {
+        return;
+    }
 
-    if config.physics_pipeline_active {
-        for (entity, parent, transform, mut interpolation, mut velocity, mut sleeping) in
-            writeback.iter_mut()
+    for entity in top_entities.iter() {
+        let (transform, delta_transform, velocity, world_offset) = if let Ok((
+            entity,
+            transform,
+            mut interpolation,
+            mut velocity,
+            mut sleeping,
+            world_within,
+            _,
+        )) = writeback.get_mut(entity)
         {
+            let mut my_new_global_transform = Transform::IDENTITY;
+            let mut parent_delta = Transform::IDENTITY;
+            let mut my_velocity = Velocity::default();
+            let mut world_offset = Vec3::ZERO;
+
+            let world = get_world(world_within, &mut context);
+
             // TODO: do this the other way round: iterate through Rapier’s RigidBodySet on the active bodies,
             // and update the components accordingly. That way, we don’t have to iterate through the entities that weren’t changed
             // by physics (for example because they are sleeping).
-            if let Some(handle) = context.entity2body.get(&entity).copied() {
-                if let Some(rb) = context.bodies.get(handle) {
+            if let Some(handle) = world.entity2body.get(&entity).copied() {
+                if let Some(rb) = world.bodies.get(handle) {
                     let mut interpolated_pos = utils::iso_to_transform(rb.position());
 
                     if let TimestepMode::Interpolated { dt, .. } = config.timestep_mode {
@@ -316,82 +432,67 @@ pub fn writeback_rigid_bodies(
                         //       the scale of its bevy transform.
                         interpolated_pos = interpolated_pos.with_scale(transform.scale);
 
-                        // NOTE: we query the parent’s global transform here, which is a bit
-                        //       unfortunate (performance-wise). An alternative would be to
-                        //       deduce the parent’s global transform from the current entity’s
-                        //       global transform. However, this makes it nearly impossible
-                        //       (because of rounding errors) to predict the exact next value this
-                        //       entity’s global transform will get after the next transform
-                        //       propagation, which breaks our transform modification detection
-                        //       that we do to detect if the user’s transform has to be written
-                        //       into the rigid-body.
-                        if let Some(parent_global_transform) =
-                            parent.and_then(|p| global_transforms.get(**p).ok())
+                        world_offset = transform.translation;
+
+                        // let (cur_inv_scale, cur_inv_rotation, cur_inv_translation) = transform
+                        //     .compute_affine()
+                        //     .inverse()
+                        //     .to_scale_rotation_translation();
+
+                        parent_delta = Transform {
+                            translation: interpolated_pos.translation - transform.translation,
+                            rotation: interpolated_pos.rotation * transform.rotation.inverse(),
+                            scale: transform.scale,
+                        };
+
+                        let com = rb.center_of_mass();
+
+                        #[cfg(feature = "dim3")]
+                        let com = Vec3::new(
+                            com.x - rb.translation().x,
+                            com.y - rb.translation().y,
+                            com.z - rb.translation().z,
+                        );
+                        #[cfg(feature = "dim2")]
+                        let com =
+                            Vec3::new(com.x - rb.translation().x, com.y - rb.translation().y, 0.0);
+
+                        let com_diff = com - parent_delta.rotation.mul_vec3(com);
+                        parent_delta.translation -= com_diff;
+
+                        #[allow(unused_mut)] // mut is needed in 2D but not in 3D.
+                        let mut new_translation = interpolated_pos.translation;
+
+                        // In 2D, preserve the transform `z` component that may have been set by the user
+                        #[cfg(feature = "dim2")]
                         {
-                            // We need to compute the new local transform such that:
-                            // curr_parent_global_transform * new_transform = interpolated_pos
-                            // new_transform = curr_parent_global_transform.inverse() * interpolated_pos
-                            let (_, inverse_parent_rotation, inverse_parent_translation) =
-                                parent_global_transform
-                                    .affine()
-                                    .inverse()
-                                    .to_scale_rotation_translation();
-                            let new_rotation = inverse_parent_rotation * interpolated_pos.rotation;
-
-                            #[allow(unused_mut)] // mut is needed in 2D but not in 3D.
-                            let mut new_translation = inverse_parent_rotation
-                                * interpolated_pos.translation
-                                + inverse_parent_translation;
-
-                            // In 2D, preserve the transform `z` component that may have been set by the user
-                            #[cfg(feature = "dim2")]
-                            {
-                                new_translation.z = transform.translation.z;
-                            }
-
-                            if transform.rotation != new_rotation
-                                || transform.translation != new_translation
-                            {
-                                // NOTE: we write the new value only if there was an
-                                //       actual change, in order to not trigger bevy’s
-                                //       change tracking when the values didn’t change.
-                                transform.rotation = new_rotation;
-                                transform.translation = new_translation;
-                            }
-
-                            // NOTE: we need to compute the result of the next transform propagation
-                            //       to make sure that our change detection for transforms is exact
-                            //       despite rounding errors.
-                            let new_global_transform =
-                                parent_global_transform.mul_transform(*transform);
-
-                            context
-                                .last_body_transform_set
-                                .insert(handle, new_global_transform);
-                        } else {
-                            // In 2D, preserve the transform `z` component that may have been set by the user
-                            #[cfg(feature = "dim2")]
-                            {
-                                interpolated_pos.translation.z = transform.translation.z;
-                            }
-
-                            if transform.rotation != interpolated_pos.rotation
-                                || transform.translation != interpolated_pos.translation
-                            {
-                                // NOTE: we write the new value only if there was an
-                                //       actual change, in order to not trigger bevy’s
-                                //       change tracking when the values didn’t change.
-                                transform.rotation = interpolated_pos.rotation;
-                                transform.translation = interpolated_pos.translation;
-                            }
-
-                            context
-                                .last_body_transform_set
-                                .insert(handle, GlobalTransform::from(interpolated_pos));
+                            new_translation.z = transform.translation.z;
                         }
+
+                        if transform.rotation != interpolated_pos.rotation
+                            || transform.translation != new_translation
+                        {
+                            // NOTE: we write the new value only if there was an
+                            //       actual change, in order to not trigger bevy’s
+                            //       change tracking when the values didn’t change.
+                            transform.rotation = interpolated_pos.rotation;
+                            transform.translation = new_translation;
+                        }
+
+                        my_new_global_transform = interpolated_pos;
+
+                        world.last_body_transform_set.insert(
+                            handle,
+                            GlobalTransform::from(
+                                Transform::from_translation(new_translation)
+                                    .with_rotation(interpolated_pos.rotation),
+                            ),
+                        );
                     }
 
                     if let Some(velocity) = &mut velocity {
+                        my_velocity = **velocity;
+
                         let new_vel = Velocity {
                             linvel: (*rb.linvel()).into(),
                             #[cfg(feature = "dim3")]
@@ -418,6 +519,278 @@ pub fn writeback_rigid_bodies(
                     }
                 }
             }
+
+            (
+                my_new_global_transform,
+                parent_delta,
+                my_velocity,
+                world_offset,
+            )
+        } else {
+            (
+                Transform::IDENTITY,
+                Transform::IDENTITY,
+                Velocity::default(),
+                Vec3::ZERO,
+            )
+        };
+
+        recurse_child_transforms(
+            context.as_mut(),
+            &config,
+            &sim_to_render_time,
+            &mut writeback,
+            transform,
+            delta_transform,
+            velocity,
+            &children_query,
+            entity,
+            world_offset,
+        );
+    }
+}
+
+fn recurse_child_transforms(
+    context: &mut RapierContext,
+    config: &RapierConfiguration,
+    sim_to_render_time: &SimulationToRenderTime,
+    writeback: &mut Query<RigidBodyWritebackComponents, Without<RigidBodyDisabled>>,
+    parent_global_transform: Transform,
+    parent_delta: Transform,
+    parent_velocity: Velocity,
+    children_query: &Query<&Children>,
+    parent_entity: Entity,
+    world_offset: Vec3,
+) {
+    let Ok(children) = children_query.get(parent_entity) else {
+        return;
+    };
+
+    for child in children.iter().copied() {
+        let mut world_offset = world_offset;
+
+        let (transform, delta_transform, velocity) = if let Ok((
+            entity,
+            transform,
+            mut interpolation,
+            mut velocity,
+            mut sleeping,
+            world_within,
+            rb_type,
+        )) = writeback.get_mut(child)
+        {
+            let mut my_new_global_transform = parent_global_transform;
+            let mut delta_transform = parent_delta;
+            let mut my_velocity = parent_velocity;
+
+            let world = get_world(world_within, context);
+
+            // TODO: do this the other way round: iterate through Rapier’s RigidBodySet on the active bodies,
+            // and update the components accordingly. That way, we don’t have to iterate through the entities that weren’t changed
+            // by physics (for example because they are sleeping).
+            if let Some(handle) = world.entity2body.get(&entity).copied() {
+                if let Some(rb) = world.bodies.get_mut(handle) {
+                    let mut interpolated_pos = utils::iso_to_transform(rb.position());
+
+                    if let TimestepMode::Interpolated { dt, .. } = config.timestep_mode {
+                        if let Some(interpolation) = interpolation.as_deref_mut() {
+                            if interpolation.end.is_none() {
+                                interpolation.end = Some(*rb.position());
+                            }
+
+                            if let Some(interpolated) =
+                                interpolation.lerp_slerp((dt + sim_to_render_time.diff) / dt)
+                            {
+                                interpolated_pos = utils::iso_to_transform(&interpolated);
+                            }
+                        }
+                    }
+
+                    if let Some(mut transform) = transform {
+                        // We need to compute the new local transform such that:
+                        // curr_parent_global_transform * new_transform * parent_delta_pos = interpolated_pos
+                        // new_transform = curr_parent_global_transform.inverse() * interpolated_pos
+
+                        let inverse_parent_rotation = parent_global_transform.rotation.inverse();
+
+                        interpolated_pos.translation -= world_offset;
+
+                        let new_rotation = Quat::IDENTITY; //inverse_parent_rotation * interpolated_pos.rotation;
+
+                        // has to be mut in 2d mode
+                        #[allow(unused_mut)]
+                        let mut new_translation;
+
+                        let translation_offset =
+                            if rb_type.copied().unwrap_or(RigidBody::Fixed) == RigidBody::Dynamic {
+                                // The parent's velocity will have already moved them
+                                parent_delta.translation
+                            } else {
+                                Vec3::ZERO
+                            };
+
+                        let rotated_interpolation = inverse_parent_rotation
+                            * (parent_delta.rotation
+                                * (interpolated_pos.translation - translation_offset));
+
+                        new_translation = rotated_interpolation;
+
+                        // In 2D, preserve the transform `z` component that may have been set by the user
+                        #[cfg(feature = "dim2")]
+                        {
+                            new_translation.z = transform.translation.z;
+                        }
+
+                        let old_transform = *transform;
+
+                        if transform.rotation != new_rotation
+                            || transform.translation != new_translation
+                        {
+                            // NOTE: we write the new value only if there was an
+                            //       actual change, in order to not trigger bevy’s
+                            //       change tracking when the values didn’t change.
+                            transform.rotation = new_rotation;
+                            transform.translation = new_translation;
+                        }
+
+                        let inv_old_transform = Transform {
+                            scale: old_transform.scale,
+                            rotation: old_transform.rotation.inverse(),
+                            translation: -old_transform.translation,
+                        };
+
+                        delta_transform = transform.mul_transform(inv_old_transform);
+
+                        // NOTE: we need to compute the result of the next transform propagation
+                        //       to make sure that our change detection for transforms is exact
+                        //       despite rounding errors.
+
+                        my_new_global_transform = parent_global_transform.mul_transform(*transform);
+                        world_offset = my_new_global_transform.translation;
+
+                        world
+                            .last_body_transform_set
+                            .insert(handle, GlobalTransform::from(my_new_global_transform));
+
+                        rb.set_position(utils::transform_to_iso(&my_new_global_transform), false);
+                    }
+
+                    if let Some(velocity) = &mut velocity {
+                        let old_linvel = *rb.linvel();
+
+                        my_velocity.linvel = old_linvel.into();
+
+                        rb.set_linvel(parent_velocity.linvel.into(), false);
+                        rb.set_linvel(old_linvel - rb.linvel(), false);
+
+                        let new_vel = Velocity {
+                            linvel: (*rb.linvel()).into(),
+                            #[cfg(feature = "dim3")]
+                            angvel: (*rb.angvel()).into(),
+                            #[cfg(feature = "dim2")]
+                            angvel: rb.angvel(),
+                        };
+
+                        // NOTE: we write the new value only if there was an
+                        //       actual change, in order to not trigger bevy’s
+                        //       change tracking when the values didn’t change.
+                        if **velocity != new_vel {
+                            **velocity = new_vel;
+                        }
+                    }
+
+                    if let Some(sleeping) = &mut sleeping {
+                        // NOTE: we write the new value only if there was an
+                        //       actual change, in order to not trigger bevy’s
+                        //       change tracking when the values didn’t change.
+                        if sleeping.sleeping != rb.is_sleeping() {
+                            sleeping.sleeping = rb.is_sleeping();
+                        }
+                    }
+                }
+            }
+
+            (my_new_global_transform, delta_transform, my_velocity)
+        } else {
+            (parent_global_transform, parent_delta, parent_velocity)
+        };
+
+        recurse_child_transforms(
+            context,
+            config,
+            sim_to_render_time,
+            writeback,
+            transform,
+            delta_transform,
+            velocity,
+            children_query,
+            child,
+            world_offset,
+        );
+    }
+}
+
+/// Syncs up child velocities with their parents in the physics simulation.
+/// This is done to avoid child components getting hit by their parent and rapier
+/// assuming the child is hit by the full velocity of the parent instead of `parent vel - child vel`.
+///
+/// This will not change the bevy component's velocity.
+pub fn sync_vel(
+    top_ents: Query<Entity, Without<Parent>>,
+    vel_query: Query<&Velocity>,
+    query: Query<(&RapierRigidBodyHandle, Option<&PhysicsWorld>)>,
+    children_query: Query<&Children>,
+    mut context: ResMut<RapierContext>,
+) {
+    for ent in top_ents.iter() {
+        let vel = if let Ok(velocity) = vel_query.get(ent) {
+            *velocity
+        } else {
+            Velocity::default()
+        };
+
+        if let Ok(children) = children_query.get(ent) {
+            for child in children.iter().copied() {
+                sync_velocity_recursively(child, &query, &children_query, vel, &mut context);
+            }
+        }
+    }
+}
+
+fn sync_velocity_recursively(
+    ent: Entity,
+    query: &Query<(&RapierRigidBodyHandle, Option<&PhysicsWorld>)>,
+    children_query: &Query<&Children>,
+    parent_vel: Velocity,
+    context: &mut RapierContext,
+) {
+    let vel = if let Ok((handle, world_within)) = query.get(ent) {
+        let world = get_world(world_within, context);
+        if let Some(rb) = world.bodies.get_mut(handle.0) {
+            #[cfg(feature = "dim3")]
+            let old_linvel = Vec3::from(*rb.linvel());
+            #[cfg(feature = "dim2")]
+            let old_linvel = Vec2::from(*rb.linvel());
+
+            rb.set_linvel((old_linvel + (parent_vel.linvel)).into(), false);
+
+            Velocity {
+                linvel: (*rb.linvel()).into(),
+                #[cfg(feature = "dim3")]
+                angvel: (*rb.angvel()).into(),
+                #[cfg(feature = "dim2")]
+                angvel: rb.angvel(),
+            }
+        } else {
+            parent_vel
+        }
+    } else {
+        parent_vel
+    };
+
+    if let Ok(children) = children_query.get(ent) {
+        for child in children.iter().copied() {
+            sync_velocity_recursively(child, query, children_query, vel, context);
         }
     }
 }
@@ -441,11 +814,11 @@ pub fn init_rigid_bodies(
         (ccd, soft_ccd),
         dominance,
         sleep,
-        damping,
-        disabled,
-        additional_solver_iters,
+        (damping, disabled, world_within, additional_solver_iters),
     ) in rigid_bodies.iter()
     {
+        let world = get_world(world_within, &mut context);
+
         let mut builder = RigidBodyBuilder::new((*rb).into());
         builder = builder.enabled(disabled.is_none());
 
@@ -521,14 +894,15 @@ pub fn init_rigid_bodies(
             activation.angular_threshold = sleep.angular_threshold;
         }
 
-        let handle = context.bodies.insert(rb);
+        let handle = world.bodies.insert(rb);
         commands
             .entity(entity)
             .insert(RapierRigidBodyHandle(handle));
-        context.entity2body.insert(entity, handle);
+
+        world.entity2body.insert(entity, handle);
 
         if let Some(transform) = transform {
-            context.last_body_transform_set.insert(handle, *transform);
+            world.last_body_transform_set.insert(handle, *transform);
         }
     }
 }
@@ -542,19 +916,22 @@ pub fn apply_initial_rigid_body_impulses(
     mut context: ResMut<RapierContext>,
     // We can’t use RapierRigidBodyHandle yet because its creation command hasn’t been
     // executed yet.
-    mut init_impulses: Query<(Entity, &mut ExternalImpulse), Without<RapierRigidBodyHandle>>,
+    mut init_impulses: Query<
+        (Entity, &mut ExternalImpulse, Option<&PhysicsWorld>),
+        Without<RapierRigidBodyHandle>,
+    >,
 ) {
-    let context = &mut *context;
+    for (entity, mut impulse, world_within) in init_impulses.iter_mut() {
+        let world = get_world(world_within, &mut context);
 
-    for (entity, mut impulse) in init_impulses.iter_mut() {
-        let bodies = &mut context.bodies;
-        if let Some(rb) = context
+        let bodies = &mut world.bodies;
+        if let Some(rb) = world
             .entity2body
             .get(&entity)
             .and_then(|h| bodies.get_mut(*h))
         {
             // Make sure the mass-properties are computed.
-            rb.recompute_mass_properties_from_colliders(&context.colliders);
+            rb.recompute_mass_properties_from_colliders(&world.colliders);
             // Apply the impulse.
             rb.apply_impulse(impulse.impulse.into(), false);
 
