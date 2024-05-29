@@ -1,7 +1,5 @@
-use bevy::prelude::{FromWorld, Resource, World};
+use bevy::prelude::Resource;
 
-use crate::math::{Real, Vect};
-use crate::plugin::RapierContext;
 
 /// Difference between simulation and rendering time
 #[derive(Resource, Default)]

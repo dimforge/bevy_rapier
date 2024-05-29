@@ -163,7 +163,7 @@ pub fn apply_collider_user_changes(
 
         if world.collider_parent(entity).is_some() {
             let (_, collider_position) =
-                collider_offset(entity, &world, &parent_query, &transform_query);
+                collider_offset(entity, world, &parent_query, &transform_query);
 
             if let Some(co) = world.colliders.get_mut(handle.0) {
                 co.set_position_wrt_parent(utils::transform_to_iso(&collider_position));
