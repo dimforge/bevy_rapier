@@ -3,22 +3,27 @@ use core::fmt;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
-use crate::geometry::{Collider, PointProjection, RayIntersection, Toi};
+use crate::geometry::{Collider, PointProjection, RayIntersection};
 use crate::math::{Rot, Vect};
 use crate::pipeline::{CollisionEvent, ContactForceEvent, QueryFilter};
 use crate::prelude::events::EventQueue;
 use rapier::control::CharacterAutostep;
 use rapier::prelude::{
-    BroadPhase, CCDSolver, ColliderHandle, ColliderSet, EventHandler, FeatureId,
-    ImpulseJointHandle, ImpulseJointSet, IntegrationParameters, IslandManager,
-    MultibodyJointHandle, MultibodyJointSet, NarrowPhase, PhysicsHooks, PhysicsPipeline,
-    QueryFilter as RapierQueryFilter, QueryPipeline, Ray, Real, RigidBodyHandle, RigidBodySet,
+    CCDSolver, ColliderHandle, ColliderSet, EventHandler, FeatureId, ImpulseJointHandle,
+    ImpulseJointSet, IntegrationParameters, IslandManager, MultibodyJointHandle, MultibodyJointSet,
+    NarrowPhase, PhysicsHooks, PhysicsPipeline, QueryFilter as RapierQueryFilter, QueryPipeline,
+    Ray, Real, RigidBodyHandle, RigidBodySet,
 };
+
+use crate::geometry::ShapeCastHit;
+use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query};
 
 use crate::control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput};
 use crate::dynamics::TransformInterpolation;
+use crate::parry::query::details::ShapeCastOptions;
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
+use rapier::geometry::DefaultBroadPhase;
 
 /// Represents the world in the rapier context
 pub type WorldId = usize;
@@ -33,7 +38,7 @@ pub struct RapierWorld {
     /// (not moving much) to reduce computations.
     pub islands: IslandManager,
     /// The broad-phase, which detects potential contact pairs.
-    pub broad_phase: BroadPhase,
+    pub broad_phase: DefaultBroadPhase,
     /// The narrow-phase, which computes contact points, tests intersections,
     /// and maintain the contact and intersection graphs.
     pub narrow_phase: NarrowPhase,
@@ -54,7 +59,6 @@ pub struct RapierWorld {
     pub query_pipeline: QueryPipeline,
     /// The integration parameters, controlling various low-level coefficient of the simulation.
     pub integration_parameters: IntegrationParameters,
-    pub(crate) physics_scale: Real,
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub(crate) event_handler: Option<Box<dyn EventHandler>>,
     // For transform change detection.
@@ -79,6 +83,34 @@ pub struct RapierWorld {
     pub(crate) contact_force_events_to_send: RwLock<Vec<ContactForceEvent>>,
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub(crate) character_collisions_collector: Vec<rapier::control::CharacterCollision>,
+}
+
+impl Default for RapierWorld {
+    fn default() -> Self {
+        Self {
+            islands: IslandManager::new(),
+            broad_phase: DefaultBroadPhase::new(),
+            narrow_phase: NarrowPhase::new(),
+            bodies: RigidBodySet::new(),
+            colliders: ColliderSet::new(),
+            impulse_joints: ImpulseJointSet::new(),
+            multibody_joints: MultibodyJointSet::new(),
+            ccd_solver: CCDSolver::new(),
+            pipeline: PhysicsPipeline::new(),
+            query_pipeline: QueryPipeline::new(),
+            integration_parameters: IntegrationParameters::default(),
+            event_handler: None,
+            last_body_transform_set: HashMap::new(),
+            entity2body: HashMap::new(),
+            entity2collider: HashMap::new(),
+            entity2impulse_joint: HashMap::new(),
+            entity2multibody_joint: HashMap::new(),
+            deleted_colliders: HashMap::new(),
+            character_collisions_collector: vec![],
+            collision_events_to_send: RwLock::new(Vec::new()),
+            contact_force_events_to_send: RwLock::new(Vec::new()),
+        }
+    }
 }
 
 impl RapierWorld {
@@ -264,7 +296,7 @@ impl RapierWorld {
 
                     for _ in 0..substeps {
                         self.pipeline.step(
-                            &(gravity / self.physics_scale).into(),
+                            &gravity.into(),
                             &substep_integration_parameters,
                             &mut self.islands,
                             &mut self.broad_phase,
@@ -295,7 +327,7 @@ impl RapierWorld {
 
                 for _ in 0..substeps {
                     self.pipeline.step(
-                        &(gravity / self.physics_scale).into(),
+                        &gravity.into(),
                         &substep_integration_parameters,
                         &mut self.islands,
                         &mut self.broad_phase,
@@ -319,7 +351,7 @@ impl RapierWorld {
 
                 for _ in 0..substeps {
                     self.pipeline.step(
-                        &(gravity / self.physics_scale).into(),
+                        &gravity.into(),
                         &substep_integration_parameters,
                         &mut self.islands,
                         &mut self.broad_phase,
@@ -375,31 +407,29 @@ impl RapierWorld {
         filter: QueryFilter,
         events: &mut impl FnMut(CharacterCollision),
     ) -> MoveShapeOutput {
-        let physics_scale = self.physics_scale;
         let mut scaled_shape = shape.clone();
         // TODO: how to set a good number of subdivisions, we don’t have access to the
         //       RapierConfiguration::scaled_shape_subdivision here.
-        scaled_shape.set_scale(shape.scale / physics_scale, 20);
+        scaled_shape.set_scale(shape.scale, 20);
 
         let up = options
             .up
             .try_into()
             .expect("The up vector must be non-zero.");
         let autostep = options.autostep.map(|autostep| CharacterAutostep {
-            max_height: autostep.max_height.map_absolute(|x| x / physics_scale),
-            min_width: autostep.min_width.map_absolute(|x| x / physics_scale),
+            max_height: autostep.max_height,
+            min_width: autostep.min_width,
             include_dynamic_bodies: autostep.include_dynamic_bodies,
         });
         let controller = rapier::control::KinematicCharacterController {
             up,
-            offset: options.offset.map_absolute(|x| x / physics_scale),
+            offset: options.offset,
             slide: options.slide,
             autostep,
             max_slope_climb_angle: options.max_slope_climb_angle,
             min_slope_slide_angle: options.min_slope_slide_angle,
-            snap_to_ground: options
-                .snap_to_ground
-                .map(|x| x.map_absolute(|x| x / physics_scale)),
+            snap_to_ground: options.snap_to_ground,
+            normal_nudge_factor: options.normal_nudge_factor,
         };
 
         self.character_collisions_collector.clear();
@@ -425,12 +455,12 @@ impl RapierWorld {
                     colliders,
                     query_pipeline,
                     (&scaled_shape).into(),
-                    &(shape_translation / physics_scale, shape_rotation).into(),
-                    (movement / physics_scale).into(),
+                    &(shape_translation, shape_rotation).into(),
+                    movement.into(),
                     filter,
                     |c| {
                         if let Some(collision) =
-                            CharacterCollision::from_raw_with_set(physics_scale, colliders, &c)
+                            CharacterCollision::from_raw_with_set(colliders, &c, true)
                         {
                             events(collision);
                         }
@@ -458,8 +488,9 @@ impl RapierWorld {
         );
 
         MoveShapeOutput {
-            effective_translation: (result.translation * physics_scale).into(),
+            effective_translation: result.translation.into(),
             grounded: result.grounded,
+            is_sliding_down_slope: result.is_sliding_down_slope,
         }
     }
 
@@ -482,10 +513,7 @@ impl RapierWorld {
         solid: bool,
         filter: QueryFilter,
     ) -> Option<(Entity, Real)> {
-        let ray = Ray::new(
-            (ray_origin / self.physics_scale).into(),
-            (ray_dir / self.physics_scale).into(),
-        );
+        let ray = Ray::new(ray_origin.into(), ray_dir.into());
 
         let (h, toi) = self.with_query_filter(filter, move |filter| {
             self.query_pipeline.cast_ray(
@@ -520,10 +548,7 @@ impl RapierWorld {
         solid: bool,
         filter: QueryFilter,
     ) -> Option<(Entity, RayIntersection)> {
-        let ray = Ray::new(
-            (ray_origin / self.physics_scale).into(),
-            (ray_dir / self.physics_scale).into(),
-        );
+        let ray = Ray::new(ray_origin.into(), ray_dir.into());
 
         let (h, result) = self.with_query_filter(filter, move |filter| {
             self.query_pipeline.cast_ray_and_get_normal(
@@ -564,10 +589,7 @@ impl RapierWorld {
         filter: QueryFilter,
         mut callback: impl FnMut(Entity, RayIntersection) -> bool,
     ) {
-        let ray = Ray::new(
-            (ray_origin / self.physics_scale).into(),
-            (ray_dir / self.physics_scale).into(),
-        );
+        let ray = Ray::new(ray_origin.into(), ray_dir.into());
         let callback = |h, inter: rapier::prelude::RayIntersection| {
             self.collider_entity(h)
                 .map(|e| callback(e, RayIntersection::from_rapier(inter, ray_origin, ray_dir)))
@@ -600,11 +622,11 @@ impl RapierWorld {
         shape: &Collider,
         filter: QueryFilter,
     ) -> Option<Entity> {
-        let scaled_transform = (shape_pos / self.physics_scale, shape_rot).into();
+        let scaled_transform = (shape_pos, shape_rot).into();
         let mut scaled_shape = shape.clone();
         // TODO: how to set a good number of subdivisions, we don’t have access to the
         //       RapierConfiguration::scaled_shape_subdivision here.
-        scaled_shape.set_scale(shape.scale / self.physics_scale, 20);
+        scaled_shape.set_scale(shape.scale, 20);
 
         let h = self.with_query_filter(filter, move |filter| {
             self.query_pipeline.intersection_with_shape(
@@ -639,14 +661,14 @@ impl RapierWorld {
             self.query_pipeline.project_point(
                 &self.bodies,
                 &self.colliders,
-                &(point / self.physics_scale).into(),
+                &point.into(),
                 solid,
                 filter,
             )
         })?;
 
         self.collider_entity(h)
-            .map(|e| (e, PointProjection::from_rapier(self.physics_scale, result)))
+            .map(|e| (e, PointProjection::from_rapier(result)))
     }
 
     /// Find all the colliders containing the given point.
@@ -671,7 +693,7 @@ impl RapierWorld {
             self.query_pipeline.intersections_with_point(
                 &self.bodies,
                 &self.colliders,
-                &(point / self.physics_scale).into(),
+                &point.into(),
                 filter,
                 callback,
             )
@@ -699,18 +721,13 @@ impl RapierWorld {
             self.query_pipeline.project_point_and_get_feature(
                 &self.bodies,
                 &self.colliders,
-                &(point / self.physics_scale).into(),
+                &point.into(),
                 filter,
             )
         })?;
 
-        self.collider_entity(h).map(|e| {
-            (
-                e,
-                PointProjection::from_rapier(self.physics_scale, proj),
-                fid,
-            )
-        })
+        self.collider_entity(h)
+            .map(|e| (e, PointProjection::from_rapier(proj), fid))
     }
 
     /// Finds all entities of all the colliders with an Aabb intersecting the given Aabb.
@@ -722,13 +739,13 @@ impl RapierWorld {
     ) {
         #[cfg(feature = "dim2")]
         let scaled_aabb = rapier::prelude::Aabb {
-            mins: (aabb.min().xy() / self.physics_scale).into(),
-            maxs: (aabb.max().xy() / self.physics_scale).into(),
+            mins: aabb.min().xy().into(),
+            maxs: aabb.max().xy().into(),
         };
         #[cfg(feature = "dim3")]
         let scaled_aabb = rapier::prelude::Aabb {
-            mins: (aabb.min() / self.physics_scale).into(),
-            maxs: (aabb.max() / self.physics_scale).into(),
+            mins: aabb.min().into(),
+            maxs: aabb.max().into(),
         };
         #[allow(clippy::redundant_closure)]
         // False-positive, we can't move callback, closure becomes `FnOnce`
@@ -744,7 +761,7 @@ impl RapierWorld {
     /// Casts a shape at a constant linear velocity and retrieve the first collider it hits.
     ///
     /// This is similar to ray-casting except that we are casting a whole shape instead of just a
-    /// point (the ray origin). In the resulting `TOI`, witness and normal 1 refer to the world
+    /// point (the ray origin). In the resulting `ShapeCastHit`, witness and normal 1 refer to the world
     /// collider, and are in world space.
     ///
     /// # Parameters
@@ -769,39 +786,41 @@ impl RapierWorld {
         shape_rot: Rot,
         shape_vel: Vect,
         shape: &Collider,
-        max_toi: Real,
-        stop_at_penetration: bool,
+        options: ShapeCastOptions,
         filter: QueryFilter,
-    ) -> Option<(Entity, Toi)> {
-        let scaled_transform = (shape_pos / self.physics_scale, shape_rot).into();
+    ) -> Option<(Entity, ShapeCastHit)> {
+        let scaled_transform = (shape_pos, shape_rot).into();
         let mut scaled_shape = shape.clone();
         // TODO: how to set a good number of subdivisions, we don’t have access to the
         //       RapierConfiguration::scaled_shape_subdivision here.
-        scaled_shape.set_scale(shape.scale / self.physics_scale, 20);
+        scaled_shape.set_scale(shape.scale, 20);
 
         let (h, result) = self.with_query_filter(filter, move |filter| {
             self.query_pipeline.cast_shape(
                 &self.bodies,
                 &self.colliders,
                 &scaled_transform,
-                &(shape_vel / self.physics_scale).into(),
+                &shape_vel.into(),
                 &*scaled_shape.raw,
-                max_toi,
-                stop_at_penetration,
+                options,
                 filter,
             )
         })?;
 
-        self.collider_entity(h)
-            .map(|e| (e, Toi::from_rapier(self.physics_scale, result)))
+        self.collider_entity(h).map(|e| {
+            (
+                e,
+                ShapeCastHit::from_rapier(result, options.compute_impact_geometry_on_penetration),
+            )
+        })
     }
 
     /* TODO: we need to wrap the NonlinearRigidMotion somehow.
      *
     /// Casts a shape with an arbitrary continuous motion and retrieve the first collider it hits.
     ///
-    /// In the resulting `TOI`, witness and normal 1 refer to the world collider, and are in world
-    /// space.
+    /// In the resulting `ShapeCastHit`, witness and normal 1 refer to the world collider, and are
+    /// in world space.
     ///
     /// # Parameters
     /// * `shape_motion` - The motion of the shape.
@@ -825,11 +844,11 @@ impl RapierWorld {
         stop_at_penetration: bool,
         filter: QueryFilter,
     ) -> Option<(Entity, Toi)> {
-        let scaled_transform = (shape_pos * self.physics_scale, shape_rot).into();
+        let scaled_transform = (shape_pos, shape_rot).into();
         let mut scaled_shape = shape.clone();
         // TODO: how to set a good number of subdivisions, we don’t have access to the
         //       RapierConfiguration::scaled_shape_subdivision here.
-        scaled_shape.set_scale(shape.scale * self.physics_scale, 20);
+        scaled_shape.set_scale(shape.scale, 20);
 
         let (h, result) = self.with_query_filter(filter, move |filter| {
             self.query_pipeline.nonlinear_cast_shape(
@@ -864,11 +883,11 @@ impl RapierWorld {
         filter: QueryFilter,
         mut callback: impl FnMut(Entity) -> bool,
     ) {
-        let scaled_transform = (shape_pos / self.physics_scale, shape_rot).into();
+        let scaled_transform = (shape_pos, shape_rot).into();
         let mut scaled_shape = shape.clone();
         // TODO: how to set a good number of subdivisions, we don’t have access to the
         //       RapierConfiguration::scaled_shape_subdivision here.
-        scaled_shape.set_scale(shape.scale / self.physics_scale, 20);
+        scaled_shape.set_scale(shape.scale, 20);
 
         #[allow(clippy::redundant_closure)]
         // False-positive, we can't move callback, closure becomes `FnOnce`
@@ -884,35 +903,6 @@ impl RapierWorld {
                 callback,
             )
         });
-    }
-}
-
-impl Default for RapierWorld {
-    fn default() -> Self {
-        Self {
-            islands: IslandManager::new(),
-            broad_phase: BroadPhase::new(),
-            narrow_phase: NarrowPhase::new(),
-            bodies: RigidBodySet::new(),
-            colliders: ColliderSet::new(),
-            impulse_joints: ImpulseJointSet::new(),
-            multibody_joints: MultibodyJointSet::new(),
-            ccd_solver: CCDSolver::new(),
-            pipeline: PhysicsPipeline::new(),
-            query_pipeline: QueryPipeline::new(),
-            integration_parameters: IntegrationParameters::default(),
-            physics_scale: 1.0,
-            event_handler: None,
-            last_body_transform_set: HashMap::new(),
-            entity2body: HashMap::new(),
-            entity2collider: HashMap::new(),
-            entity2impulse_joint: HashMap::new(),
-            entity2multibody_joint: HashMap::new(),
-            deleted_colliders: HashMap::new(),
-            character_collisions_collector: vec![],
-            collision_events_to_send: RwLock::new(Vec::new()),
-            contact_force_events_to_send: RwLock::new(Vec::new()),
-        }
     }
 }
 
@@ -995,18 +985,6 @@ impl RapierContext {
     pub fn get_world_mut(&mut self, world_id: WorldId) -> Result<&mut RapierWorld, WorldError> {
         self.worlds
             .get_mut(&world_id)
-            .ok_or(WorldError::WorldNotFound { world_id })
-    }
-
-    /// Get the physics scale that was set for this Rapier context.
-    ///
-    /// Returns None if no world was found with that id.
-    ///
-    /// See [`RapierPhysicsPlugin::with_physics_scale()`][crate::plugin::RapierPhysicsPlugin::with_physics_scale()].
-    pub fn physics_scale_for_world(&self, world_id: WorldId) -> Result<Real, WorldError> {
-        self.worlds
-            .get(&world_id)
-            .map(|x| x.physics_scale)
             .ok_or(WorldError::WorldNotFound { world_id })
     }
 
@@ -1461,22 +1439,13 @@ impl RapierContext {
         shape_rot: Rot,
         shape_vel: Vect,
         shape: &Collider,
-        max_toi: Real,
-        stop_at_penetration: bool,
+        options: ShapeCastOptions,
         filter: QueryFilter,
-    ) -> Result<Option<(Entity, Toi)>, WorldError> {
+    ) -> Result<Option<(Entity, ShapeCastHit)>, WorldError> {
         self.worlds
             .get(&world_id)
             .map_or(Err(WorldError::WorldNotFound { world_id }), |world| {
-                Ok(world.cast_shape(
-                    shape_pos,
-                    shape_rot,
-                    shape_vel,
-                    shape,
-                    max_toi,
-                    stop_at_penetration,
-                    filter,
-                ))
+                Ok(world.cast_shape(shape_pos, shape_rot, shape_vel, shape, options, filter))
             })
     }
 

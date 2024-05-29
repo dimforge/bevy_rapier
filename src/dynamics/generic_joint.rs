@@ -4,7 +4,6 @@ use rapier::dynamics::{
     GenericJoint as RapierGenericJoint, JointAxesMask, JointAxis, JointLimits, JointMotor,
     MotorModel,
 };
-use rapier::math::DIM;
 
 #[cfg(feature = "dim3")]
 use crate::dynamics::SphericalJoint;
@@ -20,22 +19,7 @@ pub struct GenericJoint {
 
 impl GenericJoint {
     /// Converts this joint into a Rapier joint.
-    pub fn into_rapier(mut self, physics_scale: Real) -> RapierGenericJoint {
-        self.raw.local_frame1.translation.vector /= physics_scale;
-        self.raw.local_frame2.translation.vector /= physics_scale;
-
-        // NOTE: we don’t apply the physics scale to angular limits.
-        for limit in &mut self.raw.limits[0..DIM] {
-            limit.min /= physics_scale;
-            limit.max /= physics_scale;
-        }
-
-        // NOTE: we don’t apply the physics scale to angular motors.
-        for motor in &mut self.raw.motors[0..DIM] {
-            motor.target_vel /= physics_scale;
-            motor.target_pos /= physics_scale;
-        }
-
+    pub fn into_rapier(self) -> RapierGenericJoint {
         self.raw
     }
 }

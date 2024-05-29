@@ -8,6 +8,7 @@ use bevy::{
     utils::intern::Interned,
 };
 use bevy::{prelude::*, transform::TransformSystem};
+use rapier::dynamics::IntegrationParameters;
 use std::marker::PhantomData;
 
 pub use super::context::RapierWorld;
@@ -23,7 +24,7 @@ pub type NoUserData = ();
 /// Rapier physics engine.
 pub struct RapierPhysicsPlugin<PhysicsHooks = ()> {
     schedule: Interned<dyn ScheduleLabel>,
-    physics_scale: f32,
+    length_unit: f32,
     default_system_setup: bool,
     _phantom: PhantomData<PhysicsHooks>,
 }
@@ -36,11 +37,11 @@ where
     /// Specifies a scale ratio between the physics world and the bevy transforms.
     ///
     /// This affects the size of every elements in the physics engine, by multiplying
-    /// all the length-related quantities by the `physics_scale` factor. This should
+    /// all the length-related quantities by the `length_unit` factor. This should
     /// likely always be 1.0 in 3D. In 2D, this is useful to specify a "pixels-per-meter"
     /// conversion ratio.
-    pub fn with_physics_scale(mut self, physics_scale: f32) -> Self {
-        self.physics_scale = physics_scale;
+    pub fn with_length_unit(mut self, length_unit: f32) -> Self {
+        self.length_unit = length_unit;
         self
     }
 
@@ -59,7 +60,7 @@ where
     #[cfg(feature = "dim2")]
     pub fn pixels_per_meter(pixels_per_meter: f32) -> Self {
         Self {
-            physics_scale: pixels_per_meter,
+            length_unit: pixels_per_meter,
             default_system_setup: true,
             ..default()
         }
@@ -138,7 +139,7 @@ impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystem
     fn default() -> Self {
         Self {
             schedule: PostUpdate.intern(),
-            physics_scale: 1.0,
+            length_unit: 1.0,
             default_system_setup: true,
             _phantom: PhantomData,
         }
@@ -182,6 +183,7 @@ where
             .register_type::<Damping>()
             .register_type::<Dominance>()
             .register_type::<Ccd>()
+            .register_type::<SoftCcd>()
             .register_type::<GravityScale>()
             .register_type::<CollidingEntities>()
             .register_type::<Sensor>()
@@ -191,20 +193,27 @@ where
             .register_type::<SolverGroups>()
             .register_type::<ContactForceEventThreshold>()
             .register_type::<Group>()
-            .register_type::<PhysicsWorld>();
-
-        // Insert all of our required resources. Don’t overwrite
-        // the `RapierConfiguration` if it already exists.
-        app.init_resource::<RapierConfiguration>();
+            .register_type::<PhysicsWorld>()
+            .register_type::<ContactSkin>();
 
         app.insert_resource(SimulationToRenderTime::default())
             .insert_resource(RapierContext::new(RapierWorld {
-                physics_scale: self.physics_scale,
+                integration_parameters: IntegrationParameters {
+                    length_unit: self.length_unit,
+                    ..Default::default()
+                },
                 ..Default::default()
             }))
             .insert_resource(Events::<CollisionEvent>::default())
             .insert_resource(Events::<ContactForceEvent>::default())
             .insert_resource(Events::<MassModifiedEvent>::default());
+
+        // Insert all of our required resources. Don’t overwrite
+        // the `RapierConfiguration` if it already exists.
+        //
+        // NOTE: be sure to call this after the `.insert_resource(RapierContext)` so we can
+        //       access the length_unit when initializing the RapierConfiguration.
+        app.init_resource::<RapierConfiguration>();
 
         // Add each set as necessary
         if self.default_system_setup {

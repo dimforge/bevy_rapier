@@ -234,41 +234,40 @@ pub struct MassProperties {
 impl MassProperties {
     /// Converts these mass-properties to Rapier’s `MassProperties` structure.
     #[cfg(feature = "dim2")]
-    pub fn into_rapier(self, physics_scale: f32) -> rapier::dynamics::MassProperties {
+    pub fn into_rapier(self) -> rapier::dynamics::MassProperties {
         rapier::dynamics::MassProperties::new(
-            (self.local_center_of_mass / physics_scale).into(),
+            self.local_center_of_mass.into(),
             self.mass,
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
-            (self.principal_inertia / (physics_scale * physics_scale)).into(),
+            self.principal_inertia.into(),
         )
     }
 
     /// Converts these mass-properties to Rapier’s `MassProperties` structure.
     #[cfg(feature = "dim3")]
-    pub fn into_rapier(self, physics_scale: f32) -> rapier::dynamics::MassProperties {
+    pub fn into_rapier(self) -> rapier::dynamics::MassProperties {
         rapier::dynamics::MassProperties::with_principal_inertia_frame(
-            (self.local_center_of_mass / physics_scale).into(),
+            self.local_center_of_mass.into(),
             self.mass,
-            (self.principal_inertia / (physics_scale * physics_scale)).into(),
+            self.principal_inertia.into(),
             self.principal_inertia_local_frame.into(),
         )
     }
 
     /// Converts Rapier’s `MassProperties` structure to `Self`.
-    pub fn from_rapier(mprops: rapier::dynamics::MassProperties, physics_scale: f32) -> Self {
+    pub fn from_rapier(mprops: rapier::dynamics::MassProperties) -> Self {
         #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
         Self {
             mass: mprops.mass(),
-            local_center_of_mass: (mprops.local_com * physics_scale).into(),
-            principal_inertia: (mprops.principal_inertia() * (physics_scale * physics_scale))
-                .into(),
+            local_center_of_mass: mprops.local_com.into(),
+            principal_inertia: mprops.principal_inertia().into(),
             #[cfg(feature = "dim3")]
             principal_inertia_local_frame: mprops.principal_inertia_local_frame.into(),
         }
     }
 }
 
-#[derive(Default, Component, Reflect, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[derive(Default, Debug, Component, Reflect, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 #[reflect(Component, PartialEq)]
 /// Flags affecting the behavior of the constraints solver for a given contact manifold.
 pub struct LockedAxes(u8);
@@ -491,6 +490,23 @@ impl Ccd {
     }
 }
 
+/// Sets the maximum prediction distance Soft Continuous Collision-Detection.
+///
+/// When set to 0, soft-CCD is disabled. Soft-CCD helps prevent tunneling especially of
+/// slow-but-thin to moderately fast objects. The soft CCD prediction distance indicates how
+/// far in the object’s path the CCD algorithm is allowed to inspect. Large values can impact
+/// performance badly by increasing the work needed from the broad-phase.
+///
+/// It is a generally cheaper variant of regular CCD (that can be enabled with
+/// [`rapier::dynamics::RigidBody::enable_ccd`] since it relies on predictive constraints instead of
+/// shape-cast and substeps.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
+#[reflect(Component, PartialEq)]
+pub struct SoftCcd {
+    /// The soft CCD prediction distance.
+    pub prediction: f32,
+}
+
 /// The dominance groups of a [`RigidBody`].
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
@@ -515,7 +531,10 @@ impl Dominance {
 #[reflect(Component, PartialEq)]
 pub struct Sleeping {
     /// The linear velocity below which the body can fall asleep.
-    pub linear_threshold: f32,
+    ///
+    /// The effictive threshold is obtained by multpilying this value by the
+    /// [`IntegrationParameters::length_unit`].
+    pub normalized_linear_threshold: f32,
     /// The angular velocity below which the body can fall asleep.
     pub angular_threshold: f32,
     /// Is this body sleeping?
@@ -526,7 +545,7 @@ impl Sleeping {
     /// Creates a components that disables sleeping for the associated [`RigidBody`].
     pub fn disabled() -> Self {
         Self {
-            linear_threshold: -1.0,
+            normalized_linear_threshold: -1.0,
             angular_threshold: -1.0,
             sleeping: false,
         }
@@ -536,7 +555,7 @@ impl Sleeping {
 impl Default for Sleeping {
     fn default() -> Self {
         Self {
-            linear_threshold: RigidBodyActivation::default_linear_threshold(),
+            normalized_linear_threshold: RigidBodyActivation::default_normalized_linear_threshold(),
             angular_threshold: RigidBodyActivation::default_angular_threshold(),
             sleeping: false,
         }

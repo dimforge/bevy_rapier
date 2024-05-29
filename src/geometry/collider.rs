@@ -491,6 +491,19 @@ impl Default for ContactForceEventThreshold {
     }
 }
 
+/// Sets the contact skin of the collider.
+///
+/// The contact skin acts as if the collider was enlarged with a skin of width `skin_thickness`
+/// around it, keeping objects further apart when colliding.
+///
+/// A non-zero contact skin can increase performance, and in some cases, stability. However
+/// it creates a small gap between colliding object (equal to the sum of their skin). If the
+/// skin is sufficiently small, this might not be visually significant or can be hidden by the
+/// rendering assets.
+#[derive(Copy, Clone, PartialEq, Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct ContactSkin(pub f32);
+
 /// Component which will be filled (if present) with a list of entities with which the current
 /// entity is currently in contact.
 ///
