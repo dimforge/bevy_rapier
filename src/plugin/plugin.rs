@@ -233,7 +233,8 @@ where
                 PostUpdate,
                 (
                     // Change any worlds needed before doing any calculations
-                    systems::apply_changing_worlds,
+                    systems::on_add_entity_with_parent,
+                    systems::on_change_world,
                     // Make sure to remove any dead bodies after changing_worlds but before everything else
                     // to avoid it deleting something right after adding it
                     systems::sync_removals,
