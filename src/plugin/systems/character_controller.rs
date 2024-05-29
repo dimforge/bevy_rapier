@@ -1,10 +1,12 @@
 use crate::control::CharacterCollision;
 use crate::dynamics::RapierRigidBodyHandle;
 use crate::geometry::RapierColliderHandle;
+use crate::plugin::get_world;
 use crate::plugin::RapierConfiguration;
 use crate::plugin::RapierContext;
 use crate::prelude::KinematicCharacterController;
 use crate::prelude::KinematicCharacterControllerOutput;
+use crate::prelude::PhysicsWorld;
 use crate::utils;
 use bevy::prelude::*;
 use rapier::math::Isometry;
@@ -40,8 +42,6 @@ pub fn update_character_controls(
     {
         let world = get_world(world_within, &mut context);
 
-        let physics_scale = world.physics_scale;
-
         if let (Some(raw_controller), Some(translation)) =
             (controller.to_raw(), controller.translation)
         {
@@ -59,11 +59,11 @@ pub fn update_character_controls(
 
             let parent_rigid_body = body_handle.map(|h| h.0).or_else(|| {
                 collider_handle
-                    .and_then(|h| context.colliders.get(h.0))
+                    .and_then(|h| world.colliders.get(h.0))
                     .and_then(|c| c.parent())
             });
             let entity_to_move = parent_rigid_body
-                .and_then(|rb| context.rigid_body_entity(rb))
+                .and_then(|rb| world.rigid_body_entity(rb))
                 .unwrap_or(entity);
 
             let (character_shape, character_pos) = if let Some((scaled_shape, tra, rot)) =
