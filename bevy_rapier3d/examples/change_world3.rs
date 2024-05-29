@@ -83,11 +83,15 @@ pub fn setup_physics(mut context: ResMut<RapierContext>, mut commands: Commands)
     commands.spawn((
         TransformBundle::from(Transform::from_xyz(0.0, 3.0, 0.0)),
         RigidBody::Dynamic,
-        Collider::cuboid(0.5, 0.5, 0.5),
-        ColliderDebugColor(Color::hsl(260.0, 1.0, 0.7)),
         PhysicsWorld {
             world_id: DEFAULT_WORLD_ID,
         },
         ChangeWorld,
-    ));
+    )).with_children(|p| {
+        p.spawn((
+            TransformBundle::from_transform(Transform::from_xyz(0.0, 0.0, 0.0)),
+            Collider::cuboid(0.5, 0.5, 0.5),
+            ColliderDebugColor(Color::hsl(260.0, 1.0, 0.7)),
+        ));
+    });
 }
