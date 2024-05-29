@@ -18,7 +18,7 @@ mod narrow_phase;
 #[allow(clippy::module_inception)]
 pub(crate) mod plugin;
 
-pub(crate) fn get_world<'a>(
+fn get_world<'a>(
     world_within: Option<&'a PhysicsWorld>,
     context: &'a mut RapierContext,
 ) -> &'a mut RapierWorld {
@@ -27,4 +27,17 @@ pub(crate) fn get_world<'a>(
     context
         .get_world_mut(world_id)
         .expect("World {world_id} does not exist")
+}
+
+fn find_item_and_world<T>(
+    context: &mut RapierContext,
+    item_finder: impl Fn(&mut RapierWorld) -> Option<T>,
+) -> Option<(&mut RapierWorld, T)> {
+    for (_, world) in context.worlds.iter_mut() {
+        if let Some(handle) = item_finder(world) {
+            return Some((world, handle));
+        }
+    }
+
+    None
 }

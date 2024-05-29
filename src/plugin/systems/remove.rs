@@ -7,6 +7,7 @@ use crate::dynamics::RigidBody;
 use crate::geometry::Collider;
 use crate::geometry::ColliderDisabled;
 use crate::geometry::RapierColliderHandle;
+use crate::plugin::find_item_and_world;
 use crate::plugin::RapierContext;
 use crate::prelude::MassModifiedEvent;
 use crate::prelude::RigidBodyDisabled;
@@ -40,31 +41,33 @@ pub fn sync_removals(
     /*
      * Rigid-bodies removal detection.
      */
-    let context = &mut *context;
     for entity in removed_bodies.read() {
-        if let Some(handle) = context.entity2body.remove(&entity) {
-            let _ = context.last_body_transform_set.remove(&handle);
-            context.bodies.remove(
+        if let Some((world, handle)) =
+            find_item_and_world(&mut context, |world| world.entity2body.remove(&entity))
+        {
+            let _ = world.last_body_transform_set.remove(&handle);
+            world.bodies.remove(
                 handle,
-                &mut context.islands,
-                &mut context.colliders,
-                &mut context.impulse_joints,
-                &mut context.multibody_joints,
+                &mut world.islands,
+                &mut world.colliders,
+                &mut world.impulse_joints,
+                &mut world.multibody_joints,
                 false,
             );
         }
     }
 
-    let context = &mut *context;
     for entity in orphan_bodies.iter() {
-        if let Some(handle) = context.entity2body.remove(&entity) {
-            let _ = context.last_body_transform_set.remove(&handle);
-            context.bodies.remove(
+        if let Some((world, handle)) =
+            find_item_and_world(&mut context, |world| world.entity2body.remove(&entity))
+        {
+            let _ = world.last_body_transform_set.remove(&handle);
+            world.bodies.remove(
                 handle,
-                &mut context.islands,
-                &mut context.colliders,
-                &mut context.impulse_joints,
-                &mut context.multibody_joints,
+                &mut world.islands,
+                &mut world.colliders,
+                &mut world.impulse_joints,
+                &mut world.multibody_joints,
                 false,
             );
         }
@@ -75,28 +78,32 @@ pub fn sync_removals(
      * Collider removal detection.
      */
     for entity in removed_colliders.read() {
-        if let Some(parent) = context.collider_parent(entity) {
-            mass_modified.send(parent.into());
-        }
+        if let Some((world, handle)) =
+            find_item_and_world(&mut context, |world| world.entity2collider.remove(&entity))
+        {
+            if let Some(parent) = world.collider_parent(entity) {
+                mass_modified.send(parent.into());
+            }
 
-        if let Some(handle) = context.entity2collider.remove(&entity) {
-            context
+            world
                 .colliders
-                .remove(handle, &mut context.islands, &mut context.bodies, true);
-            context.deleted_colliders.insert(handle, entity);
+                .remove(handle, &mut world.islands, &mut world.bodies, true);
+            world.deleted_colliders.insert(handle, entity);
         }
     }
 
     for entity in orphan_colliders.iter() {
-        if let Some(parent) = context.collider_parent(entity) {
-            mass_modified.send(parent.into());
-        }
+        if let Some((world, handle)) =
+            find_item_and_world(&mut context, |world| world.entity2collider.remove(&entity))
+        {
+            if let Some(parent) = world.collider_parent(entity) {
+                mass_modified.send(parent.into());
+            }
 
-        if let Some(handle) = context.entity2collider.remove(&entity) {
-            context
+            world
                 .colliders
-                .remove(handle, &mut context.islands, &mut context.bodies, true);
-            context.deleted_colliders.insert(handle, entity);
+                .remove(handle, &mut world.islands, &mut world.bodies, true);
+            world.deleted_colliders.insert(handle, entity);
         }
         commands.entity(entity).remove::<RapierColliderHandle>();
     }
@@ -105,14 +112,18 @@ pub fn sync_removals(
      * Impulse joint removal detection.
      */
     for entity in removed_impulse_joints.read() {
-        if let Some(handle) = context.entity2impulse_joint.remove(&entity) {
-            context.impulse_joints.remove(handle, true);
+        if let Some((world, handle)) = find_item_and_world(&mut context, |world| {
+            world.entity2impulse_joint.remove(&entity)
+        }) {
+            world.impulse_joints.remove(handle, true);
         }
     }
 
     for entity in orphan_impulse_joints.iter() {
-        if let Some(handle) = context.entity2impulse_joint.remove(&entity) {
-            context.impulse_joints.remove(handle, true);
+        if let Some((world, handle)) = find_item_and_world(&mut context, |world| {
+            world.entity2impulse_joint.remove(&entity)
+        }) {
+            world.impulse_joints.remove(handle, true);
         }
         commands.entity(entity).remove::<RapierImpulseJointHandle>();
     }
@@ -121,14 +132,18 @@ pub fn sync_removals(
      * Multibody joint removal detection.
      */
     for entity in removed_multibody_joints.read() {
-        if let Some(handle) = context.entity2multibody_joint.remove(&entity) {
-            context.multibody_joints.remove(handle, true);
+        if let Some((world, handle)) = find_item_and_world(&mut context, |world| {
+            world.entity2multibody_joint.remove(&entity)
+        }) {
+            world.multibody_joints.remove(handle, true);
         }
     }
 
     for entity in orphan_multibody_joints.iter() {
-        if let Some(handle) = context.entity2multibody_joint.remove(&entity) {
-            context.multibody_joints.remove(handle, true);
+        if let Some((world, handle)) = find_item_and_world(&mut context, |world| {
+            world.entity2multibody_joint.remove(&entity)
+        }) {
+            world.multibody_joints.remove(handle, true);
         }
         commands
             .entity(entity)
@@ -139,24 +154,30 @@ pub fn sync_removals(
      * Marker components removal detection.
      */
     for entity in removed_sensors.read() {
-        if let Some(handle) = context.entity2collider.get(&entity) {
-            if let Some(co) = context.colliders.get_mut(*handle) {
+        if let Some((world, handle)) = find_item_and_world(&mut context, |world| {
+            world.entity2collider.get(&entity).copied()
+        }) {
+            if let Some(co) = world.colliders.get_mut(handle) {
                 co.set_sensor(false);
             }
         }
     }
 
     for entity in removed_colliders_disabled.read() {
-        if let Some(handle) = context.entity2collider.get(&entity) {
-            if let Some(co) = context.colliders.get_mut(*handle) {
+        if let Some((world, handle)) = find_item_and_world(&mut context, |world| {
+            world.entity2collider.get(&entity).copied()
+        }) {
+            if let Some(co) = world.colliders.get_mut(handle) {
                 co.set_enabled(true);
             }
         }
     }
 
     for entity in removed_rigid_body_disabled.read() {
-        if let Some(handle) = context.entity2body.get(&entity) {
-            if let Some(rb) = context.bodies.get_mut(*handle) {
+        if let Some((world, handle)) = find_item_and_world(&mut context, |world| {
+            world.entity2body.get(&entity).copied()
+        }) {
+            if let Some(rb) = world.bodies.get_mut(handle) {
                 rb.set_enabled(true);
             }
         }

@@ -26,6 +26,8 @@ use bevy::prelude::*;
 use rapier::prelude::*;
 use std::collections::HashMap;
 
+use super::find_item_and_world;
+
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 use {
     crate::prelude::{AsyncCollider, AsyncSceneCollider},
@@ -1688,19 +1690,6 @@ pub fn apply_initial_rigid_body_impulses(
             impulse.reset();
         }
     }
-}
-
-fn find_item_and_world<T>(
-    context: &mut RapierContext,
-    item_finder: impl Fn(&mut RapierWorld) -> Option<T>,
-) -> Option<(&mut RapierWorld, T)> {
-    for (_, world) in context.worlds.iter_mut() {
-        if let Some(handle) = item_finder(world) {
-            return Some((world, handle));
-        }
-    }
-
-    None
 }
 
 /// System responsible for removing from Rapier the rigid-bodies/colliders/joints which had
