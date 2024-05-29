@@ -803,48 +803,6 @@ pub fn apply_rigid_body_user_changes(
     }
 }
 
-/// System responsible for applying changes the user made to a joint component.
-pub fn apply_joint_user_changes(
-    mut context: ResMut<RapierContext>,
-    changed_impulse_joints: Query<
-        (
-            &RapierImpulseJointHandle,
-            &ImpulseJoint,
-            Option<&PhysicsWorld>,
-        ),
-        Changed<ImpulseJoint>,
-    >,
-    changed_multibody_joints: Query<
-        (
-            &RapierMultibodyJointHandle,
-            &MultibodyJoint,
-            Option<&PhysicsWorld>,
-        ),
-        Changed<MultibodyJoint>,
-    >,
-) {
-    // TODO: right now, we only support propagating changes made to the joint data.
-    //       Re-parenting the joint isn’t supported yet.
-    for (handle, changed_joint, world_within) in changed_impulse_joints.iter() {
-        let world = get_world(world_within, &mut context);
-
-        if let Some(joint) = world.impulse_joints.get_mut(handle.0) {
-            joint.data = changed_joint.data.into_rapier(world.physics_scale);
-        }
-    }
-
-    for (handle, changed_joint, world_within) in changed_multibody_joints.iter() {
-        let world = get_world(world_within, &mut context);
-
-        // TODO: not sure this will always work properly, e.g., if the number of Dofs is changed.
-        if let Some((mb, link_id)) = world.multibody_joints.get_mut(handle.0) {
-            if let Some(link) = mb.link_mut(link_id) {
-                link.joint.data = changed_joint.data.into_rapier(world.physics_scale);
-            }
-        }
-    }
-}
-
 /// System responsible for writing the result of the last simulation step into our `bevy_rapier`
 /// components and the [`GlobalTransform`] component.
 pub fn writeback_rigid_bodies(
@@ -1731,81 +1689,6 @@ pub fn apply_initial_rigid_body_impulses(
         }
     }
 }
-
-/// System responsible for creating new Rapier joints from the related `bevy_rapier` components.
-pub fn init_joints(
-    mut commands: Commands,
-    mut context: ResMut<RapierContext>,
-    impulse_joints: Query<
-        (Entity, &ImpulseJoint, Option<&PhysicsWorld>),
-        Without<RapierImpulseJointHandle>,
-    >,
-    multibody_joints: Query<
-        (Entity, &MultibodyJoint, Option<&PhysicsWorld>),
-        Without<RapierMultibodyJointHandle>,
-    >,
-    parent_query: Query<&Parent>,
-) {
-    for (entity, joint, world_within) in impulse_joints.iter() {
-        let world = get_world(world_within, &mut context);
-
-        let mut target = None;
-        let mut body_entity = entity;
-        while target.is_none() {
-            target = world.entity2body.get(&body_entity).copied();
-            if let Ok(parent_entity) = parent_query.get(body_entity) {
-                body_entity = parent_entity.get();
-            } else {
-                break;
-            }
-        }
-
-        if let (Some(target), Some(source)) = (target, world.entity2body.get(&joint.parent)) {
-            let handle = world.impulse_joints.insert(
-                *source,
-                target,
-                joint.data.into_rapier(world.physics_scale),
-                true,
-            );
-            commands
-                .entity(entity)
-                .insert(RapierImpulseJointHandle(handle));
-            world.entity2impulse_joint.insert(entity, handle);
-        }
-    }
-
-    for (entity, joint, world_within) in multibody_joints.iter() {
-        let world = get_world(world_within, &mut context);
-
-        let target = world.entity2body.get(&entity);
-
-        if let (Some(target), Some(source)) = (target, world.entity2body.get(&joint.parent)) {
-            if let Some(handle) = world.multibody_joints.insert(
-                *source,
-                *target,
-                joint.data.into_rapier(world.physics_scale),
-                true,
-            ) {
-                commands
-                    .entity(entity)
-                    .insert(RapierMultibodyJointHandle(handle));
-                world.entity2multibody_joint.insert(entity, handle);
-            } else {
-                error!("Failed to create multibody joint: loop detected.")
-            }
-        }
-    }
-}
-
-// fn find_world(context: &mut RapierContext) -> &mut RapierWorld {
-//     for (_, world) in context.worlds.iter_mut() {
-//         if let Some(handle) = item_finder(world) {
-//             return Some((world, handle));
-//         }
-//     }
-
-//     None
-// }
 
 fn find_item_and_world<T>(
     context: &mut RapierContext,
