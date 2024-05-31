@@ -1,4 +1,4 @@
-<p align="center">
+<p align="center"> 
   <img src="https://www.rapier.rs/img/rapier_logo_color_textpath_dark.svg" alt="crates.io">
 </p>
 <p align="center">
