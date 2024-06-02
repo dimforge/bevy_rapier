@@ -14,17 +14,23 @@ use std::fmt::Debug;
 #[derive(Copy, Clone, Component, PartialEq, Debug)]
 pub struct ColliderDebugColor(pub Color);
 
-/// Marker to draw debug lines for colliders if `global` in [`DebugRenderContext`]
-/// is set to false.
-#[derive(Copy, Clone, Component, PartialEq, Debug)]
-pub struct ColliderDebug;
+/// Overrides the global [`DebugRenderContext`] for a single collider.
+#[derive(Copy, Clone, Component, Eq, PartialEq, Default, Debug)]
+pub enum ColliderDebug {
+    /// Always render the debug gizmos for this collider, regardless of global config.
+    #[default]
+    AlwaysRender,
+    /// Never render the debug gizmos for this collider, regardless of global confing.
+    NeverRender,
+}
 
 /// Plugin rensponsible for rendering (using lines) what Rapier "sees" when performing
 /// its physics simulation. This is typically useful to check proper
 /// alignment between colliders and your own visual assets.
 pub struct RapierDebugRenderPlugin {
-    /// Is the debug-rendering will be enabled for every entity? Or just for
-    /// collider entities with [`ColliderDebug`] component.
+    /// Whether to show debug gizmos for all colliders.
+    ///
+    /// Can be overriden for individual colliders by adding a [`ColliderDebug`] component.
     pub global: bool,
     /// Is the debug-rendering enabled?
     pub enabled: bool,
@@ -74,8 +80,9 @@ impl RapierDebugRenderPlugin {
 pub struct DebugRenderContext {
     /// Is the debug-rendering currently enabled?
     pub enabled: bool,
-    /// Is the debug-rendering enabled for every entity? Otherwise it will only work
-    /// for collider entities with [`ColliderDebug`] component.
+    /// Whether to show debug gizmos for all colliders.
+    ///
+    /// Can be overriden for individual colliders by adding a [`ColliderDebug`] component.
     pub global: bool,
     /// Pipeline responsible for rendering. Access `pipeline.mode` and `pipeline.style`
     /// to modify the set of rendered elements, and modify the default coloring rules.
@@ -111,7 +118,8 @@ impl Plugin for RapierDebugRenderPlugin {
 
 struct BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
     custom_colors: Query<'world, 'state, &'a ColliderDebugColor>,
-    visible_colliders: Option<Query<'world, 'state, &'a ColliderDebug>>,
+    global_visibility: bool,
+    override_visibility: Query<'world, 'state, &'a ColliderDebug>,
     context: &'b RapierContext,
     gizmos: Gizmos<'world, 'state>,
 }
@@ -132,15 +140,18 @@ impl<'world, 'state, 'a, 'b> BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
     }
 
     fn drawing_enabled(&self, object: DebugRenderObject) -> bool {
-        match (object, &self.visible_colliders) {
-            (DebugRenderObject::Collider(h, ..), Some(visible_colliders)) => {
-                let collider = self.context.colliders.get(h);
-                collider
-                    .map(|co| {
-                        let entity = Entity::from_bits(co.user_data as u64);
-                        visible_colliders.contains(entity)
-                    })
-                    .unwrap_or(false)
+        match object {
+            DebugRenderObject::Collider(h, ..) => {
+                let Some(collider) = self.context.colliders.get(h) else {
+                    return true;
+                };
+                let entity = Entity::from_bits(collider.user_data as u64);
+
+                if let Ok(collider_override) = self.override_visibility.get(entity) {
+                    matches!(collider_override, ColliderDebug::AlwaysRender)
+                } else {
+                    self.global_visibility
+                }
             }
             _ => true,
         }
@@ -194,16 +205,16 @@ fn debug_render_scene<'a>(
     mut render_context: ResMut<DebugRenderContext>,
     gizmos: Gizmos,
     custom_colors: Query<&'a ColliderDebugColor>,
-    visible_colliders: Query<&'a ColliderDebug>,
+    override_visibility: Query<&'a ColliderDebug>,
 ) {
     if !render_context.enabled {
         return;
     }
 
     let mut backend = BevyLinesRenderBackend {
-        global: render_context.global,
         custom_colors,
-        visible_colliders: render_context.global.then(|| visible_colliders),
+        global_visibility: render_context.global,
+        override_visibility,
         context: &rapier_context,
         gizmos,
     };

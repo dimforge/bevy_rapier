@@ -6,6 +6,9 @@
 
 - Derive `Debug` for `LockedAxes`.
 - Expose `is_sliding_down_slope` to both `MoveShapeOutput` and `KinematicCharacterControllerOutput`.
+- Added a way to configure which colliders should be debug rendered: `global` parameter for both 
+  `RapierDebugColliderPlugin` and `DebugRenderContext`, as well as individual collider setup via
+  a `ColliderDebug` component.
 
 ### Fix
 
