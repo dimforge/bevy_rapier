@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Modified
+
+- Renamed `has_any_active_contacts` to `has_any_active_contact` for better consistency with rapier.
+
 ### Added
 
 - Derive `Debug` for `LockedAxes`.
