@@ -1,8 +1,8 @@
 use crate::geometry::{Collider, CollisionGroups, ShapeCastHit};
 use crate::math::{Real, Rot, Vect};
+use crate::plugin::context::RapierWorld;
 use bevy::prelude::*;
 
-use crate::plugin::RapierContext;
 pub use rapier::control::CharacterAutostep;
 pub use rapier::control::CharacterLength;
 use rapier::prelude::{ColliderSet, QueryFilterFlags};
@@ -26,10 +26,10 @@ pub struct CharacterCollision {
 
 impl CharacterCollision {
     pub(crate) fn from_raw(
-        ctxt: &RapierContext,
+        world: &RapierWorld,
         c: &rapier::control::CharacterCollision,
     ) -> Option<Self> {
-        Self::from_raw_with_set(&ctxt.colliders, c, true)
+        Self::from_raw_with_set(&world.colliders, c, true)
     }
 
     pub(crate) fn from_raw_with_set(
@@ -37,7 +37,7 @@ impl CharacterCollision {
         c: &rapier::control::CharacterCollision,
         details_always_computed: bool,
     ) -> Option<Self> {
-        RapierContext::collider_entity_with_set(colliders, c.handle).map(|entity| {
+        RapierWorld::collider_entity_with_set(colliders, c.handle).map(|entity| {
             CharacterCollision {
                 entity,
                 character_translation: c.character_pos.translation.vector.into(),

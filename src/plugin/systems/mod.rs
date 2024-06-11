@@ -5,6 +5,7 @@ mod collider;
 mod joint;
 mod remove;
 mod rigid_body;
+mod worlds;
 mod writeback;
 
 pub use character_controller::*;
@@ -12,6 +13,7 @@ pub use collider::*;
 pub use joint::*;
 pub use remove::*;
 pub use rigid_body::*;
+pub use worlds::*;
 pub use writeback::*;
 
 use crate::dynamics::{RapierRigidBodyHandle, TransformInterpolation};
@@ -24,39 +26,44 @@ use bevy::prelude::*;
 
 /// System responsible for advancing the physics simulation, and updating the internal state
 /// for scene queries.
+#[allow(clippy::too_many_arguments)]
 pub fn step_simulation<Hooks>(
     mut context: ResMut<RapierContext>,
     config: Res<RapierConfiguration>,
     hooks: StaticSystemParam<Hooks>,
     time: Res<Time>,
     mut sim_to_render_time: ResMut<SimulationToRenderTime>,
-    collision_events: EventWriter<CollisionEvent>,
-    contact_force_events: EventWriter<ContactForceEvent>,
-    interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
+    mut collision_event_writer: EventWriter<CollisionEvent>,
+    mut contact_force_event_writer: EventWriter<ContactForceEvent>,
+    mut interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
 ) where
     Hooks: 'static + BevyPhysicsHooks,
     for<'w, 's> SystemParamItem<'w, 's, Hooks>: BevyPhysicsHooks,
 {
-    let context = &mut *context;
     let hooks_adapter = BevyPhysicsHooksAdapter::new(hooks.into_inner());
 
-    if config.physics_pipeline_active {
-        context.step_simulation(
-            config.gravity,
-            config.timestep_mode,
-            Some((collision_events, contact_force_events)),
-            &hooks_adapter,
-            &time,
-            &mut sim_to_render_time,
-            Some(interpolation_query),
-        );
-        context.deleted_colliders.clear();
-    } else {
-        context.propagate_modified_body_positions_to_colliders();
-    }
+    for (world_id, world) in context.worlds.iter_mut() {
+        if config.physics_pipeline_active {
+            world.step_simulation(
+                *world_id,
+                config.timestep_mode,
+                true,
+                &hooks_adapter,
+                &time,
+                &mut sim_to_render_time,
+                &mut Some(&mut interpolation_query),
+            );
 
-    if config.query_pipeline_active {
-        context.update_query_pipeline();
+            world.deleted_colliders.clear();
+
+            world.send_bevy_events(&mut collision_event_writer, &mut contact_force_event_writer);
+        } else {
+            world.propagate_modified_body_positions_to_colliders();
+        }
+
+        if config.query_pipeline_active {
+            world.update_query_pipeline();
+        }
     }
 }
 
@@ -78,7 +85,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        plugin::{NoUserData, RapierPhysicsPlugin},
+        plugin::{NoUserData, RapierPhysicsPlugin, DEFAULT_WORLD_ID},
         prelude::{Collider, CollidingEntities, RigidBody},
         utils,
     };
@@ -100,6 +107,7 @@ mod tests {
             entity1,
             entity2,
             CollisionEventFlags::SENSOR,
+            DEFAULT_WORLD_ID,
         ));
 
         app.update();
@@ -144,6 +152,7 @@ mod tests {
             entity1,
             entity2,
             CollisionEventFlags::SENSOR,
+            DEFAULT_WORLD_ID,
         ));
 
         app.update();
@@ -214,8 +223,12 @@ mod tests {
 
             let child_transform = app.world.entity(child).get::<GlobalTransform>().unwrap();
             let context = app.world.resource::<RapierContext>();
-            let child_handle = context.entity2body[&child];
-            let child_body = context.bodies.get(child_handle).unwrap();
+            let world = context
+                .get_world(DEFAULT_WORLD_ID)
+                .expect("The default world should exist.");
+
+            let child_handle = world.entity2body[&child];
+            let child_body = world.bodies.get(child_handle).unwrap();
             let body_transform = utils::iso_to_transform(child_body.position());
             assert_eq!(
                 GlobalTransform::from(body_transform),
@@ -276,10 +289,14 @@ mod tests {
                 .unwrap()
                 .compute_transform();
             let context = app.world.resource::<RapierContext>();
-            let parent_handle = context.entity2body[&parent];
-            let parent_body = context.bodies.get(parent_handle).unwrap();
+            let world = context
+                .get_world(DEFAULT_WORLD_ID)
+                .expect("The default world should exist.");
+
+            let parent_handle = world.entity2body[&parent];
+            let parent_body = world.bodies.get(parent_handle).unwrap();
             let child_collider_handle = parent_body.colliders()[0];
-            let child_collider = context.colliders.get(child_collider_handle).unwrap();
+            let child_collider = world.colliders.get(child_collider_handle).unwrap();
             let body_transform = utils::iso_to_transform(child_collider.position());
             approx::assert_relative_eq!(
                 body_transform.translation,
@@ -312,7 +329,7 @@ mod tests {
             app.add_plugins((
                 WindowPlugin::default(),
                 AssetPlugin::default(),
-                ScenePlugin::default(),
+                ScenePlugin,
                 RenderPlugin {
                     render_creation: RenderCreation::Automatic(WgpuSettings {
                         backends: None,

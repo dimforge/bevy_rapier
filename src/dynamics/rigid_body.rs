@@ -1,4 +1,5 @@
 use crate::math::Vect;
+use crate::plugin::context::WorldId;
 use bevy::prelude::*;
 use rapier::prelude::{
     Isometry, LockedAxes as RapierLockedAxes, RigidBodyActivation, RigidBodyHandle, RigidBodyType,
@@ -178,7 +179,7 @@ impl Default for AdditionalMassProperties {
 /// This only reads the mass from entities with a [`RigidBody`] component.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
-pub struct ReadMassProperties(MassProperties);
+pub struct ReadMassProperties(pub MassProperties);
 
 impl ReadMassProperties {
     /// Get the [`MassProperties`] of this [`RigidBody`].
@@ -456,6 +457,14 @@ impl Default for GravityScale {
     fn default() -> Self {
         Self(1.0)
     }
+}
+
+/// Denotes which world this body is a part of. If omitted, the default world is assumed.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Component, Reflect)]
+#[reflect(Component, PartialEq)]
+pub struct PhysicsWorld {
+    /// The world which this body is in. Use DEFAULT_WORLD_ID for the default world.
+    pub world_id: WorldId,
 }
 
 /// Information used for Continuous-Collision-Detection.

@@ -1,7 +1,5 @@
-use bevy::prelude::{FromWorld, Resource, World};
+use bevy::prelude::Resource;
 
-use crate::math::{Real, Vect};
-use crate::plugin::RapierContext;
 
 /// Difference between simulation and rendering time
 #[derive(Resource, Default)]
@@ -53,8 +51,6 @@ pub enum TimestepMode {
 #[derive(Resource, Copy, Clone, Debug)]
 /// A resource for specifying configuration information for the physics simulation
 pub struct RapierConfiguration {
-    /// Specifying the gravity of the physics simulation.
-    pub gravity: Vect,
     /// Specifies if the physics simulation is active and update the physics world.
     pub physics_pipeline_active: bool,
     /// Specifies if the query pipeline is active and update the query pipeline.
@@ -73,13 +69,9 @@ pub struct RapierConfiguration {
     pub force_update_from_transform_changes: bool,
 }
 
-impl FromWorld for RapierConfiguration {
-    fn from_world(world: &mut World) -> Self {
-        let length_unit = world
-            .get_resource::<RapierContext>()
-            .map(|ctxt| ctxt.integration_parameters.length_unit)
-            .unwrap_or(1.0);
-        Self::new(length_unit)
+impl Default for RapierConfiguration {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -90,9 +82,8 @@ impl RapierConfiguration {
     /// on that argument.
     ///
     /// The default gravity is automatically scaled by that length unit.
-    pub fn new(length_unit: Real) -> Self {
+    pub fn new() -> Self {
         Self {
-            gravity: Vect::Y * -9.81 * length_unit,
             physics_pipeline_active: true,
             query_pipeline_active: true,
             timestep_mode: TimestepMode::Variable {

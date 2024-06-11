@@ -92,13 +92,16 @@ pub fn cast_ray(
         };
 
         // Then cast the ray.
-        let hit = rapier_context.cast_ray(
-            ray.origin,
-            ray.direction.into(),
-            f32::MAX,
-            true,
-            QueryFilter::only_dynamic(),
-        );
+        let hit = rapier_context
+            .cast_ray(
+                DEFAULT_WORLD_ID,
+                ray.origin,
+                *ray.direction,
+                f32::MAX,
+                true,
+                QueryFilter::only_dynamic(),
+            )
+            .expect("Default world should exist.");
 
         if let Some((entity, _toi)) = hit {
             // Color in blue the entity we just hit.

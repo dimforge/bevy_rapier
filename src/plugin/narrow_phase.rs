@@ -1,9 +1,9 @@
+use super::context::RapierWorld;
 use crate::math::{Real, Vect};
-use crate::plugin::RapierContext;
 use bevy::prelude::*;
 use rapier::geometry::{Contact, ContactManifold, ContactPair, SolverContact, SolverFlags};
 
-impl RapierContext {
+impl RapierWorld {
     /// All the contact pairs involving the non-sensor collider attached to the given entity.
     ///
     /// The returned contact pairs identify pairs of colliders with intersecting bounding-volumes.
@@ -94,7 +94,7 @@ impl RapierContext {
 
 /// Read-only access to the properties of a contact manifold.
 pub struct ContactManifoldView<'a> {
-    context: &'a RapierContext,
+    context: &'a RapierWorld,
     /// The raw contact manifold from Rapier.
     pub raw: &'a ContactManifold,
 }
@@ -299,7 +299,7 @@ impl<'a> SolverContactView<'a> {
 
 /// Read-only access to the properties of a contact pair.
 pub struct ContactPairView<'a> {
-    context: &'a RapierContext,
+    context: &'a RapierWorld,
     /// The raw contact pair from Rapier.
     pub raw: &'a ContactPair,
 }

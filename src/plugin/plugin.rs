@@ -1,10 +1,7 @@
-use crate::pipeline::{CollisionEvent, ContactForceEvent};
-use crate::plugin::configuration::SimulationToRenderTime;
-use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
 use bevy::{
     ecs::{
-        event::{event_update_system, Events},
+        event::event_update_system,
         schedule::{ScheduleLabel, SystemConfigs},
         system::SystemParamItem,
     },
@@ -13,6 +10,10 @@ use bevy::{
 use bevy::{prelude::*, transform::TransformSystem};
 use rapier::dynamics::IntegrationParameters;
 use std::marker::PhantomData;
+
+pub use super::context::RapierWorld;
+pub use super::context::WorldId;
+pub use super::context::DEFAULT_WORLD_ID;
 
 /// No specific user-data is associated to the hooks.
 pub type NoUserData = ();
@@ -98,31 +99,31 @@ where
                 systems::init_rigid_bodies,
                 systems::init_colliders,
                 systems::init_joints,
-                systems::sync_removals,
-                // Run this here so the folowwing systems do not have a 1 frame delay.
+                // Run this here so the following systems do not have a 1 frame delay.
                 apply_deferred,
                 systems::apply_scale,
                 systems::apply_collider_user_changes,
                 systems::apply_rigid_body_user_changes,
                 systems::apply_joint_user_changes,
                 systems::apply_initial_rigid_body_impulses,
+                systems::sync_vel,
             )
                 .chain()
                 .into_configs(),
             PhysicsSet::StepSimulation => (
+                event_update_system::<CollisionEvent>,
+                event_update_system::<ContactForceEvent>,
                 systems::step_simulation::<PhysicsHooks>,
-                event_update_system::<CollisionEvent>
-                    .before(systems::step_simulation::<PhysicsHooks>),
-                event_update_system::<ContactForceEvent>
-                    .before(systems::step_simulation::<PhysicsHooks>),
             )
+                .chain()
                 .into_configs(),
             PhysicsSet::Writeback => (
                 systems::update_colliding_entities,
                 systems::writeback_rigid_bodies,
                 systems::writeback_mass_properties,
-                event_update_system::<MassModifiedEvent>.after(systems::writeback_mass_properties),
+                event_update_system::<MassModifiedEvent>,
             )
+                .chain()
                 .into_configs(),
         }
     }
@@ -191,17 +192,18 @@ where
             .register_type::<CollisionGroups>()
             .register_type::<SolverGroups>()
             .register_type::<ContactForceEventThreshold>()
-            .register_type::<ContactSkin>()
-            .register_type::<Group>();
+            .register_type::<Group>()
+            .register_type::<PhysicsWorld>()
+            .register_type::<ContactSkin>();
 
         app.insert_resource(SimulationToRenderTime::default())
-            .insert_resource(RapierContext {
+            .insert_resource(RapierContext::new(RapierWorld {
                 integration_parameters: IntegrationParameters {
                     length_unit: self.length_unit,
                     ..Default::default()
                 },
                 ..Default::default()
-            })
+            }))
             .insert_resource(Events::<CollisionEvent>::default())
             .insert_resource(Events::<ContactForceEvent>::default())
             .insert_resource(Events::<MassModifiedEvent>::default());
@@ -223,11 +225,23 @@ where
                     PhysicsSet::Writeback,
                 )
                     .chain()
-                    .before(TransformSystem::TransformPropagate),
+                    .before(TransformSystem::TransformPropagate)
+                    .after(systems::sync_removals),
             );
 
             // These *must* be in the main schedule currently so that they do not miss events.
-            app.add_systems(PostUpdate, (systems::sync_removals,));
+            app.add_systems(
+                PostUpdate,
+                (
+                    // Change any worlds needed before doing any calculations
+                    systems::on_add_entity_with_parent,
+                    systems::on_change_world,
+                    // Make sure to remove any dead bodies after changing_worlds but before everything else
+                    // to avoid it deleting something right after adding it
+                    systems::sync_removals,
+                )
+                    .chain(),
+            );
 
             app.add_systems(
                 self.schedule,

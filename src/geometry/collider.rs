@@ -341,6 +341,7 @@ bitflags::bitflags! {
 
         /// All of the groups.
         const ALL = u32::MAX;
+
         /// None of the groups.
         const NONE = 0;
     }

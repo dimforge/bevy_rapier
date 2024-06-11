@@ -1,10 +1,12 @@
 use crate::control::CharacterCollision;
 use crate::dynamics::RapierRigidBodyHandle;
 use crate::geometry::RapierColliderHandle;
+use crate::plugin::get_world;
 use crate::plugin::RapierConfiguration;
 use crate::plugin::RapierContext;
 use crate::prelude::KinematicCharacterController;
 use crate::prelude::KinematicCharacterControllerOutput;
+use crate::prelude::PhysicsWorld;
 use crate::utils;
 use bevy::prelude::*;
 use rapier::math::Isometry;
@@ -24,13 +26,22 @@ pub fn update_character_controls(
         Option<&RapierColliderHandle>,
         Option<&RapierRigidBodyHandle>,
         Option<&GlobalTransform>,
+        Option<&PhysicsWorld>,
     )>,
     mut transforms: Query<&mut Transform>,
 ) {
-    let context = &mut *context;
-    for (entity, mut controller, output, collider_handle, body_handle, glob_transform) in
-        character_controllers.iter_mut()
+    for (
+        entity,
+        mut controller,
+        output,
+        collider_handle,
+        body_handle,
+        glob_transform,
+        world_within,
+    ) in character_controllers.iter_mut()
     {
+        let world = get_world(world_within, &mut context);
+
         if let (Some(raw_controller), Some(translation)) =
             (controller.to_raw(), controller.translation)
         {
@@ -48,11 +59,11 @@ pub fn update_character_controls(
 
             let parent_rigid_body = body_handle.map(|h| h.0).or_else(|| {
                 collider_handle
-                    .and_then(|h| context.colliders.get(h.0))
+                    .and_then(|h| world.colliders.get(h.0))
                     .and_then(|c| c.parent())
             });
             let entity_to_move = parent_rigid_body
-                .and_then(|rb| context.rigid_body_entity(rb))
+                .and_then(|rb| world.rigid_body_entity(rb))
                 .unwrap_or(entity);
 
             let (character_shape, character_pos) = if let Some((scaled_shape, tra, rot)) =
@@ -60,15 +71,14 @@ pub fn update_character_controls(
             {
                 let mut shape_pos: Isometry<Real> = (*tra, *rot).into();
 
-                if let Some(body) = body_handle.and_then(|h| context.bodies.get(h.0)) {
+                if let Some(body) = body_handle.and_then(|h| world.bodies.get(h.0)) {
                     shape_pos = body.position() * shape_pos
                 } else if let Some(gtransform) = glob_transform {
                     shape_pos = utils::transform_to_iso(&gtransform.compute_transform()) * shape_pos
                 }
 
                 (&*scaled_shape.raw, shape_pos)
-            } else if let Some(collider) = collider_handle.and_then(|h| context.colliders.get(h.0))
-            {
+            } else if let Some(collider) = collider_handle.and_then(|h| world.colliders.get(h.0)) {
                 (collider.shape(), *collider.position())
             } else {
                 continue;
@@ -80,7 +90,7 @@ pub fn update_character_controls(
                 .custom_mass
                 .or_else(|| {
                     parent_rigid_body
-                        .and_then(|h| context.bodies.get(h))
+                        .and_then(|h| world.bodies.get(h))
                         .map(|rb| rb.mass())
                 })
                 .unwrap_or(0.0);
@@ -99,14 +109,14 @@ pub fn update_character_controls(
                 filter = filter.exclude_collider(excl_co)
             };
 
-            let collisions = &mut context.character_collisions_collector;
+            let collisions = &mut world.character_collisions_collector;
             collisions.clear();
 
             let movement = raw_controller.move_shape(
-                context.integration_parameters.dt,
-                &context.bodies,
-                &context.colliders,
-                &context.query_pipeline,
+                world.integration_parameters.dt,
+                &world.bodies,
+                &world.colliders,
+                &world.query_pipeline,
                 character_shape,
                 &character_pos,
                 translation.into(),
@@ -115,12 +125,12 @@ pub fn update_character_controls(
             );
 
             if controller.apply_impulse_to_dynamic_bodies {
-                for collision in &*collisions {
+                for collision in collisions.iter() {
                     raw_controller.solve_character_collision_impulses(
-                        context.integration_parameters.dt,
-                        &mut context.bodies,
-                        &context.colliders,
-                        &context.query_pipeline,
+                        world.integration_parameters.dt,
+                        &mut world.bodies,
+                        &world.colliders,
+                        &world.query_pipeline,
                         character_shape,
                         character_mass,
                         collision,
@@ -139,10 +149,10 @@ pub fn update_character_controls(
                 }
             }
 
-            let converted_collisions = context
+            let converted_collisions = world
                 .character_collisions_collector
                 .iter()
-                .filter_map(|c| CharacterCollision::from_raw(context, c));
+                .filter_map(|c| CharacterCollision::from_raw(world, c));
 
             if let Some(mut output) = output {
                 output.desired_translation = controller.translation.unwrap();
