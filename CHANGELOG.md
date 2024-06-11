@@ -14,6 +14,7 @@
 ### Fix
 
 - Fix rigidbodies never going to sleep when a scale was applied to their `Transform`.
+- Fix losing information about hit details when converting from `ShapeCastHit` in parry to `ShapeCastHit` in bevy_rapier
 
 ## v0.26.0 (05 May 2024)
 

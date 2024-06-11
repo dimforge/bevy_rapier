@@ -107,8 +107,8 @@ impl ShapeCastHit {
         hit: rapier::parry::query::ShapeCastHit,
         details_always_computed: bool,
     ) -> Self {
-        let details = if !details_always_computed
-            && hit.status != ShapeCastStatus::PenetratingOrWithinTargetDist
+        let details = if details_always_computed
+            || hit.status != ShapeCastStatus::PenetratingOrWithinTargetDist
         {
             Some(ShapeCastHitDetails {
                 witness1: hit.witness1.into(),
