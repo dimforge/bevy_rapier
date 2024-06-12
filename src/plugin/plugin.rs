@@ -3,7 +3,6 @@ use crate::plugin::configuration::SimulationToRenderTime;
 use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
 use bevy::ecs::{
-    event::{event_update_system, Events},
     intern::Interned,
     schedule::{ScheduleLabel, SystemConfigs},
     system::SystemParamItem,
@@ -107,16 +106,11 @@ where
             )
                 .chain()
                 .into_configs(),
-            PhysicsSet::StepSimulation => (
-                systems::step_simulation::<PhysicsHooks>,
-                event_update_system.before(systems::step_simulation::<PhysicsHooks>),
-            )
-                .into_configs(),
+            PhysicsSet::StepSimulation => (systems::step_simulation::<PhysicsHooks>).into_configs(),
             PhysicsSet::Writeback => (
                 systems::update_colliding_entities,
                 systems::writeback_rigid_bodies,
                 systems::writeback_mass_properties,
-                event_update_system.after(systems::writeback_mass_properties),
             )
                 .into_configs(),
         }
