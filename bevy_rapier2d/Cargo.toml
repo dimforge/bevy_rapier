@@ -52,7 +52,10 @@ log = "0.4"
 serde = { version = "1", features = ["derive"], optional = true }
 
 [dev-dependencies]
-bevy = { version = "0.14.0-rc.2", default-features = false, features = ["x11"] }
+bevy = { version = "0.14.0-rc.2", default-features = false, features = [
+    "x11",
+    "bevy_state",
+] }
 oorandom = "11"
 approx = "0.5.1"
 glam = { version = "0.27", features = ["approx"] }
