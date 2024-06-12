@@ -549,18 +549,15 @@ pub mod test {
         app.update();
 
         assert!(
-            app.world_mut().entity(cube).get::<Collider>().is_some(),
+            app.world().entity(cube).get::<Collider>().is_some(),
             "Collider component should be added for cube"
         );
         assert!(
-            app.world_mut().entity(capsule).get::<Collider>().is_none(),
+            app.world().entity(capsule).get::<Collider>().is_none(),
             "Collider component shouldn't be added for capsule"
         );
         assert!(
-            app.world_mut()
-                .entity(parent)
-                .get::<AsyncCollider>()
-                .is_none(),
+            app.world().entity(parent).get::<AsyncCollider>().is_none(),
             "AsyncSceneCollider component should be removed after Collider components creation"
         );
     }

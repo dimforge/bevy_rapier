@@ -51,9 +51,9 @@ pub fn setup_physics(mut commands: Commands) {
     let mut offset = -(num as f32) * (rad * 2.0 + rad) * 0.5;
     let mut color = 0;
     let colors = [
-        Color::hsl(220.0, 1.0, 0.3),
-        Color::hsl(180.0, 1.0, 0.3),
-        Color::hsl(260.0, 1.0, 0.7),
+        Hsla::hsl(220.0, 1.0, 0.3),
+        Hsla::hsl(180.0, 1.0, 0.3),
+        Hsla::hsl(260.0, 1.0, 0.7),
     ];
 
     for j in 0usize..20 {
