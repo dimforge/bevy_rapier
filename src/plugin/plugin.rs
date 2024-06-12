@@ -2,13 +2,11 @@ use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::configuration::SimulationToRenderTime;
 use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
-use bevy::{
-    ecs::{
-        event::{event_update_system, Events},
-        schedule::{ScheduleLabel, SystemConfigs},
-        system::SystemParamItem,
-    },
-    utils::intern::Interned,
+use bevy::ecs::{
+    event::{event_update_system, Events},
+    intern::Interned,
+    schedule::{ScheduleLabel, SystemConfigs},
+    system::SystemParamItem,
 };
 use bevy::{prelude::*, transform::TransformSystem};
 use rapier::dynamics::IntegrationParameters;
@@ -111,17 +109,14 @@ where
                 .into_configs(),
             PhysicsSet::StepSimulation => (
                 systems::step_simulation::<PhysicsHooks>,
-                event_update_system::<CollisionEvent>
-                    .before(systems::step_simulation::<PhysicsHooks>),
-                event_update_system::<ContactForceEvent>
-                    .before(systems::step_simulation::<PhysicsHooks>),
+                event_update_system.before(systems::step_simulation::<PhysicsHooks>),
             )
                 .into_configs(),
             PhysicsSet::Writeback => (
                 systems::update_colliding_entities,
                 systems::writeback_rigid_bodies,
                 systems::writeback_mass_properties,
-                event_update_system::<MassModifiedEvent>.after(systems::writeback_mass_properties),
+                event_update_system.after(systems::writeback_mass_properties),
             )
                 .into_configs(),
         }
@@ -241,7 +236,7 @@ where
 
             // Warn user if the timestep mode isn't in Fixed
             if self.schedule.as_dyn_eq().dyn_eq(FixedUpdate.as_dyn_eq()) {
-                let config = app.world.resource::<RapierConfiguration>();
+                let config = app.world_mut().resource::<RapierConfiguration>();
                 match config.timestep_mode {
                     TimestepMode::Fixed { .. } => {}
                     mode => {
