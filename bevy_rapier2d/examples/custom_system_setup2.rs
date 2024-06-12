@@ -4,7 +4,7 @@ use bevy_rapier2d::prelude::*;
 fn main() {
     let mut app = App::new();
 
-    app.insert_resource(ClearColor(Color::rgb(
+    app.insert_resource(ClearColor(Color::srgb(
         0xF9 as f32 / 255.0,
         0xF9 as f32 / 255.0,
         0xFF as f32 / 255.0,

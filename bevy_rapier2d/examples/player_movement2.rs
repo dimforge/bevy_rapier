@@ -35,7 +35,7 @@ pub fn spawn_player(mut commands: Commands, mut rapier_config: ResMut<RapierConf
     commands.spawn((
         SpriteBundle {
             sprite: Sprite {
-                color: Color::rgb(0.0, 0.0, 0.0),
+                color: Color::srgb(0.0, 0.0, 0.0),
                 custom_size: Some(Vec2::new(sprite_size, sprite_size)),
                 ..Default::default()
             },
