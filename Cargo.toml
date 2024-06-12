@@ -10,7 +10,7 @@ opt-level = 1
 codegen-units = 1
 
 [patch.crates-io]
-nalgebra = { path = "../nalgebra" }
+#nalgebra = { path = "../nalgebra" }
 #parry2d = { path = "../parry/crates/parry2d" }
 #parry3d = { path = "../parry/crates/parry3d" }
 #rapier2d = { path = "../rapier/crates/rapier2d" }
