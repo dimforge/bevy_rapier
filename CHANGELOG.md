@@ -5,7 +5,7 @@
 ### Modified
 
 - Renamed `has_any_active_contacts` to `has_any_active_contact` for better consistency with rapier.
-- Update to bevy `0.13`.
+- Update to bevy `0.14`.
 - `ColliderDebugColor`'s property is now a `bevy::color::Hsla`.
 
 ### Added
