@@ -748,7 +748,7 @@ impl RapierContext {
     /// * `shape_vel` - The constant velocity of the shape to cast (i.e. the cast direction).
     /// * `shape` - The shape to cast.
     /// * `max_toi` - The maximum time-of-impact that can be reported by this cast. This effectively
-    ///   limits the distance traveled by the shape to `shapeVel.norm() * maxToi`.
+    ///   limits the distance traveled by the shape to `shape_vel.norm() * maxToi`.
     /// * `stop_at_penetration` - If the casted shape starts in a penetration state with any
     ///    collider, two results are possible. If `stop_at_penetration` is `true` then, the
     ///    result will have a `toi` equal to `start_time`. If `stop_at_penetration` is `false`
