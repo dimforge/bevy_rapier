@@ -454,7 +454,7 @@ impl RapierContext {
                         query_pipeline,
                         (&scaled_shape).into(),
                         shape_mass,
-                        &*collisions,
+                        collisions.iter().copied(),
                         filter,
                     )
                 }

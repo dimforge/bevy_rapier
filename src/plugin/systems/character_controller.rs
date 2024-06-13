@@ -122,7 +122,7 @@ pub fn update_character_controls(
                     &context.query_pipeline,
                     character_shape,
                     character_mass,
-                    &*collisions,
+                    collisions.iter().copied(),
                     filter,
                 )
             }
