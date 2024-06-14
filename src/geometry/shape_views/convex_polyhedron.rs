@@ -2,6 +2,7 @@ use crate::math::Vect;
 use rapier::parry::shape::ConvexPolyhedron;
 
 /// Read-only access to the properties of a convex polyhedron.
+#[derive(Copy, Clone)]
 pub struct ConvexPolyhedronView<'a> {
     /// The raw shape from Rapier.
     pub raw: &'a ConvexPolyhedron,

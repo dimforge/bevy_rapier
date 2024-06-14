@@ -4,7 +4,6 @@ use std::fmt;
 use {crate::geometry::VHACDParameters, bevy::utils::HashMap};
 
 use bevy::prelude::*;
-use bevy::reflect::FromReflect;
 
 use bevy::utils::HashSet;
 use rapier::geometry::Shape;
@@ -51,12 +50,28 @@ pub enum ComputedColliderShape {
     /// Triangle-mesh.
     #[default]
     TriMesh,
+    /// Convex hull.
+    ConvexHull,
     /// Convex decomposition.
     ConvexDecomposition(VHACDParameters),
 }
 
-/// A geometric entity that can be attached to a body so it can be affected by contacts
+/// A geometric entity that can be attached to a [`RigidBody`] so it can be affected by contacts
 /// and intersection queries.
+///
+/// Related components:
+/// - [`ColliderMassProperties`]
+/// - [`Friction`]
+/// - [`Restitution`]
+/// - [`Sensor`]
+/// - [`CollisionGroups`]
+/// - [`SolverGroups`]
+/// - [`ActiveCollisionTypes`]
+/// - [`ActiveEvents`]
+/// - [`ContactForceEventThreshold`]
+/// - [`CollidingEntities`]
+/// - [`ColliderScale`]
+/// - [`ColliderDisabled`]
 #[derive(Component, Clone)] // TODO: Reflect
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct Collider {
@@ -88,8 +103,8 @@ impl fmt::Debug for Collider {
     }
 }
 
-/// Overwrites the default application of [`GlobalTransform::scale`] to collider shapes.
-#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect, FromReflect)]
+/// Overwrites the default application of [`GlobalTransform::scale`] to a [`Collider`]'s shapes.
+#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 pub enum ColliderScale {
     /// This scale will be multiplied with the scale in the [`GlobalTransform`] component
     /// before being applied to the collider.
@@ -98,13 +113,13 @@ pub enum ColliderScale {
     Absolute(Vect),
 }
 
-/// Indicates whether or not the collider is a sensor.
-#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Component, Reflect, FromReflect)]
+/// Indicates whether or not the [`Collider`] is a sensor.
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct Sensor;
 
-/// Custom mass-properties of a collider.
-#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect, FromReflect)]
+/// Custom mass-properties of a [`Collider`].
+#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub enum ColliderMassProperties {
     /// The mass-properties are computed automatically from the collider’s shape and this density.
@@ -121,8 +136,8 @@ impl Default for ColliderMassProperties {
     }
 }
 
-/// The friction affecting a collider.
-#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect, FromReflect)]
+/// The friction affecting a [`Collider`].
+#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct Friction {
     /// The friction coefficient of a collider.
@@ -163,8 +178,8 @@ impl Friction {
     }
 }
 
-/// The restitution affecting a collider.
-#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect, FromReflect)]
+/// The restitution affecting a [`Collider`].
+#[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct Restitution {
     /// The restitution coefficient of a collider.
@@ -205,13 +220,15 @@ impl Default for Restitution {
     }
 }
 
+#[derive(Component, Reflect, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[reflect(Component, Hash, PartialEq)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+/// Flags affecting whether or not collision-detection happens between two colliders
+/// depending on the type of rigid-bodies they are attached to.
+pub struct ActiveCollisionTypes(u16);
+
 bitflags::bitflags! {
-    #[derive(Component, Reflect, FromReflect)]
-    #[reflect(Component, Hash, PartialEq)]
-    #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-    /// Flags affecting whether or not collision-detection happens between two colliders
-    /// depending on the type of rigid-bodies they are attached to.
-    pub struct ActiveCollisionTypes: u16 {
+    impl ActiveCollisionTypes: u16 {
         /// Enable collision-detection between a collider attached to a dynamic body
         /// and another collider attached to a dynamic body.
         const DYNAMIC_DYNAMIC = 0b0000_0000_0000_0001;
@@ -244,17 +261,19 @@ impl Default for ActiveCollisionTypes {
 
 impl From<ActiveCollisionTypes> for rapier::geometry::ActiveCollisionTypes {
     fn from(collision_types: ActiveCollisionTypes) -> rapier::geometry::ActiveCollisionTypes {
-        rapier::geometry::ActiveCollisionTypes::from_bits(collision_types.bits)
+        rapier::geometry::ActiveCollisionTypes::from_bits(collision_types.bits())
             .expect("Internal error: invalid active events conversion.")
     }
 }
 
+/// A bit mask identifying groups for interaction.
+#[derive(Component, Reflect, Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[reflect(Component, Hash, PartialEq)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+pub struct Group(u32);
+
 bitflags::bitflags! {
-    /// A bit mask identifying groups for interaction.
-    #[derive(Component, Reflect, FromReflect)]
-    #[reflect(Component, Hash, PartialEq)]
-    #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-    pub struct Group: u32 {
+    impl Group: u32 {
         /// The group n°1.
         const GROUP_1 = 1 << 0;
         /// The group n°2.
@@ -348,7 +367,7 @@ impl Default for Group {
 /// ```ignore
 /// (self.memberships & rhs.filter) != 0 && (rhs.memberships & self.filter) != 0
 /// ```
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash, Component, Reflect, FromReflect)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash, Component, Reflect)]
 #[reflect(Component, Hash, PartialEq)]
 pub struct CollisionGroups {
     /// Groups memberships.
@@ -380,7 +399,7 @@ impl From<CollisionGroups> for InteractionGroups {
 /// Pairwise constraints resolution filtering using bit masks.
 ///
 /// This follows the same rules as the `CollisionGroups`.
-#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Hash, Component, Reflect, FromReflect)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Hash, Component, Reflect)]
 #[reflect(Component, Hash, PartialEq)]
 pub struct SolverGroups {
     /// Groups memberships.
@@ -409,12 +428,14 @@ impl From<SolverGroups> for InteractionGroups {
     }
 }
 
+#[derive(Default, Component, Reflect, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[reflect(Component)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+/// Flags affecting the behavior of the constraints solver for a given contact manifold.
+pub struct ActiveHooks(u32);
+
 bitflags::bitflags! {
-    #[derive(Default, Component, Reflect, FromReflect)]
-    #[reflect(Component)]
-    #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-    /// Flags affecting the behavior of the constraints solver for a given contact manifold.
-    pub struct ActiveHooks: u32 {
+    impl ActiveHooks: u32 {
         /// If set, Rapier will call `PhysicsHooks::filter_contact_pair` whenever relevant.
         const FILTER_CONTACT_PAIRS = 0b0001;
         /// If set, Rapier will call `PhysicsHooks::filter_intersection_pair` whenever relevant.
@@ -426,35 +447,40 @@ bitflags::bitflags! {
 
 impl From<ActiveHooks> for rapier::pipeline::ActiveHooks {
     fn from(active_hooks: ActiveHooks) -> rapier::pipeline::ActiveHooks {
-        rapier::pipeline::ActiveHooks::from_bits(active_hooks.bits)
+        rapier::pipeline::ActiveHooks::from_bits(active_hooks.bits())
             .expect("Internal error: invalid active events conversion.")
     }
 }
 
+#[derive(Default, Component, Reflect, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[reflect(Component)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+/// Flags affecting the events generated for this [`Collider`].
+pub struct ActiveEvents(u32);
+
 bitflags::bitflags! {
-    #[derive(Default, Component, Reflect, FromReflect)]
-    #[reflect(Component)]
-    #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-    /// Flags affecting the events generated for this collider.
-    pub struct ActiveEvents: u32 {
+    impl ActiveEvents: u32 {
         /// If set, Rapier will call `EventHandler::handle_collision_event`
-        /// whenever relevant for this collider.
+        /// whenever relevant for this [`Collider`].
         const COLLISION_EVENTS = 0b0001;
         /// If set, Rapier will call `EventHandler::handle_contact_force_event`
-        /// whenever relevant for this collider.
+        /// whenever relevant for this [`Collider`].
         const CONTACT_FORCE_EVENTS = 0b0010;
     }
 }
 
 impl From<ActiveEvents> for rapier::pipeline::ActiveEvents {
     fn from(active_events: ActiveEvents) -> rapier::pipeline::ActiveEvents {
-        rapier::pipeline::ActiveEvents::from_bits(active_events.bits)
+        rapier::pipeline::ActiveEvents::from_bits(active_events.bits())
             .expect("Internal error: invalid active events conversion.")
     }
 }
 
-/// The total force magnitude beyond which a contact force event can be emitted.
-#[derive(Copy, Clone, PartialEq, Component, Reflect, FromReflect)]
+/// The total force magnitude beyond which a [`ContactForceEvent`] can be emitted.
+///
+/// This requires that the [`ActiveEvents::CONTACT_FORCE_EVENTS`] flag is set on the
+/// entity.
+#[derive(Copy, Clone, PartialEq, Component, Reflect)]
 #[reflect(Component)]
 pub struct ContactForceEventThreshold(pub f32);
 
@@ -464,9 +490,26 @@ impl Default for ContactForceEventThreshold {
     }
 }
 
+/// Sets the contact skin of the collider.
+///
+/// The contact skin acts as if the collider was enlarged with a skin of width `skin_thickness`
+/// around it, keeping objects further apart when colliding.
+///
+/// A non-zero contact skin can increase performance, and in some cases, stability. However
+/// it creates a small gap between colliding object (equal to the sum of their skin). If the
+/// skin is sufficiently small, this might not be visually significant or can be hidden by the
+/// rendering assets.
+#[derive(Copy, Clone, PartialEq, Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct ContactSkin(pub f32);
+
 /// Component which will be filled (if present) with a list of entities with which the current
 /// entity is currently in contact.
-#[derive(Component, Default, Reflect, FromReflect)]
+///
+/// This currently only updates when on an entity with a `Collider`, and if the
+/// [`ActiveEvents::COLLISION_EVENTS`] is set on this entity or the entity it
+/// collided with.
+#[derive(Component, Default, Reflect)]
 #[reflect(Component)]
 pub struct CollidingEntities(pub(crate) HashSet<Entity>);
 
@@ -496,7 +539,7 @@ impl CollidingEntities {
 }
 
 /// Indicates whether or not the collider is disabled explicitly by the user.
-#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Component, Reflect, FromReflect)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct ColliderDisabled;
 

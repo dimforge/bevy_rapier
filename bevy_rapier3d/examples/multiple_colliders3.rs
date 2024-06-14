@@ -3,20 +3,21 @@ use bevy_rapier3d::prelude::*;
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(
+        .insert_resource(ClearColor(Color::srgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .add_plugins(DefaultPlugins)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierDebugRenderPlugin::default())
-        .add_startup_system(setup_graphics)
-        .add_startup_system(setup_physics)
+        .add_plugins((
+            DefaultPlugins,
+            RapierPhysicsPlugin::<NoUserData>::default(),
+            RapierDebugRenderPlugin::default(),
+        ))
+        .add_systems(Startup, (setup_graphics, setup_physics))
         .run();
 }
 
-fn setup_graphics(mut commands: Commands) {
+pub fn setup_graphics(mut commands: Commands) {
     commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(-30.0, 30.0, 100.0)
             .looking_at(Vec3::new(0.0, 10.0, 0.0), Vec3::Y),
@@ -50,9 +51,9 @@ pub fn setup_physics(mut commands: Commands) {
     let mut offset = -(num as f32) * (rad * 2.0 + rad) * 0.5;
     let mut color = 0;
     let colors = [
-        Color::hsl(220.0, 1.0, 0.3),
-        Color::hsl(180.0, 1.0, 0.3),
-        Color::hsl(260.0, 1.0, 0.7),
+        Hsla::hsl(220.0, 1.0, 0.3),
+        Hsla::hsl(180.0, 1.0, 0.3),
+        Hsla::hsl(260.0, 1.0, 0.7),
     ];
 
     for j in 0usize..20 {

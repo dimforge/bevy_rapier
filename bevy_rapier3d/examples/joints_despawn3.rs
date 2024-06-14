@@ -1,29 +1,35 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
+#[derive(Component)]
+pub struct Despawn;
+
 #[derive(Resource, Default)]
 pub struct DespawnResource {
-    entities: Vec<Entity>,
+    timer: Timer,
 }
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(
+        .insert_resource(ClearColor(Color::srgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
         .insert_resource(DespawnResource::default())
-        .add_plugins(DefaultPlugins)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierDebugRenderPlugin::default())
-        .add_startup_system(setup_graphics)
-        .add_startup_system(setup_physics)
-        .add_system(despawn)
+        .add_plugins((
+            DefaultPlugins,
+            RapierPhysicsPlugin::<NoUserData>::default(),
+            RapierDebugRenderPlugin::default(),
+        ))
+        .add_systems(Startup, (setup_graphics, setup_physics))
+        .add_systems(Update, despawn)
         .run();
 }
 
-fn setup_graphics(mut commands: Commands) {
+pub fn setup_graphics(mut commands: Commands, mut res: ResMut<DespawnResource>) {
+    res.timer = Timer::from_seconds(5.0, TimerMode::Once);
+
     commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(15.0, 5.0, 42.0)
             .looking_at(Vec3::new(13.0, 1.0, 1.0), Vec3::Y),
@@ -31,12 +37,7 @@ fn setup_graphics(mut commands: Commands) {
     });
 }
 
-fn create_prismatic_joints(
-    commands: &mut Commands,
-    origin: Vect,
-    num: usize,
-    despawn: &mut DespawnResource,
-) {
+fn create_prismatic_joints(commands: &mut Commands, origin: Vect, num: usize) {
     let rad = 0.4;
     let shift = 1.0;
 
@@ -62,27 +63,22 @@ fn create_prismatic_joints(
             .limits([-2.0, 2.0]);
         let joint = ImpulseJoint::new(curr_parent, prism);
 
-        curr_parent = commands
-            .spawn((
-                TransformBundle::from(Transform::from_xyz(origin.x, origin.y, origin.z + dz)),
-                RigidBody::Dynamic,
-                Collider::cuboid(rad, rad, rad),
-                joint,
-            ))
-            .id();
+        let mut entity = commands.spawn((
+            TransformBundle::from(Transform::from_xyz(origin.x, origin.y, origin.z + dz)),
+            RigidBody::Dynamic,
+            Collider::cuboid(rad, rad, rad),
+            joint,
+        ));
+
+        curr_parent = entity.id();
 
         if i == 2 {
-            despawn.entities.push(curr_parent);
+            entity.insert(Despawn);
         }
     }
 }
 
-fn create_revolute_joints(
-    commands: &mut Commands,
-    origin: Vec3,
-    num: usize,
-    despawn: &mut DespawnResource,
-) {
+fn create_revolute_joints(commands: &mut Commands, origin: Vec3, num: usize) {
     let rad = 0.4;
     let shift = 2.0;
 
@@ -142,20 +138,14 @@ fn create_revolute_joints(
         curr_parent = handles[3];
 
         if i == 1 {
-            despawn.entities.push(handles[0]);
-            despawn.entities.push(handles[1]);
-            despawn.entities.push(handles[2]);
-            despawn.entities.push(handles[3]);
+            for e in handles {
+                commands.entity(e).insert(Despawn);
+            }
         }
     }
 }
 
-fn create_fixed_joints(
-    commands: &mut Commands,
-    origin: Vec3,
-    num: usize,
-    despawn: &mut ResMut<DespawnResource>,
-) {
+fn create_fixed_joints(commands: &mut Commands, origin: Vec3, num: usize) {
     let rad = 0.4;
     let shift = 1.0;
 
@@ -208,8 +198,7 @@ fn create_fixed_joints(
                     // NOTE: we want to attach multiple impulse joints to this entity, so
                     //       we need to add the components to children of the entity. Otherwise
                     //       the second joint component would just overwrite the first one.
-                    let entity = children.spawn(ImpulseJoint::new(parent_entity, joint)).id();
-                    despawn.entities.push(entity);
+                    children.spawn((ImpulseJoint::new(parent_entity, joint), Despawn));
                 });
             }
 
@@ -218,7 +207,7 @@ fn create_fixed_joints(
     }
 }
 
-fn create_ball_joints(commands: &mut Commands, num: usize, despawn: &mut DespawnResource) {
+fn create_ball_joints(commands: &mut Commands, num: usize) {
     let rad = 0.4;
     let shift = 1.0;
 
@@ -251,9 +240,9 @@ fn create_ball_joints(commands: &mut Commands, num: usize, despawn: &mut Despawn
                     // NOTE: we want to attach multiple impulse joints to this entity, so
                     //       we need to add the components to children of the entity. Otherwise
                     //       the second joint component would just overwrite the first one.
-                    let entity = children.spawn(ImpulseJoint::new(parent_entity, joint)).id();
+                    let mut entity = children.spawn(ImpulseJoint::new(parent_entity, joint));
                     if i == 2 {
-                        despawn.entities.push(entity);
+                        entity.insert(Despawn);
                     }
                 });
             }
@@ -276,19 +265,23 @@ fn create_ball_joints(commands: &mut Commands, num: usize, despawn: &mut Despawn
     }
 }
 
-pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource>) {
-    create_prismatic_joints(&mut commands, Vec3::new(20.0, 10.0, 0.0), 5, &mut despawn);
-    create_revolute_joints(&mut commands, Vec3::new(20.0, 0.0, 0.0), 3, &mut despawn);
-    create_fixed_joints(&mut commands, Vec3::new(0.0, 10.0, 0.0), 5, &mut despawn);
-    create_ball_joints(&mut commands, 15, &mut despawn);
+pub fn setup_physics(mut commands: Commands) {
+    create_prismatic_joints(&mut commands, Vec3::new(20.0, 10.0, 0.0), 5);
+    create_revolute_joints(&mut commands, Vec3::new(20.0, 0.0, 0.0), 3);
+    create_fixed_joints(&mut commands, Vec3::new(0.0, 10.0, 0.0), 5);
+    create_ball_joints(&mut commands, 15);
 }
 
-pub fn despawn(mut commands: Commands, time: Res<Time>, mut despawn: ResMut<DespawnResource>) {
-    if time.elapsed_seconds() > 5.0 {
-        for entity in &despawn.entities {
+pub fn despawn(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut despawn: ResMut<DespawnResource>,
+    query: Query<Entity, With<Despawn>>,
+) {
+    if despawn.timer.tick(time.delta()).finished() {
+        for entity in &query {
             println!("Despawning joint entity");
-            commands.entity(*entity).despawn();
+            commands.entity(entity).despawn();
         }
-        despawn.entities.clear();
     }
 }

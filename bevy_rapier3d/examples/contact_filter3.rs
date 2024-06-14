@@ -30,16 +30,17 @@ impl BevyPhysicsHooks for SameUserDataFilter<'_, '_> {
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(
+        .insert_resource(ClearColor(Color::srgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .add_plugins(DefaultPlugins)
-        .add_plugin(RapierPhysicsPlugin::<SameUserDataFilter>::default())
-        .add_plugin(RapierDebugRenderPlugin::default())
-        .add_startup_system(setup_graphics)
-        .add_startup_system(setup_physics)
+        .add_plugins((
+            DefaultPlugins,
+            RapierPhysicsPlugin::<SameUserDataFilter>::default(),
+            RapierDebugRenderPlugin::default(),
+        ))
+        .add_systems(Startup, (setup_graphics, setup_physics))
         .run();
 }
 
@@ -80,7 +81,7 @@ pub fn setup_physics(mut commands: Commands) {
     let centery = shift / 2.0;
     let mut group_id = 0;
     let tags = [CustomFilterTag::GroupA, CustomFilterTag::GroupB];
-    let colors = [Color::hsl(220.0, 1.0, 0.3), Color::hsl(260.0, 1.0, 0.7)];
+    let colors = [Hsla::hsl(220.0, 1.0, 0.3), Hsla::hsl(260.0, 1.0, 0.7)];
 
     for i in 0..num {
         for j in 0usize..num * 5 {

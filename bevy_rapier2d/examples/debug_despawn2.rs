@@ -8,12 +8,14 @@ use bevy_rapier2d::prelude::*;
 fn main() {
     App::new()
         .init_resource::<Game>()
-        .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
-        .add_plugins(DefaultPlugins)
-        .add_startup_system(setup_game)
-        .add_system(cube_sleep_detection)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-        .add_plugin(RapierDebugRenderPlugin::default())
+        .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0)))
+        .add_plugins((
+            DefaultPlugins,
+            RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0),
+            RapierDebugRenderPlugin::default(),
+        ))
+        .add_systems(Startup, setup_game)
+        .add_systems(Update, cube_sleep_detection)
         .run();
 }
 
@@ -44,7 +46,7 @@ impl Stats {
 }
 
 #[derive(Resource)]
-struct Game {
+pub struct Game {
     n_lanes: usize,
     n_rows: usize,
     stats: Stats,
@@ -74,10 +76,12 @@ impl Default for Game {
 }
 
 fn byte_rgb(r: u8, g: u8, b: u8) -> Color {
-    Color::rgb(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0)
+    Color::srgb(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0)
 }
 
-fn setup_game(mut commands: Commands, mut game: ResMut<Game>) {
+pub fn setup_game(mut commands: Commands, mut game: ResMut<Game>) {
+    game.current_cube_joints = vec![];
+
     game.cube_colors = vec![
         byte_rgb(0, 244, 243),
         byte_rgb(238, 243, 0),
@@ -129,7 +133,7 @@ fn setup_board(commands: &mut Commands, game: &Game) {
     commands.spawn((
         SpriteBundle {
             sprite: Sprite {
-                color: Color::rgb(0.5, 0.5, 0.5),
+                color: Color::srgb(0.5, 0.5, 0.5),
                 custom_size: Some(Vec2::new(game.n_lanes as f32 * 30.0, 60.0)),
                 ..Default::default()
             },
@@ -217,7 +221,7 @@ fn spawn_block(
         .id()
 }
 
-fn cube_sleep_detection(
+pub fn cube_sleep_detection(
     mut commands: Commands,
     mut game: ResMut<Game>,
     block_query: Query<(Entity, &GlobalTransform)>,
@@ -258,7 +262,7 @@ fn clear_filled_rows(
     }
 
     for row_blocks in blocks_per_row {
-        if row_blocks.len() == game.n_lanes as usize {
+        if row_blocks.len() == game.n_lanes {
             game.stats.cleared_blocks += game.n_lanes as i32;
 
             for block_entity in row_blocks {

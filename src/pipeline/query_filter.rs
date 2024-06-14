@@ -1,11 +1,12 @@
 use bevy::prelude::Entity;
 
-pub use rapier::geometry::InteractionGroups;
 pub use rapier::pipeline::QueryFilterFlags;
 
 use crate::geometry::CollisionGroups;
 
 /// A filter that describes what collider should be included or excluded from a scene query.
+///
+/// For testing manually check [`RapierContext::with_query_filter`].
 #[derive(Copy, Clone, Default)]
 pub struct QueryFilter<'a> {
     /// Flags indicating what particular type of colliders should be excluded.
@@ -51,12 +52,12 @@ impl<'a> QueryFilter<'a> {
         QueryFilterFlags::EXCLUDE_FIXED.into()
     }
 
-    /// Exclude from the query any collider attached to a dynamic rigid-body.
+    /// Exclude from the query any collider attached to a kinematic rigid-body.
     pub fn exclude_kinematic() -> Self {
         QueryFilterFlags::EXCLUDE_KINEMATIC.into()
     }
 
-    /// Exclude from the query any collider attached to a kinematic rigid-body.
+    /// Exclude from the query any collider attached to a dynamic rigid-body.
     pub fn exclude_dynamic() -> Self {
         QueryFilterFlags::EXCLUDE_DYNAMIC.into()
     }

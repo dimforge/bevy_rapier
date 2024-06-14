@@ -1,23 +1,26 @@
+use bevy::color::palettes::basic;
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 use bevy_rapier3d::prelude::*;
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(
+        .insert_resource(ClearColor(Color::srgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .add_plugins(DefaultPlugins)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierDebugRenderPlugin::default())
-        .add_startup_system(setup_graphics)
-        .add_startup_system(setup_physics)
-        .add_system(cast_ray)
+        .add_plugins((
+            DefaultPlugins,
+            RapierPhysicsPlugin::<NoUserData>::default(),
+            RapierDebugRenderPlugin::default(),
+        ))
+        .add_systems(Startup, (setup_graphics, setup_physics))
+        .add_systems(Update, cast_ray)
         .run();
 }
 
-fn setup_graphics(mut commands: Commands) {
+pub fn setup_graphics(mut commands: Commands) {
     commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(-30.0, 30.0, 100.0)
             .looking_at(Vec3::new(0.0, 10.0, 0.0), Vec3::Y),
@@ -70,22 +73,29 @@ pub fn setup_physics(mut commands: Commands) {
     }
 }
 
-fn cast_ray(
+pub fn cast_ray(
     mut commands: Commands,
-    windows: Res<Windows>,
+    windows: Query<&Window, With<PrimaryWindow>>,
     rapier_context: Res<RapierContext>,
     cameras: Query<(&Camera, &GlobalTransform)>,
 ) {
+    let window = windows.single();
+
+    let Some(cursor_position) = window.cursor_position() else {
+        return;
+    };
+
     // We will color in read the colliders hovered by the mouse.
-    for (camera, camera_transform) in cameras.iter() {
+    for (camera, camera_transform) in &cameras {
         // First, compute a ray from the mouse position.
-        let (ray_pos, ray_dir) =
-            ray_from_mouse_position(windows.get_primary().unwrap(), camera, camera_transform);
+        let Some(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
+            return;
+        };
 
         // Then cast the ray.
         let hit = rapier_context.cast_ray(
-            ray_pos,
-            ray_dir,
+            ray.origin,
+            ray.direction.into(),
             f32::MAX,
             true,
             QueryFilter::only_dynamic(),
@@ -95,30 +105,8 @@ fn cast_ray(
             // Color in blue the entity we just hit.
             // Because of the query filter, only colliders attached to a dynamic body
             // will get an event.
-            let color = Color::BLUE;
+            let color = basic::BLUE.into();
             commands.entity(entity).insert(ColliderDebugColor(color));
         }
     }
-}
-
-// Credit to @doomy on discord.
-fn ray_from_mouse_position(
-    window: &Window,
-    camera: &Camera,
-    camera_transform: &GlobalTransform,
-) -> (Vec3, Vec3) {
-    let mouse_position = window.cursor_position().unwrap_or(Vec2::new(0.0, 0.0));
-
-    let x = 2.0 * (mouse_position.x / window.width() as f32) - 1.0;
-    let y = 2.0 * (mouse_position.y / window.height() as f32) - 1.0;
-
-    let camera_inverse_matrix =
-        camera_transform.compute_matrix() * camera.projection_matrix().inverse();
-    let near = camera_inverse_matrix * Vec3::new(x, y, -1.0).extend(1.0);
-    let far = camera_inverse_matrix * Vec3::new(x, y, 1.0).extend(1.0);
-
-    let near = near.truncate() / near.w;
-    let far = far.truncate() / far.w;
-    let dir: Vec3 = far - near;
-    (near, dir)
 }

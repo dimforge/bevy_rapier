@@ -2,6 +2,7 @@ use crate::math::Vect;
 use rapier::parry::shape::{TopologyError, TriMesh, TriMeshFlags};
 
 /// Read-only access to the properties of a triangle mesh.
+#[derive(Copy, Clone)]
 pub struct TriMeshView<'a> {
     /// The raw shape from Rapier.
     pub raw: &'a TriMesh,

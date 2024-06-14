@@ -1,5 +1,5 @@
 use crate::math::{Real, Vect};
-use bevy::prelude::{Entity, EventWriter};
+use bevy::prelude::{Entity, Event, EventWriter};
 use rapier::dynamics::RigidBodySet;
 use rapier::geometry::{
     ColliderHandle, ColliderSet, CollisionEvent as RapierCollisionEvent, CollisionEventFlags,
@@ -10,7 +10,10 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 /// Events occurring when two colliders start or stop colliding
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+///
+/// This will only get triggered if the entity has the
+/// [`ActiveEvent::COLLISION_EVENTS`] flag enabled.
+#[derive(Event, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum CollisionEvent {
     /// Event occurring when two colliders start colliding
     Started(Entity, Entity, CollisionEventFlags),
@@ -19,8 +22,11 @@ pub enum CollisionEvent {
 }
 
 /// Event occurring when the sum of the magnitudes of the contact forces
-/// between two colliders exceed a threshold.
-#[derive(Copy, Clone, Debug, PartialEq)]
+/// between two colliders exceed a threshold ([`ContactForceEventThreshold`]).
+///
+/// This will only get triggered if the entity has the
+/// [`ActiveEvent::CONTACT_FORCE_EVENTS`] flag enabled.
+#[derive(Event, Copy, Clone, Debug, PartialEq)]
 pub struct ContactForceEvent {
     /// The first collider involved in the contact.
     pub collider1: Entity,
@@ -49,8 +55,8 @@ pub(crate) struct EventQueue<'a> {
     // Used ot retrieve the entity of colliders that have been removed from the simulation
     // since the last physics step.
     pub deleted_colliders: &'a HashMap<ColliderHandle, Entity>,
-    pub collision_events: RwLock<EventWriter<'a, 'a, CollisionEvent>>,
-    pub contact_force_events: RwLock<EventWriter<'a, 'a, ContactForceEvent>>,
+    pub collision_events: RwLock<EventWriter<'a, CollisionEvent>>,
+    pub contact_force_events: RwLock<EventWriter<'a, ContactForceEvent>>,
 }
 
 impl<'a> EventQueue<'a> {
@@ -85,7 +91,7 @@ impl<'a> EventHandler for EventQueue<'a> {
         };
 
         if let Ok(mut events) = self.collision_events.write() {
-            events.send(event)
+            events.send(event);
         }
     }
 

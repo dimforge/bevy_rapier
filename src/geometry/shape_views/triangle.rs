@@ -2,6 +2,7 @@ use crate::math::{Real, Vect};
 use rapier::parry::shape::Triangle;
 
 /// Read-only access to the properties of a triangle.
+#[derive(Copy, Clone)]
 pub struct TriangleView<'a> {
     /// The raw shape from Rapier.
     pub raw: &'a Triangle,

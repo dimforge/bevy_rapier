@@ -13,7 +13,7 @@ jobs:
   check-fmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
@@ -24,7 +24,7 @@ jobs:
     env:
       RUSTFLAGS: -D warnings
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
@@ -47,13 +47,13 @@ jobs:
     env:
       RUSTFLAGS: -D warnings
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
       - name: Clippy bevy_rapier2d
-        run: cd bevy_rapier2d && cargo clippy --verbose --features wasm-bindgen --target wasm32-unknown-unknown
+        run: cd bevy_rapier2d && cargo clippy --verbose --features wasm-bindgen,bevy/webgl2 --target wasm32-unknown-unknown
       - name: Clippy bevy_rapier3d
-        run: cd bevy_rapier3d && cargo clippy --verbose --features wasm-bindgen --target wasm32-unknown-unknown
+        run: cd bevy_rapier3d && cargo clippy --verbose --features wasm-bindgen,bevy/webgl2 --target wasm32-unknown-unknown

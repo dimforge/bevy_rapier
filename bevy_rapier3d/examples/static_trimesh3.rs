@@ -5,22 +5,23 @@ use bevy_rapier3d::prelude::*;
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(
+        .insert_resource(ClearColor(Color::srgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
-        .add_plugins(DefaultPlugins)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierDebugRenderPlugin::default())
-        .add_startup_system(setup_graphics)
-        .add_startup_system(setup_physics)
+        .add_plugins((
+            DefaultPlugins,
+            RapierPhysicsPlugin::<NoUserData>::default(),
+            RapierDebugRenderPlugin::default(),
+        ))
+        .add_systems(Startup, (setup_graphics, setup_physics))
         .insert_resource(BallState::default())
-        .add_system(ball_spawner)
+        .add_systems(Update, ball_spawner)
         .run();
 }
 
-fn setup_graphics(mut commands: Commands) {
+pub fn setup_graphics(mut commands: Commands) {
     commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(-15.0, 8.0, 15.0)
             .looking_at(Vec3::new(-5.0, 0.0, 5.0), Vec3::Y),
@@ -32,7 +33,10 @@ fn ramp_size() -> Vec3 {
     Vec3::new(10.0, 1.0, 1.0)
 }
 
-pub fn setup_physics(mut commands: Commands) {
+pub fn setup_physics(mut commands: Commands, mut ball_state: ResMut<BallState>) {
+    //reset
+    ball_state.balls_spawned = 0;
+
     // Create the ramp.
     let mut vertices: Vec<Vec3> = Vec::new();
     let mut indices: Vec<[u32; 3]> = Vec::new();
@@ -99,55 +103,43 @@ pub fn setup_physics(mut commands: Commands) {
 }
 
 #[derive(Resource)]
-struct BallState {
-    seconds_until_next_spawn: f32,
-    seconds_between_spawns: f32,
+pub struct BallState {
     balls_spawned: usize,
     max_balls: usize,
+    timer: Timer,
 }
 
 impl Default for BallState {
     fn default() -> Self {
         Self {
-            seconds_until_next_spawn: 0.5,
-            seconds_between_spawns: 2.0,
             balls_spawned: 0,
             max_balls: 10,
+            timer: Timer::from_seconds(2.0, TimerMode::Repeating),
         }
     }
 }
 
-fn ball_spawner(
-    mut commands: Commands,
-    rapier_context: Res<RapierContext>,
-    mut ball_state: ResMut<BallState>,
-) {
+pub fn ball_spawner(mut commands: Commands, time: Res<Time>, mut ball_state: ResMut<BallState>) {
     if ball_state.balls_spawned >= ball_state.max_balls {
         return;
     }
 
-    // NOTE: The timing here only works properly with `time_dependent_number_of_timesteps`
-    // disabled, as it is for examples.
-    ball_state.seconds_until_next_spawn -= rapier_context.integration_parameters.dt;
-    if ball_state.seconds_until_next_spawn > 0.0 {
-        return;
+    if ball_state.timer.tick(time.delta()).finished() {
+        // Spawn a ball near the top of the ramp.
+        let ramp_size = ramp_size();
+        let rad = 0.3;
+
+        commands.spawn((
+            TransformBundle::from(Transform::from_xyz(
+                ramp_size.x * 0.9,
+                ramp_size.y / 2.0 + rad * 3.0,
+                0.0,
+            )),
+            RigidBody::Dynamic,
+            Collider::ball(rad),
+            Restitution::new(0.5),
+        ));
+
+        ball_state.balls_spawned += 1;
     }
-    ball_state.seconds_until_next_spawn = ball_state.seconds_between_spawns;
-
-    // Spawn a ball near the top of the ramp.
-    let ramp_size = ramp_size();
-    let rad = 0.3;
-
-    commands.spawn((
-        TransformBundle::from(Transform::from_xyz(
-            ramp_size.x * 0.9,
-            ramp_size.y / 2.0 + rad * 3.0,
-            0.0,
-        )),
-        RigidBody::Dynamic,
-        Collider::ball(rad),
-        Restitution::new(0.5),
-    ));
-
-    ball_state.balls_spawned += 1;
 }

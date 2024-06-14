@@ -2,6 +2,7 @@ use crate::math::{Real, Vect};
 use rapier::parry::shape::Segment;
 
 /// Read-only access to the properties of a segment.
+#[derive(Copy, Clone)]
 pub struct SegmentView<'a> {
     /// The raw shape from Rapier.
     pub raw: &'a Segment,

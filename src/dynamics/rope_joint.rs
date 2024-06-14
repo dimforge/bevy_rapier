@@ -5,21 +5,20 @@ use rapier::dynamics::{JointAxesMask, JointAxis, JointLimits, JointMotor, MotorM
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(transparent)]
-/// A prismatic joint, locks all relative motion between two bodies except for translation along the joint’s principal axis.
-pub struct PrismaticJoint {
+/// A rope joint, limits the maximum distance between two bodies
+pub struct RopeJoint {
     data: GenericJoint,
 }
 
-impl PrismaticJoint {
-    /// Creates a new prismatic joint allowing only relative translations along the specified axis.
-    ///
-    /// This axis is expressed in the local-space of both rigid-bodies.
-    pub fn new(axis: Vect) -> Self {
-        let data = GenericJointBuilder::new(JointAxesMask::LOCKED_PRISMATIC_AXES)
-            .local_axis1(axis)
-            .local_axis2(axis)
+impl RopeJoint {
+    /// Creates a new rope joint limiting the max distance between to bodies
+    pub fn new(max_dist: Real) -> Self {
+        let data = GenericJointBuilder::new(JointAxesMask::empty())
+            .coupled_axes(JointAxesMask::LIN_AXES)
             .build();
-        Self { data }
+        let mut result = Self { data };
+        result.set_max_distance(max_dist);
+        result
     }
 
     /// The underlying generic joint.
@@ -88,8 +87,8 @@ impl PrismaticJoint {
 
     /// The motor affecting the joint’s translational degree of freedom.
     #[must_use]
-    pub fn motor(&self) -> Option<&JointMotor> {
-        self.data.motor(JointAxis::LinX)
+    pub fn motor(&self, axis: JointAxis) -> Option<&JointMotor> {
+        self.data.motor(axis)
     }
 
     /// Set the spring-like model used by the motor to reach the desired target velocity and position.
@@ -138,36 +137,44 @@ impl PrismaticJoint {
 
     /// The limit distance attached bodies can translate along the joint’s principal axis.
     #[must_use]
-    pub fn limits(&self) -> Option<&JointLimits<Real>> {
-        self.data.limits(JointAxis::LinX)
+    pub fn limits(&self, axis: JointAxis) -> Option<&JointLimits<Real>> {
+        self.data.limits(axis)
     }
 
-    /// Sets the `[min,max]` limit distances attached bodies can translate along the joint’s principal axis.
-    pub fn set_limits(&mut self, limits: [Real; 2]) -> &mut Self {
-        self.data.set_limits(JointAxis::LinX, limits);
+    /// Sets the maximum allowed distance between the attached bodies.
+    ///
+    /// The `max_dist` must be strictly greater than 0.0.
+    pub fn set_max_distance(&mut self, max_dist: Real) -> &mut Self {
+        self.data.set_limits(JointAxis::LinX, [0.0, max_dist]);
         self
+    }
+
+    /// The maximum distance between the attached bodies.
+    pub fn max_distance(&self) -> Real {
+        self.data
+            .limits(JointAxis::LinX)
+            .map(|l| l.max)
+            .unwrap_or(Real::MAX)
     }
 }
 
-impl From<PrismaticJoint> for GenericJoint {
-    fn from(joint: PrismaticJoint) -> GenericJoint {
+impl From<RopeJoint> for GenericJoint {
+    fn from(joint: RopeJoint) -> GenericJoint {
         joint.data
     }
 }
 
-/// Create prismatic joints using the builder pattern.
+/// Create rope joints using the builder pattern.
 ///
-/// A prismatic joint locks all relative motion except for translations along the joint’s principal axis.
+/// A rope joint, limits the maximum distance between two bodies.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub struct PrismaticJointBuilder(PrismaticJoint);
+pub struct RopeJointBuilder(RopeJoint);
 
-impl PrismaticJointBuilder {
-    /// Creates a new builder for prismatic joints.
-    ///
-    /// This axis is expressed in the local-space of both rigid-bodies.
-    pub fn new(axis: Vect) -> Self {
-        Self(PrismaticJoint::new(axis))
+impl RopeJointBuilder {
+    /// Creates a new builder for rope joints.
+    pub fn new(max_dist: Real) -> Self {
+        Self(RopeJoint::new(max_dist))
     }
 
     /// Sets the joint’s anchor, expressed in the local-space of the first rigid-body.
@@ -239,22 +246,24 @@ impl PrismaticJointBuilder {
         self
     }
 
-    /// Sets the `[min,max]` limit distances attached bodies can translate along the joint’s principal axis.
+    /// Sets the maximum allowed distance between the attached bodies.
+    ///
+    /// The `max_dist` must be strictly greater than 0.0.    
     #[must_use]
-    pub fn limits(mut self, limits: [Real; 2]) -> Self {
-        self.0.set_limits(limits);
+    pub fn max_distance(mut self, max_dist: Real) -> Self {
+        self.0.set_max_distance(max_dist);
         self
     }
 
-    /// Builds the prismatic joint.
+    /// Builds the rope joint.
     #[must_use]
-    pub fn build(self) -> PrismaticJoint {
+    pub fn build(self) -> RopeJoint {
         self.0
     }
 }
 
-impl From<PrismaticJointBuilder> for GenericJoint {
-    fn from(joint: PrismaticJointBuilder) -> GenericJoint {
+impl From<RopeJointBuilder> for GenericJoint {
+    fn from(joint: RopeJointBuilder) -> GenericJoint {
         joint.0.into()
     }
 }

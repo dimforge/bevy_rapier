@@ -1,10 +1,9 @@
-use crate::dynamics::{FixedJoint, PrismaticJoint, RevoluteJoint};
+use crate::dynamics::{FixedJoint, PrismaticJoint, RevoluteJoint, RopeJoint};
 use crate::math::{Real, Rot, Vect};
 use rapier::dynamics::{
     GenericJoint as RapierGenericJoint, JointAxesMask, JointAxis, JointLimits, JointMotor,
     MotorModel,
 };
-use rapier::math::DIM;
 
 #[cfg(feature = "dim3")]
 use crate::dynamics::SphericalJoint;
@@ -20,22 +19,7 @@ pub struct GenericJoint {
 
 impl GenericJoint {
     /// Converts this joint into a Rapier joint.
-    pub fn into_rapier(mut self, physics_scale: Real) -> RapierGenericJoint {
-        self.raw.local_frame1.translation.vector /= physics_scale;
-        self.raw.local_frame2.translation.vector /= physics_scale;
-
-        // NOTE: we don’t apply the physics scale to angular limits.
-        for limit in &mut self.raw.limits[0..DIM] {
-            limit.min /= physics_scale;
-            limit.max /= physics_scale;
-        }
-
-        // NOTE: we don’t apply the physics scale to angular motors.
-        for motor in &mut self.raw.motors[0..DIM] {
-            motor.target_vel /= physics_scale;
-            motor.target_pos /= physics_scale;
-        }
-
+    pub fn into_rapier(self) -> RapierGenericJoint {
         self.raw
     }
 }
@@ -180,6 +164,12 @@ impl GenericJoint {
         self
     }
 
+    /// Sets the coupled degrees of freedom for this joint’s limits and motor.
+    pub fn set_coupled_axes(&mut self, axes: JointAxesMask) -> &mut Self {
+        self.raw.coupled_axes = axes;
+        self
+    }
+
     /// The spring-like motor model along the specified axis of this joint.
     #[must_use]
     pub fn motor_model(&self, axis: JointAxis) -> Option<MotorModel> {
@@ -251,7 +241,7 @@ macro_rules! joint_conversion_methods(
             if self.locked_axes() == $axes {
                 // SAFETY: this is OK because the target joint type is
                 //         a `repr(transparent)` newtype of `Joint`.
-                Some(unsafe { std::mem::transmute(self) })
+                Some(unsafe { std::mem::transmute::<&Self, &$Joint>(self) })
             } else {
                 None
             }
@@ -263,7 +253,7 @@ macro_rules! joint_conversion_methods(
             if self.locked_axes() == $axes {
                 // SAFETY: this is OK because the target joint type is
                 //         a `repr(transparent)` newtype of `Joint`.
-                Some(unsafe { std::mem::transmute(self) })
+                Some(unsafe { std::mem::transmute::<&mut Self, &mut $Joint>(self) })
             } else {
                 None
             }
@@ -289,6 +279,12 @@ impl GenericJoint {
         as_prismatic_mut,
         PrismaticJoint,
         JointAxesMask::LOCKED_PRISMATIC_AXES
+    );
+    joint_conversion_methods!(
+        as_rope,
+        as_rope_mut,
+        RopeJoint,
+        JointAxesMask::FREE_FIXED_AXES
     );
 
     #[cfg(feature = "dim3")]
@@ -368,12 +364,12 @@ impl GenericJointBuilder {
         self
     }
 
-    // /// Sets the coupled degrees of freedom for this joint’s limits and motor.
-    // #[must_use]
-    // pub fn coupled_axes(mut self, axes: JointAxesMask) -> Self {
-    //     self.0.coupled_axes = axes;
-    //     self
-    // }
+    /// Sets the coupled degrees of freedom for this joint’s limits and motor.
+    #[must_use]
+    pub fn coupled_axes(mut self, axes: JointAxesMask) -> Self {
+        self.0.set_coupled_axes(axes);
+        self
+    }
 
     /// Set the spring-like model used by the motor to reach the desired target velocity and position.
     #[must_use]

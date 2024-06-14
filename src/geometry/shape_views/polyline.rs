@@ -2,6 +2,7 @@ use crate::math::Vect;
 use rapier::parry::shape::Polyline;
 
 /// Read-only access to the properties of a polyline.
+#[derive(Copy, Clone)]
 pub struct PolylineView<'a> {
     /// The raw shape from Rapier.
     pub raw: &'a Polyline,

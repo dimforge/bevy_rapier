@@ -4,23 +4,29 @@ use bevy::prelude::*;
 use rapier::geometry::{Contact, ContactManifold, ContactPair, SolverContact, SolverFlags};
 
 impl RapierContext {
-    /// All the contacts involving the non-sensor collider attached to the given entity.
-    pub fn contacts_with(&self, collider: Entity) -> impl Iterator<Item = ContactPairView> {
+    /// All the contact pairs involving the non-sensor collider attached to the given entity.
+    ///
+    /// The returned contact pairs identify pairs of colliders with intersecting bounding-volumes.
+    /// To check if any geometric contact happened between the collider shapes, check
+    /// [`ContactPairView::has_any_active_contact`].
+    pub fn contact_pairs_with(&self, collider: Entity) -> impl Iterator<Item = ContactPairView> {
         self.entity2collider
             .get(&collider)
             .into_iter()
             .flat_map(|h| {
                 self.narrow_phase
-                    .contacts_with(*h)
+                    .contact_pairs_with(*h)
                     .map(|raw| ContactPairView { context: self, raw })
             })
     }
 
-    /// All the intersections involving the collider attached to the given entity.
+    /// All the intersection pairs involving the collider attached to the given entity, where at least one collider
+    /// involved in the intersection is a sensor.    
     ///
-    /// Intersections between two colliders are reported only if at least one of
-    /// them is a sensor.
-    pub fn intersections_with(
+    /// The returned contact pairs identify pairs of colliders (where at least one is a sensor) with
+    /// intersecting bounding-volumes. To check if any geometric overlap happened between the collider shapes, check
+    /// the returned boolean.
+    pub fn intersection_pairs_with(
         &self,
         collider: Entity,
     ) -> impl Iterator<Item = (Entity, Entity, bool)> + '_ {
@@ -29,13 +35,14 @@ impl RapierContext {
             .into_iter()
             .flat_map(|h| {
                 self.narrow_phase
-                    .intersections_with(*h)
-                    .map(|(h1, h2, inter)| {
-                        (
-                            self.collider_entity(h1).unwrap(),
-                            self.collider_entity(h2).unwrap(),
-                            inter,
-                        )
+                    .intersection_pairs_with(*h)
+                    .filter_map(|(h1, h2, inter)| {
+                        let e1 = self.collider_entity(h1);
+                        let e2 = self.collider_entity(h2);
+                        match (e1, e2) {
+                            (Some(e1), Some(e2)) => Some((e1, e2, inter)),
+                            _ => None,
+                        }
                     })
             })
     }
@@ -74,12 +81,13 @@ impl RapierContext {
     pub fn intersection_pairs(&self) -> impl Iterator<Item = (Entity, Entity, bool)> + '_ {
         self.narrow_phase
             .intersection_pairs()
-            .map(|(h1, h2, inter)| {
-                (
-                    self.collider_entity(h1).unwrap(),
-                    self.collider_entity(h2).unwrap(),
-                    inter,
-                )
+            .filter_map(|(h1, h2, inter)| {
+                let e1 = self.collider_entity(h1);
+                let e2 = self.collider_entity(h2);
+                match (e1, e2) {
+                    (Some(e1), Some(e2)) => Some((e1, e2, inter)),
+                    _ => None,
+                }
             })
     }
 }
@@ -241,7 +249,7 @@ impl<'a> ContactView<'a> {
     /// collider's rigid-body.
     #[cfg(feature = "dim2")]
     pub fn tangent_impulse(&self) -> Real {
-        self.raw.data.tangent_impulse
+        self.raw.data.tangent_impulse.x
     }
 
     /// The friction impulse along the vector orthonormal to the contact normal, applied to the first
@@ -329,7 +337,7 @@ impl<'a> ContactPairView<'a> {
     }
 
     /// Is there any active contact in this contact pair?
-    pub fn has_any_active_contacts(&self) -> bool {
+    pub fn has_any_active_contact(&self) -> bool {
         self.raw.has_any_active_contact
     }
 
