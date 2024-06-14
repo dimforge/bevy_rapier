@@ -89,11 +89,11 @@ mod tests {
         app.add_event::<CollisionEvent>()
             .add_systems(Update, update_colliding_entities);
 
-        let entity1 = app.world.spawn(CollidingEntities::default()).id();
-        let entity2 = app.world.spawn(CollidingEntities::default()).id();
+        let entity1 = app.world_mut().spawn(CollidingEntities::default()).id();
+        let entity2 = app.world_mut().spawn(CollidingEntities::default()).id();
 
         let mut collision_events = app
-            .world
+            .world_mut()
             .get_resource_mut::<Events<CollisionEvent>>()
             .unwrap();
         collision_events.send(CollisionEvent::Started(
@@ -105,7 +105,7 @@ mod tests {
         app.update();
 
         let colliding_entities1 = app
-            .world
+            .world()
             .entity(entity1)
             .get::<CollidingEntities>()
             .unwrap();
@@ -121,7 +121,7 @@ mod tests {
         );
 
         let colliding_entities2 = app
-            .world
+            .world()
             .entity(entity2)
             .get::<CollidingEntities>()
             .unwrap();
@@ -137,7 +137,7 @@ mod tests {
         );
 
         let mut collision_events = app
-            .world
+            .world_mut()
             .get_resource_mut::<Events<CollisionEvent>>()
             .unwrap();
         collision_events.send(CollisionEvent::Stopped(
@@ -149,7 +149,7 @@ mod tests {
         app.update();
 
         let colliding_entities1 = app
-            .world
+            .world()
             .entity(entity1)
             .get::<CollidingEntities>()
             .unwrap();
@@ -159,7 +159,7 @@ mod tests {
         );
 
         let colliding_entities2 = app
-            .world
+            .world()
             .entity(entity2)
             .get::<CollidingEntities>()
             .unwrap();
@@ -198,7 +198,7 @@ mod tests {
 
         for (child_transform, parent_transform) in [zero, same, different] {
             let child = app
-                .world
+                .world_mut()
                 .spawn((
                     TransformBundle::from(child_transform),
                     RigidBody::Fixed,
@@ -206,14 +206,14 @@ mod tests {
                 ))
                 .id();
 
-            app.world
+            app.world_mut()
                 .spawn(TransformBundle::from(parent_transform))
                 .push_children(&[child]);
 
             app.update();
 
-            let child_transform = app.world.entity(child).get::<GlobalTransform>().unwrap();
-            let context = app.world.resource::<RapierContext>();
+            let child_transform = app.world().entity(child).get::<GlobalTransform>().unwrap();
+            let context = app.world().resource::<RapierContext>();
             let child_handle = context.entity2body[&child];
             let child_body = context.bodies.get(child_handle).unwrap();
             let body_transform = utils::iso_to_transform(child_body.position());
@@ -257,12 +257,12 @@ mod tests {
 
         for (child_transform, parent_transform) in [zero, same, different] {
             let child = app
-                .world
+                .world_mut()
                 .spawn((TransformBundle::from(child_transform), Collider::ball(1.0)))
                 .id();
 
             let parent = app
-                .world
+                .world_mut()
                 .spawn((TransformBundle::from(parent_transform), RigidBody::Fixed))
                 .push_children(&[child])
                 .id();
@@ -270,12 +270,12 @@ mod tests {
             app.update();
 
             let child_transform = app
-                .world
+                .world()
                 .entity(child)
                 .get::<GlobalTransform>()
                 .unwrap()
                 .compute_transform();
-            let context = app.world.resource::<RapierContext>();
+            let context = app.world().resource::<RapierContext>();
             let parent_handle = context.entity2body[&parent];
             let parent_body = context.bodies.get(parent_handle).unwrap();
             let child_collider_handle = parent_body.colliders()[0];
