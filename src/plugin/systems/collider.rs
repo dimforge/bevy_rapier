@@ -492,14 +492,14 @@ pub mod test {
         app.add_plugins(HeadlessRenderPlugin)
             .add_systems(Update, init_async_colliders);
 
-        let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
+        let mut meshes = app.world_mut().resource_mut::<Assets<Mesh>>();
         let cube = meshes.add(Cuboid::default());
 
-        let entity = app.world.spawn((cube, AsyncCollider::default())).id();
+        let entity = app.world_mut().spawn((cube, AsyncCollider::default())).id();
 
         app.update();
 
-        let entity = app.world.entity(entity);
+        let entity = app.world().entity(entity);
         assert!(
             entity.get::<Collider>().is_some(),
             "Collider component should be added"
@@ -520,19 +520,22 @@ pub mod test {
         app.add_plugins(HeadlessRenderPlugin)
             .add_systems(PostUpdate, init_async_scene_colliders);
 
-        let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
+        let mut meshes = app.world_mut().resource_mut::<Assets<Mesh>>();
         let cube_handle = meshes.add(Cuboid::default());
         let capsule_handle = meshes.add(Capsule3d::default());
-        let cube = app.world.spawn((Name::new("Cube"), cube_handle)).id();
-        let capsule = app.world.spawn((Name::new("Capsule"), capsule_handle)).id();
+        let cube = app.world_mut().spawn((Name::new("Cube"), cube_handle)).id();
+        let capsule = app
+            .world_mut()
+            .spawn((Name::new("Capsule"), capsule_handle))
+            .id();
 
-        let mut scenes = app.world.resource_mut::<Assets<Scene>>();
+        let mut scenes = app.world_mut().resource_mut::<Assets<Scene>>();
         let scene = scenes.add(Scene::new(World::new()));
 
         let mut named_shapes = bevy::utils::HashMap::new();
         named_shapes.insert("Capsule".to_string(), None);
         let parent = app
-            .world
+            .world_mut()
             .spawn((
                 scene,
                 AsyncSceneCollider {
@@ -546,15 +549,15 @@ pub mod test {
         app.update();
 
         assert!(
-            app.world.entity(cube).get::<Collider>().is_some(),
+            app.world().entity(cube).get::<Collider>().is_some(),
             "Collider component should be added for cube"
         );
         assert!(
-            app.world.entity(capsule).get::<Collider>().is_none(),
+            app.world().entity(capsule).get::<Collider>().is_none(),
             "Collider component shouldn't be added for capsule"
         );
         assert!(
-            app.world.entity(parent).get::<AsyncCollider>().is_none(),
+            app.world().entity(parent).get::<AsyncCollider>().is_none(),
             "AsyncSceneCollider component should be removed after Collider components creation"
         );
     }

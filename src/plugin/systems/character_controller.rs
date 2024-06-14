@@ -115,18 +115,16 @@ pub fn update_character_controls(
             );
 
             if controller.apply_impulse_to_dynamic_bodies {
-                for collision in &*collisions {
-                    raw_controller.solve_character_collision_impulses(
-                        context.integration_parameters.dt,
-                        &mut context.bodies,
-                        &context.colliders,
-                        &context.query_pipeline,
-                        character_shape,
-                        character_mass,
-                        collision,
-                        filter,
-                    )
-                }
+                raw_controller.solve_character_collision_impulses(
+                    context.integration_parameters.dt,
+                    &mut context.bodies,
+                    &context.colliders,
+                    &context.query_pipeline,
+                    character_shape,
+                    character_mass,
+                    collisions.iter().copied(),
+                    filter,
+                )
             }
 
             if let Ok(mut transform) = transforms.get_mut(entity_to_move) {

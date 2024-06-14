@@ -2,9 +2,16 @@
 
 ## Unreleased
 
+**This is an update to Rapier 0.20 which includes several stability improvements
+and new features. Please have a look at the
+[0.20 changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md) of Rapier.**
+
 ### Modified
 
+- Update to rapier `0.20`.
+- Update to bevy `0.14`.
 - Renamed `has_any_active_contacts` to `has_any_active_contact` for better consistency with rapier.
+- `ColliderDebugColor`'s property is now a `bevy::color::Hsla`.
 
 ### Added
 
