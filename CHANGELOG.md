@@ -2,9 +2,14 @@
 
 ## Unreleased
 
+**This is an update to Rapier 0.20 which includes several stability improvements
+and new features. Please have a look at the
+[0.20 changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md) of Rapier.**
+
 ### Modified
 
 - Renamed `has_any_active_contacts` to `has_any_active_contact` for better consistency with rapier.
+- Update to rapier `0.20`.
 
 ### Added
 

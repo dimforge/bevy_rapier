@@ -338,7 +338,7 @@ impl RapierContext {
     /// Updates the state of the query pipeline, based on the collider positions known
     /// from the last timestep or the last call to `self.propagate_modified_body_positions_to_colliders()`.
     pub fn update_query_pipeline(&mut self) {
-        self.query_pipeline.update(&self.bodies, &self.colliders);
+        self.query_pipeline.update(&self.colliders);
     }
 
     /// The map from entities to rigid-body handles.
@@ -447,18 +447,16 @@ impl RapierContext {
                 );
 
                 if options.apply_impulse_to_dynamic_bodies {
-                    for collision in &*collisions {
-                        controller.solve_character_collision_impulses(
-                            dt,
-                            bodies,
-                            colliders,
-                            query_pipeline,
-                            (&scaled_shape).into(),
-                            shape_mass,
-                            collision,
-                            filter,
-                        )
-                    }
+                    controller.solve_character_collision_impulses(
+                        dt,
+                        bodies,
+                        colliders,
+                        query_pipeline,
+                        (&scaled_shape).into(),
+                        shape_mass,
+                        collisions.iter().copied(),
+                        filter,
+                    )
                 }
 
                 result
