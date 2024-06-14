@@ -8,7 +8,7 @@ use bevy_rapier2d::prelude::*;
 fn main() {
     App::new()
         .init_resource::<Game>()
-        .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
+        .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0)))
         .add_plugins((
             DefaultPlugins,
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0),
@@ -76,7 +76,7 @@ impl Default for Game {
 }
 
 fn byte_rgb(r: u8, g: u8, b: u8) -> Color {
-    Color::rgb(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0)
+    Color::srgb(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0)
 }
 
 pub fn setup_game(mut commands: Commands, mut game: ResMut<Game>) {
@@ -133,7 +133,7 @@ fn setup_board(commands: &mut Commands, game: &Game) {
     commands.spawn((
         SpriteBundle {
             sprite: Sprite {
-                color: Color::rgb(0.5, 0.5, 0.5),
+                color: Color::srgb(0.5, 0.5, 0.5),
                 custom_size: Some(Vec2::new(game.n_lanes as f32 * 30.0, 60.0)),
                 ..Default::default()
             },

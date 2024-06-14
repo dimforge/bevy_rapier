@@ -337,7 +337,7 @@ impl<'a> ContactPairView<'a> {
     }
 
     /// Is there any active contact in this contact pair?
-    pub fn has_any_active_contacts(&self) -> bool {
+    pub fn has_any_active_contact(&self) -> bool {
         self.raw.has_any_active_contact
     }
 
