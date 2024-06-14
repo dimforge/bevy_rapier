@@ -37,11 +37,11 @@ struct ExamplesRes {
 
 fn main() {
     let mut app = App::new();
-    app.add_state::<Examples>()
+    app.init_state::<Examples>()
         .init_resource::<ExamplesRes>()
         .add_plugins((
             DefaultPlugins,
-            RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0),
+            RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(10.0),
             RapierDebugRenderPlugin::default(),
         ))
         //
@@ -145,9 +145,13 @@ fn main() {
         )
         .add_systems(
             OnExit(Examples::PlayerMovement2),
-            (cleanup, |mut rapier_config: ResMut<RapierConfiguration>| {
-                rapier_config.gravity = RapierConfiguration::default().gravity;
-            }),
+            (
+                cleanup,
+                |mut rapier_config: ResMut<RapierConfiguration>, ctxt: Res<RapierContext>| {
+                    rapier_config.gravity =
+                        RapierConfiguration::new(ctxt.integration_parameters.length_unit).gravity;
+                },
+            ),
         )
         //
         //testbed
@@ -186,7 +190,7 @@ fn cleanup(world: &mut World) {
 fn check_toggle(
     state: Res<State<Examples>>,
     mut next_state: ResMut<NextState<Examples>>,
-    mouse_input: Res<Input<MouseButton>>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
 ) {
     if mouse_input.just_pressed(MouseButton::Left) {
         let next = match *state.get() {

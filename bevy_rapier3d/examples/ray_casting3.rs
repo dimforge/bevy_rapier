@@ -1,10 +1,11 @@
+use bevy::color::palettes::basic;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_rapier3d::prelude::*;
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(
+        .insert_resource(ClearColor(Color::srgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
@@ -94,7 +95,7 @@ pub fn cast_ray(
         // Then cast the ray.
         let hit = rapier_context.cast_ray(
             ray.origin,
-            ray.direction,
+            ray.direction.into(),
             f32::MAX,
             true,
             QueryFilter::only_dynamic(),
@@ -104,7 +105,7 @@ pub fn cast_ray(
             // Color in blue the entity we just hit.
             // Because of the query filter, only colliders attached to a dynamic body
             // will get an event.
-            let color = Color::BLUE;
+            let color = basic::BLUE.into();
             commands.entity(entity).insert(ColliderDebugColor(color));
         }
     }

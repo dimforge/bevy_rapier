@@ -12,7 +12,7 @@ use std::fmt::Debug;
 /// force to a specific value the color used to render the
 /// collider.
 #[derive(Copy, Clone, Component, PartialEq, Debug)]
-pub struct ColliderDebugColor(pub Color);
+pub struct ColliderDebugColor(pub Hsla);
 
 /// Plugin rensponsible for rendering (using lines) what Rapier "sees" when performing
 /// its physics simulation. This is typically useful to check proper
@@ -95,10 +95,9 @@ impl Plugin for RapierDebugRenderPlugin {
 }
 
 struct BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
-    physics_scale: f32,
     custom_colors: Query<'world, 'state, &'a ColliderDebugColor>,
     context: &'b RapierContext,
-    gizmos: Gizmos<'state>,
+    gizmos: Gizmos<'world, 'state>,
 }
 
 impl<'world, 'state, 'a, 'b> BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
@@ -113,7 +112,7 @@ impl<'world, 'state, 'a, 'b> BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
             _ => None,
         };
 
-        color.map(|co| co.as_hsla_f32()).unwrap_or(default)
+        color.map(|co: Hsla| co.to_f32_array()).unwrap_or(default)
     }
 }
 
@@ -126,11 +125,10 @@ impl<'world, 'state, 'a, 'b> DebugRenderBackend for BevyLinesRenderBackend<'worl
         b: Point<Real>,
         color: [f32; 4],
     ) {
-        let scale = self.physics_scale;
         let color = self.object_color(object, color);
         self.gizmos.line(
-            [a.x * scale, a.y * scale, 0.0].into(),
-            [b.x * scale, b.y * scale, 0.0].into(),
+            [a.x, a.y, 0.0].into(),
+            [b.x, b.y, 0.0].into(),
             Color::hsla(color[0], color[1], color[2], color[3]),
         )
     }
@@ -143,11 +141,10 @@ impl<'world, 'state, 'a, 'b> DebugRenderBackend for BevyLinesRenderBackend<'worl
         b: Point<Real>,
         color: [f32; 4],
     ) {
-        let scale = self.physics_scale;
         let color = self.object_color(object, color);
         self.gizmos.line(
-            [a.x * scale, a.y * scale, a.z * scale].into(),
-            [b.x * scale, b.y * scale, b.z * scale].into(),
+            [a.x, a.y, a.z].into(),
+            [b.x, b.y, b.z].into(),
             Color::hsla(color[0], color[1], color[2], color[3]),
         )
     }
@@ -164,14 +161,12 @@ fn debug_render_scene(
     }
 
     let mut backend = BevyLinesRenderBackend {
-        physics_scale: rapier_context.physics_scale,
         custom_colors,
         context: &rapier_context,
         gizmos,
     };
 
     let unscaled_style = render_context.pipeline.style;
-    render_context.pipeline.style.rigid_body_axes_length /= rapier_context.physics_scale;
     render_context.pipeline.render(
         &mut backend,
         &rapier_context.bodies,
