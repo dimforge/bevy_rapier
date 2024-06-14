@@ -338,7 +338,7 @@ impl RapierContext {
     /// Updates the state of the query pipeline, based on the collider positions known
     /// from the last timestep or the last call to `self.propagate_modified_body_positions_to_colliders()`.
     pub fn update_query_pipeline(&mut self) {
-        self.query_pipeline.update(&self.bodies, &self.colliders);
+        self.query_pipeline.update(&self.colliders);
     }
 
     /// The map from entities to rigid-body handles.
@@ -447,18 +447,16 @@ impl RapierContext {
                 );
 
                 if options.apply_impulse_to_dynamic_bodies {
-                    for collision in &*collisions {
-                        controller.solve_character_collision_impulses(
-                            dt,
-                            bodies,
-                            colliders,
-                            query_pipeline,
-                            (&scaled_shape).into(),
-                            shape_mass,
-                            collision,
-                            filter,
-                        )
-                    }
+                    controller.solve_character_collision_impulses(
+                        dt,
+                        bodies,
+                        colliders,
+                        query_pipeline,
+                        (&scaled_shape).into(),
+                        shape_mass,
+                        collisions.iter().copied(),
+                        filter,
+                    )
                 }
 
                 result
@@ -748,7 +746,7 @@ impl RapierContext {
     /// * `shape_vel` - The constant velocity of the shape to cast (i.e. the cast direction).
     /// * `shape` - The shape to cast.
     /// * `max_toi` - The maximum time-of-impact that can be reported by this cast. This effectively
-    ///   limits the distance traveled by the shape to `shapeVel.norm() * maxToi`.
+    ///   limits the distance traveled by the shape to `shape_vel.norm() * maxToi`.
     /// * `stop_at_penetration` - If the casted shape starts in a penetration state with any
     ///    collider, two results are possible. If `stop_at_penetration` is `true` then, the
     ///    result will have a `toi` equal to `start_time`. If `stop_at_penetration` is `false`
