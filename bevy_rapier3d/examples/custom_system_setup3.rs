@@ -4,7 +4,7 @@ use bevy_rapier3d::prelude::*;
 fn main() {
     let mut app = App::new();
 
-    app.insert_resource(ClearColor(Color::rgb(
+    app.insert_resource(ClearColor(Color::srgb(
         0xF9 as f32 / 255.0,
         0xF9 as f32 / 255.0,
         0xFF as f32 / 255.0,
@@ -94,9 +94,9 @@ pub fn setup_physics(mut commands: Commands) {
     let mut offset = -(num as f32) * (rad * 2.0 + rad) * 0.5;
     let mut color = 0;
     let colors = [
-        Color::hsl(220.0, 1.0, 0.3),
-        Color::hsl(180.0, 1.0, 0.3),
-        Color::hsl(260.0, 1.0, 0.7),
+        Hsla::hsl(220.0, 1.0, 0.3),
+        Hsla::hsl(180.0, 1.0, 0.3),
+        Hsla::hsl(260.0, 1.0, 0.7),
     ];
 
     for j in 0usize..20 {
