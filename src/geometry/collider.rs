@@ -369,6 +369,7 @@ impl Default for Group {
 /// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash, Component, Reflect)]
 #[reflect(Component, Hash, PartialEq)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct CollisionGroups {
     /// Groups memberships.
     pub memberships: Group,
@@ -401,6 +402,7 @@ impl From<CollisionGroups> for InteractionGroups {
 /// This follows the same rules as the `CollisionGroups`.
 #[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Hash, Component, Reflect)]
 #[reflect(Component, Hash, PartialEq)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct SolverGroups {
     /// Groups memberships.
     pub memberships: Group,
@@ -482,6 +484,7 @@ impl From<ActiveEvents> for rapier::pipeline::ActiveEvents {
 /// entity.
 #[derive(Copy, Clone, PartialEq, Component, Reflect)]
 #[reflect(Component)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct ContactForceEventThreshold(pub f32);
 
 impl Default for ContactForceEventThreshold {
@@ -501,6 +504,7 @@ impl Default for ContactForceEventThreshold {
 /// rendering assets.
 #[derive(Copy, Clone, PartialEq, Default, Component, Reflect)]
 #[reflect(Component)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct ContactSkin(pub f32);
 
 /// Component which will be filled (if present) with a list of entities with which the current

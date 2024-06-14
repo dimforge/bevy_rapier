@@ -12,6 +12,7 @@ and new features. Please have a look at the
 - Update to bevy `0.14`.
 - Renamed `has_any_active_contacts` to `has_any_active_contact` for better consistency with rapier.
 - `ColliderDebugColor`'s property is now a `bevy::color::Hsla`.
+- Added serialization support for `CollisionGroups`, `SolverGroups`, `ContactForceEventThreshold`, `ContactSkin`.
 
 ### Added
 
