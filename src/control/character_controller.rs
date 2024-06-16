@@ -1,4 +1,4 @@
-use crate::geometry::{Collider, CollisionGroups, Toi};
+use crate::geometry::{Collider, CollisionGroups, ShapeCastHit};
 use crate::math::{Real, Rot, Vect};
 use bevy::prelude::*;
 
@@ -21,7 +21,7 @@ pub struct CharacterCollision {
     /// The translations that was still waiting to be applied to the character when the hit happens.
     pub translation_remaining: Vect,
     /// Geometric information about the hit.
-    pub toi: Toi,
+    pub hit: ShapeCastHit,
 }
 
 impl CharacterCollision {
@@ -29,25 +29,25 @@ impl CharacterCollision {
         ctxt: &RapierContext,
         c: &rapier::control::CharacterCollision,
     ) -> Option<Self> {
-        Self::from_raw_with_set(ctxt.physics_scale, &ctxt.colliders, c)
+        Self::from_raw_with_set(&ctxt.colliders, c, true)
     }
 
     pub(crate) fn from_raw_with_set(
-        physics_scale: Real,
         colliders: &ColliderSet,
         c: &rapier::control::CharacterCollision,
+        details_always_computed: bool,
     ) -> Option<Self> {
         RapierContext::collider_entity_with_set(colliders, c.handle).map(|entity| {
             CharacterCollision {
                 entity,
-                character_translation: (c.character_pos.translation.vector * physics_scale).into(),
+                character_translation: c.character_pos.translation.vector.into(),
                 #[cfg(feature = "dim2")]
                 character_rotation: c.character_pos.rotation.angle(),
                 #[cfg(feature = "dim3")]
                 character_rotation: c.character_pos.rotation.into(),
-                translation_applied: (c.translation_applied * physics_scale).into(),
-                translation_remaining: (c.translation_remaining * physics_scale).into(),
-                toi: Toi::from_rapier(physics_scale, c.toi),
+                translation_applied: c.translation_applied.into(),
+                translation_remaining: c.translation_remaining.into(),
+                hit: ShapeCastHit::from_rapier(c.hit, details_always_computed),
             }
         })
     }
@@ -78,6 +78,15 @@ pub struct MoveShapeOptions {
     /// Should the character be automatically snapped to the ground if the distance between
     /// the ground and its feet are smaller than the specified threshold?
     pub snap_to_ground: Option<CharacterLength>,
+    /// Increase this number if your character appears to get stuck when sliding against surfaces.
+    ///
+    /// This is a small distance applied to the movement toward the contact normals of shapes hit
+    /// by the character controller. This helps shape-casting not getting stuck in an alway-penetrating
+    /// state during the sliding calculation.
+    ///
+    /// This value should remain fairly small since it can introduce artificial "bumps" when sliding
+    /// along a flat surface.
+    pub normal_nudge_factor: Real,
 }
 
 impl Default for MoveShapeOptions {
@@ -92,6 +101,7 @@ impl Default for MoveShapeOptions {
             min_slope_slide_angle: def.min_slope_slide_angle,
             apply_impulse_to_dynamic_bodies: true,
             snap_to_ground: def.snap_to_ground,
+            normal_nudge_factor: def.normal_nudge_factor,
         }
     }
 }
@@ -138,29 +148,34 @@ pub struct KinematicCharacterController {
     /// Groups for filtering-out some colliders from the environment seen by the character
     /// controller.
     pub filter_groups: Option<CollisionGroups>,
+    /// Increase this number if your character appears to get stuck when sliding against surfaces.
+    ///
+    /// This is a small distance applied to the movement toward the contact normals of shapes hit
+    /// by the character controller. This helps shape-casting not getting stuck in an alway-penetrating
+    /// state during the sliding calculation.
+    ///
+    /// This value should remain fairly small since it can introduce artificial "bumps" when sliding
+    /// along a flat surface.
+    pub normal_nudge_factor: Real,
 }
 
 impl KinematicCharacterController {
-    pub(crate) fn to_raw(
-        &self,
-        physics_scale: Real,
-    ) -> Option<rapier::control::KinematicCharacterController> {
+    pub(crate) fn to_raw(&self) -> Option<rapier::control::KinematicCharacterController> {
         let autostep = self.autostep.map(|autostep| CharacterAutostep {
-            max_height: autostep.max_height.map_absolute(|x| x / physics_scale),
-            min_width: autostep.min_width.map_absolute(|x| x / physics_scale),
+            max_height: autostep.max_height,
+            min_width: autostep.min_width,
             include_dynamic_bodies: autostep.include_dynamic_bodies,
         });
 
         Some(rapier::control::KinematicCharacterController {
             up: self.up.try_into().ok()?,
-            offset: self.offset.map_absolute(|x| x / physics_scale),
+            offset: self.offset,
             slide: self.slide,
             autostep,
             max_slope_climb_angle: self.max_slope_climb_angle,
             min_slope_slide_angle: self.min_slope_slide_angle,
-            snap_to_ground: self
-                .snap_to_ground
-                .map(|x| x.map_absolute(|x| x / physics_scale)),
+            snap_to_ground: self.snap_to_ground,
+            normal_nudge_factor: self.normal_nudge_factor,
         })
     }
 }
@@ -182,6 +197,7 @@ impl Default for KinematicCharacterController {
             snap_to_ground: def.snap_to_ground,
             filter_flags: QueryFilterFlags::default() | QueryFilterFlags::EXCLUDE_SENSORS,
             filter_groups: None,
+            normal_nudge_factor: def.normal_nudge_factor,
         }
     }
 }
@@ -201,6 +217,8 @@ pub struct KinematicCharacterControllerOutput {
     pub effective_translation: Vect,
     /// Collisions between the character and obstacles found in its path.
     pub collisions: Vec<CharacterCollision>,
+    /// Indicates whether the shape is sliding down a slope after its kinematic movement.
+    pub is_sliding_down_slope: bool,
 }
 
 /// The allowed movement computed by `RapierContext::move_shape`.
@@ -209,4 +227,6 @@ pub struct MoveShapeOutput {
     pub grounded: bool,
     /// The translation calculated by the last character control step taking obstacles into account.
     pub effective_translation: Vect,
+    /// Indicates whether the shape is sliding down a slope after its kinematic movement.
+    pub is_sliding_down_slope: bool,
 }
