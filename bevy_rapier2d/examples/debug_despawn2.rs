@@ -3,7 +3,9 @@
 //       in https://github.com/dimforge/bevy_rapier/issues/75
 
 use bevy::prelude::*;
+use bevy_rapier2d::dynamics::RevoluteJointBuilderGlam;
 use bevy_rapier2d::prelude::*;
+use rapier2d::dynamics::RevoluteJointBuilder;
 
 fn main() {
     App::new()
@@ -172,10 +174,11 @@ fn spawn_cube(commands: &mut Commands, game: &mut Game) {
                 let id = children
                     .spawn(ImpulseJoint::new(
                         block_entities[*i],
-                        RevoluteJointBuilder::new()
-                            .local_anchor1(anchor_1)
-                            .local_anchor2(anchor_2)
-                            .build(),
+                        RevoluteJointBuilder::new_glam()
+                            .local_anchor1_glam(anchor_1)
+                            .local_anchor2_glam(anchor_2)
+                            .build()
+                            .data,
                     ))
                     .id();
                 game.current_cube_joints.push(id);

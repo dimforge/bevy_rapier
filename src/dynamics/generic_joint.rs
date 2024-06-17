@@ -24,6 +24,12 @@ impl GenericJoint {
     }
 }
 
+impl From<RapierGenericJoint> for GenericJoint {
+    fn from(joint: RapierGenericJoint) -> GenericJoint {
+        Self { raw: joint }
+    }
+}
+
 /*
  * NOTE: the following are copy-pasted from Rapier’s GenericJoint, to match its
  *       construction methods, but using glam types.
