@@ -12,7 +12,7 @@ const GRAVITY: f32 = -9.81;
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(
+        .insert_resource(ClearColor(Color::srgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
@@ -82,7 +82,7 @@ fn setup_map(mut commands: Commands) {
      * Stairs
      */
     let stair_len = 30;
-    let stair_step = 0.1;
+    let stair_step = 0.2;
     for i in 1..=stair_len {
         let step = i as f32;
         let collider = Collider::cuboid(1.0, step * stair_step, 1.0);
@@ -130,21 +130,21 @@ struct MovementInput(Vec3);
 struct LookInput(Vec2);
 
 fn handle_input(
-    keyboard: Res<Input<KeyCode>>,
+    keyboard: Res<ButtonInput<KeyCode>>,
     mut movement: ResMut<MovementInput>,
     mut look: ResMut<LookInput>,
     mut mouse_events: EventReader<MouseMotion>,
 ) {
-    if keyboard.pressed(KeyCode::W) {
+    if keyboard.pressed(KeyCode::KeyW) {
         movement.z -= 1.0;
     }
-    if keyboard.pressed(KeyCode::S) {
+    if keyboard.pressed(KeyCode::KeyS) {
         movement.z += 1.0
     }
-    if keyboard.pressed(KeyCode::A) {
+    if keyboard.pressed(KeyCode::KeyA) {
         movement.x -= 1.0;
     }
-    if keyboard.pressed(KeyCode::D) {
+    if keyboard.pressed(KeyCode::KeyD) {
         movement.x += 1.0
     }
     **movement = movement.normalize_or_zero();
