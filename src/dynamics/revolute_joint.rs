@@ -1,6 +1,8 @@
 use crate::dynamics::{GenericJoint, GenericJointBuilder};
 use crate::math::{Real, Vect};
-use rapier::dynamics::{JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel};
+use rapier::dynamics::{
+    JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel, RigidBodyHandle, RigidBodySet,
+};
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -137,6 +139,26 @@ impl RevoluteJoint {
     pub fn set_limits(&mut self, limits: [Real; 2]) -> &mut Self {
         self.data.set_limits(JointAxis::AngX, limits);
         self
+    }
+
+    /// The angle along the free degree of freedom of this revolute joint in `[-π, π]`.
+    ///
+    /// # Parameters
+    /// - `bodies` : the rigid body set from [`super::super::RapierContext`]
+    /// - `body1`: the first rigid-body attached to this revolute joint, obtained through [`rapier::dynamics::ImpulseJoint`] or [`rapier::dynamics::MultibodyJoint`].
+    /// - `body2`: the second rigid-body attached to this revolute joint, obtained through [`rapier::dynamics::ImpulseJoint`] or [`rapier::dynamics::MultibodyJoint`].
+    pub fn angle(
+        &self,
+        bodies: &RigidBodySet,
+        body1: RigidBodyHandle,
+        body2: RigidBodyHandle,
+    ) -> f32 {
+        let joint = self.data.raw.as_revolute().unwrap();
+
+        let rb1 = &bodies[body1];
+        let rb2 = &bodies[body2];
+        // NOTE: unwrap will always succeed since `Self` is known to be a revolute joint.
+        joint.angle(rb1.rotation(), rb2.rotation())
     }
 }
 
