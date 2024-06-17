@@ -2,12 +2,13 @@ name: Rust
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 env:
   CARGO_TERM_COLOR: always
+  RUST_CACHE_KEY: rust-cache-20240617
 
 jobs:
   check-fmt:
@@ -29,6 +30,8 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: ${{ env.RUST_CACHE_KEY }}
       - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
       - name: Clippy for bevy_rapier2d
         run: cargo clippy --verbose -p bevy_rapier2d
@@ -53,6 +56,8 @@ jobs:
           components: clippy
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: ${{ env.RUST_CACHE_KEY }}
       - name: Clippy bevy_rapier2d
         run: cd bevy_rapier2d && cargo clippy --verbose --features wasm-bindgen,bevy/webgl2 --target wasm32-unknown-unknown
       - name: Clippy bevy_rapier3d
