@@ -18,6 +18,7 @@ and new features. Please have a look at the
 
 - Derive `Debug` for `LockedAxes`.
 - Expose `is_sliding_down_slope` to both `MoveShapeOutput` and `KinematicCharacterControllerOutput`.
+- Added a First Person Shooter `character_controller` example for `bevy_rapier3d`.
 
 ### Fix
 
