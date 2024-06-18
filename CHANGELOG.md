@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.27.0-rc.1 (17 June 2024)
+## v0.27.0-rc.1 (18 June 2024)
 
 **This is an update to Rapier 0.20 which includes several stability improvements
 and new features. Please have a look at the
