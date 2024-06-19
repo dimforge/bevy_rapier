@@ -1,4 +1,11 @@
-use bevy::prelude::*;
+use std::num::NonZeroUsize;
+
+use bevy::{
+    ecs::schedule::Stepping,
+    input::common_conditions::{input_just_pressed, input_pressed},
+    prelude::*,
+};
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier2d::prelude::*;
 
 fn main() {
@@ -13,11 +20,13 @@ fn main() {
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0),
             RapierDebugRenderPlugin::default(),
         ))
+        .add_plugins(WorldInspectorPlugin::new())
         .add_systems(Startup, (setup_graphics, setup_physics))
         .run();
 }
 
-pub fn setup_graphics(mut commands: Commands) {
+pub fn setup_graphics(mut commands: Commands, mut rapier_context: ResMut<RapierContext>) {
+    rapier_context.integration_parameters.num_solver_iterations = NonZeroUsize::new(1).unwrap();
     commands.spawn(Camera2dBundle {
         transform: Transform::from_xyz(0.0, -200.0, 0.0),
         ..default()

@@ -57,6 +57,10 @@ oorandom = "11"
 approx = "0.5.1"
 glam = { version = "0.25", features = ["approx"] }
 
+#{ git = "https://github.com/vrixyz/bevy-inspector-egui.git", branch = "bevy_0.14" }
+bevy-inspector-egui = "*"
+bevy_tasks = "*"
+
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
 features = ["debug-render-2d", "serde-serialize"]
