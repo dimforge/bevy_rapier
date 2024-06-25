@@ -1,5 +1,7 @@
+use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 use std::collections::HashMap;
+use std::ops::{Deref, DerefMut};
 use std::sync::RwLock;
 
 use rapier::prelude::{
@@ -24,6 +26,46 @@ use rapier::geometry::DefaultBroadPhase;
 
 #[derive(Component, Reflect)]
 pub struct DefaultContext;
+
+#[derive(SystemParam)]
+pub struct RapierContextAccess<'w, 's> {
+    pub rapier_context: Query<'w, 's, (Entity, &'static RapierContext)>,
+}
+
+impl<'w, 's> RapierContextAccess<'w, 's> {
+    /// Use this method if you only have one world.
+    pub fn single<'a>(&'_ self) -> &RapierContext {
+        self.rapier_context.single().1
+    }
+}
+
+impl<'w, 's> Deref for RapierContextAccess<'w, 's> {
+    type Target = RapierContext;
+
+    fn deref(&self) -> &Self::Target {
+        self.rapier_context.single().1
+    }
+}
+
+#[derive(SystemParam)]
+pub struct RapierContextAccessMut<'w, 's> {
+    pub rapier_context: Query<'w, 's, (Entity, &'static mut RapierContext)>,
+}
+
+impl<'w, 's> Deref for RapierContextAccessMut<'w, 's> {
+    type Target = RapierContext;
+
+    fn deref(&self) -> &Self::Target {
+        self.rapier_context.single().1
+    }
+}
+
+impl<'w, 's> DerefMut for RapierContextAccessMut<'w, 's> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        // TODO: should we cache the result ?
+        self.rapier_context.single_mut().1.into_inner()
+    }
+}
 
 /// The Rapier context, containing all the state of the physics engine.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]

@@ -1,5 +1,5 @@
 pub use self::configuration::{RapierConfiguration, SimulationToRenderTime, TimestepMode};
-pub use self::context::RapierContext;
+pub use self::context::{RapierContext, RapierContextAccess, RapierContextAccessMut};
 pub use self::plugin::{NoUserData, PhysicsSet, RapierPhysicsPlugin, RapierTransformPropagateSet};
 
 #[allow(clippy::type_complexity)]

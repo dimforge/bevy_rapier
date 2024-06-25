@@ -9,8 +9,9 @@
   - Migration guide: 
     - `ResMut<mut RapierContext>` -> `Query<&mut RapierContext>`
     - `Res<RapierContext>` -> `Query<&RapierContext>`
-    - `Query<&mut RapierConfiguration>` -> `Query<&mut RapierConfiguration>`
-    - `Query<&RapierConfiguration>` -> `Query<&RapierConfiguration>`
+    - `ResMut<RapierConfiguration>` -> `Query<&mut RapierConfiguration>`
+    - `Res<RapierConfiguration>` -> `Query<&RapierConfiguration>`
+    - you can reach out for the underlying configuration via .single
 
 ## v0.27.0-rc.1 (18 June 2024)
 

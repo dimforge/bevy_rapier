@@ -1,3 +1,5 @@
+use std::ops::DerefMut;
+
 use bevy::color::palettes::basic;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
@@ -76,11 +78,10 @@ pub fn setup_physics(mut commands: Commands) {
 pub fn cast_ray(
     mut commands: Commands,
     windows: Query<&Window, With<PrimaryWindow>>,
-    mut rapier_context: Query<&mut RapierContext>,
+    rapier_context: RapierContextAccessMut,
     cameras: Query<(&Camera, &GlobalTransform)>,
 ) {
     let window = windows.single();
-    let rapier_context = &mut *rapier_context.single_mut();
 
     let Some(cursor_position) = window.cursor_position() else {
         return;
