@@ -151,7 +151,7 @@ impl<'world, 'state, 'a, 'b> DebugRenderBackend for BevyLinesRenderBackend<'worl
 }
 
 fn debug_render_scene(
-    rapier_context: Res<RapierContext>,
+    rapier_context: Query<&RapierContext>,
     mut render_context: ResMut<DebugRenderContext>,
     gizmos: Gizmos,
     custom_colors: Query<&ColliderDebugColor>,
@@ -159,6 +159,7 @@ fn debug_render_scene(
     if !render_context.enabled {
         return;
     }
+    let rapier_context = &*rapier_context.single();
 
     let mut backend = BevyLinesRenderBackend {
         custom_colors,

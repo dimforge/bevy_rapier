@@ -20,8 +20,9 @@ pub type NoUserData = ();
 /// Rapier physics engine.
 pub struct RapierPhysicsPlugin<PhysicsHooks = ()> {
     schedule: Interned<dyn ScheduleLabel>,
-    length_unit: f32,
     default_system_setup: bool,
+    /// Read in PreStartup, this will create a default world.
+    pub default_world_setup: Option<RapierContextInitialization>,
     _phantom: PhantomData<PhysicsHooks>,
 }
 
@@ -37,7 +38,9 @@ where
     /// likely always be 1.0 in 3D. In 2D, this is useful to specify a "pixels-per-meter"
     /// conversion ratio.
     pub fn with_length_unit(mut self, length_unit: f32) -> Self {
-        self.length_unit = length_unit;
+        self.default_world_setup = Some(RapierContextInitialization {
+            length_unit: length_unit,
+        });
         self
     }
 
@@ -56,8 +59,10 @@ where
     #[cfg(feature = "dim2")]
     pub fn pixels_per_meter(pixels_per_meter: f32) -> Self {
         Self {
-            length_unit: pixels_per_meter,
             default_system_setup: true,
+            default_world_setup: Some(RapierContextInitialization {
+                length_unit: pixels_per_meter,
+            }),
             ..default()
         }
     }
@@ -127,8 +132,8 @@ impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystem
     fn default() -> Self {
         Self {
             schedule: PostUpdate.intern(),
-            length_unit: 1.0,
             default_system_setup: true,
+            default_world_setup: Some(RapierContextInitialization { length_unit: 1f32 }),
             _phantom: PhantomData,
         }
     }
@@ -183,24 +188,19 @@ where
             .register_type::<ContactSkin>()
             .register_type::<Group>();
 
-        app.insert_resource(SimulationToRenderTime::default())
-            .insert_resource(RapierContext {
-                integration_parameters: IntegrationParameters {
-                    length_unit: self.length_unit,
-                    ..Default::default()
-                },
-                ..Default::default()
-            })
-            .insert_resource(Events::<CollisionEvent>::default())
+        app.insert_resource(Events::<CollisionEvent>::default())
             .insert_resource(Events::<ContactForceEvent>::default())
             .insert_resource(Events::<MassModifiedEvent>::default());
 
-        // Insert all of our required resources. Don’t overwrite
-        // the `RapierConfiguration` if it already exists.
-        //
-        // NOTE: be sure to call this after the `.insert_resource(RapierContext)` so we can
-        //       access the length_unit when initializing the RapierConfiguration.
-        app.init_resource::<RapierConfiguration>();
+        app.add_systems(
+            self.schedule,
+            (
+                setup_rapier_configuration,
+                setup_rapier_simulation_to_render_time,
+            )
+                .before(PhysicsSet::SyncBackend),
+        );
+        app.add_systems(PreStartup, insert_default_world);
 
         // Add each set as necessary
         if self.default_system_setup {
@@ -227,11 +227,12 @@ where
                     Self::get_systems(PhysicsSet::Writeback).in_set(PhysicsSet::Writeback),
                 ),
             );
+            app.init_resource::<TimestepMode>();
 
             // Warn user if the timestep mode isn't in Fixed
             if self.schedule.as_dyn_eq().dyn_eq(FixedUpdate.as_dyn_eq()) {
-                let config = app.world_mut().resource::<RapierConfiguration>();
-                match config.timestep_mode {
+                let config = app.world_mut().resource::<TimestepMode>();
+                match config {
                     TimestepMode::Fixed { .. } => {}
                     mode => {
                         warn!("TimestepMode is set to `{:?}`, it is recommended to use `TimestepMode::Fixed` if you have the physics in `FixedUpdate`", mode);
@@ -239,5 +240,32 @@ where
                 }
             }
         }
+    }
+}
+
+pub struct RapierContextInitialization {
+    pub length_unit: f32,
+}
+
+pub fn insert_default_world(mut commands: Commands) {
+    commands.spawn(RapierContext::default());
+}
+
+pub fn setup_rapier_configuration(
+    mut commands: Commands,
+    rapier_context: Query<(Entity, &RapierContext), Without<RapierConfiguration>>,
+) {
+    for (e, rapier_context) in rapier_context.iter() {
+        commands.entity(e).insert(RapierConfiguration::new(
+            rapier_context.integration_parameters.length_unit,
+        ));
+    }
+}
+pub fn setup_rapier_simulation_to_render_time(
+    mut commands: Commands,
+    rapier_context: Query<Entity, (With<RapierContext>, Without<SimulationToRenderTime>)>,
+) {
+    for e in rapier_context.iter() {
+        commands.entity(e).insert(SimulationToRenderTime::default());
     }
 }

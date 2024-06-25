@@ -8,12 +8,12 @@ use bevy::prelude::*;
 /// System responsible for creating new Rapier joints from the related `bevy_rapier` components.
 pub fn init_joints(
     mut commands: Commands,
-    mut context: ResMut<RapierContext>,
+    mut context: Query<&mut RapierContext>,
     impulse_joints: Query<(Entity, &ImpulseJoint), Without<RapierImpulseJointHandle>>,
     multibody_joints: Query<(Entity, &MultibodyJoint), Without<RapierMultibodyJointHandle>>,
     parent_query: Query<&Parent>,
 ) {
-    let context = &mut *context;
+    let context = &mut *context.single_mut();
 
     for (entity, joint) in impulse_joints.iter() {
         let mut target = None;
@@ -61,7 +61,7 @@ pub fn init_joints(
 
 /// System responsible for applying changes the user made to a joint component.
 pub fn apply_joint_user_changes(
-    mut context: ResMut<RapierContext>,
+    mut context: Query<&mut RapierContext>,
     changed_impulse_joints: Query<
         (&RapierImpulseJointHandle, &ImpulseJoint),
         Changed<ImpulseJoint>,
@@ -71,6 +71,7 @@ pub fn apply_joint_user_changes(
         Changed<MultibodyJoint>,
     >,
 ) {
+    let mut context = context.single_mut();
     // TODO: right now, we only support propagating changes made to the joint data.
     //       Re-parenting the joint isn’t supported yet.
     for (handle, changed_joint) in changed_impulse_joints.iter() {

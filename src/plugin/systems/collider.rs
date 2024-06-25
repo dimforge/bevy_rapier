@@ -41,7 +41,7 @@ pub type ColliderComponents<'a> = (
 /// System responsible for applying [`GlobalTransform::scale`] and/or [`ColliderScale`] to
 /// colliders.
 pub fn apply_scale(
-    config: Res<RapierConfiguration>,
+    config: Query<&RapierConfiguration>,
     mut changed_collider_scales: Query<
         (&mut Collider, &GlobalTransform, Option<&ColliderScale>),
         Or<(
@@ -51,6 +51,8 @@ pub fn apply_scale(
         )>,
     >,
 ) {
+    let config = &*config.single();
+
     for (mut shape, transform, custom_scale) in changed_collider_scales.iter_mut() {
         #[cfg(feature = "dim2")]
         let effective_scale = match custom_scale {
@@ -75,8 +77,8 @@ pub fn apply_scale(
 
 /// System responsible for applying changes the user made to a collider-related component.
 pub fn apply_collider_user_changes(
-    mut context: ResMut<RapierContext>,
-    config: Res<RapierConfiguration>,
+    mut context: Query<&mut RapierContext>,
+    config: Query<&RapierConfiguration>,
     (changed_collider_transforms, parent_query, transform_query): (
         Query<
             (Entity, &RapierColliderHandle, &GlobalTransform),
@@ -116,6 +118,9 @@ pub fn apply_collider_user_changes(
 
     mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
+    let context = &mut *context.single_mut();
+    let config = &*config.single();
+
     for (entity, handle, transform) in changed_collider_transforms.iter() {
         if context.collider_parent(entity).is_some() {
             let (_, collider_position) =
@@ -269,14 +274,15 @@ pub(crate) fn collider_offset(
 /// System responsible for creating new Rapier colliders from the related `bevy_rapier` components.
 pub fn init_colliders(
     mut commands: Commands,
-    config: Res<RapierConfiguration>,
-    mut context: ResMut<RapierContext>,
+    config: Query<&RapierConfiguration>,
+    mut context: Query<&mut RapierContext>,
     colliders: Query<(ColliderComponents, Option<&GlobalTransform>), Without<RapierColliderHandle>>,
     mut rigid_body_mprops: Query<&mut ReadMassProperties>,
     parent_query: Query<&Parent>,
     transform_query: Query<&Transform>,
 ) {
-    let context = &mut *context;
+    let context = &mut *context.single_mut();
+    let config = &*config.single();
 
     for (
         (

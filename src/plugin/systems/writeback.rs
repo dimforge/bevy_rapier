@@ -7,13 +7,14 @@ use bevy::prelude::*;
 
 /// System responsible for writing updated mass properties back into the [`ReadMassProperties`] component.
 pub fn writeback_mass_properties(
-    mut context: ResMut<RapierContext>,
-    config: Res<RapierConfiguration>,
+    context: Query<&RapierContext>,
+    config: Query<&RapierConfiguration>,
 
     mut mass_props: Query<&mut ReadMassProperties>,
     mut mass_modified: EventReader<MassModifiedEvent>,
 ) {
-    let context = &mut *context;
+    let context = context.single();
+    let config = config.single();
 
     if config.physics_pipeline_active {
         for entity in mass_modified.read() {

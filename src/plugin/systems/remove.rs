@@ -18,7 +18,7 @@ use bevy::prelude::*;
 /// despawn).
 pub fn sync_removals(
     mut commands: Commands,
-    mut context: ResMut<RapierContext>,
+    mut context: Query<&mut RapierContext>,
     mut removed_bodies: RemovedComponents<RapierRigidBodyHandle>,
     mut removed_colliders: RemovedComponents<RapierColliderHandle>,
     mut removed_impulse_joints: RemovedComponents<RapierImpulseJointHandle>,
@@ -40,7 +40,7 @@ pub fn sync_removals(
     /*
      * Rigid-bodies removal detection.
      */
-    let context = &mut *context;
+    let context = &mut *context.single_mut();
     for entity in removed_bodies.read() {
         if let Some(handle) = context.entity2body.remove(&entity) {
             let _ = context.last_body_transform_set.remove(&handle);

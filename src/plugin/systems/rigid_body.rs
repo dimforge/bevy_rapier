@@ -37,8 +37,8 @@ pub type RigidBodyComponents<'a> = (
 
 /// System responsible for applying changes the user made to a rigid-body-related component.
 pub fn apply_rigid_body_user_changes(
-    mut context: ResMut<RapierContext>,
-    config: Res<RapierConfiguration>,
+    mut context: Query<&mut RapierContext>,
+    config: Query<&RapierConfiguration>,
     changed_rb_types: Query<(&RapierRigidBodyHandle, &RigidBody), Changed<RigidBody>>,
     mut changed_transforms: Query<
         (
@@ -76,7 +76,8 @@ pub fn apply_rigid_body_user_changes(
     ),
     mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
-    let context = &mut *context;
+    let mut context = context.single_mut();
+    let config = config.single();
 
     // Deal with sleeping first, because other changes may then wake-up the
     // rigid-body again.
@@ -143,7 +144,8 @@ pub fn apply_rigid_body_user_changes(
                 interpolation.end = None;
             }
         }
-
+        // FIXME: avoid to run multiple times the mutable deref ?
+        let context = &mut *context;
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             transform_changed = transform_changed.or_else(|| {
                 Some(transform_changed_fn(
@@ -274,16 +276,18 @@ pub fn apply_rigid_body_user_changes(
 /// System responsible for writing the result of the last simulation step into our `bevy_rapier`
 /// components and the [`GlobalTransform`] component.
 pub fn writeback_rigid_bodies(
-    mut context: ResMut<RapierContext>,
-    config: Res<RapierConfiguration>,
-    sim_to_render_time: Res<SimulationToRenderTime>,
+    mut context: Query<&mut RapierContext>,
+    timestep_mode: Res<TimestepMode>,
+    config: Query<&RapierConfiguration>,
+    sim_to_render_time: Query<&SimulationToRenderTime>,
     global_transforms: Query<&GlobalTransform>,
     mut writeback: Query<
         RigidBodyWritebackComponents,
         (With<RigidBody>, Without<RigidBodyDisabled>),
     >,
 ) {
-    let context = &mut *context;
+    let sim_to_render_time = sim_to_render_time.single();
+    let config = config.single();
 
     if config.physics_pipeline_active {
         for (handle, parent, transform, mut interpolation, mut velocity, mut sleeping) in
@@ -291,13 +295,14 @@ pub fn writeback_rigid_bodies(
         {
             let handle = handle.0;
 
+            let context = &mut *context.single_mut();
             // TODO: do this the other way round: iterate through Rapier’s RigidBodySet on the active bodies,
             // and update the components accordingly. That way, we don’t have to iterate through the entities that weren’t changed
             // by physics (for example because they are sleeping).
             if let Some(rb) = context.bodies.get(handle) {
                 let mut interpolated_pos = utils::iso_to_transform(rb.position());
 
-                if let TimestepMode::Interpolated { dt, .. } = config.timestep_mode {
+                if let TimestepMode::Interpolated { dt, .. } = *timestep_mode {
                     if let Some(interpolation) = interpolation.as_deref_mut() {
                         if interpolation.end.is_none() {
                             interpolation.end = Some(*rb.position());
@@ -425,9 +430,10 @@ pub fn writeback_rigid_bodies(
 /// System responsible for creating new Rapier rigid-bodies from the related `bevy_rapier` components.
 pub fn init_rigid_bodies(
     mut commands: Commands,
-    mut context: ResMut<RapierContext>,
+    mut context: Query<&mut RapierContext>,
     rigid_bodies: Query<RigidBodyComponents, Without<RapierRigidBodyHandle>>,
 ) {
+    let context = &mut *context.single_mut();
     for (
         entity,
         rb,
@@ -539,12 +545,12 @@ pub fn init_rigid_bodies(
 /// mass to be available, which it was not because colliders were not created yet. As a
 /// result, we run this system after the collider creation.
 pub fn apply_initial_rigid_body_impulses(
-    mut context: ResMut<RapierContext>,
+    mut context: Query<&mut RapierContext>,
     // We can’t use RapierRigidBodyHandle yet because its creation command hasn’t been
     // executed yet.
     mut init_impulses: Query<(Entity, &mut ExternalImpulse), Without<RapierRigidBodyHandle>>,
 ) {
-    let context = &mut *context;
+    let context = &mut *context.single_mut();
 
     for (entity, mut impulse) in init_impulses.iter_mut() {
         let bodies = &mut context.bodies;

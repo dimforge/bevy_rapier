@@ -15,8 +15,8 @@ use rapier::pipeline::QueryFilter;
 /// collider.
 pub fn update_character_controls(
     mut commands: Commands,
-    config: Res<RapierConfiguration>,
-    mut context: ResMut<RapierContext>,
+    config: Query<&RapierConfiguration>,
+    mut context: Query<&mut RapierContext>,
     mut character_controllers: Query<(
         Entity,
         &mut KinematicCharacterController,
@@ -27,7 +27,9 @@ pub fn update_character_controls(
     )>,
     mut transforms: Query<&mut Transform>,
 ) {
-    let context = &mut *context;
+    let context = &mut *context.single_mut();
+    let config = &*config.single();
+
     for (entity, mut controller, output, collider_handle, body_handle, glob_transform) in
         character_controllers.iter_mut()
     {
