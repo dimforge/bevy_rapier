@@ -147,8 +147,9 @@ fn main() {
             OnExit(Examples::PlayerMovement2),
             (
                 cleanup,
-                |mut rapier_config: ResMut<RapierConfiguration>,
+                |mut rapier_config: Query<&mut RapierConfiguration>,
                  ctxt: DefaultRapierContextAccess| {
+                    let mut rapier_config = rapier_config.single_mut();
                     rapier_config.gravity =
                         RapierConfiguration::new(ctxt.integration_parameters.length_unit).gravity;
                 },

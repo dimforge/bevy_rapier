@@ -68,7 +68,7 @@ pub fn step_simulation<Hooks>(
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use bevy::{
         asset::AssetPlugin,
         ecs::event::Events,

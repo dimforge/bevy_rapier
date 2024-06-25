@@ -119,3 +119,117 @@ impl<'a> EventHandler for EventQueue<'a> {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use bevy::time::TimePlugin;
+    use systems::tests::HeadlessRenderPlugin;
+
+    use crate::{plugin::*, prelude::*};
+
+    #[cfg(feature = "dim3")]
+    fn cuboid(hx: Real, hy: Real, hz: Real) -> Collider {
+        Collider::cuboid(hx, hy, hz)
+    }
+    #[cfg(feature = "dim2")]
+    fn cuboid(hx: Real, hy: Real, _hz: Real) -> Collider {
+        Collider::cuboid(hx, hy)
+    }
+
+    #[test]
+    pub fn events_received() {
+        return main();
+
+        use bevy::prelude::*;
+
+        #[derive(Resource, Reflect)]
+        pub struct EventsSaver<E: Event> {
+            pub events: Vec<E>,
+        }
+        impl<E: Event> Default for EventsSaver<E> {
+            fn default() -> Self {
+                Self {
+                    events: Default::default(),
+                }
+            }
+        }
+        pub fn save_events<E: Event + Clone>(
+            mut collision_events: EventReader<E>,
+            mut saver: ResMut<EventsSaver<E>>,
+        ) {
+            for event in collision_events.read() {
+                saver.events.push(event.clone());
+            }
+        }
+        fn run_test(app: &mut App) {
+            app.add_systems(PostUpdate, save_events::<CollisionEvent>)
+                .add_systems(PostUpdate, save_events::<ContactForceEvent>)
+                .init_resource::<EventsSaver<CollisionEvent>>()
+                .init_resource::<EventsSaver<ContactForceEvent>>();
+
+            for _ in 0..200 {
+                app.update();
+            }
+            let saved_collisions = app
+                .world()
+                .get_resource::<EventsSaver<CollisionEvent>>()
+                .unwrap();
+            assert!(saved_collisions.events.len() > 0);
+            let saved_contact_forces = app
+                .world()
+                .get_resource::<EventsSaver<CollisionEvent>>()
+                .unwrap();
+            assert!(saved_contact_forces.events.len() > 0);
+        }
+
+        /// Adapted from events example
+        fn main() {
+            let mut app = App::new();
+            app.insert_resource(ClearColor(Color::srgb(
+                0xF9 as f32 / 255.0,
+                0xF9 as f32 / 255.0,
+                0xFF as f32 / 255.0,
+            )))
+            .add_plugins((
+                HeadlessRenderPlugin,
+                TransformPlugin,
+                TimePlugin,
+                RapierPhysicsPlugin::<NoUserData>::default(),
+            ))
+            .add_systems(Startup, (setup_graphics, setup_physics));
+
+            run_test(&mut app);
+        }
+
+        pub fn setup_graphics(mut commands: Commands) {
+            commands.spawn(Camera3dBundle {
+                transform: Transform::from_xyz(0.0, 0.0, 25.0).looking_at(Vec3::ZERO, Vec3::Y),
+                ..Default::default()
+            });
+        }
+
+        pub fn setup_physics(mut commands: Commands) {
+            /*
+             * Ground
+             */
+            commands.spawn((
+                TransformBundle::from(Transform::from_xyz(0.0, -1.2, 0.0)),
+                cuboid(4.0, 1.0, 1.0),
+            ));
+
+            commands.spawn((
+                TransformBundle::from(Transform::from_xyz(0.0, 5.0, 0.0)),
+                cuboid(4.0, 1.5, 1.0),
+                Sensor,
+            ));
+
+            commands.spawn((
+                TransformBundle::from(Transform::from_xyz(0.0, 13.0, 0.0)),
+                RigidBody::Dynamic,
+                cuboid(0.5, 0.5, 0.5),
+                ActiveEvents::COLLISION_EVENTS,
+                ContactForceEventThreshold(30.0),
+            ));
+        }
+    }
+}
