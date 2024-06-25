@@ -7,7 +7,7 @@
 - `RapierContext` is now a `Component`
   - Rapier now supports multiple worlds.
   - Migration guide: 
-    - `ResMut<mut RapierContext>` -> `Query<&mut RapierContext>`
+    - `ResMut<mut RapierContext>` -> `RapierContextAccessMut`
     - `Res<RapierContext>` -> `Query<&RapierContext>`
     - `ResMut<RapierConfiguration>` -> `Query<&mut RapierConfiguration>`
     - `Res<RapierConfiguration>` -> `Query<&RapierConfiguration>`

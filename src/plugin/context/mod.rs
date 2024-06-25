@@ -1,7 +1,7 @@
-use bevy::ecs::system::SystemParam;
+pub mod systemparams;
+
 use bevy::prelude::*;
 use std::collections::HashMap;
-use std::ops::{Deref, DerefMut};
 use std::sync::RwLock;
 
 use rapier::prelude::{
@@ -24,48 +24,14 @@ use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
 use rapier::control::CharacterAutostep;
 use rapier::geometry::DefaultBroadPhase;
 
-#[derive(Component, Reflect)]
-pub struct DefaultContext;
+#[derive(Component, Reflect, Debug, Clone, Copy)]
+pub struct DefaultRapierContext;
 
-#[derive(SystemParam)]
-pub struct RapierContextAccess<'w, 's> {
-    pub rapier_context: Query<'w, 's, (Entity, &'static RapierContext)>,
-}
-
-impl<'w, 's> RapierContextAccess<'w, 's> {
-    /// Use this method if you only have one world.
-    pub fn single<'a>(&'_ self) -> &RapierContext {
-        self.rapier_context.single().1
-    }
-}
-
-impl<'w, 's> Deref for RapierContextAccess<'w, 's> {
-    type Target = RapierContext;
-
-    fn deref(&self) -> &Self::Target {
-        self.rapier_context.single().1
-    }
-}
-
-#[derive(SystemParam)]
-pub struct RapierContextAccessMut<'w, 's> {
-    pub rapier_context: Query<'w, 's, (Entity, &'static mut RapierContext)>,
-}
-
-impl<'w, 's> Deref for RapierContextAccessMut<'w, 's> {
-    type Target = RapierContext;
-
-    fn deref(&self) -> &Self::Target {
-        self.rapier_context.single().1
-    }
-}
-
-impl<'w, 's> DerefMut for RapierContextAccessMut<'w, 's> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        // TODO: should we cache the result ?
-        self.rapier_context.single_mut().1.into_inner()
-    }
-}
+/// This is a component applied to any entity containing a rapier handle component.
+/// The inner Entity referred to has the component [`RapierContext`] responsible for handling
+/// its rapier data.
+#[derive(Component, Reflect, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RapierContextEntityLink(pub Entity);
 
 /// The Rapier context, containing all the state of the physics engine.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -247,19 +213,26 @@ impl RapierContext {
         &mut self,
         gravity: Vect,
         timestep_mode: TimestepMode,
-        events: Option<(EventWriter<CollisionEvent>, EventWriter<ContactForceEvent>)>,
+        events: Option<(
+            &EventWriter<CollisionEvent>,
+            &EventWriter<ContactForceEvent>,
+        )>,
         hooks: &dyn PhysicsHooks,
         time: &Time,
         sim_to_render_time: &mut SimulationToRenderTime,
         mut interpolation_query: Option<
-            Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
+            &mut Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
         >,
     ) {
-        let event_queue = events.map(|(ce, fe)| EventQueue {
-            deleted_colliders: &self.deleted_colliders,
-            collision_events: RwLock::new(ce),
-            contact_force_events: RwLock::new(fe),
-        });
+        let event_queue = if events.is_some() {
+            Some(EventQueue {
+                deleted_colliders: &self.deleted_colliders,
+                collision_events: RwLock::new(Vec::new()),
+                contact_force_events: RwLock::new(Vec::new()),
+            })
+        } else {
+            None
+        };
 
         let events = self
             .event_handler
@@ -373,7 +346,7 @@ impl RapierContext {
         }
     }
 
-    /// This method makes sure tha the rigid-body positions have been propagated to
+    /// This method makes sure that the rigid-body positions have been propagated to
     /// their attached colliders, without having to perform a srimulation step.
     pub fn propagate_modified_body_positions_to_colliders(&mut self) {
         self.bodies

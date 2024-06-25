@@ -148,7 +148,7 @@ fn main() {
             (
                 cleanup,
                 |mut rapier_config: ResMut<RapierConfiguration>,
-                 ctxt: Query<&mut RapierContext>| {
+                 ctxt: DefaultRapierContextAccess| {
                     rapier_config.gravity =
                         RapierConfiguration::new(ctxt.integration_parameters.length_unit).gravity;
                 },

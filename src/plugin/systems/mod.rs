@@ -33,33 +33,37 @@ pub fn step_simulation<Hooks>(
     mut sim_to_render_time: Query<&mut SimulationToRenderTime>,
     collision_events: EventWriter<CollisionEvent>,
     contact_force_events: EventWriter<ContactForceEvent>,
-    interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
+    mut interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
 ) where
     Hooks: 'static + BevyPhysicsHooks,
     for<'w, 's> SystemParamItem<'w, 's, Hooks>: BevyPhysicsHooks,
 {
-    let mut context = context.single_mut();
-    let config = &*config.single();
-    let sim_to_render_time = &mut *sim_to_render_time.single_mut();
     let hooks_adapter = BevyPhysicsHooksAdapter::new(hooks.into_inner());
 
-    if config.physics_pipeline_active {
-        context.step_simulation(
-            config.gravity,
-            *timestep_mode,
-            Some((collision_events, contact_force_events)),
-            &hooks_adapter,
-            &time,
-            sim_to_render_time,
-            Some(interpolation_query),
-        );
-        context.deleted_colliders.clear();
-    } else {
-        context.propagate_modified_body_positions_to_colliders();
-    }
+    for mut context in context.iter_mut() {
+        let context = &mut *context;
 
-    if config.query_pipeline_active {
-        context.update_query_pipeline();
+        let config = &*config.single();
+        let sim_to_render_time = &mut *sim_to_render_time.single_mut();
+
+        if config.physics_pipeline_active {
+            context.step_simulation(
+                config.gravity,
+                *timestep_mode,
+                Some((&collision_events, &contact_force_events)),
+                &hooks_adapter,
+                &time,
+                sim_to_render_time,
+                Some(&mut interpolation_query),
+            );
+            context.deleted_colliders.clear();
+        } else {
+            context.propagate_modified_body_positions_to_colliders();
+        }
+
+        if config.query_pipeline_active {
+            context.update_query_pipeline();
+        }
     }
 }
 
@@ -215,7 +219,7 @@ mod tests {
 
             app.update();
 
-            let mut world = app.world_mut();
+            let world = app.world_mut();
             let context = world.query::<&RapierContext>().iter(&world).next().unwrap();
             let child_transform = world.entity(child).get::<GlobalTransform>().unwrap();
             let child_handle = context.entity2body[&child];

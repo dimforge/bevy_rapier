@@ -1,6 +1,10 @@
 use crate::dynamics::ReadMassProperties;
 use crate::geometry::Collider;
-use crate::plugin::{RapierConfiguration, RapierContext};
+use crate::plugin::context::systemparams::try_retrieve_context;
+use crate::plugin::context::RapierContextEntityLink;
+use crate::plugin::{
+    DefaultRapierContextAccessMut, RapierConfiguration, RapierContext, RapierContextAccessMut,
+};
 use crate::prelude::{
     ActiveCollisionTypes, ActiveEvents, ActiveHooks, ColliderDisabled, ColliderMassProperties,
     ColliderScale, CollidingEntities, CollisionEvent, CollisionGroups, ContactForceEventThreshold,
@@ -22,7 +26,7 @@ use bevy::math::Vec3Swizzles;
 
 /// Components related to colliders.
 pub type ColliderComponents<'a> = (
-    Entity,
+    (Entity, Option<&'a RapierContextEntityLink>),
     &'a Collider,
     Option<&'a Sensor>,
     Option<&'a ColliderMassProperties>,
@@ -77,7 +81,7 @@ pub fn apply_scale(
 
 /// System responsible for applying changes the user made to a collider-related component.
 pub fn apply_collider_user_changes(
-    mut context: Query<&mut RapierContext>,
+    mut context: RapierContextAccessMut,
     config: Query<&RapierConfiguration>,
     (changed_collider_transforms, parent_query, transform_query): (
         Query<
@@ -88,40 +92,52 @@ pub fn apply_collider_user_changes(
         Query<&Transform>,
     ),
 
-    changed_shapes: Query<(&RapierColliderHandle, &Collider), Changed<Collider>>,
-    changed_active_events: Query<(&RapierColliderHandle, &ActiveEvents), Changed<ActiveEvents>>,
-    changed_active_hooks: Query<(&RapierColliderHandle, &ActiveHooks), Changed<ActiveHooks>>,
+    changed_shapes: Query<(Entity, &RapierColliderHandle, &Collider), Changed<Collider>>,
+    changed_active_events: Query<
+        (Entity, &RapierColliderHandle, &ActiveEvents),
+        Changed<ActiveEvents>,
+    >,
+    changed_active_hooks: Query<
+        (Entity, &RapierColliderHandle, &ActiveHooks),
+        Changed<ActiveHooks>,
+    >,
     changed_active_collision_types: Query<
-        (&RapierColliderHandle, &ActiveCollisionTypes),
+        (Entity, &RapierColliderHandle, &ActiveCollisionTypes),
         Changed<ActiveCollisionTypes>,
     >,
     (changed_friction, changed_restitution, changed_contact_skin): (
-        Query<(&RapierColliderHandle, &Friction), Changed<Friction>>,
-        Query<(&RapierColliderHandle, &Restitution), Changed<Restitution>>,
-        Query<(&RapierColliderHandle, &ContactSkin), Changed<ContactSkin>>,
+        Query<(Entity, &RapierColliderHandle, &Friction), Changed<Friction>>,
+        Query<(Entity, &RapierColliderHandle, &Restitution), Changed<Restitution>>,
+        Query<(Entity, &RapierColliderHandle, &ContactSkin), Changed<ContactSkin>>,
     ),
     changed_collision_groups: Query<
-        (&RapierColliderHandle, &CollisionGroups),
+        (Entity, &RapierColliderHandle, &CollisionGroups),
         Changed<CollisionGroups>,
     >,
-    changed_solver_groups: Query<(&RapierColliderHandle, &SolverGroups), Changed<SolverGroups>>,
-    changed_sensors: Query<(&RapierColliderHandle, &Sensor), Changed<Sensor>>,
-    changed_disabled: Query<(&RapierColliderHandle, &ColliderDisabled), Changed<ColliderDisabled>>,
+    changed_solver_groups: Query<
+        (Entity, &RapierColliderHandle, &SolverGroups),
+        Changed<SolverGroups>,
+    >,
+    changed_sensors: Query<(Entity, &RapierColliderHandle, &Sensor), Changed<Sensor>>,
+    changed_disabled: Query<
+        (Entity, &RapierColliderHandle, &ColliderDisabled),
+        Changed<ColliderDisabled>,
+    >,
     changed_contact_force_threshold: Query<
-        (&RapierColliderHandle, &ContactForceEventThreshold),
+        (Entity, &RapierColliderHandle, &ContactForceEventThreshold),
         Changed<ContactForceEventThreshold>,
     >,
     changed_collider_mass_props: Query<
-        (&RapierColliderHandle, &ColliderMassProperties),
+        (Entity, &RapierColliderHandle, &ColliderMassProperties),
         Changed<ColliderMassProperties>,
     >,
 
     mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
-    let context = &mut *context.single_mut();
     let config = &*config.single();
 
     for (entity, handle, transform) in changed_collider_transforms.iter() {
+        let context = context.context(entity);
         if context.collider_parent(entity).is_some() {
             let (_, collider_position) =
                 collider_offset(entity, &context, &parent_query, &transform_query);
@@ -134,7 +150,8 @@ pub fn apply_collider_user_changes(
         }
     }
 
-    for (handle, shape) in changed_shapes.iter() {
+    for (entity, handle, shape) in changed_shapes.iter() {
+        let context = context.context(entity);
         if let Some(co) = context.colliders.get_mut(handle.0) {
             let mut scaled_shape = shape.clone();
             scaled_shape.set_scale(shape.scale, config.scaled_shape_subdivision);
@@ -148,75 +165,87 @@ pub fn apply_collider_user_changes(
         }
     }
 
-    for (handle, active_events) in changed_active_events.iter() {
+    for (entity, handle, active_events) in changed_active_events.iter() {
+        let context = context.context(entity);
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_active_events((*active_events).into())
         }
     }
 
-    for (handle, active_hooks) in changed_active_hooks.iter() {
+    for (entity, handle, active_hooks) in changed_active_hooks.iter() {
+        let context = context.context(entity);
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_active_hooks((*active_hooks).into())
         }
     }
 
-    for (handle, active_collision_types) in changed_active_collision_types.iter() {
+    for (entity, handle, active_collision_types) in changed_active_collision_types.iter() {
+        let context = context.context(entity);
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_active_collision_types((*active_collision_types).into())
         }
     }
 
-    for (handle, friction) in changed_friction.iter() {
+    for (entity, handle, friction) in changed_friction.iter() {
+        let context = context.context(entity);
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_friction(friction.coefficient);
             co.set_friction_combine_rule(friction.combine_rule.into());
         }
     }
 
-    for (handle, restitution) in changed_restitution.iter() {
+    for (entity, handle, restitution) in changed_restitution.iter() {
+        let context = context.context(entity);
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_restitution(restitution.coefficient);
             co.set_restitution_combine_rule(restitution.combine_rule.into());
         }
     }
 
-    for (handle, contact_skin) in changed_contact_skin.iter() {
+    for (entity, handle, contact_skin) in changed_contact_skin.iter() {
+        let context = context.context(entity);
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_contact_skin(contact_skin.0);
         }
     }
 
-    for (handle, collision_groups) in changed_collision_groups.iter() {
+    for (entity, handle, collision_groups) in changed_collision_groups.iter() {
+        let context = context.context(entity);
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_collision_groups((*collision_groups).into());
         }
     }
 
-    for (handle, solver_groups) in changed_solver_groups.iter() {
+    for (entity, handle, solver_groups) in changed_solver_groups.iter() {
+        let context = context.context(entity);
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_solver_groups((*solver_groups).into());
         }
     }
 
-    for (handle, _) in changed_sensors.iter() {
+    for (entity, handle, _) in changed_sensors.iter() {
+        let context = context.context(entity);
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_sensor(true);
         }
     }
 
-    for (handle, _) in changed_disabled.iter() {
+    for (entity, handle, _) in changed_disabled.iter() {
+        let context = context.context(entity);
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_enabled(false);
         }
     }
 
-    for (handle, threshold) in changed_contact_force_threshold.iter() {
+    for (entity, handle, threshold) in changed_contact_force_threshold.iter() {
+        let context = context.context(entity);
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_contact_force_event_threshold(threshold.0);
         }
     }
 
-    for (handle, mprops) in changed_collider_mass_props.iter() {
+    for (entity, handle, mprops) in changed_collider_mass_props.iter() {
+        let context = context.context(entity);
         if let Some(co) = context.colliders.get_mut(handle.0) {
             match mprops {
                 ColliderMassProperties::Density(density) => co.set_density(*density),
@@ -275,18 +304,17 @@ pub(crate) fn collider_offset(
 pub fn init_colliders(
     mut commands: Commands,
     config: Query<&RapierConfiguration>,
-    mut context: Query<&mut RapierContext>,
+    mut context: Query<(Entity, &mut RapierContext)>,
     colliders: Query<(ColliderComponents, Option<&GlobalTransform>), Without<RapierColliderHandle>>,
     mut rigid_body_mprops: Query<&mut ReadMassProperties>,
     parent_query: Query<&Parent>,
     transform_query: Query<&Transform>,
 ) {
-    let context = &mut *context.single_mut();
     let config = &*config.single();
 
     for (
         (
-            entity,
+            (entity, context_link),
             shape,
             sensor,
             mprops,
@@ -360,7 +388,14 @@ pub fn init_colliders(
         if let Some(threshold) = contact_force_event_threshold {
             builder = builder.contact_force_event_threshold(threshold.0);
         }
-
+        let context_entity =
+            try_retrieve_context(context_link, &context).unwrap_or_else(|context_entity| {
+                commands
+                    .entity(entity)
+                    .insert(RapierContextEntityLink(context_entity));
+                context_entity
+            });
+        let context = &mut *context.get_mut(context_entity).unwrap().1;
         let body_entity = entity;
         let (body_handle, child_transform) =
             collider_offset(entity, context, &parent_query, &transform_query);

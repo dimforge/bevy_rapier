@@ -8,8 +8,9 @@ use bevy::ecs::{
     system::SystemParamItem,
 };
 use bevy::{prelude::*, transform::TransformSystem};
-use rapier::dynamics::IntegrationParameters;
 use std::marker::PhantomData;
+
+use super::context::DefaultRapierContext;
 
 /// No specific user-data is associated to the hooks.
 pub type NoUserData = ();
@@ -101,7 +102,7 @@ where
                 systems::init_colliders,
                 systems::init_joints,
                 systems::sync_removals,
-                // Run this here so the folowwing systems do not have a 1 frame delay.
+                // Run this here so the following systems do not have a 1 frame delay.
                 apply_deferred,
                 systems::apply_scale,
                 systems::apply_collider_user_changes,
@@ -248,7 +249,7 @@ pub struct RapierContextInitialization {
 }
 
 pub fn insert_default_world(mut commands: Commands) {
-    commands.spawn(RapierContext::default());
+    commands.spawn((RapierContext::default(), DefaultRapierContext));
 }
 
 pub fn setup_rapier_configuration(

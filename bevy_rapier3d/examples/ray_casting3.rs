@@ -78,7 +78,7 @@ pub fn setup_physics(mut commands: Commands) {
 pub fn cast_ray(
     mut commands: Commands,
     windows: Query<&Window, With<PrimaryWindow>>,
-    rapier_context: RapierContextAccessMut,
+    rapier_context: DefaultRapierContextAccessMut,
     cameras: Query<(&Camera, &GlobalTransform)>,
 ) {
     let window = windows.single();
