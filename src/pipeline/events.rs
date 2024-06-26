@@ -1,5 +1,4 @@
 use crate::math::{Real, Vect};
-use crate::prelude::ActiveEvents;
 use bevy::prelude::{Entity, Event, EventWriter};
 use rapier::dynamics::RigidBodySet;
 use rapier::geometry::{
@@ -9,6 +8,9 @@ use rapier::geometry::{
 use rapier::pipeline::EventHandler;
 use std::collections::HashMap;
 use std::sync::RwLock;
+
+#[cfg(doc)]
+use crate::prelude::ActiveEvents;
 
 /// Events occurring when two colliders start or stop colliding
 ///
