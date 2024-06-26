@@ -1,4 +1,5 @@
 use crate::math::{Real, Vect};
+use crate::prelude::ActiveEvents;
 use bevy::prelude::{Entity, Event, EventWriter};
 use rapier::dynamics::RigidBodySet;
 use rapier::geometry::{
@@ -12,7 +13,7 @@ use std::sync::RwLock;
 /// Events occurring when two colliders start or stop colliding
 ///
 /// This will only get triggered if the entity has the
-/// [`ActiveEvent::COLLISION_EVENTS`] flag enabled.
+/// [`ActiveEvents::COLLISION_EVENTS`] flag enabled.
 #[derive(Event, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum CollisionEvent {
     /// Event occurring when two colliders start colliding
@@ -25,7 +26,7 @@ pub enum CollisionEvent {
 /// between two colliders exceed a threshold ([`ContactForceEventThreshold`]).
 ///
 /// This will only get triggered if the entity has the
-/// [`ActiveEvent::CONTACT_FORCE_EVENTS`] flag enabled.
+/// [`ActiveEvents::CONTACT_FORCE_EVENTS`] flag enabled.
 #[derive(Event, Copy, Clone, Debug, PartialEq)]
 pub struct ContactForceEvent {
     /// The first collider involved in the contact.
@@ -166,30 +167,26 @@ mod test {
                 .add_systems(PostUpdate, save_events::<ContactForceEvent>)
                 .init_resource::<EventsSaver<CollisionEvent>>()
                 .init_resource::<EventsSaver<ContactForceEvent>>();
-            // while app.plugins_state() == bevy::app::PluginsState::Adding {
-            //     #[cfg(not(target_arch = "wasm32"))]
-            //     bevy::tasks::tick_global_task_pools_on_main_thread();
-            // }
-            // app.finish();
-            // app.cleanup();
 
+            // Simulates 60 updates per seconds
             app.insert_resource(TimeUpdateStrategy::ManualDuration(
                 std::time::Duration::from_secs_f32(1f32 / 60f32),
             ));
-            for _ in 0..300 {
-                // FIXME: advance by set durations to avoid being at the mercy of the CPU.
+            // 2 seconds should be plenty of time for the cube to fall on the
+            // lowest collider.
+            for _ in 0..120 {
                 app.update();
             }
             let saved_collisions = app
                 .world()
                 .get_resource::<EventsSaver<CollisionEvent>>()
                 .unwrap();
-            assert!(!saved_collisions.events.is_empty());
+            assert_eq!(saved_collisions.events.len(), 3);
             let saved_contact_forces = app
                 .world()
-                .get_resource::<EventsSaver<CollisionEvent>>()
+                .get_resource::<EventsSaver<ContactForceEvent>>()
                 .unwrap();
-            assert!(!saved_contact_forces.events.is_empty());
+            assert_eq!(saved_contact_forces.events.len(), 1);
         }
 
         /// Adapted from events example
@@ -224,7 +221,7 @@ mod test {
                 TransformBundle::from(Transform::from_xyz(0.0, 13.0, 0.0)),
                 RigidBody::Dynamic,
                 cuboid(0.5, 0.5, 0.5),
-                ActiveEvents::COLLISION_EVENTS,
+                ActiveEvents::COLLISION_EVENTS | ActiveEvents::CONTACT_FORCE_EVENTS,
                 ContactForceEventThreshold(30.0),
             ));
         }
