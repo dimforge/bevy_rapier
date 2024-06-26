@@ -80,6 +80,10 @@ pub struct RapierContext {
     // physics update, to the entity they was attached to.
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub(crate) deleted_colliders: HashMap<ColliderHandle, Entity>,
+
+    pub(crate) collision_events_to_send: Vec<CollisionEvent>,
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
+    pub(crate) contact_force_events_to_send: Vec<ContactForceEvent>,
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub(crate) character_collisions_collector: Vec<rapier::control::CharacterCollision>,
 }
@@ -105,7 +109,9 @@ impl Default for RapierContext {
             entity2impulse_joint: HashMap::new(),
             entity2multibody_joint: HashMap::new(),
             deleted_colliders: HashMap::new(),
-            character_collisions_collector: vec![],
+            collision_events_to_send: Vec::new(),
+            contact_force_events_to_send: Vec::new(),
+            character_collisions_collector: Vec::new(),
         }
     }
 }
@@ -234,7 +240,7 @@ impl RapierContext {
             None
         };
 
-        let events = self
+        let event_handler = self
             .event_handler
             .as_deref()
             .or_else(|| event_queue.as_ref().map(|q| q as &dyn EventHandler))
@@ -284,7 +290,7 @@ impl RapierContext {
                             &mut self.ccd_solver,
                             None,
                             hooks,
-                            events,
+                            event_handler,
                         );
                     }
 
@@ -315,7 +321,7 @@ impl RapierContext {
                         &mut self.ccd_solver,
                         None,
                         hooks,
-                        events,
+                        event_handler,
                     );
                 }
             }
@@ -339,11 +345,35 @@ impl RapierContext {
                         &mut self.ccd_solver,
                         None,
                         hooks,
-                        events,
+                        event_handler,
                     );
                 }
             }
         }
+        if let Some(mut event_queue) = event_queue {
+            self.collision_events_to_send =
+                std::mem::take(event_queue.collision_events.get_mut().unwrap());
+            self.contact_force_events_to_send =
+                std::mem::take(event_queue.contact_force_events.get_mut().unwrap());
+        }
+    }
+    /// Generates bevy events for any physics interactions that have happened
+    /// that are stored in the events list
+    pub fn send_bevy_events(
+        &mut self,
+        collision_event_writer: &mut EventWriter<CollisionEvent>,
+        contact_force_event_writer: &mut EventWriter<ContactForceEvent>,
+    ) {
+        for collision_event in self.collision_events_to_send.iter() {
+            collision_event_writer.send(*collision_event);
+        }
+        self.collision_events_to_send.clear();
+
+        for contact_force_event in self.contact_force_events_to_send.iter() {
+            contact_force_event_writer.send(*contact_force_event);
+        }
+
+        self.contact_force_events_to_send.clear();
     }
 
     /// This method makes sure that the rigid-body positions have been propagated to

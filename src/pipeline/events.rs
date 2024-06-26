@@ -154,10 +154,10 @@ mod test {
             }
         }
         pub fn save_events<E: Event + Clone>(
-            mut collision_events: EventReader<E>,
+            mut events: EventReader<E>,
             mut saver: ResMut<EventsSaver<E>>,
         ) {
-            for event in collision_events.read() {
+            for event in events.read() {
                 saver.events.push(event.clone());
             }
         }
@@ -166,8 +166,16 @@ mod test {
                 .add_systems(PostUpdate, save_events::<ContactForceEvent>)
                 .init_resource::<EventsSaver<CollisionEvent>>()
                 .init_resource::<EventsSaver<ContactForceEvent>>();
-
-            for _ in 0..200 {
+            // while app.plugins_state() == bevy::app::PluginsState::Adding {
+            //     #[cfg(not(target_arch = "wasm32"))]
+            //     bevy::tasks::tick_global_task_pools_on_main_thread();
+            // }
+            // app.finish();
+            // app.cleanup();
+            let mut time = app.world_mut().get_resource_mut::<Time<Virtual>>().unwrap();
+            time.set_relative_speed(1000f32);
+            for _ in 0..300 {
+                // FIXME: advance by set durations to avoid being at the mercy of the CPU.
                 app.update();
             }
             let saved_collisions = app
@@ -185,27 +193,14 @@ mod test {
         /// Adapted from events example
         fn main() {
             let mut app = App::new();
-            app.insert_resource(ClearColor(Color::srgb(
-                0xF9 as f32 / 255.0,
-                0xF9 as f32 / 255.0,
-                0xFF as f32 / 255.0,
-            )))
-            .add_plugins((
+            app.add_plugins((
                 HeadlessRenderPlugin,
                 TransformPlugin,
                 TimePlugin,
                 RapierPhysicsPlugin::<NoUserData>::default(),
             ))
-            .add_systems(Startup, (setup_graphics, setup_physics));
-
+            .add_systems(Startup, setup_physics);
             run_test(&mut app);
-        }
-
-        pub fn setup_graphics(mut commands: Commands) {
-            commands.spawn(Camera3dBundle {
-                transform: Transform::from_xyz(0.0, 0.0, 25.0).looking_at(Vec3::ZERO, Vec3::Y),
-                ..Default::default()
-            });
         }
 
         pub fn setup_physics(mut commands: Commands) {

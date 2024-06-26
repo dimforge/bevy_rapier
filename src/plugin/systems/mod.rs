@@ -31,8 +31,8 @@ pub fn step_simulation<Hooks>(
     hooks: StaticSystemParam<Hooks>,
     time: Res<Time>,
     mut sim_to_render_time: Query<&mut SimulationToRenderTime>,
-    collision_events: EventWriter<CollisionEvent>,
-    contact_force_events: EventWriter<ContactForceEvent>,
+    mut collision_events: EventWriter<CollisionEvent>,
+    mut contact_force_events: EventWriter<ContactForceEvent>,
     mut interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
 ) where
     Hooks: 'static + BevyPhysicsHooks,
@@ -64,6 +64,7 @@ pub fn step_simulation<Hooks>(
         if config.query_pipeline_active {
             context.update_query_pipeline();
         }
+        context.send_bevy_events(&mut collision_events, &mut contact_force_events);
     }
 }
 
