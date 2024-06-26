@@ -44,6 +44,18 @@ where
         });
         self
     }
+    /// Specifies a default configuration for the default `RapierContext`
+    ///
+    /// If [`None`], no world will be initialized, you are responsible of creating and maintaining
+    /// a [`RapierContext`] before creating any rapier entities (rigidbodies, colliders, joints),
+    /// and as long as any [`RapierContextEntityLink`] has a reference to its [`RapierContext`].
+    pub fn with_default_world(
+        mut self,
+        default_world_initialization: Option<RapierContextInitialization>,
+    ) -> Self {
+        self.default_world_setup = default_world_initialization;
+        self
+    }
 
     /// Specifies whether the plugin should setup each of its [`PhysicsStages`]
     /// (`true`), or if the user will set them up later (`false`).
@@ -244,6 +256,7 @@ where
     }
 }
 
+#[derive(Resource)]
 pub struct RapierContextInitialization {
     pub length_unit: f32,
 }

@@ -4,7 +4,7 @@ pub use self::context::{
         DefaultRapierContextAccess, DefaultRapierContextAccessMut, RapierContextAccess,
         RapierContextAccessMut,
     },
-    RapierContext,
+    RapierContext, RapierContextEntityLink,
 };
 pub use self::plugin::{NoUserData, PhysicsSet, RapierPhysicsPlugin, RapierTransformPropagateSet};
 
