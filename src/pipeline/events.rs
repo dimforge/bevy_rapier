@@ -122,7 +122,7 @@ impl<'a> EventHandler for EventQueue<'a> {
 
 #[cfg(test)]
 mod test {
-    use bevy::time::TimePlugin;
+    use bevy::time::{TimePlugin, TimeUpdateStrategy};
     use systems::tests::HeadlessRenderPlugin;
 
     use crate::{plugin::*, prelude::*};
@@ -172,8 +172,10 @@ mod test {
             // }
             // app.finish();
             // app.cleanup();
-            let mut time = app.world_mut().get_resource_mut::<Time<Virtual>>().unwrap();
-            time.set_relative_speed(1000f32);
+
+            app.insert_resource(TimeUpdateStrategy::ManualDuration(
+                std::time::Duration::from_secs_f32(1f32 / 60f32),
+            ));
             for _ in 0..300 {
                 // FIXME: advance by set durations to avoid being at the mercy of the CPU.
                 app.update();
@@ -182,12 +184,12 @@ mod test {
                 .world()
                 .get_resource::<EventsSaver<CollisionEvent>>()
                 .unwrap();
-            assert!(saved_collisions.events.len() > 0);
+            assert!(!saved_collisions.events.is_empty());
             let saved_contact_forces = app
                 .world()
                 .get_resource::<EventsSaver<CollisionEvent>>()
                 .unwrap();
-            assert!(saved_contact_forces.events.len() > 0);
+            assert!(!saved_contact_forces.events.is_empty());
         }
 
         /// Adapted from events example
