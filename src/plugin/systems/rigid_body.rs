@@ -1,6 +1,6 @@
 use crate::dynamics::RapierRigidBodyHandle;
 use crate::plugin::context::systemparams::try_retrieve_context;
-use crate::plugin::context::{self, RapierContextEntityLink};
+use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::{configuration::TimestepMode, RapierConfiguration, RapierContext};
 use crate::{dynamics::RigidBody, plugin::configuration::SimulationToRenderTime};
 use crate::{prelude::*, utils};
@@ -558,14 +558,13 @@ pub fn init_rigid_bodies(
 /// mass to be available, which it was not because colliders were not created yet. As a
 /// result, we run this system after the collider creation.
 pub fn apply_initial_rigid_body_impulses(
-    mut context: DefaultRapierContextAccessMut,
+    mut context: RapierContextAccessMut,
     // We can’t use RapierRigidBodyHandle yet because its creation command hasn’t been
     // executed yet.
     mut init_impulses: Query<(Entity, &mut ExternalImpulse), Without<RapierRigidBodyHandle>>,
 ) {
-    let context = &mut *context;
-
     for (entity, mut impulse) in init_impulses.iter_mut() {
+        let context = context.context(entity);
         let bodies = &mut context.bodies;
         if let Some(rb) = context
             .entity2body

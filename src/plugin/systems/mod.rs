@@ -25,12 +25,14 @@ use bevy::prelude::*;
 /// System responsible for advancing the physics simulation, and updating the internal state
 /// for scene queries.
 pub fn step_simulation<Hooks>(
-    mut context: Query<&mut RapierContext>,
+    mut context: Query<(
+        &mut RapierContext,
+        &RapierConfiguration,
+        &mut SimulationToRenderTime,
+    )>,
     timestep_mode: Res<TimestepMode>,
-    config: Query<&RapierConfiguration>,
     hooks: StaticSystemParam<Hooks>,
     time: Res<Time>,
-    mut sim_to_render_time: Query<&mut SimulationToRenderTime>,
     mut collision_events: EventWriter<CollisionEvent>,
     mut contact_force_events: EventWriter<ContactForceEvent>,
     mut interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
@@ -40,11 +42,8 @@ pub fn step_simulation<Hooks>(
 {
     let hooks_adapter = BevyPhysicsHooksAdapter::new(hooks.into_inner());
 
-    for mut context in context.iter_mut() {
+    for (mut context, config, mut sim_to_render_time) in context.iter_mut() {
         let context = &mut *context;
-
-        let config = &*config.single();
-        let sim_to_render_time = &mut *sim_to_render_time.single_mut();
 
         if config.physics_pipeline_active {
             context.step_simulation(
@@ -53,7 +52,7 @@ pub fn step_simulation<Hooks>(
                 Some((&collision_events, &contact_force_events)),
                 &hooks_adapter,
                 &time,
-                sim_to_render_time,
+                &mut sim_to_render_time,
                 Some(&mut interpolation_query),
             );
             context.deleted_colliders.clear();

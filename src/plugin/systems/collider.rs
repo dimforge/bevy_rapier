@@ -2,9 +2,7 @@ use crate::dynamics::ReadMassProperties;
 use crate::geometry::Collider;
 use crate::plugin::context::systemparams::try_retrieve_context;
 use crate::plugin::context::RapierContextEntityLink;
-use crate::plugin::{
-    DefaultRapierContextAccessMut, RapierConfiguration, RapierContext, RapierContextAccessMut,
-};
+use crate::plugin::{RapierConfiguration, RapierContext, RapierContextAccessMut};
 use crate::prelude::{
     ActiveCollisionTypes, ActiveEvents, ActiveHooks, ColliderDisabled, ColliderMassProperties,
     ColliderScale, CollidingEntities, CollisionEvent, CollisionGroups, ContactForceEventThreshold,
@@ -310,8 +308,6 @@ pub fn init_colliders(
     parent_query: Query<&Parent>,
     transform_query: Query<&Transform>,
 ) {
-    let config = &*config.single();
-
     for (
         (
             (entity, context_link),
@@ -332,6 +328,15 @@ pub fn init_colliders(
         global_transform,
     ) in colliders.iter()
     {
+        let context_entity =
+            try_retrieve_context(context_link, &context).unwrap_or_else(|context_entity| {
+                commands
+                    .entity(entity)
+                    .insert(RapierContextEntityLink(context_entity));
+                context_entity
+            });
+        let context = &mut *context.get_mut(context_entity).unwrap().1;
+        let config = config.get(context_entity).unwrap();
         let mut scaled_shape = shape.clone();
         scaled_shape.set_scale(shape.scale, config.scaled_shape_subdivision);
         let mut builder = ColliderBuilder::new(scaled_shape.raw.clone());
@@ -388,14 +393,6 @@ pub fn init_colliders(
         if let Some(threshold) = contact_force_event_threshold {
             builder = builder.contact_force_event_threshold(threshold.0);
         }
-        let context_entity =
-            try_retrieve_context(context_link, &context).unwrap_or_else(|context_entity| {
-                commands
-                    .entity(entity)
-                    .insert(RapierContextEntityLink(context_entity));
-                context_entity
-            });
-        let context = &mut *context.get_mut(context_entity).unwrap().1;
         let body_entity = entity;
         let (body_handle, child_transform) =
             collider_offset(entity, context, &parent_query, &transform_query);

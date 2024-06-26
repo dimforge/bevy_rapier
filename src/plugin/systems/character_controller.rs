@@ -1,8 +1,8 @@
 use crate::control::CharacterCollision;
 use crate::dynamics::RapierRigidBodyHandle;
 use crate::geometry::RapierColliderHandle;
-use crate::plugin::DefaultRapierContextAccessMut;
 use crate::plugin::RapierConfiguration;
+use crate::plugin::RapierContextAccessMut;
 use crate::prelude::KinematicCharacterController;
 use crate::prelude::KinematicCharacterControllerOutput;
 use crate::utils;
@@ -16,7 +16,7 @@ use rapier::pipeline::QueryFilter;
 pub fn update_character_controls(
     mut commands: Commands,
     config: Query<&RapierConfiguration>,
-    mut context: DefaultRapierContextAccessMut,
+    mut context_access: RapierContextAccessMut,
     mut character_controllers: Query<(
         Entity,
         &mut KinematicCharacterController,
@@ -27,12 +27,12 @@ pub fn update_character_controls(
     )>,
     mut transforms: Query<&mut Transform>,
 ) {
-    let context = &mut *context;
-    let config = &*config.single();
-
     for (entity, mut controller, output, collider_handle, body_handle, glob_transform) in
         character_controllers.iter_mut()
     {
+        let link = *context_access.link(entity);
+        let context = context_access.follow_link(link);
+        let config = config.get(link.0).unwrap();
         if let (Some(raw_controller), Some(translation)) =
             (controller.to_raw(), controller.translation)
         {

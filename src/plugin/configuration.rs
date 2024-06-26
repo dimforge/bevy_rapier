@@ -1,7 +1,6 @@
-use bevy::prelude::{default, Component, FromWorld, Resource, World};
+use bevy::prelude::{Component, Resource};
 
 use crate::math::{Real, Vect};
-use crate::plugin::RapierContext;
 
 /// The different ways of adjusting the timestep length each frame.
 #[derive(Copy, Clone, Debug, PartialEq, Resource)]

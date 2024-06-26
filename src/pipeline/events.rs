@@ -1,5 +1,5 @@
 use crate::math::{Real, Vect};
-use bevy::prelude::{Entity, Event, EventWriter};
+use bevy::prelude::{Entity, Event};
 use rapier::dynamics::RigidBodySet;
 use rapier::geometry::{
     ColliderHandle, ColliderSet, CollisionEvent as RapierCollisionEvent, CollisionEventFlags,
