@@ -11,7 +11,7 @@ use std::fmt::Debug;
 /// Insert this component alongside the collider component to
 /// force to a specific value the color used to render the
 /// collider.
-#[derive(Copy, Clone, Component, PartialEq, Debug)]
+#[derive(Copy, Clone, Component, PartialEq, Debug, Reflect)]
 pub struct ColliderDebugColor(pub Hsla);
 
 /// Plugin rensponsible for rendering (using lines) what Rapier "sees" when performing

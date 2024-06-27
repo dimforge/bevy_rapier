@@ -342,6 +342,7 @@ pub fn init_colliders(
     {
         let context_entity = context_link.map_or_else(
             || {
+                dbg!("unknown rapierContext for object, setting to default");
                 let context_entity = context.iter().next().unwrap().0;
                 commands
                     .entity(entity)

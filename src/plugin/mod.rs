@@ -4,9 +4,12 @@ pub use self::context::{
         DefaultRapierContextAccess, DefaultRapierContextAccessMut, RapierContextAccess,
         RapierContextAccessMut,
     },
-    RapierContext, RapierContextEntityLink,
+    DefaultRapierContext, RapierContext, RapierContextEntityLink,
 };
-pub use self::plugin::{NoUserData, PhysicsSet, RapierPhysicsPlugin, RapierTransformPropagateSet};
+pub use self::plugin::{
+    NoUserData, PhysicsSet, RapierContextInitialization, RapierPhysicsPlugin,
+    RapierTransformPropagateSet,
+};
 
 #[allow(clippy::type_complexity)]
 #[allow(clippy::too_many_arguments)]

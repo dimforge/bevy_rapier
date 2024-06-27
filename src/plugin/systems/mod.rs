@@ -3,6 +3,7 @@
 mod character_controller;
 mod collider;
 mod joint;
+mod multiple_rapier_contexts;
 mod remove;
 mod rigid_body;
 mod writeback;
@@ -10,6 +11,7 @@ mod writeback;
 pub use character_controller::*;
 pub use collider::*;
 pub use joint::*;
+pub use multiple_rapier_contexts::*;
 pub use remove::*;
 pub use rigid_body::*;
 pub use writeback::*;

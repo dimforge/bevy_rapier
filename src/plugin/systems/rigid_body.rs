@@ -1,5 +1,4 @@
 use crate::dynamics::RapierRigidBodyHandle;
-use crate::plugin::context::systemparams::try_retrieve_context;
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::{configuration::TimestepMode, RapierConfiguration, RapierContext};
 use crate::{dynamics::RigidBody, plugin::configuration::SimulationToRenderTime};
@@ -7,7 +6,6 @@ use crate::{prelude::*, utils};
 use bevy::prelude::*;
 use rapier::dynamics::{RigidBodyBuilder, RigidBodyHandle, RigidBodyType};
 use std::collections::HashMap;
-use std::ops::DerefMut;
 
 /// Components that will be updated after a physics step.
 pub type RigidBodyWritebackComponents<'a> = (

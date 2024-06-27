@@ -1,18 +1,19 @@
-use bevy::prelude::*;
+use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_rapier3d::prelude::*;
 
 const N_WORLDS: usize = 2;
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(
+        .insert_resource(ClearColor(Color::srgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
         )))
         .add_plugins((
             DefaultPlugins,
-            RapierPhysicsPlugin::<NoUserData>::default().with_default_world(None),
+            RapierPhysicsPlugin::<NoUserData>::default()
+                .with_default_world(RapierContextInitialization::NoAutomaticRapierContext),
             RapierDebugRenderPlugin::default(),
         ))
         .add_systems(
@@ -20,14 +21,19 @@ fn main() {
             ((create_worlds, setup_physics).chain(), setup_graphics),
         )
         .add_systems(Update, move_platforms)
-        // .add_systems(Update, change_world)
-        // .add_systems(Update, despawn_last)
+        .add_systems(
+            Update,
+            change_world.run_if(input_just_pressed(KeyCode::KeyC)),
+        )
         .run();
 }
 
 fn create_worlds(mut commands: Commands) {
     for i in 0..N_WORLDS {
-        commands.spawn((RapierContext::default(), WorldId(i)));
+        let mut world = commands.spawn((RapierContext::default(), WorldId(i)));
+        if i == 0 {
+            world.insert(DefaultRapierContext);
+        }
     }
 }
 
@@ -53,23 +59,20 @@ fn move_platforms(time: Res<Time>, mut query: Query<(&mut Transform, &Platform)>
     }
 }
 
-/// Demonstrates despawning an entity removing it from its world
-// fn despawn_last(query: Query<(&PhysicsWorld, Entity)>, mut commands: Commands) {
-//     for (bw, entity) in query.iter() {
-//         if bw.world_id == N_WORLDS - 1 {
-//             commands.entity(entity).despawn_recursive();
-//         }
-//     }
-// }
-
 /// Demonstrates how easy it is to move one entity to another world.
-// fn change_world(mut query: Query<&mut PhysicsWorld>) {
-//     for mut bw in query.iter_mut() {
-//         if bw.world_id == 1 {
-//             bw.world_id = 0;
-//         }
-//     }
-// }
+fn change_world(
+    query_context: Query<Entity, With<DefaultRapierContext>>,
+    mut query_links: Query<(Entity, &mut RapierContextEntityLink)>,
+) {
+    let default_context = query_context.single();
+    for (e, mut link) in query_links.iter_mut() {
+        if link.0 == default_context {
+            continue;
+        }
+        link.0 = default_context;
+        println!("changing world of {} for world {}", e, link.0);
+    }
+}
 
 pub fn setup_physics(
     context: Query<(Entity, &WorldId), With<RapierContext>>,

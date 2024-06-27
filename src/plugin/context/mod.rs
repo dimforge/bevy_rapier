@@ -24,6 +24,13 @@ use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
 use rapier::control::CharacterAutostep;
 use rapier::geometry::DefaultBroadPhase;
 
+/// Marker component for to access the default [`RapierContext`].
+///
+/// This is used by [`systemparams::DefaultRapierContextAccess`] and other default accesses
+/// to help with getting a reference to the correct RapierContext.
+///
+/// If you're making a library, you might be interested in [`RapierContextEntityLink`]
+/// and leverage a [`Query<&RapierContext>`] to find the correct [`RapierContext`] of an entity.
 #[derive(Component, Reflect, Debug, Clone, Copy)]
 pub struct DefaultRapierContext;
 
@@ -40,6 +47,7 @@ pub struct RapierContext {
     /// The island manager, which detects what object is sleeping
     /// (not moving much) to reduce computations.
     pub islands: IslandManager,
+    // FIXME: This should be serialized but a bug prevents it
     /// The broad-phase, which detects potential contact pairs.
     pub broad_phase: DefaultBroadPhase,
     /// The narrow-phase, which computes contact points, tests intersections,
@@ -81,6 +89,7 @@ pub struct RapierContext {
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub(crate) deleted_colliders: HashMap<ColliderHandle, Entity>,
 
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub(crate) collision_events_to_send: Vec<CollisionEvent>,
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub(crate) contact_force_events_to_send: Vec<ContactForceEvent>,

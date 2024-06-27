@@ -1,4 +1,7 @@
-use bevy::prelude::{Component, Resource};
+use bevy::{
+    prelude::{Component, Resource},
+    reflect::Reflect,
+};
 
 use crate::math::{Real, Vect};
 
@@ -43,7 +46,7 @@ pub enum TimestepMode {
 }
 
 /// Difference between simulation and rendering time
-#[derive(Component, Default)]
+#[derive(Component, Default, Reflect)]
 pub struct SimulationToRenderTime {
     /// Difference between simulation and rendering time
     pub diff: f32,
@@ -59,7 +62,7 @@ impl Default for TimestepMode {
     }
 }
 
-#[derive(Component, Copy, Clone, Debug)]
+#[derive(Component, Copy, Clone, Debug, Reflect)]
 /// A resource for specifying configuration information for the physics simulation
 pub struct RapierConfiguration {
     /// Specifying the gravity of the physics simulation.
