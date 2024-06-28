@@ -880,4 +880,26 @@ impl RapierContext {
             )
         });
     }
+
+    /// FIXME: This is not a great API, I would prefer to come from a RevoluteJoint component or (RevoluteJoint, ImpulseJoint).
+    ///        An `ImpulseJoint<RevoluteJoint>` might be interesting.
+    /// parameter entity should be an impulse joint revolute joint
+    pub fn angle_for_entity_impulse_revolute_joint(&self, entity: Entity) -> Option<f32> {
+        let joint = match self.entity2impulse_joint().get(&entity) {
+            Some(it) => it,
+            None => return dbg!(None),
+        };
+        let impulse_joint = match self.impulse_joints.get(*joint) {
+            Some(it) => it,
+            None => return dbg!(None),
+        };
+        let revolute_joint = match impulse_joint.data.as_revolute() {
+            Some(it) => it,
+            None => return dbg!(None),
+        };
+
+        let rb1 = &self.bodies[impulse_joint.body1];
+        let rb2 = &self.bodies[impulse_joint.body2];
+        Some(revolute_joint.angle(rb1.rotation(), rb2.rotation()))
+    }
 }

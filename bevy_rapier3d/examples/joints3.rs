@@ -1,4 +1,6 @@
-use bevy::prelude::*;
+use std::time::Duration;
+
+use bevy::{prelude::*, time::common_conditions::once_after_delay};
 use bevy_rapier3d::prelude::*;
 
 fn main() {
@@ -14,6 +16,10 @@ fn main() {
             RapierDebugRenderPlugin::default(),
         ))
         .add_systems(Startup, (setup_graphics, setup_physics))
+        .add_systems(
+            Last,
+            print_joints.run_if(once_after_delay(Duration::from_secs_f32(0.1f32))),
+        )
         .run();
 }
 
@@ -275,4 +281,24 @@ pub fn setup_physics(mut commands: Commands) {
     create_fixed_joints(&mut commands, Vec3::new(0.0, 10.0, 0.0), 5);
     create_rope_joints(&mut commands, Vec3::new(30.0, 10.0, 0.0), 5);
     create_ball_joints(&mut commands, 15);
+}
+
+/// Ideal API which I imagine could be achievable.
+/// ```rs
+/// pub fn print_joints_simpler(
+///     context: Res<RapierContext>,
+///     joints: Query<(&ImpulseJoint<RevoluteJoint>)>,
+/// ) {
+///     for (revolute_joint) in joints.iter() {
+///         println!(revolute_joint.angle(&*context));
+///     }
+/// }
+pub fn print_joints(context: Res<RapierContext>, joints: Query<Entity, With<ImpulseJoint>>) {
+    for entity in joints.iter() {
+        println!(
+            "angle for {}: {:?}",
+            entity,
+            context.angle_for_entity_impulse_revolute_joint(entity),
+        );
+    }
 }
