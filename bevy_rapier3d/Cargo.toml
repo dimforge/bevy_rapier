@@ -1,6 +1,6 @@
 [package]
 name = "bevy_rapier3d"
-version = "0.26.0"
+version = "0.27.0-rc.1"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 description = "3-dimensional physics engine in Rust, official Bevy plugin."
 documentation = "http://docs.rs/bevy_rapier3d"
@@ -45,15 +45,15 @@ headless = []
 async-collider = ["bevy/bevy_asset", "bevy/bevy_scene"]
 
 [dependencies]
-bevy = { version = "0.14.0-rc.2", default-features = false }
-nalgebra = { version = "0.32.6", features = ["convert-glam027"] }
-rapier3d = "0.20"
+bevy = { version = "0.14.0-rc.3", default-features = false }
+nalgebra = { version = "0.33", features = ["convert-glam027"] }
+rapier3d = "0.21"
 bitflags = "2.4"
 log = "0.4"
 serde = { version = "1", features = ["derive"], optional = true }
 
 [dev-dependencies]
-bevy = { version = "0.14.0-rc.2", default-features = false, features = [
+bevy = { version = "0.14.0-rc.3", default-features = false, features = [
     "x11",
     "tonemapping_luts",
     "bevy_state",

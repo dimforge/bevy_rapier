@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+**This is an update from rapier 0.19 to Rapier 0.21 which includes several stability improvements
+and new features. Please have a look at the
+[0.20 and 0.21 changelogs](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md) of Rapier.**
+
+- Update to rapier `0.21`.
+- Update to nalgebra `0.33`.
+
+## v0.27.0-rc.1 (18 June 2024)
+
 **This is an update to Rapier 0.20 which includes several stability improvements
 and new features. Please have a look at the
 [0.20 changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md) of Rapier.**
@@ -18,6 +27,7 @@ and new features. Please have a look at the
 
 - Derive `Debug` for `LockedAxes`.
 - Expose `is_sliding_down_slope` to both `MoveShapeOutput` and `KinematicCharacterControllerOutput`.
+- Added a First Person Shooter `character_controller` example for `bevy_rapier3d`.
 
 ### Fix
 
