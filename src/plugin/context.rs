@@ -22,6 +22,9 @@ use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
 use rapier::control::CharacterAutostep;
 use rapier::geometry::DefaultBroadPhase;
 
+#[cfg(doc)]
+use crate::prelude::{ImpulseJoint, JointDescription, MultibodyJoint};
+
 /// The Rapier context, containing all the state of the physics engine.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Resource)]
@@ -881,21 +884,23 @@ impl RapierContext {
         });
     }
 
-    /// FIXME: This is not a great API, I would prefer to come from a RevoluteJoint component or (RevoluteJoint, ImpulseJoint).
-    ///        An `ImpulseJoint<RevoluteJoint>` might be interesting.
-    /// parameter entity should be an impulse joint revolute joint
+    /// Computes the angle between the 2 bodies
+    /// referenced by the underlying [`ImpulseJoint`] of the given `entity`,
+    /// according to its [`RevoluteJoint`] description.
+    ///
+    /// Parameter `entity` should have a [`ImpulseJoint`] or [`MultibodyJoint`] component with a [`JointDescription::RevoluteJoint`] variant as `data`.
     pub fn angle_for_entity_impulse_revolute_joint(&self, entity: Entity) -> Option<f32> {
-        let joint = match self.entity2impulse_joint().get(&entity) {
+        let joint_handle = match self.entity2impulse_joint().get(&entity) {
             Some(it) => it,
-            None => return dbg!(None),
+            None => return None,
         };
-        let impulse_joint = match self.impulse_joints.get(*joint) {
+        let impulse_joint = match self.impulse_joints.get(*joint_handle) {
             Some(it) => it,
-            None => return dbg!(None),
+            None => return None,
         };
         let revolute_joint = match impulse_joint.data.as_revolute() {
             Some(it) => it,
-            None => return dbg!(None),
+            None => return None,
         };
 
         let rb1 = &self.bodies[impulse_joint.body1];

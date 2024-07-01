@@ -1,32 +1,61 @@
-use crate::dynamics::GenericJoint;
 use bevy::prelude::*;
 use rapier::dynamics::{ImpulseJointHandle, MultibodyJointHandle};
 
 pub use rapier::dynamics::{JointAxesMask, JointAxis, MotorModel};
 
+use super::{FixedJoint, GenericJoint, PrismaticJoint, RevoluteJoint, RopeJoint, SpringJoint};
+
+#[cfg(feature = "dim3")]
+use super::SphericalJoint;
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum JointDescription {
+    FixedJoint(FixedJoint),
+    GenericJoint(GenericJoint),
+    PrismaticJoint(PrismaticJoint),
+    RevoluteJoint(RevoluteJoint),
+    RopeJoint(RopeJoint),
+    #[cfg(feature = "dim3")]
+    SphericalJoint(SphericalJoint),
+    SpringJoint(SpringJoint),
+}
+
+impl JointDescription {
+    pub fn generic_joint(&self) -> &GenericJoint {
+        match self {
+            JointDescription::FixedJoint(j) => &j.data,
+            JointDescription::GenericJoint(j) => &j,
+            JointDescription::PrismaticJoint(j) => &j.data,
+            JointDescription::RevoluteJoint(j) => j.data(),
+            JointDescription::RopeJoint(j) => &j.data(),
+            #[cfg(feature = "dim3")]
+            JointDescription::SphericalJoint(j) => &j.data(),
+            JointDescription::SpringJoint(j) => j.data(),
+        }
+    }
+    pub fn generic_joint_mut(&mut self) -> &mut GenericJoint {
+        match self {
+            JointDescription::FixedJoint(ref mut j) => &mut j.data,
+            JointDescription::GenericJoint(ref mut j) => j,
+            JointDescription::PrismaticJoint(ref mut j) => &mut j.data,
+            JointDescription::RevoluteJoint(ref mut j) => &mut j.data,
+            JointDescription::RopeJoint(ref mut j) => &mut j.data,
+            #[cfg(feature = "dim3")]
+            JointDescription::SphericalJoint(ref mut j) => &mut j.data,
+            JointDescription::SpringJoint(ref mut j) => &mut j.data,
+        }
+    }
+}
+
 /// A trait used for different constraint types applied to joints,
 /// see [`ImpulseJoint`] and [`MultibodyJoint`].
-pub trait JointConstraint<JointDescriptionType = GenericJoint>
-where
-    JointDescriptionType: JointDescription,
-{
+pub trait JointConstraint {
     /// The entity containing the rigid-body used as the first endpoint of this joint.
     fn parent(&self) -> Entity;
     /// Access the joint’s description.
-    fn data(&self) -> &JointDescriptionType;
+    fn data(&self) -> &JointDescription;
     /// Access mutably the joint’s description.
-    fn data_mut(&mut self) -> &mut JointDescriptionType;
-}
-
-/// A trait used for different constraint description applied to joints,
-///
-// TECH: It's mostly used to avoid being able
-// to pass a builder as a `JointDescriptionType` to `JointConstraint`
-#[diagnostic::on_unimplemented(note = "If you are using a builder, call `.build()`.")]
-pub trait JointDescription
-where
-    Self: Into<GenericJoint>,
-{
+    fn data_mut(&mut self) -> &mut JointDescription;
 }
 
 /// The handle of an impulse joint added to the physics scene.
@@ -49,37 +78,20 @@ pub struct RapierMultibodyJointHandle(pub MultibodyJointHandle);
 /// rigid-body (this is similar to the technique used to attach multiple
 /// colliders to the same rigid-body).
 #[derive(Copy, Clone, Debug, PartialEq, Component)]
-pub struct ImpulseJoint<JointDescriptionType = GenericJoint>
-where
-    JointDescriptionType: JointDescription,
-{
+pub struct ImpulseJoint {
     /// The entity containing the rigid-body used as the first endpoint of this joint.
     pub parent: Entity,
     /// The joint’s description.
-    pub data: JointDescriptionType,
+    pub data: JointDescription,
 }
 
-impl<T: JointDescription> ImpulseJoint<T> {
+impl ImpulseJoint {
     /// Initializes an impulse-based joint from its first endpoint and the joint description.
-    pub fn new(parent: Entity, data: T) -> Self {
-        Self { parent, data: data }
-    }
-}
-
-impl<T> JointConstraint<T> for ImpulseJoint<T>
-where
-    T: JointDescription,
-{
-    fn parent(&self) -> Entity {
-        self.parent
-    }
-
-    fn data(&self) -> &T {
-        &self.data
-    }
-
-    fn data_mut(&mut self) -> &mut T {
-        &mut self.data
+    pub fn new(parent: Entity, data: impl Into<JointDescription>) -> Self {
+        Self {
+            parent,
+            data: data.into(),
+        }
     }
 }
 
@@ -93,40 +105,30 @@ where
 /// If a closed loop is detected, the last joint that closes the loop is ignored, and an
 /// error is printed to `stderr` (using `log::error!`).
 #[derive(Copy, Clone, Debug, PartialEq, Component)]
-pub struct MultibodyJoint<JointDescriptionType = GenericJoint>
-where
-    JointDescriptionType: JointDescription,
-{
+pub struct MultibodyJoint {
     /// The entity containing the rigid-body used as the first endpoint of this joint.
     pub parent: Entity,
     /// The joint’s description.
-    pub data: JointDescriptionType,
+    pub data: JointDescription,
 }
 
-impl<T> MultibodyJoint<T>
-where
-    T: JointDescription,
-{
+impl MultibodyJoint {
     /// Initializes an joint based on reduced coordinates from its first endpoint and
     /// the joint description.
-    pub fn new(parent: Entity, data: T) -> Self {
+    pub fn new(parent: Entity, data: JointDescription) -> Self {
         Self { parent, data: data }
     }
 }
-
-impl<T> JointConstraint<T> for MultibodyJoint<T>
-where
-    T: JointDescription,
-{
+impl JointConstraint for ImpulseJoint {
     fn parent(&self) -> Entity {
         self.parent
     }
 
-    fn data(&self) -> &T {
+    fn data(&self) -> &JointDescription {
         &self.data
     }
 
-    fn data_mut(&mut self) -> &mut T {
+    fn data_mut(&mut self) -> &mut JointDescription {
         &mut self.data
     }
 }

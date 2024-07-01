@@ -2,6 +2,8 @@ use crate::dynamics::{GenericJoint, GenericJointBuilder, JointAxesMask};
 use crate::dynamics::{JointAxis, MotorModel};
 use crate::math::{Real, Vect};
 
+use super::JointDescription;
+
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(transparent)]
@@ -14,8 +16,6 @@ pub struct SpringJoint {
     /// The underlying joint data.
     pub data: GenericJoint,
 }
-
-impl super::JointDescription for SpringJoint {}
 
 impl SpringJoint {
     /// Creates a new spring joint limiting the max distance between two bodies.
@@ -144,8 +144,14 @@ impl SpringJointBuilder {
     }
 }
 
-impl From<SpringJointBuilder> for GenericJoint {
-    fn from(val: SpringJointBuilder) -> GenericJoint {
-        val.0.into()
+impl From<SpringJointBuilder> for JointDescription {
+    fn from(joint: SpringJointBuilder) -> JointDescription {
+        JointDescription::SpringJoint(joint.0.into())
+    }
+}
+
+impl From<SpringJoint> for JointDescription {
+    fn from(joint: SpringJoint) -> JointDescription {
+        JointDescription::SpringJoint(joint)
     }
 }

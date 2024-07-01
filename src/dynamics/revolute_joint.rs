@@ -6,12 +6,15 @@ use rapier::dynamics::{
     JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel, RigidBodyHandle, RigidBodySet,
 };
 
+use super::JointDescription;
+
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(transparent)]
 /// A revolute joint, locks all relative motion except for rotation along the joint’s principal axis.
 pub struct RevoluteJoint {
-    data: GenericJoint,
+    /// The underlying joint data.
+    pub data: GenericJoint,
 }
 
 #[cfg(feature = "dim2")]
@@ -20,8 +23,6 @@ impl Default for RevoluteJoint {
         Self::new()
     }
 }
-
-impl super::JointDescription for RevoluteJoint {}
 
 impl RevoluteJoint {
     /// Creates a new revolute joint allowing only relative rotations.
@@ -282,8 +283,14 @@ impl RevoluteJointBuilder {
     }
 }
 
-impl From<RevoluteJointBuilder> for GenericJoint {
-    fn from(joint: RevoluteJointBuilder) -> GenericJoint {
-        joint.0.into()
+impl From<RevoluteJointBuilder> for JointDescription {
+    fn from(joint: RevoluteJointBuilder) -> JointDescription {
+        JointDescription::RevoluteJoint(joint.0.into())
+    }
+}
+
+impl From<RevoluteJoint> for JointDescription {
+    fn from(joint: RevoluteJoint) -> JointDescription {
+        JointDescription::RevoluteJoint(joint)
     }
 }

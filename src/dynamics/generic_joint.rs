@@ -24,8 +24,6 @@ impl GenericJoint {
     }
 }
 
-impl super::JointDescription for GenericJoint {}
-
 /*
  * NOTE: the following are copy-pasted from Rapier’s GenericJoint, to match its
  *       construction methods, but using glam types.

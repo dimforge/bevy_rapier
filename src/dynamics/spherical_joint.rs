@@ -2,12 +2,15 @@ use crate::dynamics::{GenericJoint, GenericJointBuilder};
 use crate::math::{Real, Vect};
 use rapier::dynamics::{JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel};
 
+use super::JointDescription;
+
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(transparent)]
 /// A spherical joint, locks all relative translations between two bodies.
 pub struct SphericalJoint {
-    data: GenericJoint,
+    /// The underlying joint data.
+    pub data: GenericJoint,
 }
 
 impl Default for SphericalJoint {
@@ -15,8 +18,6 @@ impl Default for SphericalJoint {
         SphericalJoint::new()
     }
 }
-
-impl super::JointDescription for SphericalJoint {}
 
 impl SphericalJoint {
     /// Creates a new spherical joint locking all relative translations between two bodies.
@@ -235,8 +236,14 @@ impl SphericalJointBuilder {
     }
 }
 
-impl From<SphericalJointBuilder> for GenericJoint {
-    fn from(joint: SphericalJointBuilder) -> GenericJoint {
-        joint.0.into()
+impl From<SphericalJointBuilder> for JointDescription {
+    fn from(joint: SphericalJointBuilder) -> JointDescription {
+        JointDescription::SphericalJoint(joint.0.into())
+    }
+}
+
+impl From<SphericalJoint> for JointDescription {
+    fn from(joint: SphericalJoint) -> JointDescription {
+        JointDescription::SphericalJoint(joint)
     }
 }

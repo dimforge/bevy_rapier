@@ -44,5 +44,5 @@ pub fn setup_physics(mut commands: Commands) {
             RigidBody::Dynamic,
             Collider::cuboid(rad, rad),
         ))
-        .insert(ImpulseJoint::new(parent, joint.build()));
+        .insert(ImpulseJoint::new(parent, joint));
 }

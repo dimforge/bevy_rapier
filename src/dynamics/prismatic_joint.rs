@@ -2,15 +2,16 @@ use crate::dynamics::{GenericJoint, GenericJointBuilder};
 use crate::math::{Real, Vect};
 use rapier::dynamics::{JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel};
 
+use super::JointDescription;
+
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(transparent)]
 /// A prismatic joint, locks all relative motion between two bodies except for translation along the joint’s principal axis.
 pub struct PrismaticJoint {
-    data: GenericJoint,
+    /// The underlying joint data.
+    pub data: GenericJoint,
 }
-
-impl super::JointDescription for PrismaticJoint {}
 
 impl PrismaticJoint {
     /// Creates a new prismatic joint allowing only relative translations along the specified axis.
@@ -255,8 +256,14 @@ impl PrismaticJointBuilder {
     }
 }
 
-impl From<PrismaticJointBuilder> for GenericJoint {
-    fn from(joint: PrismaticJointBuilder) -> GenericJoint {
-        joint.0.into()
+impl From<PrismaticJointBuilder> for JointDescription {
+    fn from(joint: PrismaticJointBuilder) -> JointDescription {
+        JointDescription::PrismaticJoint(joint.0.into())
+    }
+}
+
+impl From<PrismaticJoint> for JointDescription {
+    fn from(joint: PrismaticJoint) -> JointDescription {
+        JointDescription::PrismaticJoint(joint)
     }
 }

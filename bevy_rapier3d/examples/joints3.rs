@@ -18,8 +18,7 @@ fn main() {
         .add_systems(Startup, (setup_graphics, setup_physics))
         .add_systems(
             Last,
-            print_joints::<ImpulseJoint<RevoluteJoint>>
-                .run_if(once_after_delay(Duration::from_secs_f32(0.1f32))),
+            (print_joints,).run_if(once_after_delay(Duration::from_secs_f32(0.1f32))),
         )
         .run();
 }
@@ -303,15 +302,17 @@ pub fn setup_physics(mut commands: Commands) {
 ///         println!(revolute_joint.angle(&*context));
 ///     }
 /// }
-pub fn print_joints<AnyRevoluteJoint: JointConstraint<RevoluteJoint> + Component>(
-    context: Res<RapierContext>,
-    joints: Query<(Entity, &AnyRevoluteJoint)>,
-) {
+pub fn print_joints(context: Res<RapierContext>, joints: Query<(Entity, &ImpulseJoint)>) {
     for (entity, impulse_joint) in joints.iter() {
-        println!(
-            "angle for {}: {:?}",
-            entity,
-            context.angle_for_entity_impulse_revolute_joint(entity),
-        );
+        match &impulse_joint.data {
+            JointDescription::RevoluteJoint(_revolute_joint) => {
+                println!(
+                    "angle for {}: {:?}",
+                    entity,
+                    context.angle_for_entity_impulse_revolute_joint(entity),
+                );
+            }
+            _ => println!("angle computation not supported"),
+        }
     }
 }
