@@ -5,11 +5,11 @@ use std::ops::{Deref, DerefMut};
 use super::super::{DefaultRapierContext, RapierContext, RapierContextEntityLink};
 /// Utility [`SystemParam`] to easily access the default world [`RapierContext`] immutably
 #[derive(SystemParam)]
-pub struct DefaultRapierContextAccess<'w, 's> {
-    rapier_context: Query<'w, 's, &'static RapierContext, With<DefaultRapierContext>>,
+pub struct DefaultRapierContextAccess<'w, 's, T: Component = DefaultRapierContext> {
+    rapier_context: Query<'w, 's, &'static RapierContext, With<T>>,
 }
 
-impl<'w, 's> DefaultRapierContextAccess<'w, 's> {
+impl<'w, 's, T: Component> DefaultRapierContextAccess<'w, 's, T> {
     /// Use this method if you only have one world.
     pub fn single(&'_ self) -> &RapierContext {
         self.rapier_context.single()
@@ -26,11 +26,11 @@ impl<'w, 's> Deref for DefaultRapierContextAccess<'w, 's> {
 
 /// Utility [`SystemParam`] to easily access the default world [`RapierContext`] mutably
 #[derive(SystemParam)]
-pub struct DefaultRapierContextAccessMut<'w, 's> {
-    rapier_context: Query<'w, 's, &'static mut RapierContext, With<DefaultRapierContext>>,
+pub struct DefaultRapierContextAccessMut<'w, 's, T: Component = DefaultRapierContext> {
+    rapier_context: Query<'w, 's, &'static mut RapierContext, With<T>>,
 }
 
-impl<'w, 's> Deref for DefaultRapierContextAccessMut<'w, 's> {
+impl<'w, 's, T: Component> Deref for DefaultRapierContextAccessMut<'w, 's, T> {
     type Target = RapierContext;
 
     fn deref(&self) -> &Self::Target {
@@ -48,10 +48,16 @@ impl<'w, 's> DerefMut for DefaultRapierContextAccessMut<'w, 's> {
 /// Utility [`SystemParam`] to easily access any [`RapierContext`] immutably
 #[derive(SystemParam)]
 pub struct RapierContextAccess<'w, 's> {
-    rapier_context: Query<'w, 's, &'static RapierContext>,
+    /// Query used to retrieve a [`RapierContext`].
+    /// It's helpful to iterate over every rapier contexts,
+    /// or get a handle over a specific context, for example through:
+    /// - a marker component such as [`DefaultRapierContext`]
+    /// - a [`RapierContextEntityLink`]. See [context](RapierContextAccess::context)
+    pub rapier_context: Query<'w, 's, &'static RapierContext>,
 }
 
 impl<'w, 's> RapierContextAccess<'w, 's> {
+    /// Retrieves the rapier context responsible for the entity owning the given [`RapierContextEntityLink`].
     pub fn context(&self, link: RapierContextEntityLink) -> &'_ RapierContext {
         self.rapier_context
             .get(link.0)
@@ -70,27 +76,20 @@ impl<'w, 's> Deref for RapierContextAccess<'w, 's> {
 /// Utility [`SystemParam`] to easily access any [`RapierContext`] mutably
 #[derive(SystemParam)]
 pub struct RapierContextAccessMut<'w, 's> {
+    /// Query used to retrieve a [`RapierContext`].
+    /// It's helpful to iterate over every rapier contexts,
+    /// or get a handle over a specific context, for example through:
+    /// - a marker component such as [`DefaultRapierContext`]
+    /// - a [`RapierContextEntityLink`]. See [context](RapierContextAccess::context)
     pub rapier_context: Query<'w, 's, &'static mut RapierContext>,
 }
 
 impl<'w, 's> RapierContextAccessMut<'w, 's> {
+    /// Retrieves the rapier context responsible for the entity owning the given [`RapierContextEntityLink`].
     pub fn context(&mut self, link: RapierContextEntityLink) -> &'_ mut RapierContext {
         self.rapier_context
             .get_mut(link.0)
             .expect("RapierContextEntityLink.0 refers to an entity without RapierContext.")
             .into_inner()
     }
-}
-
-pub fn try_retrieve_context<'a>(
-    link: Option<&RapierContextEntityLink>,
-    context: &Query<Entity, With<RapierContext>>,
-) -> Result<Entity, Entity> {
-    link.map_or_else(
-        || {
-            let context_entity = context.iter().next().unwrap();
-            Err(context_entity)
-        },
-        |link| Ok(link.0),
-    )
 }

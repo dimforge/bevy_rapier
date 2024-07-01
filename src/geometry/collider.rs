@@ -3,7 +3,7 @@ use std::fmt;
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 use {crate::geometry::VHACDParameters, bevy::utils::HashMap};
 
-use bevy::{prelude::*, reflect::impl_reflect};
+use bevy::prelude::*;
 
 use bevy::utils::HashSet;
 use rapier::geometry::Shape;

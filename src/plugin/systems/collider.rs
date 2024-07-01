@@ -1,6 +1,6 @@
 use crate::dynamics::ReadMassProperties;
 use crate::geometry::Collider;
-use crate::plugin::context::systemparams::{try_retrieve_context, RapierEntity};
+use crate::plugin::context::systemparams::RapierEntity;
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::{RapierConfiguration, RapierContext, RapierContextAccessMut};
 use crate::prelude::{
@@ -142,11 +142,10 @@ pub fn apply_collider_user_changes(
 ) {
     for (rapier_entity, handle, transform) in changed_collider_transforms.iter() {
         let context = context.context(*rapier_entity.rapier_context_link);
-        let config = config.get(rapier_entity.rapier_context_link.0).unwrap();
         if context.collider_parent(rapier_entity.entity).is_some() {
             let (_, collider_position) = collider_offset(
                 rapier_entity.entity,
-                &context,
+                context,
                 &parent_query,
                 &transform_query,
             );

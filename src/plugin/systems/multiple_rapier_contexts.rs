@@ -11,7 +11,10 @@ use bevy::prelude::*;
 ///
 /// If this fails to happen, weirdness will ensue.
 pub fn on_add_entity_with_parent(
-    q_add_entity_without_parent: Query<(Entity, &Parent), Changed<Parent>>,
+    q_add_entity_without_parent: Query<
+        (Entity, &Parent),
+        (With<RapierContextEntityLink>, Changed<Parent>),
+    >,
     q_parent: Query<&Parent>,
     q_physics_world: Query<&RapierContextEntityLink>,
     mut commands: Commands,

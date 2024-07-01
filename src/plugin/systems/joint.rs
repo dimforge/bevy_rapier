@@ -2,7 +2,6 @@ use crate::dynamics::ImpulseJoint;
 use crate::dynamics::MultibodyJoint;
 use crate::dynamics::RapierImpulseJointHandle;
 use crate::dynamics::RapierMultibodyJointHandle;
-use crate::plugin::context::systemparams::try_retrieve_context;
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::RapierContext;
 use crate::plugin::RapierContextAccessMut;

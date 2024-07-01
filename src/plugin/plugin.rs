@@ -42,11 +42,14 @@ where
     /// likely always be 1.0 in 3D. In 2D, this is useful to specify a "pixels-per-meter"
     /// conversion ratio.
     pub fn with_length_unit(mut self, length_unit: f32) -> Self {
-        self.default_world_setup = RapierContextInitialization::InitializeDefaultRapierContext {
-            length_unit: length_unit,
-        };
+        self.default_world_setup =
+            RapierContextInitialization::InitializeDefaultRapierContext { length_unit };
         self
     }
+
+    /// Specifies a default world initialization strategy.
+    ///
+    /// The default is to initialize a [`RapierContext`] with a length unit of 1.
     pub fn with_default_world(
         mut self,
         default_world_initialization: RapierContextInitialization,
@@ -106,9 +109,8 @@ where
                     .in_set(RapierTransformPropagateSet),
                 systems::on_add_entity_with_parent,
                 systems::on_change_world,
-                apply_deferred,
+                //
                 systems::sync_removals,
-                apply_deferred,
                 #[cfg(all(feature = "dim3", feature = "async-collider"))]
                 systems::init_async_scene_colliders,
                 #[cfg(all(feature = "dim3", feature = "async-collider"))]
@@ -116,10 +118,8 @@ where
                 systems::init_rigid_bodies,
                 systems::init_colliders,
                 systems::init_joints,
-                apply_deferred,
                 //systems::sync_removals,
                 // Run this here so the following systems do not have a 1 frame delay.
-                apply_deferred,
                 systems::apply_scale,
                 systems::apply_collider_user_changes,
                 systems::apply_rigid_body_user_changes,
@@ -292,8 +292,14 @@ where
 /// and as long as any [`RapierContextEntityLink`] has a reference to its [`RapierContext`].
 #[derive(Resource, Debug, Reflect, Clone)]
 pub enum RapierContextInitialization {
+    /// [`RapierPhysicsPlugin`] will not spawn any entity containing [`RapierContext`] automatically.
     NoAutomaticRapierContext,
-    InitializeDefaultRapierContext { length_unit: f32 },
+    /// [`RapierPhysicsPlugin`] will spawn an entity containing a [`RapierContext`]
+    /// automatically during [`PreStartup`], with the [`DefaultRapierContext`] marker component.
+    InitializeDefaultRapierContext {
+        /// See [`IntegrationParameters::length_unit`]
+        length_unit: f32,
+    },
 }
 
 impl Default for RapierContextInitialization {
