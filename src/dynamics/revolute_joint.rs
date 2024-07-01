@@ -285,7 +285,7 @@ impl RevoluteJointBuilder {
 
 impl From<RevoluteJointBuilder> for JointDescription {
     fn from(joint: RevoluteJointBuilder) -> JointDescription {
-        JointDescription::RevoluteJoint(joint.0.into())
+        joint.0.into()
     }
 }
 

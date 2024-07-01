@@ -60,7 +60,7 @@ pub fn setup_physics(mut commands: Commands) {
                     // NOTE: we want to attach multiple impulse joints to this entity, so
                     //       we need to add the components to children of the entity. Otherwise
                     //       the second joint component would just overwrite the first one.
-                    cmd.spawn(ImpulseJoint::new(parent_entity, joint.build()));
+                    cmd.spawn(ImpulseJoint::new(parent_entity, joint));
                 });
             }
 
@@ -73,7 +73,7 @@ pub fn setup_physics(mut commands: Commands) {
                     // NOTE: we want to attach multiple impulse joints to this entity, so
                     //       we need to add the components to children of the entity. Otherwise
                     //       the second joint component would just overwrite the first one.
-                    cmd.spawn(ImpulseJoint::new(parent_entity, joint.build()));
+                    cmd.spawn(ImpulseJoint::new(parent_entity, joint));
                 });
             }
 

@@ -146,7 +146,7 @@ impl SpringJointBuilder {
 
 impl From<SpringJointBuilder> for JointDescription {
     fn from(joint: SpringJointBuilder) -> JointDescription {
-        JointDescription::SpringJoint(joint.0.into())
+        joint.0.into()
     }
 }
 

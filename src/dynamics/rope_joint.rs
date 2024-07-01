@@ -267,7 +267,7 @@ impl RopeJointBuilder {
 
 impl From<RopeJointBuilder> for JointDescription {
     fn from(joint: RopeJointBuilder) -> JointDescription {
-        JointDescription::RopeJoint(joint.0.into())
+        joint.0.into()
     }
 }
 

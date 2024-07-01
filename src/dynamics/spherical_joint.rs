@@ -238,7 +238,7 @@ impl SphericalJointBuilder {
 
 impl From<SphericalJointBuilder> for JointDescription {
     fn from(joint: SphericalJointBuilder) -> JointDescription {
-        JointDescription::SphericalJoint(joint.0.into())
+        joint.0.into()
     }
 }
 

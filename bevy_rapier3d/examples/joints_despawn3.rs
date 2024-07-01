@@ -60,8 +60,7 @@ fn create_prismatic_joints(commands: &mut Commands, origin: Vect, num: usize) {
 
         let prism = PrismaticJointBuilder::new(axis)
             .local_anchor2(Vec3::new(0.0, 0.0, -shift))
-            .limits([-2.0, 2.0])
-            .build();
+            .limits([-2.0, 2.0]);
         let joint = ImpulseJoint::new(curr_parent, prism);
 
         let mut entity = commands.spawn((
@@ -118,17 +117,16 @@ fn create_revolute_joints(commands: &mut Commands, origin: Vec3, num: usize) {
 
         let revs = [
             RevoluteJointBuilder::new(z)
-                .local_anchor2(Vec3::new(0.0, 0.0, -shift))
-                .build(),
+                .local_anchor2(Vec3::new(0.0, 0.0, -shift)),
             RevoluteJointBuilder::new(x)
                 .local_anchor2(Vec3::new(-shift, 0.0, 0.0))
-                .build(),
+                ,
             RevoluteJointBuilder::new(z)
                 .local_anchor2(Vec3::new(0.0, 0.0, -shift))
-                .build(),
+                ,
             RevoluteJointBuilder::new(x)
                 .local_anchor2(Vec3::new(shift, 0.0, 0.0))
-                .build(),
+                .,
         ];
 
         commands
@@ -194,7 +192,7 @@ fn create_fixed_joints(commands: &mut Commands, origin: Vec3, num: usize) {
                     // NOTE: we want to attach multiple impulse joints to this entity, so
                     //       we need to add the components to children of the entity. Otherwise
                     //       the second joint component would just overwrite the first one.
-                    children.spawn(ImpulseJoint::new(parent_entity, joint.build()));
+                    children.spawn(ImpulseJoint::new(parent_entity, joint));
                 });
             }
 
@@ -207,7 +205,7 @@ fn create_fixed_joints(commands: &mut Commands, origin: Vec3, num: usize) {
                     // NOTE: we want to attach multiple impulse joints to this entity, so
                     //       we need to add the components to children of the entity. Otherwise
                     //       the second joint component would just overwrite the first one.
-                    children.spawn((ImpulseJoint::new(parent_entity, joint.build()), Despawn));
+                    children.spawn((ImpulseJoint::new(parent_entity, joint), Despawn));
                 });
             }
 
@@ -249,8 +247,7 @@ fn create_ball_joints(commands: &mut Commands, num: usize) {
                     // NOTE: we want to attach multiple impulse joints to this entity, so
                     //       we need to add the components to children of the entity. Otherwise
                     //       the second joint component would just overwrite the first one.
-                    let mut entity =
-                        children.spawn(ImpulseJoint::new(parent_entity, joint.build()));
+                    let mut entity = children.spawn(ImpulseJoint::new(parent_entity, joint));
                     if i == 2 {
                         entity.insert(Despawn);
                     }
@@ -266,7 +263,7 @@ fn create_ball_joints(commands: &mut Commands, num: usize) {
                     // NOTE: we want to attach multiple impulse joints to this entity, so
                     //       we need to add the components to children of the entity. Otherwise
                     //       the second joint component would just overwrite the first one.
-                    children.spawn(ImpulseJoint::new(parent_entity, joint.build()));
+                    children.spawn(ImpulseJoint::new(parent_entity, joint));
                 });
             }
 

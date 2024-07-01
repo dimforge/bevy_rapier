@@ -8,6 +8,7 @@ use super::JointDescription;
 #[repr(transparent)]
 /// A fixed joint, locks all relative motion between two bodies.
 pub struct FixedJoint {
+    /// The underlying joint data.
     pub data: GenericJoint,
 }
 

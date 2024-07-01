@@ -258,7 +258,7 @@ impl PrismaticJointBuilder {
 
 impl From<PrismaticJointBuilder> for JointDescription {
     fn from(joint: PrismaticJointBuilder) -> JointDescription {
-        JointDescription::PrismaticJoint(joint.0.into())
+        joint.0.into()
     }
 }
 

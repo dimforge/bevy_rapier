@@ -8,31 +8,41 @@ use super::{FixedJoint, GenericJoint, PrismaticJoint, RevoluteJoint, RopeJoint, 
 #[cfg(feature = "dim3")]
 use super::SphericalJoint;
 
+/// Wrapper enum over a specific joint.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum JointDescription {
+    /// See [`FixedJoint`]
     FixedJoint(FixedJoint),
+    /// See [`GenericJoint`]
     GenericJoint(GenericJoint),
+    /// See [`PrismaticJoint`]
     PrismaticJoint(PrismaticJoint),
+    /// See [`RevoluteJoint`]
     RevoluteJoint(RevoluteJoint),
+    /// See [`RopeJoint`]
     RopeJoint(RopeJoint),
+    /// See [`SphericalJoint`]
     #[cfg(feature = "dim3")]
     SphericalJoint(SphericalJoint),
+    /// See [`SpringJoint`]
     SpringJoint(SpringJoint),
 }
 
 impl JointDescription {
+    /// The underlying generic joint.
     pub fn generic_joint(&self) -> &GenericJoint {
         match self {
             JointDescription::FixedJoint(j) => &j.data,
-            JointDescription::GenericJoint(j) => &j,
+            JointDescription::GenericJoint(j) => j,
             JointDescription::PrismaticJoint(j) => &j.data,
             JointDescription::RevoluteJoint(j) => j.data(),
-            JointDescription::RopeJoint(j) => &j.data(),
+            JointDescription::RopeJoint(j) => j.data(),
             #[cfg(feature = "dim3")]
-            JointDescription::SphericalJoint(j) => &j.data(),
+            JointDescription::SphericalJoint(j) => j.data(),
             JointDescription::SpringJoint(j) => j.data(),
         }
     }
+    /// The underlying generic joint.
     pub fn generic_joint_mut(&mut self) -> &mut GenericJoint {
         match self {
             JointDescription::FixedJoint(ref mut j) => &mut j.data,
@@ -116,7 +126,7 @@ impl MultibodyJoint {
     /// Initializes an joint based on reduced coordinates from its first endpoint and
     /// the joint description.
     pub fn new(parent: Entity, data: JointDescription) -> Self {
-        Self { parent, data: data }
+        Self { parent, data }
     }
 }
 impl JointConstraint for ImpulseJoint {
