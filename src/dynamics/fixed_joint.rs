@@ -15,6 +15,8 @@ impl Default for FixedJoint {
     }
 }
 
+impl super::JointDescription for FixedJoint {}
+
 impl FixedJoint {
     /// Creates a new fixed joint.
     #[must_use]

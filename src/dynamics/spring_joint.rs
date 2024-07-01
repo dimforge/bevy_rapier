@@ -15,6 +15,8 @@ pub struct SpringJoint {
     pub data: GenericJoint,
 }
 
+impl super::JointDescription for SpringJoint {}
+
 impl SpringJoint {
     /// Creates a new spring joint limiting the max distance between two bodies.
     ///

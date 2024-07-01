@@ -72,7 +72,7 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
                     // NOTE: we want to attach multiple impulse joints to this entity, so
                     //       we need to add the components to children of the entity. Otherwise
                     //       the second joint component would just overwrite the first one.
-                    let mut entity = cmd.spawn(ImpulseJoint::new(parent_entity, joint));
+                    let mut entity = cmd.spawn(ImpulseJoint::new(parent_entity, joint.build()));
                     if i == (numi / 2) || (k % 4 == 0 || k == numk - 1) {
                         entity.insert(Despawn);
                     }
@@ -88,7 +88,7 @@ pub fn setup_physics(mut commands: Commands, mut despawn: ResMut<DespawnResource
                     // NOTE: we want to attach multiple impulse joints to this entity, so
                     //       we need to add the components to children of the entity. Otherwise
                     //       the second joint component would just overwrite the first one.
-                    let mut entity = cmd.spawn(ImpulseJoint::new(parent_entity, joint));
+                    let mut entity = cmd.spawn(ImpulseJoint::new(parent_entity, joint.build()));
                     if i == (numi / 2) || (k % 4 == 0 || k == numk - 1) {
                         entity.insert(Despawn);
                     }

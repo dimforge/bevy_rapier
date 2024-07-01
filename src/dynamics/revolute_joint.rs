@@ -21,6 +21,8 @@ impl Default for RevoluteJoint {
     }
 }
 
+impl super::JointDescription for RevoluteJoint {}
+
 impl RevoluteJoint {
     /// Creates a new revolute joint allowing only relative rotations.
     #[cfg(feature = "dim2")]

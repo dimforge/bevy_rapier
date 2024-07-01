@@ -10,6 +10,8 @@ pub struct RopeJoint {
     data: GenericJoint,
 }
 
+impl super::JointDescription for RopeJoint {}
+
 impl RopeJoint {
     /// Creates a new rope joint limiting the max distance between to bodies
     pub fn new(max_dist: Real) -> Self {

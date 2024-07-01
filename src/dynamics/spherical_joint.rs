@@ -16,6 +16,8 @@ impl Default for SphericalJoint {
     }
 }
 
+impl super::JointDescription for SphericalJoint {}
+
 impl SphericalJoint {
     /// Creates a new spherical joint locking all relative translations between two bodies.
     pub fn new() -> Self {

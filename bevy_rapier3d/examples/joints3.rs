@@ -18,7 +18,8 @@ fn main() {
         .add_systems(Startup, (setup_graphics, setup_physics))
         .add_systems(
             Last,
-            print_joints.run_if(once_after_delay(Duration::from_secs_f32(0.1f32))),
+            print_joints::<ImpulseJoint<RevoluteJoint>>
+                .run_if(once_after_delay(Duration::from_secs_f32(0.1f32))),
         )
         .run();
 }
@@ -54,7 +55,8 @@ fn create_prismatic_joints(commands: &mut Commands, origin: Vect, num: usize) {
 
         let prism = PrismaticJointBuilder::new(axis)
             .local_anchor2(Vec3::new(0.0, 0.0, -shift))
-            .limits([-2.0, 2.0]);
+            .limits([-2.0, 2.0])
+            .build();
         let joint = ImpulseJoint::new(curr_parent, prism);
 
         curr_parent = commands
@@ -84,7 +86,7 @@ fn create_rope_joints(commands: &mut Commands, origin: Vect, num: usize) {
         let dz = (i + 1) as f32 * shift;
 
         let rope = RopeJointBuilder::new(2.0).local_anchor2(Vec3::new(0.0, 0.0, -shift));
-        let joint = ImpulseJoint::new(curr_parent, rope);
+        let joint = ImpulseJoint::new(curr_parent, rope.build());
 
         curr_parent = commands
             .spawn((
@@ -135,12 +137,20 @@ fn create_revolute_joints(commands: &mut Commands, origin: Vec3, num: usize) {
         let z = Vec3::Z;
 
         let revs = [
-            RevoluteJointBuilder::new(z).local_anchor2(Vec3::new(0.0, 0.0, -shift)),
-            RevoluteJointBuilder::new(x).local_anchor2(Vec3::new(-shift, 0.0, 0.0)),
-            RevoluteJointBuilder::new(z).local_anchor2(Vec3::new(0.0, 0.0, -shift)),
-            RevoluteJointBuilder::new(x).local_anchor2(Vec3::new(shift, 0.0, 0.0)),
+            RevoluteJointBuilder::new(z)
+                .local_anchor2(Vec3::new(0.0, 0.0, -shift))
+                .build(),
+            RevoluteJointBuilder::new(x)
+                .local_anchor2(Vec3::new(-shift, 0.0, 0.0))
+                .build(),
+            RevoluteJointBuilder::new(z)
+                .local_anchor2(Vec3::new(0.0, 0.0, -shift))
+                .build(),
+            RevoluteJointBuilder::new(x)
+                .local_anchor2(Vec3::new(shift, 0.0, 0.0))
+                .build(),
         ];
-
+        let joint = ImpulseJoint::new(curr_parent, revs[0]);
         commands
             .entity(handles[0])
             .insert(ImpulseJoint::new(curr_parent, revs[0]));
@@ -198,7 +208,7 @@ fn create_fixed_joints(commands: &mut Commands, origin: Vec3, num: usize) {
                     // NOTE: we want to attach multiple impulse joints to this entity, so
                     //       we need to add the components to children of the entity. Otherwise
                     //       the second joint component would just overwrite the first one.
-                    children.spawn(ImpulseJoint::new(parent_entity, joint));
+                    children.spawn(ImpulseJoint::new(parent_entity, joint.build()));
                 });
             }
 
@@ -211,7 +221,7 @@ fn create_fixed_joints(commands: &mut Commands, origin: Vec3, num: usize) {
                     // NOTE: we want to attach multiple impulse joints to this entity, so
                     //       we need to add the components to children of the entity. Otherwise
                     //       the second joint component would just overwrite the first one.
-                    children.spawn(ImpulseJoint::new(parent_entity, joint));
+                    children.spawn(ImpulseJoint::new(parent_entity, joint.build()));
                 });
             }
 
@@ -253,7 +263,7 @@ fn create_ball_joints(commands: &mut Commands, num: usize) {
                     // NOTE: we want to attach multiple impulse joints to this entity, so
                     //       we need to add the components to children of the entity. Otherwise
                     //       the second joint component would just overwrite the first one.
-                    children.spawn(ImpulseJoint::new(parent_entity, joint));
+                    children.spawn(ImpulseJoint::new(parent_entity, joint.build()));
                 });
             }
 
@@ -266,7 +276,7 @@ fn create_ball_joints(commands: &mut Commands, num: usize) {
                     // NOTE: we want to attach multiple impulse joints to this entity, so
                     //       we need to add the components to children of the entity. Otherwise
                     //       the second joint component would just overwrite the first one.
-                    children.spawn(ImpulseJoint::new(parent_entity, joint));
+                    children.spawn(ImpulseJoint::new(parent_entity, joint.build()));
                 });
             }
 
@@ -293,8 +303,11 @@ pub fn setup_physics(mut commands: Commands) {
 ///         println!(revolute_joint.angle(&*context));
 ///     }
 /// }
-pub fn print_joints(context: Res<RapierContext>, joints: Query<Entity, With<ImpulseJoint>>) {
-    for entity in joints.iter() {
+pub fn print_joints<AnyRevoluteJoint: JointConstraint<RevoluteJoint> + Component>(
+    context: Res<RapierContext>,
+    joints: Query<(Entity, &AnyRevoluteJoint)>,
+) {
+    for (entity, impulse_joint) in joints.iter() {
         println!(
             "angle for {}: {:?}",
             entity,

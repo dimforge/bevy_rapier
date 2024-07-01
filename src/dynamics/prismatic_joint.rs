@@ -10,6 +10,8 @@ pub struct PrismaticJoint {
     data: GenericJoint,
 }
 
+impl super::JointDescription for PrismaticJoint {}
+
 impl PrismaticJoint {
     /// Creates a new prismatic joint allowing only relative translations along the specified axis.
     ///
