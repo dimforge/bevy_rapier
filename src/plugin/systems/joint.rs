@@ -2,7 +2,9 @@ use crate::dynamics::ImpulseJoint;
 use crate::dynamics::MultibodyJoint;
 use crate::dynamics::RapierImpulseJointHandle;
 use crate::dynamics::RapierMultibodyJointHandle;
+use crate::plugin::context::systemparams::try_get_default_context;
 use crate::plugin::context::RapierContextEntityLink;
+use crate::plugin::DefaultRapierContext;
 use crate::plugin::RapierContext;
 use crate::plugin::RapierContextAccessMut;
 use bevy::prelude::*;
@@ -11,6 +13,7 @@ use bevy::prelude::*;
 pub fn init_joints(
     mut commands: Commands,
     mut context: Query<(Entity, &mut RapierContext)>,
+    default_context: Query<Entity, With<DefaultRapierContext>>,
     impulse_joints: Query<
         (Entity, Option<&RapierContextEntityLink>, &ImpulseJoint),
         Without<RapierImpulseJointHandle>,
@@ -24,7 +27,7 @@ pub fn init_joints(
     for (entity, entity_context_link, joint) in impulse_joints.iter() {
         let context_entity = entity_context_link.map_or_else(
             || {
-                let context_entity = context.iter().next().unwrap().0;
+                let context_entity = try_get_default_context(&default_context).unwrap();
                 commands
                     .entity(entity)
                     .insert(RapierContextEntityLink(context_entity));

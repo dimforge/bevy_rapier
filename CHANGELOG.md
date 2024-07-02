@@ -4,13 +4,16 @@
 
 ### Changed
 
-- `RapierContext` is now a `Component`
-  - Rapier now supports multiple worlds.
-  - Migration guide: 
+- `RapierContext`, `RapierConfiguration` and `RenderToSimulationTime` are now a `Component`
+  - Rapier now supports multiple worlds, see example `multi_world3` for usage details.
+  - Migration guide:
     - `ResMut<mut RapierContext>` -> `DefaultRapierContextAccessMut`
     - `Res<RapierContext>` -> `DefaultRapierContextAccess`
-    - `ResMut<RapierConfiguration>` -> `DefaultRapierConfigurationMut`
-    - `Res<RapierConfiguration>` -> `DefaultRapierConfiguration`
+    - Access to `RapierConfiguration` and `RenderToSimulationTime` should query for it
+on the responsible entity owning the `RenderContext`.
+  - If you are building a library on top of `bevy_rapier` and would want to support multiple worlds too,
+you can check out the details of [#545](https://github.com/dimforge/bevy_rapier/pull/545)
+to get more context and information.
 
 ## v0.27.0-rc.1 (18 June 2024)
 

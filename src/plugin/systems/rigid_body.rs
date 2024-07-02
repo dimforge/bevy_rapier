@@ -1,4 +1,5 @@
 use crate::dynamics::RapierRigidBodyHandle;
+use crate::plugin::context::systemparams::try_get_default_context;
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::{configuration::TimestepMode, RapierConfiguration, RapierContext};
 use crate::{dynamics::RigidBody, plugin::configuration::SimulationToRenderTime};
@@ -603,17 +604,7 @@ pub fn init_rigid_bodies(
         // Get rapier context from RapierContextEntityLink or insert its default value.
         let context_entity = entity_context_link.map_or_else(
             || {
-                let context_entity = match default_context_access.iter().next() {
-                    Some(it) => it,
-                    None => {
-                        log::error!(
-                            "No entity with `DefaultRapierContext` found.\
-                        Please add a default `RapierContext` or a `RapierContextEntityLink`\
-                        on the new rapier-managed entity."
-                        );
-                        return None;
-                    }
-                };
+                let context_entity = try_get_default_context(&default_context_access)?;
                 commands
                     .entity(entity)
                     .insert(RapierContextEntityLink(context_entity));
@@ -640,6 +631,7 @@ pub fn init_rigid_bodies(
         }
     }
 }
+
 /// This applies the initial impulse given to a rigid-body when it is created.
 ///
 /// This cannot be done inside `init_rigid_bodies` because impulses require the rigid-body

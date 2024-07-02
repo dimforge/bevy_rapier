@@ -18,10 +18,6 @@ pub fn writeback_mass_properties(
     for entity in mass_modified.read() {
         let link = link.get(entity.0).unwrap();
         let config = config.get(link.0).unwrap();
-        // FIXME: I think this should still run even if the physics pipeline is not enabled:
-        // - if we re-enable the pipeline, we'll have missed that event
-        // - it's not a heavy computation
-        // - it shouldn't happen too often anyway (only at initialization or when a user add/removes child colliders / changes their mass)
         if config.physics_pipeline_active {
             let context = context.get(link.0).unwrap();
 

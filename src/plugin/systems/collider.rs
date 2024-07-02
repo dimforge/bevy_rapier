@@ -1,8 +1,10 @@
 use crate::dynamics::ReadMassProperties;
 use crate::geometry::Collider;
-use crate::plugin::context::systemparams::RapierEntity;
+use crate::plugin::context::systemparams::{try_get_default_context, RapierEntity};
 use crate::plugin::context::RapierContextEntityLink;
-use crate::plugin::{RapierConfiguration, RapierContext, RapierContextAccessMut};
+use crate::plugin::{
+    DefaultRapierContext, RapierConfiguration, RapierContext, RapierContextAccessMut,
+};
 use crate::prelude::{
     ActiveCollisionTypes, ActiveEvents, ActiveHooks, ColliderDisabled, ColliderMassProperties,
     ColliderScale, CollidingEntities, CollisionEvent, CollisionGroups, ContactForceEventThreshold,
@@ -314,6 +316,7 @@ pub fn init_colliders(
     mut commands: Commands,
     config: Query<&RapierConfiguration>,
     mut context: Query<(Entity, &mut RapierContext)>,
+    default_context: Query<Entity, With<DefaultRapierContext>>,
     colliders: Query<(ColliderComponents, Option<&GlobalTransform>), Without<RapierColliderHandle>>,
     mut rigid_body_mprops: Query<&mut ReadMassProperties>,
     parent_query: Query<&Parent>,
@@ -342,7 +345,7 @@ pub fn init_colliders(
         let context_entity = context_link.map_or_else(
             || {
                 dbg!("unknown rapierContext for object, setting to default");
-                let context_entity = context.iter().next().unwrap().0;
+                let context_entity = try_get_default_context(&default_context).unwrap();
                 commands
                     .entity(entity)
                     .insert(RapierContextEntityLink(context_entity));

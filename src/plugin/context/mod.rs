@@ -360,6 +360,8 @@ impl RapierContext {
             }
         }
         if let Some(mut event_queue) = event_queue {
+            // SAFETY: event_queue and its inner locksare only accessed from
+            // within `self.pipeline.step` called above, so we can unwrap here safely.
             self.collision_events_to_send =
                 std::mem::take(event_queue.collision_events.get_mut().unwrap());
             self.contact_force_events_to_send =

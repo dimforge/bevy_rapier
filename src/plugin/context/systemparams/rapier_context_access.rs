@@ -93,3 +93,20 @@ impl<'w, 's> RapierContextAccessMut<'w, 's> {
             .into_inner()
     }
 }
+
+pub fn try_get_default_context(
+    default_context_access: &Query<Entity, With<DefaultRapierContext>>,
+) -> Option<Entity> {
+    let context_entity = match default_context_access.iter().next() {
+        Some(it) => it,
+        None => {
+            log::error!(
+                "No entity with `DefaultRapierContext` found.\
+                        Please add a default `RapierContext` or a `RapierContextEntityLink`\
+                        on the new rapier-managed entity."
+            );
+            return None;
+        }
+    };
+    Some(context_entity)
+}

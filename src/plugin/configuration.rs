@@ -83,17 +83,6 @@ pub struct RapierConfiguration {
     pub force_update_from_transform_changes: bool,
 }
 
-/*
-impl FromWorld for RapierConfiguration {
-    fn from_world(world: &mut World) -> Self {
-        let length_unit = world
-            .get_resource::<RapierContext>()
-            .map(|ctxt| ctxt.integration_parameters.length_unit)
-            .unwrap_or(1.0);
-        Self::new(length_unit)
-    }
-}*/
-
 impl RapierConfiguration {
     /// Configures rapier with the specified length unit.
     ///
