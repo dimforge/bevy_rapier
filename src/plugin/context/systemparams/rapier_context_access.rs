@@ -92,6 +92,21 @@ impl<'w, 's> RapierContextAccessMut<'w, 's> {
             .expect("RapierContextEntityLink.0 refers to an entity without RapierContext.")
             .into_inner()
     }
+
+    /// Retrieves the rapier context component on this [`Entity`].
+    ///
+    /// Do not call this on a rapier managed entity. given entity should have a [`RapierContext`].
+    pub(crate) fn context_from_entity(
+        &mut self,
+        rapier_context_entity: Entity,
+    ) -> &'_ mut RapierContext {
+        self.rapier_context
+            .get_mut(rapier_context_entity)
+            .expect(&format!(
+                "entity {rapier_context_entity} has no RapierContext."
+            ))
+            .into_inner()
+    }
 }
 
 pub fn try_get_default_context(

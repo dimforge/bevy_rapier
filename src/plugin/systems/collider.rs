@@ -315,7 +315,7 @@ pub(crate) fn collider_offset(
 pub fn init_colliders(
     mut commands: Commands,
     config: Query<&RapierConfiguration>,
-    mut context: Query<(Entity, &mut RapierContext)>,
+    mut context_access: RapierContextAccessMut,
     default_context: Query<Entity, With<DefaultRapierContext>>,
     colliders: Query<(ColliderComponents, Option<&GlobalTransform>), Without<RapierColliderHandle>>,
     mut rigid_body_mprops: Query<&mut ReadMassProperties>,
@@ -344,7 +344,6 @@ pub fn init_colliders(
     {
         let context_entity = context_link.map_or_else(
             || {
-                dbg!("unknown rapierContext for object, setting to default");
                 let context_entity = try_get_default_context(&default_context).unwrap();
                 commands
                     .entity(entity)
@@ -353,7 +352,7 @@ pub fn init_colliders(
             },
             |link| link.0,
         );
-        let context = &mut *context.get_mut(context_entity).unwrap().1;
+        let context = context_access.context_from_entity(context_entity);
         let config = config.get(context_entity).unwrap();
         let mut scaled_shape = shape.clone();
         scaled_shape.set_scale(shape.scale, config.scaled_shape_subdivision);

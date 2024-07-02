@@ -5,14 +5,13 @@ use crate::dynamics::RapierMultibodyJointHandle;
 use crate::plugin::context::systemparams::try_get_default_context;
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::DefaultRapierContext;
-use crate::plugin::RapierContext;
 use crate::plugin::RapierContextAccessMut;
 use bevy::prelude::*;
 
 /// System responsible for creating new Rapier joints from the related `bevy_rapier` components.
 pub fn init_joints(
     mut commands: Commands,
-    mut context: Query<(Entity, &mut RapierContext)>,
+    mut context_access: RapierContextAccessMut,
     default_context: Query<Entity, With<DefaultRapierContext>>,
     impulse_joints: Query<
         (Entity, Option<&RapierContextEntityLink>, &ImpulseJoint),
@@ -35,7 +34,7 @@ pub fn init_joints(
             },
             |link| link.0,
         );
-        let context = &mut *context.get_mut(context_entity).unwrap().1;
+        let context = context_access.context_from_entity(context_entity);
         let mut target = None;
         let mut body_entity = entity;
         while target.is_none() {
@@ -62,7 +61,7 @@ pub fn init_joints(
     for (entity, entity_context_link, joint) in multibody_joints.iter() {
         let context_entity = entity_context_link.map_or_else(
             || {
-                let context_entity = context.iter().next().unwrap().0;
+                let context_entity = try_get_default_context(&default_context).unwrap();
                 commands
                     .entity(entity)
                     .insert(RapierContextEntityLink(context_entity));
@@ -70,7 +69,7 @@ pub fn init_joints(
             },
             |link| link.0,
         );
-        let context = &mut *context.get_mut(context_entity).unwrap().1;
+        let context = context_access.context_from_entity(context_entity);
         let target = context.entity2body.get(&entity);
 
         if let (Some(target), Some(source)) = (target, context.entity2body.get(&joint.parent)) {
