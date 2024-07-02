@@ -53,6 +53,7 @@ log = "0.4"
 serde = { version = "1", features = ["derive"], optional = true }
 
 [dev-dependencies]
+benches_common = { path = "../benches_common" }
 bevy = { version = "0.14.0-rc.3", default-features = false, features = [
     "x11",
     "tonemapping_luts",
@@ -60,7 +61,12 @@ bevy = { version = "0.14.0-rc.3", default-features = false, features = [
 ] }
 approx = "0.5.1"
 glam = { version = "0.27", features = ["approx"] }
+criterion = { version = "0.5", features = ["html_reports"] }
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
 features = ["debug-render-3d", "serde-serialize"]
+
+[[bench]]
+name = "cubes"
+harness = false
