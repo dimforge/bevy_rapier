@@ -504,6 +504,7 @@ pub fn writeback_rigid_bodies(
 /// System responsible for creating new Rapier rigid-bodies from the related `bevy_rapier` components.
 pub fn init_rigid_bodies(
     mut commands: Commands,
+    default_context_access: Query<Entity, With<DefaultRapierContext>>,
     mut context: Query<(Entity, &mut RapierContext)>,
     rigid_bodies: Query<RigidBodyComponents, Without<RapierRigidBodyHandle>>,
 ) {
@@ -599,18 +600,35 @@ pub fn init_rigid_bodies(
             activation.normalized_linear_threshold = sleep.normalized_linear_threshold;
             activation.angular_threshold = sleep.angular_threshold;
         }
-
+        // Get rapier context from RapierContextEntityLink or insert its default value.
         let context_entity = entity_context_link.map_or_else(
             || {
-                let context_entity = context.iter().next().unwrap().0;
+                let context_entity = match default_context_access.iter().next() {
+                    Some(it) => it,
+                    None => {
+                        log::error!(
+                            "No entity with `DefaultRapierContext` found.\
+                        Please add a default `RapierContext` or a `RapierContextEntityLink`\
+                        on the new rapier-managed entity."
+                        );
+                        return None;
+                    }
+                };
                 commands
                     .entity(entity)
                     .insert(RapierContextEntityLink(context_entity));
-                context_entity
+                Some(context_entity)
             },
-            |link| link.0,
+            |link| Some(link.0),
         );
-        let mut context = context.get_mut(context_entity).unwrap().1;
+        let Some(context_entity) = context_entity else {
+            continue;
+        };
+
+        let Ok((_, mut context)) = context.get_mut(context_entity) else {
+            log::error!("Could not find entity {context_entity} with rapier context while initializing {entity}");
+            continue;
+        };
         let handle = context.bodies.insert(rb);
         commands
             .entity(entity)
