@@ -286,7 +286,7 @@ impl<'a> ColliderView<'a> {
         }
     }
 
-    /// Compute the scaled version of `self.raw`.
+    /// Compute the scaled version of its inner [`Shape`].
     pub fn raw_scale_by(&self, scale: Vect, num_subdivisions: u32) -> Option<SharedShape> {
         let shape = self
             .to_shape()
