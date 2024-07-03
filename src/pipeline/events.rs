@@ -149,6 +149,7 @@ mod test {
         pub struct EventsSaver<E: Event> {
             pub events: Vec<E>,
         }
+
         impl<E: Event> Default for EventsSaver<E> {
             fn default() -> Self {
                 Self {
@@ -156,6 +157,7 @@ mod test {
                 }
             }
         }
+
         pub fn save_events<E: Event + Clone>(
             mut events: EventReader<E>,
             mut saver: ResMut<EventsSaver<E>>,
@@ -164,6 +166,7 @@ mod test {
                 saver.events.push(event.clone());
             }
         }
+
         fn run_test(app: &mut App) {
             app.add_systems(PostUpdate, save_events::<CollisionEvent>)
                 .add_systems(PostUpdate, save_events::<ContactForceEvent>)
