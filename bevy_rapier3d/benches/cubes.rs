@@ -1,10 +1,9 @@
-use std::time::Duration;
+//! Translated from avian benchmark.
 
 use benches_common::bench_app;
 use bevy::prelude::*;
 use bevy_rapier3d::math::*;
 use bevy_rapier3d::prelude::*;
-use criterion::{criterion_group, criterion_main, Criterion};
 
 fn setup_cubes(app: &mut App, size: u32) {
     app.add_systems(Startup, move |mut commands: Commands| {
@@ -25,23 +24,20 @@ fn setup_cubes(app: &mut App, size: u32) {
     });
 }
 
-fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("cubes 3x3, 30 steps", |b| {
-        bench_app(b, 30, |app| setup_cubes(app, 3))
-    });
-
-    c.bench_function("cubes 5x5, 30 steps", |b| {
-        bench_app(b, 30, |app| setup_cubes(app, 5))
-    });
-
-    c.bench_function("cubes 10x10, 30 steps", |b| {
-        bench_app(b, 30, |app| setup_cubes(app, 10))
-    });
+#[divan::bench]
+fn cubes_3x3_30_steps(bencher: divan::Bencher) {
+    bench_app(bencher, 30, |app| setup_cubes(app, 3))
+}
+#[divan::bench]
+fn cubes_5x5_30_steps(bencher: divan::Bencher) {
+    bench_app(bencher, 30, |app| setup_cubes(app, 5))
+}
+#[divan::bench]
+fn cubes_10x10__30_steps(bencher: divan::Bencher) {
+    bench_app(bencher, 30, |app| setup_cubes(app, 10))
 }
 
-criterion_group!(
-    name = benches;
-    config = Criterion::default().measurement_time(Duration::from_secs(20));
-    targets = criterion_benchmark
-);
-criterion_main!(benches);
+fn main() {
+    // Run registered benchmarks.
+    divan::main();
+}
