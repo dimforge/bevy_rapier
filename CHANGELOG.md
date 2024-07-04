@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+<<<<<<< HEAD
 ### Changed
 
 - `RapierContext`, `RapierConfiguration` and `RenderToSimulationTime` are now a `Component`
@@ -14,6 +15,14 @@ on the responsible entity owning the `RenderContext`.
   - If you are building a library on top of `bevy_rapier` and would want to support multiple worlds too,
 you can check out the details of [#545](https://github.com/dimforge/bevy_rapier/pull/545)
 to get more context and information.
+=======
+**This is an update from rapier 0.19 to Rapier 0.21 which includes several stability improvements
+and new features. Please have a look at the
+[0.20 and 0.21 changelogs](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md) of Rapier.**
+
+- Update to rapier `0.21`.
+- Update to nalgebra `0.33`.
+>>>>>>> upstream
 
 ## v0.27.0-rc.1 (18 June 2024)
 
