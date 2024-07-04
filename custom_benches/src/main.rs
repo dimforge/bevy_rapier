@@ -1,5 +1,5 @@
 //! Translated from rapier benchmark.
-
+//!
 use benches_common::default_app;
 use benches_common::wait_app_start;
 use bevy::prelude::*;
@@ -100,6 +100,7 @@ pub fn custom_bencher(steps: usize, setup: impl Fn(&mut App)) {
     println!("average rapier step time: {}", average);
     println!("total time: {}", timer_total.time());
 }
+
 fn pyramid_1_with_height_2() {
     custom_bencher(1000, |app| setup_cubes(app, 1, 2));
 }

@@ -1,5 +1,5 @@
 [workspace]
-members = ["bevy_rapier2d", "bevy_rapier3d"]
+members = ["bevy_rapier2d", "bevy_rapier3d", "custom_benches"]
 resolver = "2"
 
 [profile.dev]
