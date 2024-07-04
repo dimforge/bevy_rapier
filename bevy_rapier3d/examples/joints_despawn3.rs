@@ -116,17 +116,10 @@ fn create_revolute_joints(commands: &mut Commands, origin: Vec3, num: usize) {
         let z = Vec3::Z;
 
         let revs = [
-            RevoluteJointBuilder::new(z)
-                .local_anchor2(Vec3::new(0.0, 0.0, -shift)),
-            RevoluteJointBuilder::new(x)
-                .local_anchor2(Vec3::new(-shift, 0.0, 0.0))
-                ,
-            RevoluteJointBuilder::new(z)
-                .local_anchor2(Vec3::new(0.0, 0.0, -shift))
-                ,
-            RevoluteJointBuilder::new(x)
-                .local_anchor2(Vec3::new(shift, 0.0, 0.0))
-                .,
+            RevoluteJointBuilder::new(z).local_anchor2(Vec3::new(0.0, 0.0, -shift)),
+            RevoluteJointBuilder::new(x).local_anchor2(Vec3::new(-shift, 0.0, 0.0)),
+            RevoluteJointBuilder::new(z).local_anchor2(Vec3::new(0.0, 0.0, -shift)),
+            RevoluteJointBuilder::new(x).local_anchor2(Vec3::new(shift, 0.0, 0.0)),
         ];
 
         commands
