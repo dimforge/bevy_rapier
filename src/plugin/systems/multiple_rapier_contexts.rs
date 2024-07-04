@@ -150,7 +150,7 @@ mod test {
         ));
         app.update();
         // Verify all rapier entities have a `RapierContextEntityLink`.
-        let mut world = app.world_mut();
+        let world = app.world_mut();
         let mut query = world.query_filtered::<Entity, With<Marker<'R'>>>();
         for entity in query.iter(&world) {
             world
