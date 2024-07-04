@@ -1,5 +1,6 @@
 [package]
 name = "custom_benches"
+version = "0.1.0"
 description = "Custom benchmarks for bevy_rapier."
 readme = "./README.md"
 license = "Apache-2.0"
