@@ -155,7 +155,7 @@ mod test {
         for entity in query.iter(&world) {
             world
                 .get::<RapierContextEntityLink>(entity)
-                .expect(&format!("no link to rapier context entity from {entity}."));
+                .unwrap_or_else(|| panic!("no link to rapier context entity from {entity}."));
         }
         // Verify link is correctly updated for children.
         let new_rapier_context = world.spawn(RapierContext::default()).id();

@@ -102,9 +102,7 @@ impl<'w, 's> RapierContextAccessMut<'w, 's> {
     ) -> &'_ mut RapierContext {
         self.rapier_context
             .get_mut(rapier_context_entity)
-            .expect(&format!(
-                "entity {rapier_context_entity} has no RapierContext."
-            ))
+            .unwrap_or_else(|_| panic!("entity {rapier_context_entity} has no RapierContext."))
             .into_inner()
     }
 }
