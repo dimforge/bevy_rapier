@@ -1,58 +1,14 @@
 [package]
 name = "custom_benches"
-version = "0.27.0-rc.1"
-authors = ["Sébastien Crozet <developer@crozet.re>"]
-description = "3-dimensional physics engine in Rust, official Bevy plugin."
-documentation = "http://docs.rs/bevy_rapier3d"
-homepage = "http://rapier.rs"
-repository = "https://github.com/dimforge/bevy_rapier"
-readme = "../README.md"
-keywords = ["physics", "dynamics", "rigid", "real-time", "joints"]
+description = "Custom benchmarks for bevy_rapier."
+readme = "./README.md"
 license = "Apache-2.0"
 edition = "2021"
 
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-[lib]
-path = "../src/lib.rs"
-required-features = ["dim3"]
-
-[features]
-default = ["dim3", "async-collider", "debug-render-3d"]
-dim3 = []
-debug-render = ["debug-render-3d"]
-debug-render-2d = [
-    "bevy/bevy_core_pipeline",
-    "bevy/bevy_sprite",
-    "bevy/bevy_gizmos",
-    "rapier3d/debug-render",
-    "bevy/bevy_asset",
-]
-debug-render-3d = [
-    "bevy/bevy_core_pipeline",
-    "bevy/bevy_pbr",
-    "bevy/bevy_gizmos",
-    "rapier3d/debug-render",
-    "bevy/bevy_asset",
-]
-parallel = ["rapier3d/parallel"]
-simd-stable = ["rapier3d/simd-stable"]
-simd-nightly = ["rapier3d/simd-nightly"]
-wasm-bindgen = ["rapier3d/wasm-bindgen"]
-serde-serialize = ["rapier3d/serde-serialize", "bevy/serialize", "serde"]
-enhanced-determinism = ["rapier3d/enhanced-determinism"]
-headless = []
-async-collider = ["bevy/bevy_asset", "bevy/bevy_scene"]
 
 [dependencies]
 rapier3d = { features = ["profiler"], version = "0.21" }
 bevy_rapier3d = { path = "../bevy_rapier3d" }
 bevy = { version = "0.14.0-rc.3", default-features = false }
-nalgebra = { version = "0.33", features = ["convert-glam027"] }
-bitflags = "2.4"
-log = "0.4"
-serde = { version = "1", features = ["derive"], optional = true }
 benches_common = { path = "../benches_common" }
-
-[dev-dependencies]
-approx = "0.5.1"
