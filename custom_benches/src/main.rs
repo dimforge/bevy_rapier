@@ -7,7 +7,6 @@ use bevy_rapier3d::dynamics::RigidBody;
 use bevy_rapier3d::geometry::Collider;
 use bevy_rapier3d::math::Vect;
 use bevy_rapier3d::plugin::RapierContext;
-use bevy_rapier3d::plugin::SimulationToRenderTime;
 
 pub fn create_pyramid(commands: &mut Commands, offset: Vect, stack_height: usize, rad: f32) {
     let shift = rad * 2.0;
@@ -76,7 +75,6 @@ pub fn custom_bencher(steps: usize, setup: impl Fn(&mut App)) {
 
     let mut timer_total = rapier3d::counters::Timer::new();
     let mut timer_full_update = rapier3d::counters::Timer::new();
-    let mut bevy_overheads = vec![];
     let mut rapier_step_times = vec![];
     let mut total_update_times = vec![];
     timer_total.start();
@@ -86,18 +84,17 @@ pub fn custom_bencher(steps: usize, setup: impl Fn(&mut App)) {
         timer_full_update.pause();
         let elapsed_time = timer_full_update.time() as f32;
         let rc = app.world().resource::<RapierContext>();
-        let bevy_overhead = app.world().resource::<SimulationToRenderTime>();
-        bevy_overheads.push(bevy_overhead.diff);
         rapier_step_times.push(rc.pipeline.counters.step_time.time() as f32);
         total_update_times.push(elapsed_time);
     }
     timer_total.pause();
-    let average = bevy_overheads.iter().sum::<f32>() / bevy_overheads.len() as f32;
-    println!("average bevy overhead: {}", average);
-    let average = total_update_times.iter().sum::<f32>() / total_update_times.len() as f32;
-    println!("average total time: {}", average);
-    let average = rapier_step_times.iter().sum::<f32>() / rapier_step_times.len() as f32;
-    println!("average rapier step time: {}", average);
+    let average_total = total_update_times.iter().sum::<f32>() / total_update_times.len() as f32;
+    println!("average total time: {}", average_total);
+    let average_rapier_step =
+        rapier_step_times.iter().sum::<f32>() / rapier_step_times.len() as f32;
+    println!("average rapier step time: {}", average_rapier_step);
+    let average_rapier_overhead = average_total - average_rapier_step;
+    println!("average bevy overhead: {}", average_rapier_overhead);
     println!("total time: {}", timer_total.time());
 }
 

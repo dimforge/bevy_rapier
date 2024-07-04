@@ -45,14 +45,14 @@ headless = []
 async-collider = ["bevy/bevy_asset", "bevy/bevy_scene"]
 
 [dependencies]
-rapier3d = { features = ["profiler"], version = "0.20" }
+rapier3d = { features = ["profiler"], version = "0.21" }
 bevy_rapier3d = { path = "../bevy_rapier3d" }
 bevy = { version = "0.14.0-rc.3", default-features = false }
-nalgebra = { version = "0.32.6", features = ["convert-glam027"] }
+nalgebra = { version = "0.33", features = ["convert-glam027"] }
 bitflags = "2.4"
 log = "0.4"
 serde = { version = "1", features = ["derive"], optional = true }
 benches_common = { path = "../benches_common" }
 
-[profile.release]
-debug = true
+[dev-dependencies]
+approx = "0.5.1"

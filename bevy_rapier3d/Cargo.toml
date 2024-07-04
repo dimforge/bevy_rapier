@@ -63,10 +63,6 @@ approx = "0.5.1"
 glam = { version = "0.27", features = ["approx"] }
 divan = "0.1"
 
-[dev-dependencies.rapier3d]
-features = ["profiler"]
-version = "0.20"
-
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
 features = ["debug-render-3d", "serde-serialize"]
@@ -77,8 +73,4 @@ harness = false
 
 [[bench]]
 name = "many_pyramids3"
-harness = false
-
-[[bench]]
-name = "many_pyramids3_custom"
 harness = false
