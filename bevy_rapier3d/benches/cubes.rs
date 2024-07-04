@@ -33,7 +33,7 @@ fn cubes_5x5_30_steps(bencher: divan::Bencher) {
     bench_app(bencher, 30, |app| setup_cubes(app, 5))
 }
 #[divan::bench]
-fn cubes_10x10__30_steps(bencher: divan::Bencher) {
+fn cubes_10x10_30_steps(bencher: divan::Bencher) {
     bench_app(bencher, 30, |app| setup_cubes(app, 10))
 }
 

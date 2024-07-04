@@ -1,10 +1,8 @@
 
 ## cargo bench
 
-within `bevy_rapier3d`:
-
 ```sh
-cargo bench
+cargo bench -p bevy_rapier3d
 ```
 
 ## Custom benches
