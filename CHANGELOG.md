@@ -8,6 +8,8 @@ and new features. Please have a look at the
 
 - Update to rapier `0.21`.
 - Update to nalgebra `0.33`.
+- `ImpulseJoint` and `MultibodyJoint` now have a more detailed enum `JointDescription` instead of a `GenericJoint`.
+You can still access its inner `GenericJoint` with `.generic_joint()`.
 
 ## v0.27.0-rc.1 (18 June 2024)
 

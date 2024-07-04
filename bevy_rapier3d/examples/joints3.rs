@@ -19,7 +19,7 @@ fn main() {
         .add_systems(
             Last,
             (print_impulse_revolute_joints,)
-                .run_if(once_after_delay(Duration::from_secs_f32(0.1f32))),
+                .run_if(once_after_delay(Duration::from_secs_f32(1f32))),
         )
         .run();
 }
@@ -85,7 +85,7 @@ fn create_rope_joints(commands: &mut Commands, origin: Vect, num: usize) {
         let dz = (i + 1) as f32 * shift;
 
         let rope = RopeJointBuilder::new(2.0).local_anchor2(Vec3::new(0.0, 0.0, -shift));
-        let joint = ImpulseJoint::new(curr_parent, rope.build());
+        let joint = ImpulseJoint::new(curr_parent, rope);
 
         curr_parent = commands
             .spawn((
