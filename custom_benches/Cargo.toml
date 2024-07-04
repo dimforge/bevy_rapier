@@ -10,6 +10,6 @@ edition = "2021"
 
 [dependencies]
 rapier3d = { features = ["profiler"], version = "0.21" }
-bevy_rapier3d = { path = "../bevy_rapier3d" }
+bevy_rapier3d = { version = "0.27.0-rc.1", path = "../bevy_rapier3d" }
 bevy = { version = "0.14.0-rc.3", default-features = false }
-benches_common = { path = "../benches_common" }
+benches_common = { version = "0.1", path = "../benches_common" }
