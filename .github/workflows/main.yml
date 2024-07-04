@@ -8,7 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_CACHE_KEY: rust-cache-20240626
+  RUST_CACHE_KEY: rust-cache-20240701
 
 jobs:
   check-fmt:
