@@ -141,7 +141,6 @@ fn create_revolute_joints(commands: &mut Commands, origin: Vec3, num: usize) {
             RevoluteJointBuilder::new(z).local_anchor2(Vec3::new(0.0, 0.0, -shift)),
             RevoluteJointBuilder::new(x).local_anchor2(Vec3::new(shift, 0.0, 0.0)),
         ];
-        let joint = ImpulseJoint::new(curr_parent, revs[0]);
         commands
             .entity(handles[0])
             .insert(ImpulseJoint::new(curr_parent, revs[0]));
