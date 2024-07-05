@@ -109,7 +109,6 @@ where
                     .in_set(RapierTransformPropagateSet),
                 systems::on_add_entity_with_parent,
                 systems::on_change_world,
-                //
                 systems::sync_removals,
                 #[cfg(all(feature = "dim3", feature = "async-collider"))]
                 systems::init_async_scene_colliders,
@@ -118,8 +117,6 @@ where
                 systems::init_rigid_bodies,
                 systems::init_colliders,
                 systems::init_joints,
-                //systems::sync_removals,
-                // Run this here so the following systems do not have a 1 frame delay.
                 systems::apply_scale,
                 systems::apply_collider_user_changes,
                 systems::apply_rigid_body_user_changes,
@@ -246,20 +243,6 @@ where
                     .before(TransformSystem::TransformPropagate),
             );
 
-            // These *must* be in the main schedule currently so that they do not miss events.
-            /*app.add_systems(
-                PostUpdate,
-                (
-                    // Change any worlds needed before doing any calculations
-                    systems::on_add_entity_with_parent,
-                    systems::on_change_world,
-                    // Make sure to remove any dead bodies after changing_worlds but before everything else
-                    // to avoid it deleting something right after adding it
-                    //systems::sync_removals,
-                )
-                    .chain(),
-            );*/
-
             app.add_systems(
                 self.schedule,
                 (
@@ -287,12 +270,15 @@ where
 
 /// Specifies a default configuration for the default `RapierContext`
 ///
-/// If [`None`], no world will be initialized, you are responsible of creating and maintaining
-/// a [`RapierContext`] before creating any rapier entities (rigidbodies, colliders, joints),
-/// and as long as any [`RapierContextEntityLink`] has a reference to its [`RapierContext`].
+/// If [`NoAutomaticRapierContext`],
 #[derive(Resource, Debug, Reflect, Clone)]
 pub enum RapierContextInitialization {
     /// [`RapierPhysicsPlugin`] will not spawn any entity containing [`RapierContext`] automatically.
+    ///
+    /// You are responsible for creating a [`RapierContext`],
+    /// before spawning any rapier entities (rigidbodies, colliders, joints).
+    ///
+    /// You might be interested in adding [`DefaultRapierContext`] to the created world.
     NoAutomaticRapierContext,
     /// [`RapierPhysicsPlugin`] will spawn an entity containing a [`RapierContext`]
     /// automatically during [`PreStartup`], with the [`DefaultRapierContext`] marker component.

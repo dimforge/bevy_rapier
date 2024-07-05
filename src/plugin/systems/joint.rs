@@ -2,7 +2,7 @@ use crate::dynamics::ImpulseJoint;
 use crate::dynamics::MultibodyJoint;
 use crate::dynamics::RapierImpulseJointHandle;
 use crate::dynamics::RapierMultibodyJointHandle;
-use crate::plugin::context::systemparams::try_get_default_context;
+use crate::plugin::context::systemparams::get_single_context;
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::DefaultRapierContext;
 use crate::plugin::RapierContextAccessMut;
@@ -26,7 +26,7 @@ pub fn init_joints(
     for (entity, entity_context_link, joint) in impulse_joints.iter() {
         let context_entity = entity_context_link.map_or_else(
             || {
-                let context_entity = try_get_default_context(&default_context).unwrap();
+                let context_entity = get_single_context(&default_context);
                 commands
                     .entity(entity)
                     .insert(RapierContextEntityLink(context_entity));
@@ -34,7 +34,9 @@ pub fn init_joints(
             },
             |link| link.0,
         );
-        let context = context_access.context_from_entity(context_entity);
+        let context = context_access
+            .context_from_entity(context_entity)
+            .into_inner();
         let mut target = None;
         let mut body_entity = entity;
         while target.is_none() {
@@ -61,7 +63,7 @@ pub fn init_joints(
     for (entity, entity_context_link, joint) in multibody_joints.iter() {
         let context_entity = entity_context_link.map_or_else(
             || {
-                let context_entity = try_get_default_context(&default_context).unwrap();
+                let context_entity = get_single_context(&default_context);
                 commands
                     .entity(entity)
                     .insert(RapierContextEntityLink(context_entity));
@@ -69,7 +71,9 @@ pub fn init_joints(
             },
             |link| link.0,
         );
-        let context = context_access.context_from_entity(context_entity);
+        let context = context_access
+            .context_from_entity(context_entity)
+            .into_inner();
         let target = context.entity2body.get(&entity);
 
         if let (Some(target), Some(source)) = (target, context.entity2body.get(&joint.parent)) {
@@ -112,14 +116,14 @@ pub fn apply_joint_user_changes(
     // TODO: right now, we only support propagating changes made to the joint data.
     //       Re-parenting the joint isn’t supported yet.
     for (link, handle, changed_joint) in changed_impulse_joints.iter() {
-        let context = context.context(*link);
+        let context = context.context(link).into_inner();
         if let Some(joint) = context.impulse_joints.get_mut(handle.0) {
             joint.data = changed_joint.data.into_rapier();
         }
     }
 
     for (link, handle, changed_joint) in changed_multibody_joints.iter() {
-        let context = context.context(*link);
+        let context = context.context(link).into_inner();
         // TODO: not sure this will always work properly, e.g., if the number of Dofs is changed.
         if let Some((mb, link_id)) = context.multibody_joints.get_mut(handle.0) {
             if let Some(link) = mb.link_mut(link_id) {

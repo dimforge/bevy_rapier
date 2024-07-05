@@ -39,11 +39,13 @@ pub fn update_character_controls(
         glob_transform,
     ) in character_controllers.iter_mut()
     {
-        let context = context_access.context(*rapier_context_link);
-        let config = config.get(rapier_context_link.0).unwrap();
         if let (Some(raw_controller), Some(translation)) =
             (controller.to_raw(), controller.translation)
         {
+            let config = config
+                .get(rapier_context_link.0)
+                .expect("Could not get [`RapierConfiguration`]");
+            let context = context_access.context(rapier_context_link).into_inner();
             let scaled_custom_shape =
                 controller
                     .custom_shape

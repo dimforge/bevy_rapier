@@ -375,16 +375,13 @@ impl RapierContext {
         collision_event_writer: &mut EventWriter<CollisionEvent>,
         contact_force_event_writer: &mut EventWriter<ContactForceEvent>,
     ) {
-        for collision_event in self.collision_events_to_send.iter() {
-            collision_event_writer.send(*collision_event);
-        }
-        self.collision_events_to_send.clear();
-
-        for contact_force_event in self.contact_force_events_to_send.iter() {
-            contact_force_event_writer.send(*contact_force_event);
+        for collision_event in self.collision_events_to_send.drain(..) {
+            collision_event_writer.send(collision_event);
         }
 
-        self.contact_force_events_to_send.clear();
+        for contact_force_event in self.contact_force_events_to_send.drain(..) {
+            contact_force_event_writer.send(contact_force_event);
+        }
     }
 
     /// This method makes sure that the rigid-body positions have been propagated to

@@ -1,5 +1,4 @@
 use crate::dynamics::RapierRigidBodyHandle;
-use crate::plugin::context::systemparams::try_get_default_context;
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::{configuration::TimestepMode, RapierConfiguration, RapierContext};
 use crate::{dynamics::RigidBody, plugin::configuration::SimulationToRenderTime};
@@ -40,7 +39,7 @@ pub type RigidBodyComponents<'a> = (
 
 /// System responsible for applying changes the user made to a rigid-body-related component.
 pub fn apply_rigid_body_user_changes(
-    mut context: Query<&mut RapierContext>,
+    mut context: RapierContextAccessMut,
     config: Query<&RapierConfiguration>,
     changed_rb_types: Query<
         (&RapierRigidBodyHandle, &RapierContextEntityLink, &RigidBody),
@@ -139,7 +138,7 @@ pub fn apply_rigid_body_user_changes(
     // Deal with sleeping first, because other changes may then wake-up the
     // rigid-body again.
     for (handle, link, sleeping) in changed_sleeping.iter() {
-        let mut context = context.get_mut(link.0).unwrap();
+        let context = context.context(link).into_inner();
 
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             let activation = rb.activation_mut();
@@ -161,7 +160,7 @@ pub fn apply_rigid_body_user_changes(
     //       changed to anything else, a transform change would modify the next
     //       position instead of the current one.
     for (handle, link, rb_type) in changed_rb_types.iter() {
-        let mut context = context.get_mut(link.0).unwrap();
+        let context = context.context(link).into_inner();
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_body_type((*rb_type).into(), true);
         }
@@ -186,8 +185,10 @@ pub fn apply_rigid_body_user_changes(
         };
 
     for (handle, link, global_transform, mut interpolation) in changed_transforms.iter_mut() {
-        let context = &mut *context.get_mut(link.0).unwrap();
-        let config = config.get(link.0).unwrap();
+        let context = context.context(link).into_inner();
+        let config = config
+            .get(link.0)
+            .expect("Could not get `RapierConfiguration`");
         // Use an Option<bool> to avoid running the check twice.
         let mut transform_changed = None;
 
@@ -246,7 +247,7 @@ pub fn apply_rigid_body_user_changes(
     }
 
     for (handle, link, velocity) in changed_velocities.iter() {
-        let mut context = context.get_mut(link.0).unwrap();
+        let context = context.context(link).into_inner();
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_linvel(velocity.linvel.into(), true);
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
@@ -255,7 +256,7 @@ pub fn apply_rigid_body_user_changes(
     }
 
     for (entity, link, handle, mprops) in changed_additional_mass_props.iter() {
-        let mut context = context.get_mut(link.0).unwrap();
+        let context = context.context(link).into_inner();
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             match mprops {
                 AdditionalMassProperties::MassProperties(mprops) => {
@@ -271,21 +272,21 @@ pub fn apply_rigid_body_user_changes(
     }
 
     for (handle, link, additional_solver_iters) in changed_additional_solver_iterations.iter() {
-        let mut context = context.get_mut(link.0).unwrap();
+        let context = context.context(link).into_inner();
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_additional_solver_iterations(additional_solver_iters.0);
         }
     }
 
     for (handle, link, locked_axes) in changed_locked_axes.iter() {
-        let mut context = context.get_mut(link.0).unwrap();
+        let context = context.context(link).into_inner();
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_locked_axes((*locked_axes).into(), true);
         }
     }
 
     for (handle, link, forces) in changed_forces.iter() {
-        let mut context = context.get_mut(link.0).unwrap();
+        let context = context.context(link).into_inner();
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.reset_forces(true);
             rb.reset_torques(true);
@@ -296,7 +297,7 @@ pub fn apply_rigid_body_user_changes(
     }
 
     for (handle, link, mut impulses) in changed_impulses.iter_mut() {
-        let mut context = context.get_mut(link.0).unwrap();
+        let context = context.context(link).into_inner();
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.apply_impulse(impulses.impulse.into(), true);
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
@@ -306,35 +307,35 @@ pub fn apply_rigid_body_user_changes(
     }
 
     for (handle, link, gravity_scale) in changed_gravity_scale.iter() {
-        let mut context = context.get_mut(link.0).unwrap();
+        let context = context.context(link).into_inner();
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_gravity_scale(gravity_scale.0, true);
         }
     }
 
     for (handle, link, ccd) in changed_ccd.iter() {
-        let mut context = context.get_mut(link.0).unwrap();
+        let context = context.context(link).into_inner();
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.enable_ccd(ccd.enabled);
         }
     }
 
     for (handle, link, soft_ccd) in changed_soft_ccd.iter() {
-        let mut context = context.get_mut(link.0).unwrap();
+        let context = context.context(link).into_inner();
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_soft_ccd_prediction(soft_ccd.prediction);
         }
     }
 
     for (handle, link, dominance) in changed_dominance.iter() {
-        let mut context = context.get_mut(link.0).unwrap();
+        let context = context.context(link).into_inner();
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_dominance_group(dominance.groups);
         }
     }
 
     for (handle, link, damping) in changed_damping.iter() {
-        let mut context = context.get_mut(link.0).unwrap();
+        let context = context.context(link).into_inner();
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_linear_damping(damping.linear_damping);
             rb.set_angular_damping(damping.angular_damping);
@@ -342,7 +343,7 @@ pub fn apply_rigid_body_user_changes(
     }
 
     for (handle, link, _) in changed_disabled.iter() {
-        let mut context = context.get_mut(link.0).unwrap();
+        let context = context.context(link).into_inner();
         if let Some(co) = context.bodies.get_mut(handle.0) {
             co.set_enabled(false);
         }
@@ -352,7 +353,7 @@ pub fn apply_rigid_body_user_changes(
 /// System responsible for writing the result of the last simulation step into our `bevy_rapier`
 /// components and the [`GlobalTransform`] component.
 pub fn writeback_rigid_bodies(
-    mut context: Query<&mut RapierContext>,
+    mut context: RapierContextAccessMut,
     timestep_mode: Res<TimestepMode>,
     config: Query<&RapierConfiguration>,
     sim_to_render_time: Query<&SimulationToRenderTime>,
@@ -365,14 +366,18 @@ pub fn writeback_rigid_bodies(
     for (handle, link, parent, transform, mut interpolation, mut velocity, mut sleeping) in
         writeback.iter_mut()
     {
-        let config = config.get(link.0).unwrap();
+        let config = config
+            .get(link.0)
+            .expect("Could not get `RapierConfiguration`");
         if !config.physics_pipeline_active {
             continue;
         }
         let handle = handle.0;
 
-        let context = &mut *context.get_mut(link.0).unwrap();
-        let sim_to_render_time = sim_to_render_time.get(link.0).unwrap();
+        let context = context.context(link).into_inner();
+        let sim_to_render_time = sim_to_render_time
+            .get(link.0)
+            .expect("Could not get `SimulationToRenderTime`");
         // TODO: do this the other way round: iterate through Rapier’s RigidBodySet on the active bodies,
         // and update the components accordingly. That way, we don’t have to iterate through the entities that weren’t changed
         // by physics (for example because they are sleeping).
@@ -604,7 +609,7 @@ pub fn init_rigid_bodies(
         // Get rapier context from RapierContextEntityLink or insert its default value.
         let context_entity = entity_context_link.map_or_else(
             || {
-                let context_entity = try_get_default_context(&default_context_access)?;
+                let context_entity = default_context_access.get_single().ok()?;
                 commands
                     .entity(entity)
                     .insert(RapierContextEntityLink(context_entity));
@@ -647,7 +652,7 @@ pub fn apply_initial_rigid_body_impulses(
     >,
 ) {
     for (entity, link, mut impulse) in init_impulses.iter_mut() {
-        let context = context.context(*link);
+        let context = context.context(link).into_inner();
         let bodies = &mut context.bodies;
         if let Some(rb) = context
             .entity2body

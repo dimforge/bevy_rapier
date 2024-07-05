@@ -1,6 +1,6 @@
 use crate::dynamics::ReadMassProperties;
 use crate::geometry::Collider;
-use crate::plugin::context::systemparams::{try_get_default_context, RapierEntity};
+use crate::plugin::context::systemparams::{get_single_context, RapierEntity};
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::{
     DefaultRapierContext, RapierConfiguration, RapierContext, RapierContextAccessMut,
@@ -143,7 +143,9 @@ pub fn apply_collider_user_changes(
     mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
     for (rapier_entity, handle, transform) in changed_collider_transforms.iter() {
-        let context = context.context(*rapier_entity.rapier_context_link);
+        let context = context
+            .context(rapier_entity.rapier_context_link)
+            .into_inner();
         if context.collider_parent(rapier_entity.entity).is_some() {
             let (_, collider_position) = collider_offset(
                 rapier_entity.entity,
@@ -161,7 +163,9 @@ pub fn apply_collider_user_changes(
     }
 
     for (rapier_entity, handle, shape) in changed_shapes.iter() {
-        let context = context.context(*rapier_entity.rapier_context_link);
+        let context = context
+            .context(rapier_entity.rapier_context_link)
+            .into_inner();
         let config = config.get(rapier_entity.rapier_context_link.0).unwrap();
         if let Some(co) = context.colliders.get_mut(handle.0) {
             let mut scaled_shape = shape.clone();
@@ -177,28 +181,36 @@ pub fn apply_collider_user_changes(
     }
 
     for (rapier_entity, handle, active_events) in changed_active_events.iter() {
-        let context = context.context(*rapier_entity.rapier_context_link);
+        let context = context
+            .context(rapier_entity.rapier_context_link)
+            .into_inner();
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_active_events((*active_events).into())
         }
     }
 
     for (rapier_entity, handle, active_hooks) in changed_active_hooks.iter() {
-        let context = context.context(*rapier_entity.rapier_context_link);
+        let context = context
+            .context(rapier_entity.rapier_context_link)
+            .into_inner();
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_active_hooks((*active_hooks).into())
         }
     }
 
     for (rapier_entity, handle, active_collision_types) in changed_active_collision_types.iter() {
-        let context = context.context(*rapier_entity.rapier_context_link);
+        let context = context
+            .context(rapier_entity.rapier_context_link)
+            .into_inner();
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_active_collision_types((*active_collision_types).into())
         }
     }
 
     for (rapier_entity, handle, friction) in changed_friction.iter() {
-        let context = context.context(*rapier_entity.rapier_context_link);
+        let context = context
+            .context(rapier_entity.rapier_context_link)
+            .into_inner();
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_friction(friction.coefficient);
             co.set_friction_combine_rule(friction.combine_rule.into());
@@ -206,7 +218,9 @@ pub fn apply_collider_user_changes(
     }
 
     for (rapier_entity, handle, restitution) in changed_restitution.iter() {
-        let context = context.context(*rapier_entity.rapier_context_link);
+        let context = context
+            .context(rapier_entity.rapier_context_link)
+            .into_inner();
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_restitution(restitution.coefficient);
             co.set_restitution_combine_rule(restitution.combine_rule.into());
@@ -214,49 +228,63 @@ pub fn apply_collider_user_changes(
     }
 
     for (rapier_entity, handle, contact_skin) in changed_contact_skin.iter() {
-        let context = context.context(*rapier_entity.rapier_context_link);
+        let context = context
+            .context(rapier_entity.rapier_context_link)
+            .into_inner();
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_contact_skin(contact_skin.0);
         }
     }
 
     for (rapier_entity, handle, collision_groups) in changed_collision_groups.iter() {
-        let context = context.context(*rapier_entity.rapier_context_link);
+        let context = context
+            .context(rapier_entity.rapier_context_link)
+            .into_inner();
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_collision_groups((*collision_groups).into());
         }
     }
 
     for (rapier_entity, handle, solver_groups) in changed_solver_groups.iter() {
-        let context = context.context(*rapier_entity.rapier_context_link);
+        let context = context
+            .context(rapier_entity.rapier_context_link)
+            .into_inner();
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_solver_groups((*solver_groups).into());
         }
     }
 
     for (rapier_entity, handle, _) in changed_sensors.iter() {
-        let context = context.context(*rapier_entity.rapier_context_link);
+        let context = context
+            .context(rapier_entity.rapier_context_link)
+            .into_inner();
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_sensor(true);
         }
     }
 
     for (rapier_entity, handle, _) in changed_disabled.iter() {
-        let context = context.context(*rapier_entity.rapier_context_link);
+        let context = context
+            .context(rapier_entity.rapier_context_link)
+            .into_inner();
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_enabled(false);
         }
     }
 
     for (rapier_entity, handle, threshold) in changed_contact_force_threshold.iter() {
-        let context = context.context(*rapier_entity.rapier_context_link);
+        let context = context
+            .context(rapier_entity.rapier_context_link)
+            .into_inner();
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_contact_force_event_threshold(threshold.0);
         }
     }
 
     for (rapier_entity, handle, mprops) in changed_collider_mass_props.iter() {
-        let context = context.context(*rapier_entity.rapier_context_link);
+        let context = context
+            .context(rapier_entity.rapier_context_link)
+            .into_inner();
         if let Some(co) = context.colliders.get_mut(handle.0) {
             match mprops {
                 ColliderMassProperties::Density(density) => co.set_density(*density),
@@ -344,7 +372,7 @@ pub fn init_colliders(
     {
         let context_entity = context_link.map_or_else(
             || {
-                let context_entity = try_get_default_context(&default_context).unwrap();
+                let context_entity = get_single_context(&default_context);
                 commands
                     .entity(entity)
                     .insert(RapierContextEntityLink(context_entity));
@@ -352,8 +380,12 @@ pub fn init_colliders(
             },
             |link| link.0,
         );
-        let context = context_access.context_from_entity(context_entity);
-        let config = config.get(context_entity).unwrap();
+        let context = context_access
+            .context_from_entity(context_entity)
+            .into_inner();
+        let config = config.get(context_entity).unwrap_or_else(|_| {
+            panic!("Failed to retrieve `RapierConfiguration` on entity {context_entity}.")
+        });
         let mut scaled_shape = shape.clone();
         scaled_shape.set_scale(shape.scale, config.scaled_shape_subdivision);
         let mut builder = ColliderBuilder::new(scaled_shape.raw.clone());
