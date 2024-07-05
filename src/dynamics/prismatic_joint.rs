@@ -25,11 +25,6 @@ impl PrismaticJoint {
         Self { data }
     }
 
-    /// The underlying generic joint.
-    pub fn data(&self) -> &GenericJoint {
-        &self.data
-    }
-
     /// Are contacts between the attached rigid-bodies enabled?
     pub fn contacts_enabled(&self) -> bool {
         self.data.contacts_enabled()

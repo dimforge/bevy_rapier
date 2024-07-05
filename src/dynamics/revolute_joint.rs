@@ -44,11 +44,6 @@ impl RevoluteJoint {
         Self { data }
     }
 
-    /// The underlying generic joint.
-    pub fn data(&self) -> &GenericJoint {
-        &self.data
-    }
-
     /// Are contacts between the attached rigid-bodies enabled?
     pub fn contacts_enabled(&self) -> bool {
         self.data.contacts_enabled()
@@ -148,8 +143,11 @@ impl RevoluteJoint {
 
     /// The angle along the free degree of freedom of this revolute joint in `[-π, π]`.
     ///
+    /// See also [`Self::angle`] for a version of this method taking entities instead of rigid-body handles.
+    /// Similarly [`RapierContext::impulse_revolute_joint_angle`] only takes a single entity as argument to compute that angle.
+    ///
     /// # Parameters
-    /// - `bodies` : the rigid body set from [`super::super::RapierContext`]
+    /// - `bodies` : the rigid body set from [`RapierContext`]
     /// - `body1`: the first rigid-body attached to this revolute joint, obtained through [`rapier::dynamics::ImpulseJoint`] or [`rapier::dynamics::MultibodyJoint`].
     /// - `body2`: the second rigid-body attached to this revolute joint, obtained through [`rapier::dynamics::ImpulseJoint`] or [`rapier::dynamics::MultibodyJoint`].
     pub fn angle_from_handles(

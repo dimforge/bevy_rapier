@@ -293,7 +293,7 @@ pub fn print_impulse_revolute_joints(
                 println!(
                     "angle for {}: {:?}",
                     entity,
-                    context.angle_for_entity_impulse_revolute_joint(entity),
+                    context.impulse_revolute_joint_angle(entity),
                 );
             }
             _ => {}

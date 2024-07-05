@@ -28,22 +28,8 @@ pub enum JointDescription {
     SpringJoint(SpringJoint),
 }
 
-impl JointDescription {
-    /// The underlying generic joint.
-    pub fn generic_joint(&self) -> &GenericJoint {
-        match self {
-            JointDescription::FixedJoint(j) => &j.data,
-            JointDescription::GenericJoint(j) => j,
-            JointDescription::PrismaticJoint(j) => &j.data,
-            JointDescription::RevoluteJoint(j) => j.data(),
-            JointDescription::RopeJoint(j) => j.data(),
-            #[cfg(feature = "dim3")]
-            JointDescription::SphericalJoint(j) => j.data(),
-            JointDescription::SpringJoint(j) => j.data(),
-        }
-    }
-    /// The underlying generic joint.
-    pub fn generic_joint_mut(&mut self) -> &mut GenericJoint {
+impl AsMut<GenericJoint> for JointDescription {
+    fn as_mut(&mut self) -> &mut GenericJoint {
         match self {
             JointDescription::FixedJoint(ref mut j) => &mut j.data,
             JointDescription::GenericJoint(ref mut j) => j,
@@ -57,15 +43,19 @@ impl JointDescription {
     }
 }
 
-/// A trait used for different constraint types applied to joints,
-/// see [`ImpulseJoint`] and [`MultibodyJoint`].
-pub trait JointConstraint {
-    /// The entity containing the rigid-body used as the first endpoint of this joint.
-    fn parent(&self) -> Entity;
-    /// Access the joint’s description.
-    fn data(&self) -> &JointDescription;
-    /// Access mutably the joint’s description.
-    fn data_mut(&mut self) -> &mut JointDescription;
+impl AsRef<GenericJoint> for JointDescription {
+    fn as_ref(&self) -> &GenericJoint {
+        match self {
+            JointDescription::FixedJoint(j) => &j.data,
+            JointDescription::GenericJoint(j) => j,
+            JointDescription::PrismaticJoint(j) => &j.data,
+            JointDescription::RevoluteJoint(j) => &j.data,
+            JointDescription::RopeJoint(j) => &j.data,
+            #[cfg(feature = "dim3")]
+            JointDescription::SphericalJoint(j) => &j.data,
+            JointDescription::SpringJoint(j) => &j.data,
+        }
+    }
 }
 
 /// The handle of an impulse joint added to the physics scene.
@@ -127,18 +117,5 @@ impl MultibodyJoint {
     /// the joint description.
     pub fn new(parent: Entity, data: JointDescription) -> Self {
         Self { parent, data }
-    }
-}
-impl JointConstraint for ImpulseJoint {
-    fn parent(&self) -> Entity {
-        self.parent
-    }
-
-    fn data(&self) -> &JointDescription {
-        &self.data
-    }
-
-    fn data_mut(&mut self) -> &mut JointDescription {
-        &mut self.data
     }
 }

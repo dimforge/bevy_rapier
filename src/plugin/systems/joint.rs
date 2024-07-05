@@ -31,7 +31,7 @@ pub fn init_joints(
             let handle = context.impulse_joints.insert(
                 *source,
                 target,
-                joint.data.generic_joint().into_rapier(),
+                joint.data.as_ref().into_rapier(),
                 true,
             );
             commands
@@ -48,7 +48,7 @@ pub fn init_joints(
             if let Some(handle) = context.multibody_joints.insert(
                 *source,
                 *target,
-                joint.data.generic_joint().into_rapier(),
+                joint.data.as_ref().into_rapier(),
                 true,
             ) {
                 commands
@@ -78,7 +78,7 @@ pub fn apply_joint_user_changes(
     //       Re-parenting the joint isn’t supported yet.
     for (handle, changed_joint) in changed_impulse_joints.iter() {
         if let Some(joint) = context.impulse_joints.get_mut(handle.0) {
-            joint.data = changed_joint.data.generic_joint().into_rapier();
+            joint.data = changed_joint.data.as_ref().into_rapier();
         }
     }
 
@@ -86,7 +86,7 @@ pub fn apply_joint_user_changes(
         // TODO: not sure this will always work properly, e.g., if the number of Dofs is changed.
         if let Some((mb, link_id)) = context.multibody_joints.get_mut(handle.0) {
             if let Some(link) = mb.link_mut(link_id) {
-                link.joint.data = changed_joint.data.generic_joint().into_rapier();
+                link.joint.data = changed_joint.data.as_ref().into_rapier();
             }
         }
     }
