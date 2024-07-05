@@ -28,8 +28,8 @@ pub struct AsyncCollider(pub ComputedColliderShape);
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 #[derive(Component, Debug, Clone)]
 pub struct AsyncSceneCollider {
-    /// Collider type for each scene mesh not included in [`named_shapes`]. If [`None`], then all
-    /// shapes will be skipped for processing except [`named_shapes`].
+    /// Collider type for each scene mesh not included in [`Self::named_shapes`]. If [`None`], then all
+    /// shapes will be skipped for processing except [`Self::named_shapes`].
     pub shape: Option<ComputedColliderShape>,
     /// Shape types for meshes by name. If shape is [`None`], then it will be skipped for
     /// processing.

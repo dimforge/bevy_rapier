@@ -74,7 +74,7 @@ where
     }
 
     /// Provided for use when staging systems outside of this plugin using
-    /// [`with_system_setup(false)`](Self::with_default_system_setup).
+    /// [`with_default_system_setup(false)`](Self::with_default_system_setup).
     /// See [`PhysicsSet`] for a description of these systems.
     pub fn get_systems(set: PhysicsSet) -> SystemConfigs {
         match set {
