@@ -2,7 +2,7 @@ use crate::dynamics::{GenericJoint, GenericJointBuilder};
 use crate::math::{Real, Vect};
 use rapier::dynamics::{JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel};
 
-use super::JointDescription;
+use super::TypedJoint;
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -231,14 +231,14 @@ impl SphericalJointBuilder {
     }
 }
 
-impl From<SphericalJointBuilder> for JointDescription {
-    fn from(joint: SphericalJointBuilder) -> JointDescription {
+impl From<SphericalJointBuilder> for TypedJoint {
+    fn from(joint: SphericalJointBuilder) -> TypedJoint {
         joint.0.into()
     }
 }
 
-impl From<SphericalJoint> for JointDescription {
-    fn from(joint: SphericalJoint) -> JointDescription {
-        JointDescription::SphericalJoint(joint)
+impl From<SphericalJoint> for TypedJoint {
+    fn from(joint: SphericalJoint) -> TypedJoint {
+        TypedJoint::SphericalJoint(joint)
     }
 }

@@ -2,7 +2,7 @@ use crate::dynamics::{GenericJoint, GenericJointBuilder};
 use crate::math::{Rot, Vect};
 use rapier::dynamics::JointAxesMask;
 
-use super::JointDescription;
+use super::TypedJoint;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(transparent)]
@@ -137,14 +137,14 @@ impl FixedJointBuilder {
     }
 }
 
-impl From<FixedJointBuilder> for JointDescription {
-    fn from(joint: FixedJointBuilder) -> JointDescription {
+impl From<FixedJointBuilder> for TypedJoint {
+    fn from(joint: FixedJointBuilder) -> TypedJoint {
         joint.0.into()
     }
 }
 
-impl From<FixedJoint> for JointDescription {
-    fn from(joint: FixedJoint) -> JointDescription {
-        JointDescription::FixedJoint(joint)
+impl From<FixedJoint> for TypedJoint {
+    fn from(joint: FixedJoint) -> TypedJoint {
+        TypedJoint::FixedJoint(joint)
     }
 }

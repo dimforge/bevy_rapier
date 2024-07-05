@@ -2,7 +2,7 @@ use crate::dynamics::{GenericJoint, GenericJointBuilder, JointAxesMask};
 use crate::dynamics::{JointAxis, MotorModel};
 use crate::math::{Real, Vect};
 
-use super::JointDescription;
+use super::TypedJoint;
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -139,14 +139,14 @@ impl SpringJointBuilder {
     }
 }
 
-impl From<SpringJointBuilder> for JointDescription {
-    fn from(joint: SpringJointBuilder) -> JointDescription {
+impl From<SpringJointBuilder> for TypedJoint {
+    fn from(joint: SpringJointBuilder) -> TypedJoint {
         joint.0.into()
     }
 }
 
-impl From<SpringJoint> for JointDescription {
-    fn from(joint: SpringJoint) -> JointDescription {
-        JointDescription::SpringJoint(joint)
+impl From<SpringJoint> for TypedJoint {
+    fn from(joint: SpringJoint) -> TypedJoint {
+        TypedJoint::SpringJoint(joint)
     }
 }

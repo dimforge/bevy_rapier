@@ -10,7 +10,7 @@ use super::SphericalJoint;
 
 /// Wrapper enum over a specific joint.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum JointDescription {
+pub enum TypedJoint {
     /// See [`FixedJoint`]
     FixedJoint(FixedJoint),
     /// See [`GenericJoint`]
@@ -28,32 +28,32 @@ pub enum JointDescription {
     SpringJoint(SpringJoint),
 }
 
-impl AsMut<GenericJoint> for JointDescription {
+impl AsMut<GenericJoint> for TypedJoint {
     fn as_mut(&mut self) -> &mut GenericJoint {
         match self {
-            JointDescription::FixedJoint(ref mut j) => &mut j.data,
-            JointDescription::GenericJoint(ref mut j) => j,
-            JointDescription::PrismaticJoint(ref mut j) => &mut j.data,
-            JointDescription::RevoluteJoint(ref mut j) => &mut j.data,
-            JointDescription::RopeJoint(ref mut j) => &mut j.data,
+            TypedJoint::FixedJoint(ref mut j) => &mut j.data,
+            TypedJoint::GenericJoint(ref mut j) => j,
+            TypedJoint::PrismaticJoint(ref mut j) => &mut j.data,
+            TypedJoint::RevoluteJoint(ref mut j) => &mut j.data,
+            TypedJoint::RopeJoint(ref mut j) => &mut j.data,
             #[cfg(feature = "dim3")]
-            JointDescription::SphericalJoint(ref mut j) => &mut j.data,
-            JointDescription::SpringJoint(ref mut j) => &mut j.data,
+            TypedJoint::SphericalJoint(ref mut j) => &mut j.data,
+            TypedJoint::SpringJoint(ref mut j) => &mut j.data,
         }
     }
 }
 
-impl AsRef<GenericJoint> for JointDescription {
+impl AsRef<GenericJoint> for TypedJoint {
     fn as_ref(&self) -> &GenericJoint {
         match self {
-            JointDescription::FixedJoint(j) => &j.data,
-            JointDescription::GenericJoint(j) => j,
-            JointDescription::PrismaticJoint(j) => &j.data,
-            JointDescription::RevoluteJoint(j) => &j.data,
-            JointDescription::RopeJoint(j) => &j.data,
+            TypedJoint::FixedJoint(j) => &j.data,
+            TypedJoint::GenericJoint(j) => j,
+            TypedJoint::PrismaticJoint(j) => &j.data,
+            TypedJoint::RevoluteJoint(j) => &j.data,
+            TypedJoint::RopeJoint(j) => &j.data,
             #[cfg(feature = "dim3")]
-            JointDescription::SphericalJoint(j) => &j.data,
-            JointDescription::SpringJoint(j) => &j.data,
+            TypedJoint::SphericalJoint(j) => &j.data,
+            TypedJoint::SpringJoint(j) => &j.data,
         }
     }
 }
@@ -82,12 +82,12 @@ pub struct ImpulseJoint {
     /// The entity containing the rigid-body used as the first endpoint of this joint.
     pub parent: Entity,
     /// The joint’s description.
-    pub data: JointDescription,
+    pub data: TypedJoint,
 }
 
 impl ImpulseJoint {
     /// Initializes an impulse-based joint from its first endpoint and the joint description.
-    pub fn new(parent: Entity, data: impl Into<JointDescription>) -> Self {
+    pub fn new(parent: Entity, data: impl Into<TypedJoint>) -> Self {
         Self {
             parent,
             data: data.into(),
@@ -109,13 +109,13 @@ pub struct MultibodyJoint {
     /// The entity containing the rigid-body used as the first endpoint of this joint.
     pub parent: Entity,
     /// The joint’s description.
-    pub data: JointDescription,
+    pub data: TypedJoint,
 }
 
 impl MultibodyJoint {
     /// Initializes an joint based on reduced coordinates from its first endpoint and
     /// the joint description.
-    pub fn new(parent: Entity, data: JointDescription) -> Self {
+    pub fn new(parent: Entity, data: TypedJoint) -> Self {
         Self { parent, data }
     }
 }

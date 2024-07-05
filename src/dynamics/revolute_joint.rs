@@ -6,7 +6,7 @@ use rapier::dynamics::{
     JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel, RigidBodyHandle, RigidBodySet,
 };
 
-use super::JointDescription;
+use super::TypedJoint;
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -281,14 +281,14 @@ impl RevoluteJointBuilder {
     }
 }
 
-impl From<RevoluteJointBuilder> for JointDescription {
-    fn from(joint: RevoluteJointBuilder) -> JointDescription {
+impl From<RevoluteJointBuilder> for TypedJoint {
+    fn from(joint: RevoluteJointBuilder) -> TypedJoint {
         joint.0.into()
     }
 }
 
-impl From<RevoluteJoint> for JointDescription {
-    fn from(joint: RevoluteJoint) -> JointDescription {
-        JointDescription::RevoluteJoint(joint)
+impl From<RevoluteJoint> for TypedJoint {
+    fn from(joint: RevoluteJoint) -> TypedJoint {
+        TypedJoint::RevoluteJoint(joint)
     }
 }

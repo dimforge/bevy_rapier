@@ -2,7 +2,7 @@ use crate::dynamics::{GenericJoint, GenericJointBuilder};
 use crate::math::{Real, Vect};
 use rapier::dynamics::{JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel};
 
-use super::JointDescription;
+use super::TypedJoint;
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -260,14 +260,14 @@ impl RopeJointBuilder {
     }
 }
 
-impl From<RopeJointBuilder> for JointDescription {
-    fn from(joint: RopeJointBuilder) -> JointDescription {
+impl From<RopeJointBuilder> for TypedJoint {
+    fn from(joint: RopeJointBuilder) -> TypedJoint {
         joint.0.into()
     }
 }
 
-impl From<RopeJoint> for JointDescription {
-    fn from(joint: RopeJoint) -> JointDescription {
-        JointDescription::RopeJoint(joint)
+impl From<RopeJoint> for TypedJoint {
+    fn from(joint: RopeJoint) -> TypedJoint {
+        TypedJoint::RopeJoint(joint)
     }
 }

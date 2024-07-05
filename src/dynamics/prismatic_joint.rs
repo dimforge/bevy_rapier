@@ -2,7 +2,7 @@ use crate::dynamics::{GenericJoint, GenericJointBuilder};
 use crate::math::{Real, Vect};
 use rapier::dynamics::{JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel};
 
-use super::JointDescription;
+use super::TypedJoint;
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -251,14 +251,14 @@ impl PrismaticJointBuilder {
     }
 }
 
-impl From<PrismaticJointBuilder> for JointDescription {
-    fn from(joint: PrismaticJointBuilder) -> JointDescription {
+impl From<PrismaticJointBuilder> for TypedJoint {
+    fn from(joint: PrismaticJointBuilder) -> TypedJoint {
         joint.0.into()
     }
 }
 
-impl From<PrismaticJoint> for JointDescription {
-    fn from(joint: PrismaticJoint) -> JointDescription {
-        JointDescription::PrismaticJoint(joint)
+impl From<PrismaticJoint> for TypedJoint {
+    fn from(joint: PrismaticJoint) -> TypedJoint {
+        TypedJoint::PrismaticJoint(joint)
     }
 }
