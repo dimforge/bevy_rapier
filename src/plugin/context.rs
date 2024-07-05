@@ -890,18 +890,9 @@ impl RapierContext {
     ///
     /// Parameter `entity` should have a [`ImpulseJoint`] or [`MultibodyJoint`] component with a [`JointDescription::RevoluteJoint`] variant as `data`.
     pub fn angle_for_entity_impulse_revolute_joint(&self, entity: Entity) -> Option<f32> {
-        let joint_handle = match self.entity2impulse_joint().get(&entity) {
-            Some(it) => it,
-            None => return None,
-        };
-        let impulse_joint = match self.impulse_joints.get(*joint_handle) {
-            Some(it) => it,
-            None => return None,
-        };
-        let revolute_joint = match impulse_joint.data.as_revolute() {
-            Some(it) => it,
-            None => return None,
-        };
+        let joint_handle = self.entity2impulse_joint().get(&entity)?;
+        let impulse_joint = self.impulse_joints.get(*joint_handle)?;
+        let revolute_joint = impulse_joint.data.as_revolute()?;
 
         let rb1 = &self.bodies[impulse_joint.body1];
         let rb2 = &self.bodies[impulse_joint.body2];
