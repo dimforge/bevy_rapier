@@ -12,6 +12,9 @@ use rapier::prelude::{ColliderHandle, InteractionGroups, SharedShape};
 use crate::dynamics::{CoefficientCombineRule, MassProperties};
 use crate::math::Vect;
 
+#[cfg(doc)]
+use rapier::{dynamics::RigidBody, geometry::ContactForceEvent};
+
 /// The Rapier handle of a collider that was inserted to the physics scene.
 #[derive(Copy, Clone, Debug, Component)]
 pub struct RapierColliderHandle(pub ColliderHandle);
@@ -103,7 +106,7 @@ impl fmt::Debug for Collider {
     }
 }
 
-/// Overwrites the default application of [`GlobalTransform::scale`] to a [`Collider`]'s shapes.
+/// Overwrites the default application of [`GlobalTransform`] scale to a [`Collider`]'s shapes.
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 pub enum ColliderScale {
     /// This scale will be multiplied with the scale in the [`GlobalTransform`] component

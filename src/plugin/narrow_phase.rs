@@ -8,7 +8,7 @@ impl RapierContext {
     ///
     /// The returned contact pairs identify pairs of colliders with intersecting bounding-volumes.
     /// To check if any geometric contact happened between the collider shapes, check
-    /// [`ContactPairView::has_any_active_contact`].
+    /// [`ContactPairView::has_any_active_contact()`].
     pub fn contact_pairs_with(&self, collider: Entity) -> impl Iterator<Item = ContactPairView> {
         self.entity2collider
             .get(&collider)
@@ -51,7 +51,7 @@ impl RapierContext {
     ///
     /// If this returns `None`, there is no contact between the two colliders.
     /// If this returns `Some`, then there may be a contact between the two colliders. Check the
-    /// result [`ContactPair::has_any_active_collider`] method to see if there is an actual contact.
+    /// result [`ContactPairView::has_any_active_contact()`] method to see if there is an actual contact.
     pub fn contact_pair(&self, collider1: Entity, collider2: Entity) -> Option<ContactPairView> {
         let h1 = self.entity2collider.get(&collider1)?;
         let h2 = self.entity2collider.get(&collider2)?;

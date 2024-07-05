@@ -41,7 +41,7 @@ where
         self
     }
 
-    /// Specifies whether the plugin should setup each of its [`PhysicsStages`]
+    /// Specifies whether the plugin should setup each of its [`PhysicsSet`]
     /// (`true`), or if the user will set them up later (`false`).
     ///
     /// The default value is `true`.
@@ -74,7 +74,7 @@ where
     }
 
     /// Provided for use when staging systems outside of this plugin using
-    /// [`with_system_setup(false)`](Self::with_system_setup).
+    /// [`with_system_setup(false)`](Self::with_default_system_setup).
     /// See [`PhysicsSet`] for a description of these systems.
     pub fn get_systems(set: PhysicsSet) -> SystemConfigs {
         match set {
@@ -134,19 +134,19 @@ impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystem
     }
 }
 
-/// [`StageLabel`] for each phase of the plugin.
+/// [`SystemSet`] for each phase of the plugin.
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum PhysicsSet {
     /// This set runs the systems responsible for synchronizing (and
     /// initializing) backend data structures with current component state.
-    /// These systems typically run at the after [`CoreSet::Update`].
+    /// These systems typically run at the after [`Update`].
     SyncBackend,
     /// The systems responsible for advancing the physics simulation, and
     /// updating the internal state for scene queries.
     /// These systems typically run immediately after [`PhysicsSet::SyncBackend`].
     StepSimulation,
     /// The systems responsible for updating
-    /// [`crate::geometry::collider::CollidingEntities`] and writing
+    /// [`crate::geometry::CollidingEntities`] and writing
     /// the result of the last simulation step into our `bevy_rapier`
     /// components and the [`GlobalTransform`] component.
     /// These systems typically run immediately after [`PhysicsSet::StepSimulation`].
