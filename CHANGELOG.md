@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.27.0 (07 July 2024)
 
 **This is an update from rapier 0.19 to Rapier 0.21 which includes several stability improvements
 and new features. Please have a look at the
@@ -8,35 +8,22 @@ and new features. Please have a look at the
 
 ### Modified
 
-- Update to rapier `0.21`.
+- Update from rapier `0.19` to rapier `0.21`.
 - Update to nalgebra `0.33`.
+- Update to bevy `0.14`.
+- Renamed `has_any_active_contacts` to `has_any_active_contact` for better consistency with rapier.
+- `ColliderDebugColor`'s property is now a `bevy::color::Hsla`.
 - `ImpulseJoint::data` and `MultibodyJoint::data` are now a more detailed enum `TypedJoint` instead of a `GenericJoint`.
 You can still access its inner `GenericJoint` with `.as_ref()` or `as_mut()`.
 - `data` fields from all joints (`FixedJoint`, …) are now public, and their getters removed.
 
 ### Added
 
-- Added `RapierContext::context.impulse_revolute_joint_angle` to compute the angle along a revolute joint’s principal axis.
-
-## v0.27.0-rc.1 (18 June 2024)
-
-**This is an update to Rapier 0.20 which includes several stability improvements
-and new features. Please have a look at the
-[0.20 changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md) of Rapier.**
-
-### Modified
-
-- Update to rapier `0.20`.
-- Update to bevy `0.14`.
-- Renamed `has_any_active_contacts` to `has_any_active_contact` for better consistency with rapier.
-- `ColliderDebugColor`'s property is now a `bevy::color::Hsla`.
-- Added serialization support for `CollisionGroups`, `SolverGroups`, `ContactForceEventThreshold`, `ContactSkin`.
-
-### Added
-
 - Derive `Debug` for `LockedAxes`.
 - Expose `is_sliding_down_slope` to both `MoveShapeOutput` and `KinematicCharacterControllerOutput`.
 - Added a First Person Shooter `character_controller` example for `bevy_rapier3d`.
+- Added serialization support for `CollisionGroups`, `SolverGroups`, `ContactForceEventThreshold`, `ContactSkin`.
+- Added `RapierContext::context.impulse_revolute_joint_angle` to compute the angle along a revolute joint’s principal axis.
 
 ### Fix
 
