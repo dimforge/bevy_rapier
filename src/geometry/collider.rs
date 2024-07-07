@@ -12,6 +12,9 @@ use rapier::prelude::{ColliderHandle, InteractionGroups, SharedShape};
 use crate::dynamics::{CoefficientCombineRule, MassProperties};
 use crate::math::Vect;
 
+#[cfg(doc)]
+use rapier::{dynamics::RigidBody, geometry::ContactForceEvent};
+
 /// The Rapier handle of a collider that was inserted to the physics scene.
 #[derive(Copy, Clone, Debug, Component)]
 pub struct RapierColliderHandle(pub ColliderHandle);
@@ -25,8 +28,8 @@ pub struct AsyncCollider(pub ComputedColliderShape);
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 #[derive(Component, Debug, Clone)]
 pub struct AsyncSceneCollider {
-    /// Collider type for each scene mesh not included in [`named_shapes`]. If [`None`], then all
-    /// shapes will be skipped for processing except [`named_shapes`].
+    /// Collider type for each scene mesh not included in [`Self::named_shapes`]. If [`None`], then all
+    /// shapes will be skipped for processing except [`Self::named_shapes`].
     pub shape: Option<ComputedColliderShape>,
     /// Shape types for meshes by name. If shape is [`None`], then it will be skipped for
     /// processing.
@@ -103,7 +106,7 @@ impl fmt::Debug for Collider {
     }
 }
 
-/// Overwrites the default application of [`GlobalTransform::scale`] to a [`Collider`]'s shapes.
+/// Overwrites the default application of [`GlobalTransform`] scale to a [`Collider`]'s shapes.
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 pub enum ColliderScale {
     /// This scale will be multiplied with the scale in the [`GlobalTransform`] component
