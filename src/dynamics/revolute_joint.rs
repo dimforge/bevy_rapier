@@ -167,7 +167,7 @@ impl RevoluteJoint {
     /// The angle along the free degree of freedom of this revolute joint in `[-π, π]`.
     ///
     /// # Parameters
-    /// - `bodies` : the rigid body set from [`super::super::RapierContext`]
+    /// - `bodies` : the rigid body set from [`RapierContext`]
     /// - `body1`: the first rigid-body attached to this revolute joint.
     /// - `body2`: the second rigid-body attached to this revolute joint.
     pub fn angle(&self, context: &RapierContext, body1: Entity, body2: Entity) -> f32 {
