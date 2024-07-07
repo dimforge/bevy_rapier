@@ -10,13 +10,13 @@ and new features. Please have a look at the
 
 - Update to rapier `0.21`.
 - Update to nalgebra `0.33`.
-- `ImpulseJoint` and `MultibodyJoint` now have a more detailed enum `TypedJoint` instead of a `GenericJoint`.
+- `ImpulseJoint::data` and `MultibodyJoint::data` are now a more detailed enum `TypedJoint` instead of a `GenericJoint`.
 You can still access its inner `GenericJoint` with `.as_ref()` or `as_mut()`.
-- `data` fields from all joints (`FixedJoint`...) are now public, and their getters removed.
+- `data` fields from all joints (`FixedJoint`, …) are now public, and their getters removed.
 
 ### Added
 
-- `RapierContext::context.impulse_revolute_joint_angle` to compute the angle along a revolute joint’s principal axis.
+- Added `RapierContext::context.impulse_revolute_joint_angle` to compute the angle along a revolute joint’s principal axis.
 
 ## v0.27.0-rc.1 (18 June 2024)
 
