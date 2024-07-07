@@ -165,10 +165,12 @@ impl<'a> ContactManifoldView<'a> {
         self.raw.data.normal.into()
     }
 
+    /// The contacts that will be seen by the constraints solver for computing forces.
     pub fn num_solver_contacts(&self) -> usize {
         self.raw.data.solver_contacts.len()
     }
 
+    /// Gets the i-th solver contact.
     pub fn solver_contact(&self, i: usize) -> Option<SolverContactView> {
         self.raw
             .data
