@@ -2,12 +2,15 @@ use crate::dynamics::{GenericJoint, GenericJointBuilder};
 use crate::math::{Real, Vect};
 use rapier::dynamics::{JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel};
 
+use super::TypedJoint;
+
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(transparent)]
 /// A rope joint, limits the maximum distance between two bodies
 pub struct RopeJoint {
-    data: GenericJoint,
+    /// The underlying joint data.
+    pub data: GenericJoint,
 }
 
 impl RopeJoint {
@@ -19,11 +22,6 @@ impl RopeJoint {
         let mut result = Self { data };
         result.set_max_distance(max_dist);
         result
-    }
-
-    /// The underlying generic joint.
-    pub fn data(&self) -> &GenericJoint {
-        &self.data
     }
 
     /// Are contacts between the attached rigid-bodies enabled?
@@ -262,8 +260,14 @@ impl RopeJointBuilder {
     }
 }
 
-impl From<RopeJointBuilder> for GenericJoint {
-    fn from(joint: RopeJointBuilder) -> GenericJoint {
+impl From<RopeJointBuilder> for TypedJoint {
+    fn from(joint: RopeJointBuilder) -> TypedJoint {
         joint.0.into()
+    }
+}
+
+impl From<RopeJoint> for TypedJoint {
+    fn from(joint: RopeJoint) -> TypedJoint {
+        TypedJoint::RopeJoint(joint)
     }
 }

@@ -13,6 +13,9 @@ and new features. Please have a look at the
 - Update to bevy `0.14`.
 - Renamed `has_any_active_contacts` to `has_any_active_contact` for better consistency with rapier.
 - `ColliderDebugColor`'s property is now a `bevy::color::Hsla`.
+- `ImpulseJoint::data` and `MultibodyJoint::data` are now a more detailed enum `TypedJoint` instead of a `GenericJoint`.
+You can still access its inner `GenericJoint` with `.as_ref()` or `as_mut()`.
+- `data` fields from all joints (`FixedJoint`, …) are now public, and their getters removed.
 
 ### Added
 
@@ -20,6 +23,7 @@ and new features. Please have a look at the
 - Expose `is_sliding_down_slope` to both `MoveShapeOutput` and `KinematicCharacterControllerOutput`.
 - Added a First Person Shooter `character_controller` example for `bevy_rapier3d`.
 - Added serialization support for `CollisionGroups`, `SolverGroups`, `ContactForceEventThreshold`, `ContactSkin`.
+- Added `RapierContext::context.impulse_revolute_joint_angle` to compute the angle along a revolute joint’s principal axis.
 
 ### Fix
 

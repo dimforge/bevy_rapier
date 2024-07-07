@@ -3,6 +3,9 @@ use bevy::prelude::{FromWorld, Resource, World};
 use crate::math::{Real, Vect};
 use crate::plugin::RapierContext;
 
+#[cfg(doc)]
+use rapier::dynamics::IntegrationParameters;
+
 /// Difference between simulation and rendering time
 #[derive(Resource, Default)]
 pub struct SimulationToRenderTime {
