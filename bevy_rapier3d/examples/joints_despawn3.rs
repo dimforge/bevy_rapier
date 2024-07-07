@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
+use rapier3d::dynamics::RevoluteJointBuilder;
 
 #[derive(Component)]
 pub struct Despawn;
@@ -116,24 +117,24 @@ fn create_revolute_joints(commands: &mut Commands, origin: Vec3, num: usize) {
         let z = Vec3::Z;
 
         let revs = [
-            RevoluteJointBuilder::new(z).local_anchor2(Vec3::new(0.0, 0.0, -shift)),
-            RevoluteJointBuilder::new(x).local_anchor2(Vec3::new(-shift, 0.0, 0.0)),
-            RevoluteJointBuilder::new(z).local_anchor2(Vec3::new(0.0, 0.0, -shift)),
-            RevoluteJointBuilder::new(x).local_anchor2(Vec3::new(shift, 0.0, 0.0)),
+            RevoluteJointBuilder::new_glam(z).local_anchor2_glam(Vec3::new(0.0, 0.0, -shift)),
+            RevoluteJointBuilder::new_glam(x).local_anchor2_glam(Vec3::new(-shift, 0.0, 0.0)),
+            RevoluteJointBuilder::new_glam(z).local_anchor2_glam(Vec3::new(0.0, 0.0, -shift)),
+            RevoluteJointBuilder::new_glam(x).local_anchor2_glam(Vec3::new(shift, 0.0, 0.0)),
         ];
 
         commands
             .entity(handles[0])
-            .insert(ImpulseJoint::new(curr_parent, revs[0]));
+            .insert(ImpulseJoint::new(curr_parent, revs[0].build().data));
         commands
             .entity(handles[1])
-            .insert(ImpulseJoint::new(handles[0], revs[1]));
+            .insert(ImpulseJoint::new(handles[0], revs[1].build().data));
         commands
             .entity(handles[2])
-            .insert(ImpulseJoint::new(handles[1], revs[2]));
+            .insert(ImpulseJoint::new(handles[1], revs[2].build().data));
         commands
             .entity(handles[3])
-            .insert(ImpulseJoint::new(handles[2], revs[3]));
+            .insert(ImpulseJoint::new(handles[2], revs[3].build().data));
 
         curr_parent = handles[3];
 
