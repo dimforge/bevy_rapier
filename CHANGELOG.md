@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.27.0 (05 July 2024)
+## v0.27.0 (07 July 2024)
 
 **This is an update from rapier 0.19 to Rapier 0.21 which includes several stability improvements
 and new features. Please have a look at the
