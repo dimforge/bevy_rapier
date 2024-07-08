@@ -16,7 +16,7 @@ pub struct SimulationToRenderTime {
 }
 
 /// The different ways of adjusting the timestep length each frame.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Resource)]
 pub enum TimestepMode {
     /// Use a fixed timestep: the physics simulation will be advanced by the fixed value
     /// `dt` seconds at each Bevy tick by performing `substeps` of length `dt / substeps`.
