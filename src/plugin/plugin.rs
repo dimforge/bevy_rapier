@@ -214,8 +214,10 @@ where
             .insert_resource(Events::<MassModifiedEvent>::default());
         let default_world_init = app.world().get_resource::<RapierContextInitialization>();
         if let Some(world_init) = default_world_init {
-            warn!("RapierPhysicsPlugin added with a default rapier context initialization but a `RapierContextInitialization` was already existing.\
-                the following resource will be used in priority: {:?}", world_init);
+            warn!("RapierPhysicsPlugin added but a `RapierContextInitialization` resource was already existing.\
+            This might overwrite previous configuration made via `RapierPhysicsPlugin::with_default_world`\
+            or `RapierPhysicsPlugin::with_length_unit`.
+            The following resource will be used: {:?}", world_init);
         } else {
             app.insert_resource(self.default_world_setup.clone());
         }
@@ -268,9 +270,9 @@ where
     }
 }
 
-/// Specifies a default configuration for the default `RapierContext`
+/// Specifies a default configuration for the default [`RapierContext`]
 ///
-/// If [`NoAutomaticRapierContext`],
+/// Designed to be passed as parameter to [`RapierPhysicsPlugin::with_default_world`].
 #[derive(Resource, Debug, Reflect, Clone)]
 pub enum RapierContextInitialization {
     /// [`RapierPhysicsPlugin`] will not spawn any entity containing [`RapierContext`] automatically.

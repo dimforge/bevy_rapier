@@ -37,7 +37,7 @@ pub struct DefaultRapierContext;
 /// This is a component applied to any entity containing a rapier handle component.
 /// The inner Entity referred to has the component [`RapierContext`] responsible for handling
 /// its rapier data.
-#[derive(Component, Reflect, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Component, Reflect, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RapierContextEntityLink(pub Entity);
 
 /// The Rapier context, containing all the state of the physics engine.
