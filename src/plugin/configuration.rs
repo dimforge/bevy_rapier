@@ -66,7 +66,7 @@ impl Default for TimestepMode {
 }
 
 #[derive(Component, Copy, Clone, Debug, Reflect)]
-/// A resource for specifying configuration information for the physics simulation
+/// A component for specifying configuration information for the physics simulation
 pub struct RapierConfiguration {
     /// Specifying the gravity of the physics simulation.
     pub gravity: Vect,
