@@ -42,7 +42,7 @@ pub type ColliderComponents<'a> = (
     Option<&'a ColliderDisabled>,
 );
 
-/// System responsible for applying [`GlobalTransform::scale`] and/or [`ColliderScale`] to
+/// System responsible for applying [`GlobalTransform`] scale and/or [`ColliderScale`] to
 /// colliders.
 pub fn apply_scale(
     config: Query<&RapierConfiguration>,

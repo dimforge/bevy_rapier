@@ -5,8 +5,18 @@ use bevy::{
 
 use crate::math::{Real, Vect};
 
+#[cfg(doc)]
+use rapier::dynamics::IntegrationParameters;
+
+/// Difference between simulation and rendering time
+#[derive(Component, Default, Reflect)]
+pub struct SimulationToRenderTime {
+    /// Difference between simulation and rendering time
+    pub diff: f32,
+}
+
 /// The different ways of adjusting the timestep length each frame.
-#[derive(Copy, Clone, Debug, PartialEq, Resource)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum TimestepMode {
     /// Use a fixed timestep: the physics simulation will be advanced by the fixed value
     /// `dt` seconds at each Bevy tick by performing `substeps` of length `dt / substeps`.
@@ -43,13 +53,6 @@ pub enum TimestepMode {
         /// The number of substeps that will be performed whenever the physics simulation is advanced.
         substeps: usize,
     },
-}
-
-/// Difference between simulation and rendering time
-#[derive(Component, Default, Reflect)]
-pub struct SimulationToRenderTime {
-    /// Difference between simulation and rendering time
-    pub diff: f32,
 }
 
 impl Default for TimestepMode {

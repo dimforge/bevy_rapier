@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 #[cfg(doc)]
-use crate::prelude::ActiveEvents;
+use crate::prelude::{ActiveEvents, ContactForceEventThreshold};
 
 /// Events occurring when two colliders start or stop colliding
 ///
@@ -55,7 +55,7 @@ pub struct ContactForceEvent {
 // issue).
 /// A set of queues collecting events emitted by the physics engine.
 pub(crate) struct EventQueue<'a> {
-    // Used ot retrieve the entity of colliders that have been removed from the simulation
+    // Used to retrieve the entity of colliders that have been removed from the simulation
     // since the last physics step.
     pub deleted_colliders: &'a HashMap<ColliderHandle, Entity>,
     pub collision_events: RwLock<Vec<CollisionEvent>>,

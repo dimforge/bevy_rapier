@@ -49,10 +49,12 @@ pub fn init_joints(
         }
 
         if let (Some(target), Some(source)) = (target, context.entity2body.get(&joint.parent)) {
-            let handle =
-                context
-                    .impulse_joints
-                    .insert(*source, target, joint.data.into_rapier(), true);
+            let handle = context.impulse_joints.insert(
+                *source,
+                target,
+                joint.data.as_ref().into_rapier(),
+                true,
+            );
             commands
                 .entity(entity)
                 .insert(RapierImpulseJointHandle(handle));
@@ -77,11 +79,12 @@ pub fn init_joints(
         let target = context.entity2body.get(&entity);
 
         if let (Some(target), Some(source)) = (target, context.entity2body.get(&joint.parent)) {
-            if let Some(handle) =
-                context
-                    .multibody_joints
-                    .insert(*source, *target, joint.data.into_rapier(), true)
-            {
+            if let Some(handle) = context.multibody_joints.insert(
+                *source,
+                *target,
+                joint.data.as_ref().into_rapier(),
+                true,
+            ) {
                 commands
                     .entity(entity)
                     .insert(RapierMultibodyJointHandle(handle));
@@ -118,7 +121,7 @@ pub fn apply_joint_user_changes(
     for (link, handle, changed_joint) in changed_impulse_joints.iter() {
         let context = context.context(link).into_inner();
         if let Some(joint) = context.impulse_joints.get_mut(handle.0) {
-            joint.data = changed_joint.data.into_rapier();
+            joint.data = changed_joint.data.as_ref().into_rapier();
         }
     }
 
@@ -127,7 +130,7 @@ pub fn apply_joint_user_changes(
         // TODO: not sure this will always work properly, e.g., if the number of Dofs is changed.
         if let Some((mb, link_id)) = context.multibody_joints.get_mut(handle.0) {
             if let Some(link) = mb.link_mut(link_id) {
-                link.joint.data = changed_joint.data.into_rapier();
+                link.joint.data = changed_joint.data.as_ref().into_rapier();
             }
         }
     }
