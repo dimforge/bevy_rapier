@@ -335,3 +335,155 @@ pub fn setup_rapier_simulation_to_render_time(
         commands.entity(e).insert(SimulationToRenderTime::default());
     }
 }
+
+#[cfg(test)]
+mod test {
+
+    use bevy::{
+        ecs::schedule::Stepping,
+        prelude::Component,
+        time::{TimePlugin, TimeUpdateStrategy},
+    };
+    use rapier::{data::Index, dynamics::RigidBodyHandle};
+    use systems::tests::HeadlessRenderPlugin;
+
+    use crate::{plugin::*, prelude::*};
+
+    #[cfg(feature = "dim3")]
+    fn cuboid(hx: Real, hy: Real, hz: Real) -> Collider {
+        Collider::cuboid(hx, hy, hz)
+    }
+    #[cfg(feature = "dim2")]
+    fn cuboid(hx: Real, hy: Real, _hz: Real) -> Collider {
+        Collider::cuboid(hx, hy)
+    }
+
+    #[derive(Component)]
+    pub struct TestMarker;
+
+    #[test]
+    pub fn hierarchy_link_propagation() {
+        return main();
+
+        use bevy::prelude::*;
+
+        fn run_test(app: &mut App) {
+            app.insert_resource(TimeUpdateStrategy::ManualDuration(
+                std::time::Duration::from_secs_f32(1f32 / 60f32),
+            ));
+
+            app.add_systems(Update, setup_physics);
+
+            // while app.plugins_state() == bevy::app::PluginsState::Adding {
+            //     #[cfg(not(target_arch = "wasm32"))]
+            //     bevy::tasks::tick_global_task_pools_on_main_thread();
+            // }
+            // app.finish();
+            // app.cleanup();
+
+            let mut stepping = Stepping::new();
+
+            app.update();
+
+            stepping
+                .add_schedule(PostUpdate)
+                .add_schedule(Update)
+                .enable()
+                .set_breakpoint(PostUpdate, systems::on_add_entity_with_parent)
+                .set_breakpoint(PostUpdate, systems::init_rigid_bodies)
+                .set_breakpoint(PostUpdate, systems::on_change_world)
+                .set_breakpoint(PostUpdate, systems::sync_removals)
+                .set_breakpoint(Update, setup_physics);
+
+            app.insert_resource(stepping);
+
+            let mut stepping = app.world_mut().resource_mut::<Stepping>();
+            // Advancing once to get the context.
+            stepping.continue_frame();
+            app.update();
+            // arbitrary hardcoded amount to run the simulation for a few frames.
+            // This test uses stepping so the actual amount of frames is this `number / breakpoints`
+            for i in 0..20 {
+                let world = app.world_mut();
+                let stepping = world.resource_mut::<Stepping>();
+                if let Some(cursor) = &stepping.cursor() {
+                    let system = world
+                        .resource::<Schedules>()
+                        .get(cursor.0)
+                        .unwrap()
+                        .systems()
+                        .unwrap()
+                        .find(|s| s.0 == cursor.1)
+                        .unwrap();
+                    println!(
+                        "next system: {}",
+                        system
+                            .1
+                            .name()
+                            .to_string()
+                            .split_terminator("::")
+                            .last()
+                            .unwrap()
+                    );
+                } else {
+                    println!("no cursor, new frame!");
+                }
+                let mut stepping = world.resource_mut::<Stepping>();
+                stepping.continue_frame();
+                app.update();
+                let context = app
+                    .world_mut()
+                    .query::<&RapierContext>()
+                    .get_single(&app.world())
+                    .unwrap();
+
+                println!("{:?}", &context.entity2body);
+            }
+            let context = app
+                .world_mut()
+                .query::<&RapierContext>()
+                .get_single(&app.world())
+                .unwrap();
+
+            assert_eq!(
+                context.entity2body.iter().next().unwrap().1,
+                // assert the generation is 0, that means we didn't modify it twice (due to change world detection)
+                &RigidBodyHandle(Index::from_raw_parts(0, 0))
+            );
+        }
+
+        fn main() {
+            let mut app = App::new();
+            app.add_plugins((
+                HeadlessRenderPlugin,
+                TransformPlugin,
+                TimePlugin,
+                RapierPhysicsPlugin::<NoUserData>::default(),
+            ));
+            run_test(&mut app);
+        }
+
+        pub fn setup_physics(mut commands: Commands, mut counter: Local<i32>) {
+            // run on the 3rd iteration: I believe current logic is:
+            // - 1st is to setup bevy internals
+            // - 2nd is to wait for having stepping enabled, as I couldnt get it to work for the first update.
+            // - 3rd, we're looking to test adding a rapier entity while playing, opposed to a Startup function,
+            //   which most examples are focused on.
+            let run_at = 3;
+            if *counter == run_at {
+                return;
+            }
+            *counter += 1;
+            if *counter < run_at {
+                return;
+            }
+
+            commands.spawn((
+                TransformBundle::from(Transform::from_xyz(0.0, 13.0, 0.0)),
+                RigidBody::Dynamic,
+                cuboid(0.5, 0.5, 0.5),
+                TestMarker,
+            ));
+        }
+    }
+}

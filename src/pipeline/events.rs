@@ -125,7 +125,7 @@ impl<'a> EventHandler for EventQueue<'a> {
 
 #[cfg(test)]
 mod test {
-    use bevy::time::TimePlugin;
+    use bevy::time::{TimePlugin, TimeUpdateStrategy};
     use systems::tests::HeadlessRenderPlugin;
 
     use crate::{plugin::*, prelude::*};
@@ -175,10 +175,14 @@ mod test {
             // }
             // app.finish();
             // app.cleanup();
-            let mut time = app.world_mut().get_resource_mut::<Time<Virtual>>().unwrap();
-            time.set_relative_speed(1000f32);
-            for _ in 0..300 {
-                // FIXME: advance by set durations to avoid being at the mercy of the CPU.
+
+            // Simulates 60 updates per seconds
+            app.insert_resource(TimeUpdateStrategy::ManualDuration(
+                std::time::Duration::from_secs_f32(1f32 / 60f32),
+            ));
+            // 2 seconds should be plenty of time for the cube to fall on the
+            // lowest collider.
+            for _ in 0..120 {
                 app.update();
             }
             let saved_collisions = app

@@ -7,13 +7,17 @@ use crate::geometry::RapierColliderHandle;
 use crate::plugin::{RapierContext, RapierContextEntityLink};
 use bevy::prelude::*;
 
-/// If an entity is turned into the child of something with a physics world, the child should become a part of that physics world
+/// If an entity is turned into the child of something with a physics context link,
+/// the child should become a part of that physics context
 ///
 /// If this fails to happen, weirdness will ensue.
 pub fn on_add_entity_with_parent(
     q_add_entity_without_parent: Query<
         (Entity, &Parent),
-        (With<RapierContextEntityLink>, Changed<Parent>),
+        (
+            With<RapierContextEntityLink>,
+            Or<(Changed<RapierContextEntityLink>, Changed<Parent>)>,
+        ),
     >,
     q_parent: Query<&Parent>,
     q_physics_world: Query<&RapierContextEntityLink>,
@@ -27,7 +31,6 @@ pub fn on_add_entity_with_parent(
                 remove_old_physics(ent, &mut commands);
                 break;
             }
-
             parent = q_parent.get(parent_entity).ok().map(|x| x.get());
         }
     }
@@ -58,31 +61,23 @@ pub fn on_change_world(
 ) {
     for (entity, new_physics_world) in &q_changed_worlds {
         let context = q_context.get(new_physics_world.0);
-        if new_physics_world.is_added() {
-            continue;
-        }
         // Ensure the world actually changed before removing them from the world
         if !context
             .map(|x| {
                 // They are already apart of this world if any of these are true
-                x.entity2impulse_joint.contains_key(&entity)
-                    || x.entity2multibody_joint.contains_key(&entity)
-                    || x.entity2collider.contains_key(&entity)
+                x.entity2collider.contains_key(&entity)
                     || x.entity2body.contains_key(&entity)
+                    || x.entity2impulse_joint.contains_key(&entity)
+                    || x.entity2multibody_joint.contains_key(&entity)
             })
             .unwrap_or(false)
         {
-            remove_old_physics(entity, &mut commands);
-
+            remove_old_physics(dbg!(entity), &mut commands);
             bubble_down_world_change(
                 &mut commands,
                 entity,
                 &q_children,
-                *new_physics_world,
-                &q_physics_world,
-            );
-        }
-    }
+                *new_physics_world, 
 }
 
 fn bubble_down_world_change(
