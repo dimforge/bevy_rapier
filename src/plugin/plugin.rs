@@ -304,6 +304,7 @@ pub fn insert_default_world(
         RapierContextInitialization::NoAutomaticRapierContext => {}
         RapierContextInitialization::InitializeDefaultRapierContext { length_unit } => {
             commands.spawn((
+                Name("Rapier Context"),
                 RapierContext {
                     integration_parameters: IntegrationParameters {
                         length_unit: *length_unit,

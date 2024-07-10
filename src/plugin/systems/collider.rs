@@ -1,6 +1,6 @@
 use crate::dynamics::ReadMassProperties;
 use crate::geometry::Collider;
-use crate::plugin::context::systemparams::{get_single_context, RapierEntity};
+use crate::plugin::context::systemparams::RapierEntity;
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::{
     DefaultRapierContext, RapierConfiguration, RapierContext, RapierContextAccessMut,
@@ -344,7 +344,7 @@ pub fn init_colliders(
     mut commands: Commands,
     config: Query<&RapierConfiguration>,
     mut context_access: RapierContextAccessMut,
-    default_context: Query<Entity, With<DefaultRapierContext>>,
+    default_context_access: Query<Entity, With<DefaultRapierContext>>,
     colliders: Query<(ColliderComponents, Option<&GlobalTransform>), Without<RapierColliderHandle>>,
     mut rigid_body_mprops: Query<&mut ReadMassProperties>,
     parent_query: Query<&Parent>,
@@ -352,7 +352,7 @@ pub fn init_colliders(
 ) {
     for (
         (
-            (entity, context_link),
+            (entity, entity_context_link),
             shape,
             sensor,
             mprops,
@@ -370,22 +370,29 @@ pub fn init_colliders(
         global_transform,
     ) in colliders.iter()
     {
-        let context_entity = context_link.map_or_else(
+        // Get rapier context from RapierContextEntityLink or insert its default value.
+        let context_entity = entity_context_link.map_or_else(
             || {
-                let context_entity = get_single_context(&default_context);
+                let context_entity = default_context_access.get_single().ok()?;
                 commands
                     .entity(entity)
                     .insert(RapierContextEntityLink(context_entity));
-                context_entity
+                Some(context_entity)
             },
-            |link| link.0,
+            |link| Some(link.0),
         );
-        let context = context_access
-            .context_from_entity(context_entity)
-            .into_inner();
+        let Some(context_entity) = context_entity else {
+            continue;
+        };
+
         let config = config.get(context_entity).unwrap_or_else(|_| {
             panic!("Failed to retrieve `RapierConfiguration` on entity {context_entity}.")
         });
+        let Some(context) = context_access.try_context_from_entity(context_entity) else {
+            log::error!("Could not find entity {context_entity} with rapier context while initializing {entity}");
+            continue;
+        };
+        let context = context.into_inner();
         let mut scaled_shape = shape.clone();
         scaled_shape.set_scale(shape.scale, config.scaled_shape_subdivision);
         let mut builder = ColliderBuilder::new(scaled_shape.raw.clone());

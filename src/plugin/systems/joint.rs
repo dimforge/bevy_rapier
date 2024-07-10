@@ -2,7 +2,6 @@ use crate::dynamics::ImpulseJoint;
 use crate::dynamics::MultibodyJoint;
 use crate::dynamics::RapierImpulseJointHandle;
 use crate::dynamics::RapierMultibodyJointHandle;
-use crate::plugin::context::systemparams::get_single_context;
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::DefaultRapierContext;
 use crate::plugin::RapierContextAccessMut;
@@ -12,7 +11,7 @@ use bevy::prelude::*;
 pub fn init_joints(
     mut commands: Commands,
     mut context_access: RapierContextAccessMut,
-    default_context: Query<Entity, With<DefaultRapierContext>>,
+    default_context_access: Query<Entity, With<DefaultRapierContext>>,
     impulse_joints: Query<
         (Entity, Option<&RapierContextEntityLink>, &ImpulseJoint),
         Without<RapierImpulseJointHandle>,
@@ -24,19 +23,26 @@ pub fn init_joints(
     parent_query: Query<&Parent>,
 ) {
     for (entity, entity_context_link, joint) in impulse_joints.iter() {
+        // Get rapier context from RapierContextEntityLink or insert its default value.
         let context_entity = entity_context_link.map_or_else(
             || {
-                let context_entity = get_single_context(&default_context);
+                let context_entity = default_context_access.get_single().ok()?;
                 commands
                     .entity(entity)
                     .insert(RapierContextEntityLink(context_entity));
-                context_entity
+                Some(context_entity)
             },
-            |link| link.0,
+            |link| Some(link.0),
         );
-        let context = context_access
-            .context_from_entity(context_entity)
-            .into_inner();
+        let Some(context_entity) = context_entity else {
+            continue;
+        };
+
+        let Some(context) = context_access.try_context_from_entity(context_entity) else {
+            log::error!("Could not find entity {context_entity} with rapier context while initializing {entity}");
+            continue;
+        };
+        let context = context.into_inner();
         let mut target = None;
         let mut body_entity = entity;
         while target.is_none() {
@@ -63,19 +69,26 @@ pub fn init_joints(
     }
 
     for (entity, entity_context_link, joint) in multibody_joints.iter() {
+        // Get rapier context from RapierContextEntityLink or insert its default value.
         let context_entity = entity_context_link.map_or_else(
             || {
-                let context_entity = get_single_context(&default_context);
+                let context_entity = default_context_access.get_single().ok()?;
                 commands
                     .entity(entity)
                     .insert(RapierContextEntityLink(context_entity));
-                context_entity
+                Some(context_entity)
             },
-            |link| link.0,
+            |link| Some(link.0),
         );
-        let context = context_access
-            .context_from_entity(context_entity)
-            .into_inner();
+        let Some(context_entity) = context_entity else {
+            continue;
+        };
+
+        let Some(context) = context_access.try_context_from_entity(context_entity) else {
+            log::error!("Could not find entity {context_entity} with rapier context while initializing {entity}");
+            continue;
+        };
+        let context = context.into_inner();
         let target = context.entity2body.get(&entity);
 
         if let (Some(target), Some(source)) = (target, context.entity2body.get(&joint.parent)) {

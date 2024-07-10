@@ -131,37 +131,10 @@ impl<'w, 's> RapierContextAccessMut<'w, 's> {
     ///
     /// Calling this method on a rapier managed entity (rigid body, collider, joints...) will fail.
     /// Given entity should have a [`RapierContext`].
-    ///
-    /// SAFETY: This method will panic if its underlying query fails.
-    pub(crate) fn context_from_entity(
-        &mut self,
-        rapier_context_entity: Entity,
-    ) -> Mut<RapierContext> {
-        self.try_context_from_entity(rapier_context_entity)
-            .unwrap_or_else(|| panic!("entity {rapier_context_entity} has no RapierContext."))
-    }
-
-    /// Retrieves the rapier context component on this [`Entity`].
-    ///
-    /// Calling this method on a rapier managed entity (rigid body, collider, joints...) will fail.
-    /// Given entity should have a [`RapierContext`].
     pub fn try_context_from_entity(
         &mut self,
         rapier_context_entity: Entity,
     ) -> Option<Mut<RapierContext>> {
         self.rapier_context.get_mut(rapier_context_entity).ok()
     }
-}
-
-/// Gets the default RapierContext.
-///
-/// SAFETY: Panics if no entity with [`DefaultRapierContext`] exist.
-pub fn get_single_context(
-    default_context_access: &Query<Entity, With<DefaultRapierContext>>,
-) -> Entity {
-    default_context_access.get_single().expect(
-        "No entity with `DefaultRapierContext` found.\
-                        Please add a default `RapierContext` or a `RapierContextEntityLink`\
-                        on the new rapier-managed entity.",
-    )
 }
