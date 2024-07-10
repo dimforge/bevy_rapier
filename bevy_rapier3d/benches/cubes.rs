@@ -1,4 +1,6 @@
 //! Translated from avian benchmark.
+//!
+//! https://github.com/Jondolf/avian/blob/81290423e146264120cf9711af716f6faf669717/crates/avian3d/benches/cubes.rs.
 
 use benches_common::bench_app;
 use bevy::prelude::*;
