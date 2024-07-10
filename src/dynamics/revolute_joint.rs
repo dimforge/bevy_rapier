@@ -1,13 +1,20 @@
 use crate::dynamics::{GenericJoint, GenericJointBuilder};
 use crate::math::{Real, Vect};
-use rapier::dynamics::{JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel};
+use crate::plugin::RapierContext;
+use bevy::prelude::Entity;
+use rapier::dynamics::{
+    JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel, RigidBodyHandle, RigidBodySet,
+};
+
+use super::TypedJoint;
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(transparent)]
 /// A revolute joint, locks all relative motion except for rotation along the joint’s principal axis.
 pub struct RevoluteJoint {
-    data: GenericJoint,
+    /// The underlying joint data.
+    pub data: GenericJoint,
 }
 
 #[cfg(feature = "dim2")]
@@ -35,11 +42,6 @@ impl RevoluteJoint {
             .local_axis2(axis)
             .build();
         Self { data }
-    }
-
-    /// The underlying generic joint.
-    pub fn data(&self) -> &GenericJoint {
-        &self.data
     }
 
     /// Are contacts between the attached rigid-bodies enabled?
@@ -137,6 +139,41 @@ impl RevoluteJoint {
     pub fn set_limits(&mut self, limits: [Real; 2]) -> &mut Self {
         self.data.set_limits(JointAxis::AngX, limits);
         self
+    }
+
+    /// The angle along the free degree of freedom of this revolute joint in `[-π, π]`.
+    ///
+    /// See also [`Self::angle`] for a version of this method taking entities instead of rigid-body handles.
+    /// Similarly [`RapierContext::impulse_revolute_joint_angle`] only takes a single entity as argument to compute that angle.
+    ///
+    /// # Parameters
+    /// - `bodies` : the rigid body set from [`RapierContext`]
+    /// - `body1`: the first rigid-body attached to this revolute joint, obtained through [`rapier::dynamics::ImpulseJoint`] or [`rapier::dynamics::MultibodyJoint`].
+    /// - `body2`: the second rigid-body attached to this revolute joint, obtained through [`rapier::dynamics::ImpulseJoint`] or [`rapier::dynamics::MultibodyJoint`].
+    pub fn angle_from_handles(
+        &self,
+        bodies: &RigidBodySet,
+        body1: RigidBodyHandle,
+        body2: RigidBodyHandle,
+    ) -> f32 {
+        // NOTE: unwrap will always succeed since `Self` is known to be a revolute joint.
+        let joint = self.data.raw.as_revolute().unwrap();
+
+        let rb1 = &bodies[body1];
+        let rb2 = &bodies[body2];
+        joint.angle(rb1.rotation(), rb2.rotation())
+    }
+
+    /// The angle along the free degree of freedom of this revolute joint in `[-π, π]`.
+    ///
+    /// # Parameters
+    /// - `bodies` : the rigid body set from [`RapierContext`]
+    /// - `body1`: the first rigid-body attached to this revolute joint.
+    /// - `body2`: the second rigid-body attached to this revolute joint.
+    pub fn angle(&self, context: &RapierContext, body1: Entity, body2: Entity) -> f32 {
+        let rb1 = context.entity2body().get(&body1).unwrap();
+        let rb2 = context.entity2body().get(&body2).unwrap();
+        self.angle_from_handles(&context.bodies, *rb1, *rb2)
     }
 }
 
@@ -244,8 +281,14 @@ impl RevoluteJointBuilder {
     }
 }
 
-impl From<RevoluteJointBuilder> for GenericJoint {
-    fn from(joint: RevoluteJointBuilder) -> GenericJoint {
+impl From<RevoluteJointBuilder> for TypedJoint {
+    fn from(joint: RevoluteJointBuilder) -> TypedJoint {
         joint.0.into()
+    }
+}
+
+impl From<RevoluteJoint> for TypedJoint {
+    fn from(joint: RevoluteJoint) -> TypedJoint {
+        TypedJoint::RevoluteJoint(joint)
     }
 }
