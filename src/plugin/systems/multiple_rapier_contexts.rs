@@ -77,7 +77,11 @@ pub fn on_change_world(
                 &mut commands,
                 entity,
                 &q_children,
-                *new_physics_world, 
+                *new_physics_world,
+                &q_physics_world,
+            );
+        }
+    }
 }
 
 fn bubble_down_world_change(
