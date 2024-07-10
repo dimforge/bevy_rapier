@@ -1,6 +1,6 @@
 //! Translated from rapier benchmark.
 //!
-//! https://github.com/dimforge/rapier/blob/87ada34008f4a1a313ccf8c3040040bab4f10e69/benchmarks3d/many_pyramids3.rs
+//! <https://github.com/dimforge/rapier/blob/87ada34008f4a1a313ccf8c3040040bab4f10e69/benchmarks3d/many_pyramids3.rs>
 
 use benches_common::default_app;
 use benches_common::wait_app_start;
