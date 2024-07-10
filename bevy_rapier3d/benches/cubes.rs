@@ -2,7 +2,7 @@
 //!
 //! https://github.com/Jondolf/avian/blob/81290423e146264120cf9711af716f6faf669717/crates/avian3d/benches/cubes.rs.
 
-use benches_common::bench_app;
+use benches_common::bench_app_updates;
 use bevy::prelude::*;
 use bevy_rapier3d::math::*;
 use bevy_rapier3d::prelude::*;
@@ -26,17 +26,21 @@ fn setup_cubes(app: &mut App, size: u32) {
     });
 }
 
-#[divan::bench]
-fn cubes_3x3_30_steps(bencher: divan::Bencher) {
-    bench_app(bencher, 30, |app| setup_cubes(app, 3))
+#[divan::bench(sample_count = 60, sample_size = 1)]
+fn cubes_3x3(bencher: divan::Bencher) {
+    bench_app_updates(bencher, |app| setup_cubes(app, 3))
 }
-#[divan::bench]
-fn cubes_5x5_30_steps(bencher: divan::Bencher) {
-    bench_app(bencher, 30, |app| setup_cubes(app, 5))
+#[divan::bench(sample_count = 60, sample_size = 1)]
+fn cubes_5x5(bencher: divan::Bencher) {
+    bench_app_updates(bencher, |app| setup_cubes(app, 5))
 }
-#[divan::bench]
-fn cubes_10x10_30_steps(bencher: divan::Bencher) {
-    bench_app(bencher, 30, |app| setup_cubes(app, 10))
+#[divan::bench(sample_count = 60, sample_size = 1)]
+fn cubes_10x10(bencher: divan::Bencher) {
+    bench_app_updates(bencher, |app| setup_cubes(app, 10))
+}
+#[divan::bench(sample_count = 60, sample_size = 1)]
+fn cubes_20x20(bencher: divan::Bencher) {
+    bench_app_updates(bencher, |app| setup_cubes(app, 20))
 }
 
 fn main() {

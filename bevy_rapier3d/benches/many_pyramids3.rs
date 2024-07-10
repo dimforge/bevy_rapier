@@ -2,7 +2,7 @@
 //!
 //! https://github.com/dimforge/rapier/blob/87ada34008f4a1a313ccf8c3040040bab4f10e69/benchmarks3d/many_pyramids3.rs
 
-use benches_common::bench_app;
+use benches_common::bench_app_updates;
 use bevy::prelude::*;
 use bevy_rapier3d::math::*;
 use bevy_rapier3d::prelude::*;
@@ -67,19 +67,19 @@ pub fn setup_cubes(app: &mut App, pyramid_count: usize, stack_height: usize) {
     });
 }
 
-#[divan::bench(sample_count = 5, sample_size = 5)]
+#[divan::bench(sample_count = 60, sample_size = 1)]
 fn pyramid_1_with_height_2(bencher: divan::Bencher) {
-    bench_app(bencher, 1000, |app| setup_cubes(app, 1, 2));
+    bench_app_updates(bencher, |app| setup_cubes(app, 1, 2));
 }
 
-#[divan::bench(sample_count = 2, sample_size = 2)]
+#[divan::bench(sample_count = 60, sample_size = 1)]
 fn pyramid_1_with_height_20(bencher: divan::Bencher) {
-    bench_app(bencher, 100, |app| setup_cubes(app, 1, 20));
+    bench_app_updates(bencher, |app| setup_cubes(app, 1, 20));
 }
 
-#[divan::bench(sample_count = 1, sample_size = 1)]
+#[divan::bench(sample_count = 60, sample_size = 1)]
 fn pyramid_2_with_height_20(bencher: divan::Bencher) {
-    bench_app(bencher, 100, |app| setup_cubes(app, 2, 20));
+    bench_app_updates(bencher, |app| setup_cubes(app, 2, 20));
 }
 
 fn main() {

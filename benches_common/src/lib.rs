@@ -47,17 +47,12 @@ pub fn wait_app_start(app: &mut App) {
     app.cleanup();
 }
 
-pub fn bench_app(bencher: divan::Bencher, steps: u32, setup: impl Fn(&mut App)) {
-    bencher
-        .with_inputs(|| {
-            let mut app = default_app();
-            setup(&mut app);
-            wait_app_start(&mut app);
-            app
-        })
-        .bench_local_values(|mut app| {
-            for _ in 0..steps {
-                app.update();
-            }
-        });
+pub fn bench_app_updates(bencher: divan::Bencher, setup: impl Fn(&mut App)) {
+    let mut app = default_app();
+    setup(&mut app);
+    wait_app_start(&mut app);
+
+    bencher.bench_local(|| {
+        app.update();
+    });
 }
