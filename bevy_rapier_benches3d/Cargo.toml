@@ -1,5 +1,5 @@
 [package]
-name = "custom_benches"
+name = "bevy_rapier_benches3d"
 version = "0.1.0"
 description = "Custom benchmarks for bevy_rapier."
 readme = "./README.md"

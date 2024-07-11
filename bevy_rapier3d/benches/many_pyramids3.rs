@@ -2,6 +2,10 @@
 //!
 //! <https://github.com/dimforge/rapier/blob/87ada34008f4a1a313ccf8c3040040bab4f10e69/benchmarks3d/many_pyramids3.rs>
 
+mod common;
+
+use common::bench_app_updates;
+
 use benches_common::bench_app_updates;
 use bevy::prelude::*;
 use bevy_rapier3d::math::*;

@@ -53,7 +53,6 @@ log = "0.4"
 serde = { version = "1", features = ["derive"], optional = true }
 
 [dev-dependencies]
-benches_common = { version = "0.1", path = "../benches_common" }
 bevy = { version = "0.14", default-features = false, features = [
     "x11",
     "tonemapping_luts",
