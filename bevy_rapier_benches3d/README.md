@@ -7,7 +7,7 @@ It is implemented as a standalone binary, running different scenes setup, gather
 and outputs them at the end.
 
 ```sh
-cargo run --release -p bevy_rapier_benches3d
+cargo run --release --bin bench
 ```
 
 ## cargo bench

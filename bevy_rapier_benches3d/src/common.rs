@@ -46,13 +46,3 @@ pub fn wait_app_start(app: &mut App) {
     app.finish();
     app.cleanup();
 }
-
-pub fn bench_app_updates(bencher: divan::Bencher, setup: impl Fn(&mut App)) {
-    let mut app = default_app();
-    setup(&mut app);
-    wait_app_start(&mut app);
-
-    bencher.bench_local(|| {
-        app.update();
-    });
-}
