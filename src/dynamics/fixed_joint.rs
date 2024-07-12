@@ -2,11 +2,14 @@ use crate::dynamics::{GenericJoint, GenericJointBuilder};
 use crate::math::{Rot, Vect};
 use rapier::dynamics::JointAxesMask;
 
+use super::TypedJoint;
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(transparent)]
 /// A fixed joint, locks all relative motion between two bodies.
 pub struct FixedJoint {
-    data: GenericJoint,
+    /// The underlying joint data.
+    pub data: GenericJoint,
 }
 
 impl Default for FixedJoint {
@@ -134,8 +137,14 @@ impl FixedJointBuilder {
     }
 }
 
-impl From<FixedJointBuilder> for GenericJoint {
-    fn from(joint: FixedJointBuilder) -> GenericJoint {
+impl From<FixedJointBuilder> for TypedJoint {
+    fn from(joint: FixedJointBuilder) -> TypedJoint {
         joint.0.into()
+    }
+}
+
+impl From<FixedJoint> for TypedJoint {
+    fn from(joint: FixedJoint) -> TypedJoint {
+        TypedJoint::FixedJoint(joint)
     }
 }
