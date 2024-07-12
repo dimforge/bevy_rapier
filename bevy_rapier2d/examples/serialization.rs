@@ -25,10 +25,13 @@ fn main() {
 }
 
 pub fn print_physics(context: Res<RapierContext>) {
-    println!(
+    #[cfg(feature = "serde-serialize")]
+    info!(
         "{}",
         serde_json::to_string_pretty(&(*context)).expect("Unable to serialize `RapierContext`")
     );
+    #[cfg(not(feature = "serde-serialize"))]
+    error!("Example 'serialization' should be run with '--features serde-serialize'.");
 }
 
 fn quit(mut exit_event: EventWriter<AppExit>) {
