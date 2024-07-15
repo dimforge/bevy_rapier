@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added a `TriMeshFlags` parameter for `ComputedColliderShape`,
+its default value is `TriMeshFlags::MERGE_DUPLICATE_VERTICES`,
+which was its hardcoded behaviour.
+
 ## v0.27.0 (07 July 2024)
 
 **This is an update from rapier 0.19 to Rapier 0.21 which includes several stability improvements

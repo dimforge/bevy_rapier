@@ -175,10 +175,9 @@ impl Collider {
         let (vtx, idx) = extract_mesh_vertices_indices(mesh)?;
 
         match collider_shape {
-            ComputedColliderShape::TriMesh => Some(
-                SharedShape::trimesh_with_flags(vtx, idx, TriMeshFlags::MERGE_DUPLICATE_VERTICES)
-                    .into(),
-            ),
+            ComputedColliderShape::TriMesh(flags) => {
+                Some(SharedShape::trimesh_with_flags(vtx, idx, *flags).into())
+            }
             ComputedColliderShape::ConvexHull => {
                 SharedShape::convex_hull(&vtx).map(|shape| shape.into())
             }
