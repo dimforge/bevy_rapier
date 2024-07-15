@@ -12,7 +12,7 @@ use std::fmt::Debug;
 /// force to a specific value the color used to render the
 /// collider.
 #[derive(Copy, Clone, Component, PartialEq, Debug)]
-pub struct ColliderDebugColor(pub Color);
+pub struct ColliderDebugColor(pub Hsla);
 
 /// Overrides the global [`DebugRenderContext`] for a single collider.
 #[derive(Copy, Clone, Component, Eq, PartialEq, Default, Debug)]
@@ -136,7 +136,7 @@ impl<'world, 'state, 'a, 'b> BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
             _ => None,
         };
 
-        color.map(|co| co.as_hsla_f32()).unwrap_or(default)
+        color.map(|co: Hsla| co.to_f32_array()).unwrap_or(default)
     }
 
     fn drawing_enabled(&self, object: DebugRenderObject) -> bool {

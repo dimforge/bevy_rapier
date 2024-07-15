@@ -1,6 +1,6 @@
 [package]
 name = "bevy_rapier3d"
-version = "0.26.0"
+version = "0.27.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 description = "3-dimensional physics engine in Rust, official Bevy plugin."
 documentation = "http://docs.rs/bevy_rapier3d"
@@ -21,8 +21,20 @@ required-features = ["dim3"]
 default = ["dim3", "async-collider", "debug-render-3d"]
 dim3 = []
 debug-render = ["debug-render-3d"]
-debug-render-2d = ["bevy/bevy_core_pipeline", "bevy/bevy_sprite", "bevy/bevy_gizmos", "rapier3d/debug-render", "bevy/bevy_asset"]
-debug-render-3d = ["bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_gizmos", "rapier3d/debug-render", "bevy/bevy_asset"]
+debug-render-2d = [
+    "bevy/bevy_core_pipeline",
+    "bevy/bevy_sprite",
+    "bevy/bevy_gizmos",
+    "rapier3d/debug-render",
+    "bevy/bevy_asset",
+]
+debug-render-3d = [
+    "bevy/bevy_core_pipeline",
+    "bevy/bevy_pbr",
+    "bevy/bevy_gizmos",
+    "rapier3d/debug-render",
+    "bevy/bevy_asset",
+]
 parallel = ["rapier3d/parallel"]
 simd-stable = ["rapier3d/simd-stable"]
 simd-nightly = ["rapier3d/simd-nightly"]
@@ -33,17 +45,21 @@ headless = []
 async-collider = ["bevy/bevy_asset", "bevy/bevy_scene"]
 
 [dependencies]
-bevy = { version = "0.13", default-features = false }
-nalgebra = { version = "0.32.3", features = ["convert-glam025"] }
-rapier3d = "0.19"
+bevy = { version = "0.14", default-features = false }
+nalgebra = { version = "0.33", features = ["convert-glam027"] }
+rapier3d = "0.21"
 bitflags = "2.4"
 log = "0.4"
 serde = { version = "1", features = ["derive"], optional = true }
 
 [dev-dependencies]
-bevy = { version = "0.13", default-features = false, features = ["x11", "tonemapping_luts"] }
+bevy = { version = "0.14", default-features = false, features = [
+    "x11",
+    "tonemapping_luts",
+    "bevy_state",
+] }
 approx = "0.5.1"
-glam = { version = "0.25", features = ["approx"] }
+glam = { version = "0.27", features = ["approx"] }
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs

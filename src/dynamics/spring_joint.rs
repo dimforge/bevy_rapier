@@ -2,6 +2,8 @@ use crate::dynamics::{GenericJoint, GenericJointBuilder, JointAxesMask};
 use crate::dynamics::{JointAxis, MotorModel};
 use crate::math::{Real, Vect};
 
+use super::TypedJoint;
+
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(transparent)]
@@ -22,15 +24,10 @@ impl SpringJoint {
     pub fn new(rest_length: Real, stiffness: Real, damping: Real) -> Self {
         let data = GenericJointBuilder::new(JointAxesMask::empty())
             .coupled_axes(JointAxesMask::LIN_AXES)
-            .motor_position(JointAxis::X, rest_length, stiffness, damping)
-            .motor_model(JointAxis::X, MotorModel::ForceBased)
+            .motor_position(JointAxis::LinX, rest_length, stiffness, damping)
+            .motor_model(JointAxis::LinX, MotorModel::ForceBased)
             .build();
         Self { data }
-    }
-
-    /// The underlying generic joint.
-    pub fn data(&self) -> &GenericJoint {
-        &self.data
     }
 
     /// Are contacts between the attached rigid-bodies enabled?
@@ -75,7 +72,7 @@ impl SpringJoint {
     /// `MotorModel::AccelerationBased`, the spring constants will be automatically scaled by the attached masses,
     /// making the spring more mass-independent.
     pub fn set_spring_model(&mut self, model: MotorModel) -> &mut Self {
-        self.data.set_motor_model(JointAxis::X, model);
+        self.data.set_motor_model(JointAxis::LinX, model);
         self
     }
 }
@@ -142,8 +139,14 @@ impl SpringJointBuilder {
     }
 }
 
-impl From<SpringJointBuilder> for GenericJoint {
-    fn from(val: SpringJointBuilder) -> GenericJoint {
-        val.0.into()
+impl From<SpringJointBuilder> for TypedJoint {
+    fn from(joint: SpringJointBuilder) -> TypedJoint {
+        joint.0.into()
+    }
+}
+
+impl From<SpringJoint> for TypedJoint {
+    fn from(joint: SpringJoint) -> TypedJoint {
+        TypedJoint::SpringJoint(joint)
     }
 }

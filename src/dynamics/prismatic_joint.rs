@@ -2,12 +2,15 @@ use crate::dynamics::{GenericJoint, GenericJointBuilder};
 use crate::math::{Real, Vect};
 use rapier::dynamics::{JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel};
 
+use super::TypedJoint;
+
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(transparent)]
 /// A prismatic joint, locks all relative motion between two bodies except for translation along the joint’s principal axis.
 pub struct PrismaticJoint {
-    data: GenericJoint,
+    /// The underlying joint data.
+    pub data: GenericJoint,
 }
 
 impl PrismaticJoint {
@@ -20,11 +23,6 @@ impl PrismaticJoint {
             .local_axis2(axis)
             .build();
         Self { data }
-    }
-
-    /// The underlying generic joint.
-    pub fn data(&self) -> &GenericJoint {
-        &self.data
     }
 
     /// Are contacts between the attached rigid-bodies enabled?
@@ -89,19 +87,19 @@ impl PrismaticJoint {
     /// The motor affecting the joint’s translational degree of freedom.
     #[must_use]
     pub fn motor(&self) -> Option<&JointMotor> {
-        self.data.motor(JointAxis::X)
+        self.data.motor(JointAxis::LinX)
     }
 
     /// Set the spring-like model used by the motor to reach the desired target velocity and position.
     pub fn set_motor_model(&mut self, model: MotorModel) -> &mut Self {
-        self.data.set_motor_model(JointAxis::X, model);
+        self.data.set_motor_model(JointAxis::LinX, model);
         self
     }
 
     /// Sets the target velocity this motor needs to reach.
     pub fn set_motor_velocity(&mut self, target_vel: Real, factor: Real) -> &mut Self {
         self.data
-            .set_motor_velocity(JointAxis::X, target_vel, factor);
+            .set_motor_velocity(JointAxis::LinX, target_vel, factor);
         self
     }
 
@@ -113,7 +111,7 @@ impl PrismaticJoint {
         damping: Real,
     ) -> &mut Self {
         self.data
-            .set_motor_position(JointAxis::X, target_pos, stiffness, damping);
+            .set_motor_position(JointAxis::LinX, target_pos, stiffness, damping);
         self
     }
 
@@ -126,25 +124,25 @@ impl PrismaticJoint {
         damping: Real,
     ) -> &mut Self {
         self.data
-            .set_motor(JointAxis::X, target_pos, target_vel, stiffness, damping);
+            .set_motor(JointAxis::LinX, target_pos, target_vel, stiffness, damping);
         self
     }
 
     /// Sets the maximum force the motor can deliver.
     pub fn set_motor_max_force(&mut self, max_force: Real) -> &mut Self {
-        self.data.set_motor_max_force(JointAxis::X, max_force);
+        self.data.set_motor_max_force(JointAxis::LinX, max_force);
         self
     }
 
     /// The limit distance attached bodies can translate along the joint’s principal axis.
     #[must_use]
     pub fn limits(&self) -> Option<&JointLimits<Real>> {
-        self.data.limits(JointAxis::X)
+        self.data.limits(JointAxis::LinX)
     }
 
     /// Sets the `[min,max]` limit distances attached bodies can translate along the joint’s principal axis.
     pub fn set_limits(&mut self, limits: [Real; 2]) -> &mut Self {
-        self.data.set_limits(JointAxis::X, limits);
+        self.data.set_limits(JointAxis::LinX, limits);
         self
     }
 }
@@ -253,8 +251,14 @@ impl PrismaticJointBuilder {
     }
 }
 
-impl From<PrismaticJointBuilder> for GenericJoint {
-    fn from(joint: PrismaticJointBuilder) -> GenericJoint {
+impl From<PrismaticJointBuilder> for TypedJoint {
+    fn from(joint: PrismaticJointBuilder) -> TypedJoint {
         joint.0.into()
+    }
+}
+
+impl From<PrismaticJoint> for TypedJoint {
+    fn from(joint: PrismaticJoint) -> TypedJoint {
+        TypedJoint::PrismaticJoint(joint)
     }
 }
