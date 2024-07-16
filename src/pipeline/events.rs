@@ -249,7 +249,7 @@ mod test {
         ))
         .insert_resource(RapierConfiguration {
             timestep_mode: TimestepMode::Interpolated {
-                dt: 1.0 / 600.0,
+                dt: 1.0 / 30.0,
                 time_scale: 1.0,
                 substeps: 2,
             },
@@ -258,13 +258,9 @@ mod test {
         .add_systems(Startup, setup_physics)
         .add_systems(Update, remove_collider);
         // Simulates 60 updates per seconds
-        //app.insert_resource(TimeUpdateStrategy::ManualDuration(
-        //    std::time::Duration::from_secs_f32(1f32 / 60f32),
-        //));
-        // First update for setups, + creating default rapier context.
-
-        //app.run();
-        //return;
+        app.insert_resource(TimeUpdateStrategy::ManualDuration(
+            std::time::Duration::from_secs_f32(1f32 / 60f32),
+        ));
 
         for i in 0..100 {
             dbg!(i);
@@ -284,7 +280,7 @@ mod test {
             Collider::cuboid(hx, hy)
         }
         pub fn setup_physics(mut commands: Commands) {
-            for i in 0..100 {
+            for _i in 0..100 {
                 commands.spawn((
                     TransformBundle::from(Transform::from_xyz(0.0, 0.0, 0.0)),
                     RigidBody::Dynamic,
