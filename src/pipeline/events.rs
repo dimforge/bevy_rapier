@@ -125,7 +125,13 @@ impl<'a> EventHandler for EventQueue<'a> {
 
 #[cfg(test)]
 mod test {
-    use bevy::time::{TimePlugin, TimeUpdateStrategy};
+    use bevy::{
+        app::{App, Startup, Update},
+        prelude::{default, Commands, Component, Entity, Query, With},
+        time::{TimePlugin, TimeUpdateStrategy},
+        transform::{bundles::TransformBundle, components::Transform, TransformPlugin},
+        MinimalPlugins,
+    };
     use systems::tests::HeadlessRenderPlugin;
 
     use crate::{plugin::*, prelude::*};
@@ -229,6 +235,82 @@ mod test {
                 ActiveEvents::COLLISION_EVENTS | ActiveEvents::CONTACT_FORCE_EVENTS,
                 ContactForceEventThreshold(30.0),
             ));
+        }
+    }
+
+    #[test]
+    pub fn spam_remove_rapier_entity_interpolated() {
+        let mut app = App::new();
+        app.add_plugins((
+            HeadlessRenderPlugin,
+            MinimalPlugins,
+            TransformPlugin,
+            RapierPhysicsPlugin::<NoUserData>::default(),
+        ))
+        .insert_resource(RapierConfiguration {
+            timestep_mode: TimestepMode::Interpolated {
+                dt: 1.0 / 600.0,
+                time_scale: 1.0,
+                substeps: 2,
+            },
+            ..RapierConfiguration::new(1f32)
+        })
+        .add_systems(Startup, setup_physics)
+        .add_systems(Update, remove_collider);
+        // Simulates 60 updates per seconds
+        //app.insert_resource(TimeUpdateStrategy::ManualDuration(
+        //    std::time::Duration::from_secs_f32(1f32 / 60f32),
+        //));
+        // First update for setups, + creating default rapier context.
+
+        //app.run();
+        //return;
+
+        for i in 0..100 {
+            dbg!(i);
+            app.update();
+        }
+        return;
+
+        #[derive(Component)]
+        pub struct ToRemove;
+
+        #[cfg(feature = "dim3")]
+        fn cuboid(hx: Real, hy: Real, hz: Real) -> Collider {
+            Collider::cuboid(hx, hy, hz)
+        }
+        #[cfg(feature = "dim2")]
+        fn cuboid(hx: Real, hy: Real, _hz: Real) -> Collider {
+            Collider::cuboid(hx, hy)
+        }
+        pub fn setup_physics(mut commands: Commands) {
+            for i in 0..100 {
+                commands.spawn((
+                    TransformBundle::from(Transform::from_xyz(0.0, 0.0, 0.0)),
+                    RigidBody::Dynamic,
+                    cuboid(0.5, 0.5, 0.5),
+                    ActiveEvents::all(),
+                    ToRemove,
+                ));
+            }
+            /*
+             * Ground
+             */
+            let ground_size = 5.1;
+            let ground_height = 0.1;
+            let starting_y = -0.5 - ground_height;
+
+            commands.spawn((
+                TransformBundle::from(Transform::from_xyz(0.0, starting_y, 0.0)),
+                cuboid(ground_size, ground_height, ground_size),
+            ));
+        }
+
+        fn remove_collider(mut commands: Commands, query: Query<Entity, With<ToRemove>>) {
+            let Some(entity) = query.iter().next() else {
+                return;
+            };
+            commands.entity(entity).despawn();
         }
     }
 }
