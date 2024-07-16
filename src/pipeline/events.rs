@@ -127,7 +127,7 @@ impl<'a> EventHandler for EventQueue<'a> {
 mod test {
     use bevy::{
         app::{App, Startup, Update},
-        prelude::{default, Commands, Component, Entity, Query, With},
+        prelude::{Commands, Component, Entity, Query, With},
         time::{TimePlugin, TimeUpdateStrategy},
         transform::{bundles::TransformBundle, components::Transform, TransformPlugin},
         MinimalPlugins,
