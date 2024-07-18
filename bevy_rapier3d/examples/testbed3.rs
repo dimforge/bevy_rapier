@@ -43,17 +43,15 @@ struct ExampleDefinition {
     pub state: Examples,
     pub name: &'static str,
 }
+
 impl From<(Examples, &'static str)> for ExampleDefinition {
-    fn from(other: (Examples, &'static str)) -> Self {
-        Self {
-            state: other.0,
-            name: other.1,
-        }
+    fn from((state, name): (Examples, &'static str)) -> Self {
+        Self { state, name }
     }
 }
 
 #[derive(Resource, Debug, Reflect)]
-struct ExamplesAvailable(pub Vec<ExampleDefinition>);
+struct ExampleSet(pub Vec<ExampleDefinition>);
 
 fn main() {
     let mut app = App::new();
@@ -69,7 +67,7 @@ fn main() {
         .register_type::<ExamplesRes>()
         .register_type::<ExampleSelected>()
         .init_state::<Examples>()
-        .insert_resource(ExamplesAvailable(vec![
+        .insert_resource(ExampleSet(vec![
             (Examples::Boxes3, "Boxes3").into(),
             (Examples::Despawn3, "Despawn3").into(),
             (Examples::Events3, "Events3").into(),
@@ -222,17 +220,16 @@ fn cleanup(world: &mut World) {
 
 fn change_example(
     example_selected: Res<ExampleSelected>,
-    examples_available: Res<ExamplesAvailable>,
+    examples_available: Res<ExampleSet>,
     mut next_state: ResMut<NextState<Examples>>,
 ) {
-    next_state.set(Examples::None);
     next_state.set(examples_available.0[example_selected.0].state);
 }
 
 fn ui_example_system(
     mut contexts: EguiContexts,
     mut current_example: ResMut<ExampleSelected>,
-    examples_available: Res<ExamplesAvailable>,
+    examples_available: Res<ExampleSet>,
 ) {
     egui::Window::new("Testbed").show(contexts.ctx_mut(), |ui| {
         let mut changed = false;
