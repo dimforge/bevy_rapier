@@ -2,6 +2,8 @@ use crate::dynamics::{GenericJoint, GenericJointBuilder, JointAxesMask};
 use crate::dynamics::{JointAxis, MotorModel};
 use crate::math::{Real, Vect};
 
+use super::TypedJoint;
+
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(transparent)]
@@ -26,11 +28,6 @@ impl SpringJoint {
             .motor_model(JointAxis::LinX, MotorModel::ForceBased)
             .build();
         Self { data }
-    }
-
-    /// The underlying generic joint.
-    pub fn data(&self) -> &GenericJoint {
-        &self.data
     }
 
     /// Are contacts between the attached rigid-bodies enabled?
@@ -142,8 +139,14 @@ impl SpringJointBuilder {
     }
 }
 
-impl From<SpringJointBuilder> for GenericJoint {
-    fn from(val: SpringJointBuilder) -> GenericJoint {
-        val.0.into()
+impl From<SpringJointBuilder> for TypedJoint {
+    fn from(joint: SpringJointBuilder) -> TypedJoint {
+        joint.0.into()
+    }
+}
+
+impl From<SpringJoint> for TypedJoint {
+    fn from(joint: SpringJoint) -> TypedJoint {
+        TypedJoint::SpringJoint(joint)
     }
 }

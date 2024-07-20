@@ -2,12 +2,15 @@ use crate::dynamics::{GenericJoint, GenericJointBuilder};
 use crate::math::{Real, Vect};
 use rapier::dynamics::{JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel};
 
+use super::TypedJoint;
+
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(transparent)]
 /// A prismatic joint, locks all relative motion between two bodies except for translation along the joint’s principal axis.
 pub struct PrismaticJoint {
-    data: GenericJoint,
+    /// The underlying joint data.
+    pub data: GenericJoint,
 }
 
 impl PrismaticJoint {
@@ -20,11 +23,6 @@ impl PrismaticJoint {
             .local_axis2(axis)
             .build();
         Self { data }
-    }
-
-    /// The underlying generic joint.
-    pub fn data(&self) -> &GenericJoint {
-        &self.data
     }
 
     /// Are contacts between the attached rigid-bodies enabled?
@@ -253,8 +251,14 @@ impl PrismaticJointBuilder {
     }
 }
 
-impl From<PrismaticJointBuilder> for GenericJoint {
-    fn from(joint: PrismaticJointBuilder) -> GenericJoint {
+impl From<PrismaticJointBuilder> for TypedJoint {
+    fn from(joint: PrismaticJointBuilder) -> TypedJoint {
         joint.0.into()
+    }
+}
+
+impl From<PrismaticJoint> for TypedJoint {
+    fn from(joint: PrismaticJoint) -> TypedJoint {
+        TypedJoint::PrismaticJoint(joint)
     }
 }

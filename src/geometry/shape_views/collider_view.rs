@@ -5,6 +5,9 @@ use crate::math::Vect;
 use rapier::geometry::{Shape, SharedShape};
 use rapier::parry::shape::TypedShape;
 
+#[cfg(doc)]
+use rapier::parry;
+
 /// Read-only access to the properties of a collider.
 #[derive(Copy, Clone)]
 pub enum ColliderView<'a> {
@@ -162,7 +165,7 @@ impl<'a> From<ColliderView<'a>> for SharedShape {
 }
 
 impl<'a> ColliderView<'a> {
-    /// Convert to [`parry::TypedShape`].
+    /// Convert to [`parry::shape::TypedShape`].
     pub fn as_typed_shape(self) -> TypedShape<'a> {
         match self {
             ColliderView::Ball(BallView { raw: s }) => TypedShape::Ball(s),
@@ -211,7 +214,7 @@ impl<'a> ColliderView<'a> {
         }
     }
 
-    /// Convert to [`parry::SharedShape`].
+    /// Convert to [`parry::shape::SharedShape`].
     pub fn to_shared_shape(self) -> SharedShape {
         match self {
             ColliderView::Ball(BallView { raw }) => SharedShape::new(*raw),

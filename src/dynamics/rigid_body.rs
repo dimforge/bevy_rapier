@@ -5,6 +5,9 @@ use rapier::prelude::{
 };
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 
+#[cfg(doc)]
+use rapier::dynamics::IntegrationParameters;
+
 /// The Rapier handle of a [`RigidBody`] that was inserted to the physics scene.
 #[derive(Copy, Clone, Debug, Component)]
 pub struct RapierRigidBodyHandle(pub RigidBodyHandle);

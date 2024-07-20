@@ -22,6 +22,9 @@ use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
 use rapier::control::CharacterAutostep;
 use rapier::geometry::DefaultBroadPhase;
 
+#[cfg(doc)]
+use crate::prelude::{ImpulseJoint, MultibodyJoint, RevoluteJoint, TypedJoint};
+
 /// The Rapier context, containing all the state of the physics engine.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Resource)]
@@ -879,5 +882,20 @@ impl RapierContext {
                 callback,
             )
         });
+    }
+
+    /// Computes the angle between the two bodies attached by the [`RevoluteJoint`] component (if any) referenced by the given `entity`.
+    ///
+    /// The angle is computed along the revolute joint’s principal axis.
+    ///
+    /// Parameter `entity` should have a [`ImpulseJoint`] component with a [`TypedJoint::RevoluteJoint`] variant as `data`.
+    pub fn impulse_revolute_joint_angle(&self, entity: Entity) -> Option<f32> {
+        let joint_handle = self.entity2impulse_joint().get(&entity)?;
+        let impulse_joint = self.impulse_joints.get(*joint_handle)?;
+        let revolute_joint = impulse_joint.data.as_revolute()?;
+
+        let rb1 = &self.bodies[impulse_joint.body1];
+        let rb2 = &self.bodies[impulse_joint.body2];
+        Some(revolute_joint.angle(rb1.rotation(), rb2.rotation()))
     }
 }

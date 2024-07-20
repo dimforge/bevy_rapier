@@ -1,7 +1,10 @@
 use std::fmt;
 
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
-use {crate::geometry::VHACDParameters, bevy::utils::HashMap};
+use {
+    crate::geometry::{TriMeshFlags, VHACDParameters},
+    bevy::utils::HashMap,
+};
 
 use bevy::prelude::*;
 
@@ -11,6 +14,9 @@ use rapier::prelude::{ColliderHandle, InteractionGroups, SharedShape};
 
 use crate::dynamics::{CoefficientCombineRule, MassProperties};
 use crate::math::Vect;
+
+#[cfg(doc)]
+use rapier::{dynamics::RigidBody, geometry::ContactForceEvent};
 
 /// The Rapier handle of a collider that was inserted to the physics scene.
 #[derive(Copy, Clone, Debug, Component)]
@@ -25,8 +31,8 @@ pub struct AsyncCollider(pub ComputedColliderShape);
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 #[derive(Component, Debug, Clone)]
 pub struct AsyncSceneCollider {
-    /// Collider type for each scene mesh not included in [`named_shapes`]. If [`None`], then all
-    /// shapes will be skipped for processing except [`named_shapes`].
+    /// Collider type for each scene mesh not included in [`Self::named_shapes`]. If [`None`], then all
+    /// shapes will be skipped for processing except [`Self::named_shapes`].
     pub shape: Option<ComputedColliderShape>,
     /// Shape types for meshes by name. If shape is [`None`], then it will be skipped for
     /// processing.
@@ -37,7 +43,7 @@ pub struct AsyncSceneCollider {
 impl Default for AsyncSceneCollider {
     fn default() -> Self {
         Self {
-            shape: Some(ComputedColliderShape::TriMesh),
+            shape: Some(Default::default()),
             named_shapes: Default::default(),
         }
     }
@@ -45,15 +51,21 @@ impl Default for AsyncSceneCollider {
 
 /// Shape type based on a Bevy mesh asset.
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub enum ComputedColliderShape {
     /// Triangle-mesh.
-    #[default]
-    TriMesh,
+    TriMesh(TriMeshFlags),
     /// Convex hull.
     ConvexHull,
     /// Convex decomposition.
     ConvexDecomposition(VHACDParameters),
+}
+
+#[cfg(all(feature = "dim3", feature = "async-collider"))]
+impl Default for ComputedColliderShape {
+    fn default() -> Self {
+        Self::TriMesh(TriMeshFlags::MERGE_DUPLICATE_VERTICES)
+    }
 }
 
 /// A geometric entity that can be attached to a [`RigidBody`] so it can be affected by contacts
@@ -103,7 +115,7 @@ impl fmt::Debug for Collider {
     }
 }
 
-/// Overwrites the default application of [`GlobalTransform::scale`] to a [`Collider`]'s shapes.
+/// Overwrites the default application of [`GlobalTransform`] scale to a [`Collider`]'s shapes.
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
 pub enum ColliderScale {
     /// This scale will be multiplied with the scale in the [`GlobalTransform`] component

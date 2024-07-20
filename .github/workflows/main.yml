@@ -8,7 +8,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_CACHE_KEY: rust-cache-20240617
+  RUST_CACHE_KEY: rust-cache-20240701
+  CARGO_PROFILE_DEV_DEBUG: none
 
 jobs:
   check-fmt:
@@ -20,6 +21,18 @@ jobs:
           components: rustfmt
       - name: Check formatting
         run: cargo fmt -- --check
+  doc:
+    runs-on: ubuntu-latest
+    env:
+      RUSTDOCFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: ${{ env.RUST_CACHE_KEY }}
+      - name: Cargo doc
+        run: cargo doc
   test:
     runs-on: ubuntu-latest
     env:

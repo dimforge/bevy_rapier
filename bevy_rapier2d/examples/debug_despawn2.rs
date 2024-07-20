@@ -174,8 +174,7 @@ fn spawn_cube(commands: &mut Commands, game: &mut Game) {
                         block_entities[*i],
                         RevoluteJointBuilder::new()
                             .local_anchor1(anchor_1)
-                            .local_anchor2(anchor_2)
-                            .build(),
+                            .local_anchor2(anchor_2),
                     ))
                     .id();
                 game.current_cube_joints.push(id);
