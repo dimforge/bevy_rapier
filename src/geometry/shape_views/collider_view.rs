@@ -251,10 +251,11 @@ impl<'a> ColliderView<'a> {
             ColliderView::RoundConvexPolyhedron(RoundConvexPolyhedronView { raw }) => {
                 SharedShape::new(raw.clone())
             }
-            ColliderView::Custom(i) => SharedShape(i.clone_box().into()),
+            ColliderView::Custom(i) => SharedShape(i.clone_dyn().into()),
         }
     }
 
+    /// Convert to &dyn [`Shape`].
     pub fn to_shape(&self) -> &dyn Shape {
         match self {
             ColliderView::Ball(BallView { raw }) => *raw,
