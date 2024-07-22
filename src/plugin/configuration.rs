@@ -4,10 +4,7 @@ use crate::math::{Real, Vect};
 use crate::plugin::RapierContext;
 
 #[cfg(doc)]
-use {
-    crate::prelude::TransformInterpolation,
-    rapier::dynamics::IntegrationParameters,
-};
+use {crate::prelude::TransformInterpolation, rapier::dynamics::IntegrationParameters};
 
 /// Difference between simulation and rendering time
 #[derive(Resource, Default)]
