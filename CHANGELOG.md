@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Modified
+
+- Update from rapier `0.21` to rapier `0.22`,
+  see [rapier's changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md).
+
 ### Added
 
 - Added a `TriMeshFlags` parameter for `ComputedColliderShape`,
