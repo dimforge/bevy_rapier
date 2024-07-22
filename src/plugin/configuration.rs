@@ -4,7 +4,7 @@ use crate::math::{Real, Vect};
 use crate::plugin::RapierContext;
 
 #[cfg(doc)]
-use rapier::dynamics::IntegrationParameters;
+use {crate::prelude::TransformInterpolation, rapier::dynamics::IntegrationParameters};
 
 /// Difference between simulation and rendering time
 #[derive(Resource, Default)]
@@ -39,7 +39,7 @@ pub enum TimestepMode {
     },
     /// Use a fixed timestep equal to `IntegrationParameters::dt`, but don't step if the
     /// physics simulation advanced by a time greater than the real-world elapsed time multiplied by `time_scale`.
-    /// Rigid-bodies with a component `InterpolatedTransform` attached will use interpolation to
+    /// Rigid-bodies with a component [`TransformInterpolation`] attached will use interpolation to
     /// estimate the rigid-bodies position in-between steps.
     Interpolated {
         /// The physics simulation will be advanced by this total amount at each Bevy tick, unless
