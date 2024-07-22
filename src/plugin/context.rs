@@ -333,6 +333,7 @@ impl RapierContext {
                 }
             }
         }
+
         if executed_steps > 0 {
             self.deleted_colliders.clear();
         }
