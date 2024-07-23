@@ -50,7 +50,7 @@ where
     /// Specifies a default world initialization strategy.
     ///
     /// The default is to initialize a [`RapierContext`] with a length unit of 1.
-    pub fn with_default_world(
+    pub fn with_custom_initialization(
         mut self,
         default_world_initialization: RapierContextInitialization,
     ) -> Self {
@@ -215,7 +215,7 @@ where
         let default_world_init = app.world().get_resource::<RapierContextInitialization>();
         if let Some(world_init) = default_world_init {
             warn!("RapierPhysicsPlugin added but a `RapierContextInitialization` resource was already existing.\
-            This might overwrite previous configuration made via `RapierPhysicsPlugin::with_default_world`\
+            This might overwrite previous configuration made via `RapierPhysicsPlugin::with_custom_initialization`\
             or `RapierPhysicsPlugin::with_length_unit`.
             The following resource will be used: {:?}", world_init);
         } else {
@@ -272,7 +272,7 @@ where
 
 /// Specifies a default configuration for the default [`RapierContext`]
 ///
-/// Designed to be passed as parameter to [`RapierPhysicsPlugin::with_default_world`].
+/// Designed to be passed as parameter to [`RapierPhysicsPlugin::with_custom_initialization`].
 #[derive(Resource, Debug, Reflect, Clone)]
 pub enum RapierContextInitialization {
     /// [`RapierPhysicsPlugin`] will not spawn any entity containing [`RapierContext`] automatically.

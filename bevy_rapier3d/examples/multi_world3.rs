@@ -13,7 +13,7 @@ fn main() {
         .add_plugins((
             DefaultPlugins,
             RapierPhysicsPlugin::<NoUserData>::default()
-                .with_default_world(RapierContextInitialization::NoAutomaticRapierContext),
+                .with_custom_initialization(RapierContextInitialization::NoAutomaticRapierContext),
             RapierDebugRenderPlugin::default(),
         ))
         .add_systems(
