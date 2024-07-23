@@ -12,9 +12,11 @@ mod player_movement2;
 mod rope_joint2;
 
 use bevy::prelude::*;
+use bevy_egui::{egui, EguiContexts, EguiPlugin};
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier2d::prelude::*;
 
-#[derive(Debug, Clone, Eq, PartialEq, Default, Hash, States)]
+#[derive(Debug, Reflect, Clone, Copy, Eq, PartialEq, Default, Hash, States)]
 pub enum Examples {
     #[default]
     None,
@@ -25,25 +27,61 @@ pub enum Examples {
     Events2,
     Joints2,
     JointsDespawn2,
-    LockedRotation2,
+    LockedRotations2,
     MultipleColliders2,
     PlayerMovement2,
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Reflect)]
 struct ExamplesRes {
     entities_before: Vec<Entity>,
 }
 
+#[derive(Resource, Debug, Default, Reflect)]
+struct ExampleSelected(pub usize);
+
+#[derive(Debug, Reflect)]
+struct ExampleDefinition {
+    pub state: Examples,
+    pub name: &'static str,
+}
+
+impl From<(Examples, &'static str)> for ExampleDefinition {
+    fn from((state, name): (Examples, &'static str)) -> Self {
+        Self { state, name }
+    }
+}
+
+#[derive(Resource, Debug, Reflect)]
+struct ExampleSet(pub Vec<ExampleDefinition>);
+
 fn main() {
     let mut app = App::new();
-    app.init_state::<Examples>()
-        .init_resource::<ExamplesRes>()
+    app.init_resource::<ExamplesRes>()
         .add_plugins((
             DefaultPlugins,
+            EguiPlugin,
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(10.0),
             RapierDebugRenderPlugin::default(),
+            WorldInspectorPlugin::new(),
         ))
+        .register_type::<Examples>()
+        .register_type::<ExamplesRes>()
+        .register_type::<ExampleSelected>()
+        .init_state::<Examples>()
+        .insert_resource(ExampleSet(vec![
+            (Examples::Boxes2, "Boxes3").into(),
+            (Examples::RopeJoint2, "RopeJoint2").into(),
+            (Examples::DebugDespawn2, "DebugDespawn2").into(),
+            (Examples::Despawn2, "Despawn3").into(),
+            (Examples::Events2, "Events3").into(),
+            (Examples::Joints2, "Joints3").into(),
+            (Examples::JointsDespawn2, "JointsDespawn3").into(),
+            (Examples::LockedRotations2, "LockedRotations3").into(),
+            (Examples::MultipleColliders2, "MultipleColliders3").into(),
+            (Examples::PlayerMovement2, "PlayerMovement2").into(),
+        ]))
+        .init_resource::<ExampleSelected>()
         //
         //boxes2
         .add_systems(
@@ -116,13 +154,13 @@ fn main() {
         //
         //locked rotations
         .add_systems(
-            OnEnter(Examples::LockedRotation2),
+            OnEnter(Examples::LockedRotations2),
             (
                 locked_rotations2::setup_graphics,
                 locked_rotations2::setup_physics,
             ),
         )
-        .add_systems(OnExit(Examples::LockedRotation2), cleanup)
+        .add_systems(OnExit(Examples::LockedRotations2), cleanup)
         //
         //multiple colliders
         .add_systems(
@@ -164,7 +202,14 @@ fn main() {
             },
         )
         .add_systems(OnExit(Examples::None), init)
-        .add_systems(Update, check_toggle);
+        .add_systems(
+            Update,
+            (
+                ui_example_system,
+                change_example.run_if(resource_changed::<ExampleSelected>),
+            )
+                .chain(),
+        );
 
     app.run();
 }
@@ -189,25 +234,34 @@ fn cleanup(world: &mut World) {
     }
 }
 
-fn check_toggle(
-    state: Res<State<Examples>>,
+fn change_example(
+    example_selected: Res<ExampleSelected>,
+    examples_available: Res<ExampleSet>,
     mut next_state: ResMut<NextState<Examples>>,
-    mouse_input: Res<ButtonInput<MouseButton>>,
 ) {
-    if mouse_input.just_pressed(MouseButton::Left) {
-        let next = match *state.get() {
-            Examples::None => Examples::Boxes2,
-            Examples::Boxes2 => Examples::RopeJoint2,
-            Examples::RopeJoint2 => Examples::DebugDespawn2,
-            Examples::DebugDespawn2 => Examples::Despawn2,
-            Examples::Despawn2 => Examples::Events2,
-            Examples::Events2 => Examples::Joints2,
-            Examples::Joints2 => Examples::JointsDespawn2,
-            Examples::JointsDespawn2 => Examples::LockedRotation2,
-            Examples::LockedRotation2 => Examples::MultipleColliders2,
-            Examples::MultipleColliders2 => Examples::PlayerMovement2,
-            Examples::PlayerMovement2 => Examples::Boxes2,
-        };
-        next_state.set(next);
-    }
+    next_state.set(examples_available.0[example_selected.0].state);
+}
+
+fn ui_example_system(
+    mut contexts: EguiContexts,
+    mut current_example: ResMut<ExampleSelected>,
+    examples_available: Res<ExampleSet>,
+) {
+    egui::Window::new("Testbed").show(contexts.ctx_mut(), |ui| {
+        let mut changed = false;
+        egui::ComboBox::from_label("example")
+            .width(150.0)
+            .selected_text(examples_available.0[current_example.0].name)
+            .show_ui(ui, |ui| {
+                for (id, value) in examples_available.0.iter().enumerate() {
+                    changed = ui
+                        .selectable_value(&mut current_example.0, id, value.name)
+                        .changed()
+                        || changed;
+                }
+            });
+        if ui.button("Next").clicked() {
+            current_example.0 = (current_example.0 + 1) % examples_available.0.len();
+        }
+    });
 }

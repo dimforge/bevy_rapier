@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Fix
+
+- Fix a crash when using `TimestepMode::Interpolated` and removing colliders
+during a frame which would not run a simulation step.
+
+### Added
+
+- Added a `TriMeshFlags` parameter for `ComputedColliderShape`,
+its default value is `TriMeshFlags::MERGE_DUPLICATE_VERTICES`,
+which was its hardcoded behaviour.
+
 ### Modified
 
 - `RapierContext`, `RapierConfiguration` and `RenderToSimulationTime` are now a `Component`

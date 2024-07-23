@@ -61,7 +61,19 @@ bevy = { version = "0.14", default-features = false, features = [
 ] }
 approx = "0.5.1"
 glam = { version = "0.27", features = ["approx"] }
+bevy-inspector-egui = "0.25.1"
+bevy_egui = "0.28.0"
+divan = "0.1"
+bevy_rapier_benches3d = { version = "0.1", path = "../bevy_rapier_benches3d" }
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
 features = ["debug-render-3d", "serde-serialize"]
+
+[[bench]]
+name = "cubes"
+harness = false
+
+[[bench]]
+name = "many_pyramids3"
+harness = false

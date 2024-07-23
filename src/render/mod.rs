@@ -6,9 +6,12 @@ use rapier::pipeline::{DebugRenderBackend, DebugRenderObject, DebugRenderPipelin
 pub use rapier::pipeline::{DebugRenderMode, DebugRenderStyle};
 use std::fmt::Debug;
 
+#[cfg(doc)]
+use crate::prelude::Collider;
+
 /// The color of a collider when using the debug-renderer.
 ///
-/// Insert this component alongside the collider component to
+/// Insert this component alongside the [`Collider`] component to
 /// force to a specific value the color used to render the
 /// collider.
 #[derive(Copy, Clone, Component, PartialEq, Debug, Reflect)]

@@ -258,6 +258,7 @@ impl RapierContext {
             .or_else(|| event_queue.as_ref().map(|q| q as &dyn EventHandler))
             .unwrap_or(&() as &dyn EventHandler);
 
+        let mut executed_steps = 0;
         match timestep_mode {
             TimestepMode::Interpolated {
                 dt,
@@ -304,6 +305,7 @@ impl RapierContext {
                             hooks,
                             event_handler,
                         );
+                        executed_steps += 1;
                     }
 
                     sim_to_render_time.diff -= dt;
@@ -335,6 +337,7 @@ impl RapierContext {
                         hooks,
                         event_handler,
                     );
+                    executed_steps += 1;
                 }
             }
             TimestepMode::Fixed { dt, substeps } => {
@@ -359,6 +362,7 @@ impl RapierContext {
                         hooks,
                         event_handler,
                     );
+                    executed_steps += 1;
                 }
             }
         }
@@ -369,6 +373,10 @@ impl RapierContext {
                 std::mem::take(event_queue.collision_events.get_mut().unwrap());
             self.contact_force_events_to_send =
                 std::mem::take(event_queue.contact_force_events.get_mut().unwrap());
+        }
+
+        if executed_steps > 0 {
+            self.deleted_colliders.clear();
         }
     }
     /// Generates bevy events for any physics interactions that have happened
