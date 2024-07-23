@@ -171,8 +171,8 @@ impl Default for Friction {
 }
 
 impl Friction {
-    /// Creates a `Friction` component from the given friction coefficient, and using the default
-    /// `CoefficientCombineRule::Average` coefficient combine rule.
+    /// Creates a [`Friction`] component from the given friction coefficient, and using the default
+    /// [`CoefficientCombineRule::Average`] coefficient combine rule.
     pub const fn new(coefficient: f32) -> Self {
         Self {
             coefficient,
@@ -180,8 +180,8 @@ impl Friction {
         }
     }
 
-    /// Creates a `Friction` component from the given friction coefficient, and using the default
-    /// `CoefficientCombineRule::Average` coefficient combine rule.
+    /// Creates a [`Friction`] component from the given friction coefficient, and using the default
+    /// [`CoefficientCombineRule::Average`] coefficient combine rule.
     pub const fn coefficient(coefficient: f32) -> Self {
         Self {
             coefficient,
@@ -204,8 +204,8 @@ pub struct Restitution {
 }
 
 impl Restitution {
-    /// Creates a `Restitution` component from the given restitution coefficient, and using the default
-    /// `CoefficientCombineRule::Average` coefficient combine rule.
+    /// Creates a [`Restitution`] component from the given restitution coefficient, and using the default
+    /// [`CoefficientCombineRule::Average`] coefficient combine rule.
     pub const fn new(coefficient: f32) -> Self {
         Self {
             coefficient,
@@ -213,8 +213,8 @@ impl Restitution {
         }
     }
 
-    /// Creates a `Restitution` component from the given restitution coefficient, and using the default
-    /// `CoefficientCombineRule::Average` coefficient combine rule.
+    /// Creates a [`Restitution`] component from the given restitution coefficient, and using the default
+    /// [`CoefficientCombineRule::Average`] coefficient combine rule.
     pub const fn coefficient(coefficient: f32) -> Self {
         Self {
             coefficient,

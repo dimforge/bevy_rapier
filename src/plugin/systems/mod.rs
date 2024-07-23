@@ -50,7 +50,6 @@ pub fn step_simulation<Hooks>(
             &mut sim_to_render_time,
             Some(interpolation_query),
         );
-        context.deleted_colliders.clear();
     } else {
         context.propagate_modified_body_positions_to_colliders();
     }
