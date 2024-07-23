@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Fix
+
+- Fix a crash when using `TimestepMode::Interpolated` and removing colliders
+during a frame which would not run a simulation step.
+
 ### Added
 
 - Added a `TriMeshFlags` parameter for `ComputedColliderShape`,
