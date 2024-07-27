@@ -225,6 +225,7 @@ impl RapierContext {
             .or_else(|| event_queue.as_ref().map(|q| q as &dyn EventHandler))
             .unwrap_or(&() as &dyn EventHandler);
 
+        let mut executed_steps = 0;
         match timestep_mode {
             TimestepMode::Interpolated {
                 dt,
@@ -271,6 +272,7 @@ impl RapierContext {
                             hooks,
                             events,
                         );
+                        executed_steps += 1;
                     }
 
                     sim_to_render_time.diff -= dt;
@@ -302,6 +304,7 @@ impl RapierContext {
                         hooks,
                         events,
                     );
+                    executed_steps += 1;
                 }
             }
             TimestepMode::Fixed { dt, substeps } => {
@@ -326,8 +329,13 @@ impl RapierContext {
                         hooks,
                         events,
                     );
+                    executed_steps += 1;
                 }
             }
+        }
+
+        if executed_steps > 0 {
+            self.deleted_colliders.clear();
         }
     }
 
