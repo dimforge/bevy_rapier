@@ -17,7 +17,9 @@ during a frame which would not run a simulation step.
 - Added a `TriMeshFlags` parameter for `ComputedColliderShape`,
 its default value is `TriMeshFlags::MERGE_DUPLICATE_VERTICES`,
 which was its hardcoded behaviour.
-- Added `ColliderDebug` component to control individual debug rendering for colliders.
+- Added a way to configure which colliders should be debug rendered: `global` parameter for both 
+  `RapierDebugColliderPlugin` and `DebugRenderContext`, as well as individual collider setup via
+  a `ColliderDebug` component.
 
 ## v0.27.0 (07 July 2024)
 
@@ -40,9 +42,6 @@ You can still access its inner `GenericJoint` with `.as_ref()` or `as_mut()`.
 
 - Derive `Debug` for `LockedAxes`.
 - Expose `is_sliding_down_slope` to both `MoveShapeOutput` and `KinematicCharacterControllerOutput`.
-- Added a way to configure which colliders should be debug rendered: `global` parameter for both 
-  `RapierDebugColliderPlugin` and `DebugRenderContext`, as well as individual collider setup via
-  a `ColliderDebug` component.
 - Added a First Person Shooter `character_controller` example for `bevy_rapier3d`.
 - Added serialization support for `CollisionGroups`, `SolverGroups`, `ContactForceEventThreshold`, `ContactSkin`.
 - Added `RapierContext::context.impulse_revolute_joint_angle` to compute the angle along a revolute joint’s principal axis.
