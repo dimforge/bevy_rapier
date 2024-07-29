@@ -12,9 +12,11 @@ mod ray_casting3;
 mod static_trimesh3;
 
 use bevy::prelude::*;
+use bevy_egui::{egui, EguiContexts, EguiPlugin};
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier3d::prelude::*;
 
-#[derive(Debug, Clone, Eq, PartialEq, Default, Hash, States)]
+#[derive(Debug, Reflect, Clone, Copy, Eq, PartialEq, Default, Hash, States)]
 pub enum Examples {
     #[default]
     None,
@@ -30,20 +32,56 @@ pub enum Examples {
     StaticTrimesh3,
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Reflect)]
 struct ExamplesRes {
     entities_before: Vec<Entity>,
 }
 
+#[derive(Resource, Debug, Default, Reflect)]
+struct ExampleSelected(pub usize);
+
+#[derive(Debug, Reflect)]
+struct ExampleDefinition {
+    pub state: Examples,
+    pub name: &'static str,
+}
+
+impl From<(Examples, &'static str)> for ExampleDefinition {
+    fn from((state, name): (Examples, &'static str)) -> Self {
+        Self { state, name }
+    }
+}
+
+#[derive(Resource, Debug, Reflect)]
+struct ExampleSet(pub Vec<ExampleDefinition>);
+
 fn main() {
     let mut app = App::new();
-    app.init_state::<Examples>()
-        .init_resource::<ExamplesRes>()
+    app.init_resource::<ExamplesRes>()
         .add_plugins((
             DefaultPlugins,
+            EguiPlugin,
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
+            WorldInspectorPlugin::new(),
         ))
+        .register_type::<Examples>()
+        .register_type::<ExamplesRes>()
+        .register_type::<ExampleSelected>()
+        .init_state::<Examples>()
+        .insert_resource(ExampleSet(vec![
+            (Examples::Boxes3, "Boxes3").into(),
+            (Examples::DebugToggle3, "DebugToggle3").into(),
+            (Examples::Despawn3, "Despawn3").into(),
+            (Examples::Events3, "Events3").into(),
+            (Examples::Joints3, "Joints3").into(),
+            (Examples::JointsDespawn3, "JointsDespawn3").into(),
+            (Examples::LockedRotations3, "LockedRotations3").into(),
+            (Examples::MultipleColliders3, "MultipleColliders3").into(),
+            (Examples::Raycasting3, "Raycasting3").into(),
+            (Examples::StaticTrimesh3, "StaticTrimesh3").into(),
+        ]))
+        .init_resource::<ExampleSelected>()
         //
         //boxes2
         .add_systems(
@@ -54,16 +92,19 @@ fn main() {
         //
         // Debug toggle
         .add_systems(
-            Startup,
+            OnEnter(Examples::DebugToggle3),
             (debug_toggle3::setup_graphics, debug_toggle3::setup_physics),
         )
-        .add_systems(Update, debug_toggle3::toggle_debug)
         .add_systems(
             Update,
-            (|mut debug_render_context: ResMut<DebugRenderContext>| {
-                debug_render_context.enabled = !debug_render_context.enabled;
-            })
-            .run_if(debug_toggle3::input_just_pressed(KeyCode::KeyV)),
+            (
+                debug_toggle3::toggle_debug,
+                (|mut debug_render_context: ResMut<DebugRenderContext>| {
+                    debug_render_context.enabled = !debug_render_context.enabled;
+                })
+                .run_if(debug_toggle3::input_just_pressed(KeyCode::KeyV)),
+            )
+                .run_if(in_state(Examples::DebugToggle3)),
         )
         //
         // despawn
@@ -165,7 +206,14 @@ fn main() {
             },
         )
         .add_systems(OnExit(Examples::None), init)
-        .add_systems(Update, check_toggle);
+        .add_systems(
+            Update,
+            (
+                ui_example_system,
+                change_example.run_if(resource_changed::<ExampleSelected>),
+            )
+                .chain(),
+        );
 
     app.run();
 }
@@ -190,25 +238,34 @@ fn cleanup(world: &mut World) {
     }
 }
 
-fn check_toggle(
-    state: Res<State<Examples>>,
+fn change_example(
+    example_selected: Res<ExampleSelected>,
+    examples_available: Res<ExampleSet>,
     mut next_state: ResMut<NextState<Examples>>,
-    mouse_input: Res<ButtonInput<MouseButton>>,
 ) {
-    if mouse_input.just_pressed(MouseButton::Left) {
-        let next = match *state.get() {
-            Examples::None => Examples::Boxes3,
-            Examples::Boxes3 => Examples::DebugToggle3,
-            Examples::DebugToggle3 => Examples::Despawn3,
-            Examples::Despawn3 => Examples::Events3,
-            Examples::Events3 => Examples::Joints3,
-            Examples::Joints3 => Examples::JointsDespawn3,
-            Examples::JointsDespawn3 => Examples::LockedRotations3,
-            Examples::LockedRotations3 => Examples::MultipleColliders3,
-            Examples::MultipleColliders3 => Examples::Raycasting3,
-            Examples::Raycasting3 => Examples::StaticTrimesh3,
-            Examples::StaticTrimesh3 => Examples::Boxes3,
-        };
-        next_state.set(next);
-    }
+    next_state.set(examples_available.0[example_selected.0].state);
+}
+
+fn ui_example_system(
+    mut contexts: EguiContexts,
+    mut current_example: ResMut<ExampleSelected>,
+    examples_available: Res<ExampleSet>,
+) {
+    egui::Window::new("Testbed").show(contexts.ctx_mut(), |ui| {
+        let mut changed = false;
+        egui::ComboBox::from_label("example")
+            .width(150.0)
+            .selected_text(examples_available.0[current_example.0].name)
+            .show_ui(ui, |ui| {
+                for (id, value) in examples_available.0.iter().enumerate() {
+                    changed = ui
+                        .selectable_value(&mut current_example.0, id, value.name)
+                        .changed()
+                        || changed;
+                }
+            });
+        if ui.button("Next").clicked() {
+            current_example.0 = (current_example.0 + 1) % examples_available.0.len();
+        }
+    });
 }

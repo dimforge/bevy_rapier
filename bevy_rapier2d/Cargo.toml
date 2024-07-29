@@ -46,7 +46,7 @@ async-collider = ["bevy/bevy_asset", "bevy/bevy_scene"]
 [dependencies]
 bevy = { version = "0.14", default-features = false }
 nalgebra = { version = "0.33", features = ["convert-glam027"] }
-rapier2d = "0.21"
+rapier2d = "0.22"
 bitflags = "2.4"
 log = "0.4"
 serde = { version = "1", features = ["derive"], optional = true }
@@ -59,6 +59,8 @@ bevy = { version = "0.14", default-features = false, features = [
 oorandom = "11"
 approx = "0.5.1"
 glam = { version = "0.27", features = ["approx"] }
+bevy-inspector-egui = "0.25.1"
+bevy_egui = "0.28.0"
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs

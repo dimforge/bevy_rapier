@@ -17,13 +17,15 @@ fn main() {
             RapierDebugRenderPlugin::default(),
         ))
         .add_systems(Startup, (setup_graphics, setup_physics))
-        .add_systems(Update, toggle_debug)
         .add_systems(
             Update,
-            (|mut debug_render_context: ResMut<DebugRenderContext>| {
-                debug_render_context.enabled = !debug_render_context.enabled;
-            })
-            .run_if(input_just_pressed(KeyCode::KeyV)),
+            (
+                toggle_debug,
+                (|mut debug_render_context: ResMut<DebugRenderContext>| {
+                    debug_render_context.enabled = !debug_render_context.enabled;
+                })
+                .run_if(input_just_pressed(KeyCode::KeyV)),
+            ),
         )
         .run();
 }

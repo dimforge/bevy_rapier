@@ -37,6 +37,7 @@ macro_rules! impl_ref_methods(
             ///
             /// The normal points such that it is collinear to `AB × AC` (where `×` denotes the cross
             /// product).
+            #[cfg(feature = "dim3")]
             #[inline]
             pub fn normal(&self) -> Option<Vect> {
                 self.raw.normal().map(|n| (*n).into())
@@ -46,6 +47,7 @@ macro_rules! impl_ref_methods(
             ///
             /// The vector points such that it is collinear to `AB × AC` (where `×` denotes the cross
             /// product).
+            #[cfg(feature = "dim3")]
             #[inline]
             pub fn scaled_normal(&self) -> Vect {
                 self.raw.scaled_normal().into()
