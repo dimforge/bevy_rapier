@@ -17,6 +17,9 @@ edition = "2021"
 path = "../src/lib.rs"
 required-features = ["dim2"]
 
+[lints]
+workspace = true
+
 [features]
 default = ["dim2", "async-collider", "debug-render-2d"]
 dim2 = []
