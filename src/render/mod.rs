@@ -14,7 +14,7 @@ use crate::prelude::Collider;
 /// Insert this component alongside the [`Collider`] component to
 /// force to a specific value the color used to render the
 /// collider.
-#[derive(Copy, Clone, Component, PartialEq, Debug)]
+#[derive(Copy, Clone, Component, PartialEq, Debug, Reflect)]
 pub struct ColliderDebugColor(pub Hsla);
 
 /// Plugin rensponsible for rendering (using lines) what Rapier "sees" when performing
@@ -97,13 +97,15 @@ impl Plugin for RapierDebugRenderPlugin {
     }
 }
 
-struct BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
-    custom_colors: Query<'world, 'state, &'a ColliderDebugColor>,
+struct BevyLinesRenderBackend<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'p> {
+    custom_colors: &'c Query<'world, 'state, &'a ColliderDebugColor>,
     context: &'b RapierContext,
-    gizmos: Gizmos<'world, 'state>,
+    gizmos: &'p mut Gizmos<'world2, 'state2>,
 }
 
-impl<'world, 'state, 'a, 'b> BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
+impl<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'p>
+    BevyLinesRenderBackend<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'p>
+{
     fn object_color(&self, object: DebugRenderObject, default: [f32; 4]) -> [f32; 4] {
         let color = match object {
             DebugRenderObject::Collider(h, ..) => self.context.colliders.get(h).and_then(|co| {
@@ -119,7 +121,9 @@ impl<'world, 'state, 'a, 'b> BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
     }
 }
 
-impl<'world, 'state, 'a, 'b> DebugRenderBackend for BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
+impl<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'p> DebugRenderBackend
+    for BevyLinesRenderBackend<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'p>
+{
     #[cfg(feature = "dim2")]
     fn draw_line(
         &mut self,
@@ -154,29 +158,30 @@ impl<'world, 'state, 'a, 'b> DebugRenderBackend for BevyLinesRenderBackend<'worl
 }
 
 fn debug_render_scene(
-    rapier_context: Res<RapierContext>,
+    rapier_context: Query<&RapierContext>,
     mut render_context: ResMut<DebugRenderContext>,
-    gizmos: Gizmos,
+    mut gizmos: Gizmos,
     custom_colors: Query<&ColliderDebugColor>,
 ) {
     if !render_context.enabled {
         return;
     }
+    for rapier_context in rapier_context.iter() {
+        let mut backend = BevyLinesRenderBackend {
+            custom_colors: &custom_colors,
+            context: rapier_context,
+            gizmos: &mut gizmos,
+        };
 
-    let mut backend = BevyLinesRenderBackend {
-        custom_colors,
-        context: &rapier_context,
-        gizmos,
-    };
-
-    let unscaled_style = render_context.pipeline.style;
-    render_context.pipeline.render(
-        &mut backend,
-        &rapier_context.bodies,
-        &rapier_context.colliders,
-        &rapier_context.impulse_joints,
-        &rapier_context.multibody_joints,
-        &rapier_context.narrow_phase,
-    );
-    render_context.pipeline.style = unscaled_style;
+        let unscaled_style = render_context.pipeline.style;
+        render_context.pipeline.render(
+            &mut backend,
+            &rapier_context.bodies,
+            &rapier_context.colliders,
+            &rapier_context.impulse_joints,
+            &rapier_context.multibody_joints,
+            &rapier_context.narrow_phase,
+        );
+        render_context.pipeline.style = unscaled_style;
+    }
 }

@@ -284,7 +284,7 @@ pub fn setup_physics(mut commands: Commands) {
 }
 
 pub fn print_impulse_revolute_joints(
-    context: Res<RapierContext>,
+    context: DefaultRapierContextAccess,
     joints: Query<(Entity, &ImpulseJoint)>,
 ) {
     for (entity, impulse_joint) in joints.iter() {
