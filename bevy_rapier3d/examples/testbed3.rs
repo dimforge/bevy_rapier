@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 mod boxes3;
+mod debug_toggle3;
 mod despawn3;
 mod events3;
 mod joints3;
@@ -18,6 +19,7 @@ pub enum Examples {
     #[default]
     None,
     Boxes3,
+    DebugToggle3,
     Despawn3,
     Events3,
     Joints3,
@@ -49,6 +51,20 @@ fn main() {
             (boxes3::setup_graphics, boxes3::setup_physics),
         )
         .add_systems(OnExit(Examples::Boxes3), cleanup)
+        //
+        // Debug toggle
+        .add_systems(
+            Startup,
+            (debug_toggle3::setup_graphics, debug_toggle3::setup_physics),
+        )
+        .add_systems(Update, debug_toggle3::toggle_debug)
+        .add_systems(
+            Update,
+            (|mut debug_render_context: ResMut<DebugRenderContext>| {
+                debug_render_context.enabled = !debug_render_context.enabled;
+            })
+            .run_if(debug_toggle3::input_just_pressed(KeyCode::KeyV)),
+        )
         //
         // despawn
         .init_resource::<despawn3::DespawnResource>()
@@ -182,7 +198,8 @@ fn check_toggle(
     if mouse_input.just_pressed(MouseButton::Left) {
         let next = match *state.get() {
             Examples::None => Examples::Boxes3,
-            Examples::Boxes3 => Examples::Despawn3,
+            Examples::Boxes3 => Examples::DebugToggle3,
+            Examples::DebugToggle3 => Examples::Despawn3,
             Examples::Despawn3 => Examples::Events3,
             Examples::Events3 => Examples::Joints3,
             Examples::Joints3 => Examples::JointsDespawn3,

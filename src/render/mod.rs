@@ -15,12 +15,12 @@ use std::fmt::Debug;
 pub struct ColliderDebugColor(pub Hsla);
 
 /// Overrides the global [`DebugRenderContext`] for a single collider.
-#[derive(Copy, Clone, Component, Eq, PartialEq, Default, Debug)]
+#[derive(Copy, Clone, Reflect, Component, Eq, PartialEq, Default, Debug)]
 pub enum ColliderDebug {
     /// Always render the debug gizmos for this collider, regardless of global config.
     #[default]
     AlwaysRender,
-    /// Never render the debug gizmos for this collider, regardless of global confing.
+    /// Never render the debug gizmos for this collider, regardless of global config.
     NeverRender,
 }
 
@@ -30,8 +30,8 @@ pub enum ColliderDebug {
 pub struct RapierDebugRenderPlugin {
     /// Whether to show debug gizmos for all colliders.
     ///
-    /// Can be overriden for individual colliders by adding a [`ColliderDebug`] component.
-    pub global: bool,
+    /// Can be overridden for individual colliders by adding a [`ColliderDebug`] component.
+    pub default_collider_debug: ColliderDebug,
     /// Is the debug-rendering enabled?
     pub enabled: bool,
     /// Control some aspects of the render coloring.
@@ -47,7 +47,7 @@ impl Default for RapierDebugRenderPlugin {
     fn default() -> Self {
         Self {
             enabled: true,
-            global: true,
+            default_collider_debug: ColliderDebug::AlwaysRender,
             style: DebugRenderStyle {
                 rigid_body_axes_length: 20.0,
                 ..Default::default()
@@ -59,7 +59,7 @@ impl Default for RapierDebugRenderPlugin {
     fn default() -> Self {
         Self {
             enabled: true,
-            global: true,
+            default_collider_debug: ColliderDebug::AlwaysRender,
             style: DebugRenderStyle::default(),
             mode: DebugRenderMode::default(),
         }
@@ -83,7 +83,7 @@ pub struct DebugRenderContext {
     /// Whether to show debug gizmos for all colliders.
     ///
     /// Can be overriden for individual colliders by adding a [`ColliderDebug`] component.
-    pub global: bool,
+    pub default_collider_debug: ColliderDebug,
     /// Pipeline responsible for rendering. Access `pipeline.mode` and `pipeline.style`
     /// to modify the set of rendered elements, and modify the default coloring rules.
     #[reflect(ignore)]
@@ -94,7 +94,7 @@ impl Default for DebugRenderContext {
     fn default() -> Self {
         Self {
             enabled: true,
-            global: true,
+            default_collider_debug: ColliderDebug::AlwaysRender,
             pipeline: DebugRenderPipeline::default(),
         }
     }
@@ -103,10 +103,11 @@ impl Default for DebugRenderContext {
 impl Plugin for RapierDebugRenderPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<DebugRenderContext>();
+        app.register_type::<ColliderDebug>();
 
         app.insert_resource(DebugRenderContext {
             enabled: self.enabled,
-            global: self.global,
+            default_collider_debug: self.default_collider_debug,
             pipeline: DebugRenderPipeline::new(self.style, self.mode),
         })
         .add_systems(
@@ -118,7 +119,7 @@ impl Plugin for RapierDebugRenderPlugin {
 
 struct BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
     custom_colors: Query<'world, 'state, &'a ColliderDebugColor>,
-    global_visibility: bool,
+    default_collider_debug: ColliderDebug,
     override_visibility: Query<'world, 'state, &'a ColliderDebug>,
     context: &'b RapierContext,
     gizmos: Gizmos<'world, 'state>,
@@ -143,15 +144,17 @@ impl<'world, 'state, 'a, 'b> BevyLinesRenderBackend<'world, 'state, 'a, 'b> {
         match object {
             DebugRenderObject::Collider(h, ..) => {
                 let Some(collider) = self.context.colliders.get(h) else {
-                    return true;
+                    return false;
                 };
                 let entity = Entity::from_bits(collider.user_data as u64);
 
-                if let Ok(collider_override) = self.override_visibility.get(entity) {
-                    matches!(collider_override, ColliderDebug::AlwaysRender)
-                } else {
-                    self.global_visibility
-                }
+                let collider_debug =
+                    if let Ok(collider_override) = self.override_visibility.get(entity) {
+                        *collider_override
+                    } else {
+                        self.default_collider_debug
+                    };
+                collider_debug == ColliderDebug::AlwaysRender
             }
             _ => true,
         }
@@ -213,7 +216,7 @@ fn debug_render_scene<'a>(
 
     let mut backend = BevyLinesRenderBackend {
         custom_colors,
-        global_visibility: render_context.global,
+        default_collider_debug: render_context.default_collider_debug,
         override_visibility,
         context: &rapier_context,
         gizmos,
