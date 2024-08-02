@@ -17,6 +17,9 @@ during a frame which would not run a simulation step.
 - Added a `TriMeshFlags` parameter for `ComputedColliderShape`,
 its default value is `TriMeshFlags::MERGE_DUPLICATE_VERTICES`,
 which was its hardcoded behaviour.
+- Added a way to configure which colliders should be debug rendered: `global` parameter for both 
+  `RapierDebugColliderPlugin` and `DebugRenderContext`, as well as individual collider setup via
+  a `ColliderDebug` component.
 
 ## v0.27.0 (07 July 2024)
 

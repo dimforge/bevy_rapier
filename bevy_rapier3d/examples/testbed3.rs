@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 mod boxes3;
+mod debug_toggle3;
 mod despawn3;
 mod events3;
 mod joints3;
@@ -20,6 +21,7 @@ pub enum Examples {
     #[default]
     None,
     Boxes3,
+    DebugToggle3,
     Despawn3,
     Events3,
     Joints3,
@@ -69,6 +71,7 @@ fn main() {
         .init_state::<Examples>()
         .insert_resource(ExampleSet(vec![
             (Examples::Boxes3, "Boxes3").into(),
+            (Examples::DebugToggle3, "DebugToggle3").into(),
             (Examples::Despawn3, "Despawn3").into(),
             (Examples::Events3, "Events3").into(),
             (Examples::Joints3, "Joints3").into(),
@@ -86,6 +89,23 @@ fn main() {
             (boxes3::setup_graphics, boxes3::setup_physics),
         )
         .add_systems(OnExit(Examples::Boxes3), cleanup)
+        //
+        // Debug toggle
+        .add_systems(
+            OnEnter(Examples::DebugToggle3),
+            (debug_toggle3::setup_graphics, debug_toggle3::setup_physics),
+        )
+        .add_systems(
+            Update,
+            (
+                debug_toggle3::toggle_debug,
+                (|mut debug_render_context: ResMut<DebugRenderContext>| {
+                    debug_render_context.enabled = !debug_render_context.enabled;
+                })
+                .run_if(debug_toggle3::input_just_pressed(KeyCode::KeyV)),
+            )
+                .run_if(in_state(Examples::DebugToggle3)),
+        )
         //
         // despawn
         .init_resource::<despawn3::DespawnResource>()
