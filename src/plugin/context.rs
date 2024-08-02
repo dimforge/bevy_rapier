@@ -32,8 +32,6 @@ pub struct RapierContext {
     /// The island manager, which detects what object is sleeping
     /// (not moving much) to reduce computations.
     pub islands: IslandManager,
-    // FIXME: This shoulnd not be skipped.
-    #[cfg_attr(feature = "serde-serialize", serde(skip))]
     /// The broad-phase, which detects potential contact pairs.
     pub broad_phase: DefaultBroadPhase,
     /// The narrow-phase, which computes contact points, tests intersections,
