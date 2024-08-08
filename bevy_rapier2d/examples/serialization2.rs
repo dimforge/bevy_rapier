@@ -24,11 +24,11 @@ fn main() {
         .run();
 }
 
-pub fn print_physics(context: Res<RapierContext>) {
+pub fn print_physics(_context: Res<RapierContext>) {
     #[cfg(feature = "serde-serialize")]
     println!(
         "{}",
-        serde_json::to_string_pretty(&(*context)).expect("Unable to serialize `RapierContext`")
+        serde_json::to_string_pretty(&(*_context)).expect("Unable to serialize `RapierContext`")
     );
     #[cfg(not(feature = "serde-serialize"))]
     panic!("Example 'serialization' should be run with '--features serde-serialize'.");
