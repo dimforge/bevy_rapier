@@ -1,6 +1,7 @@
 //! Example for RapierContext serialization, run with `--features serde-serialize`.
 
 use bevy::prelude::*;
+use bevy::MinimalPlugins;
 use bevy_rapier2d::prelude::*;
 
 /// Note: This will end up in duplication for testbed, but that's more simple.
@@ -14,11 +15,10 @@ fn main() {
             0xFF as f32 / 255.0,
         )))
         .add_plugins((
-            DefaultPlugins,
+            MinimalPlugins,
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0),
-            RapierDebugRenderPlugin::default(),
         ))
-        .add_systems(Startup, (joints2::setup_graphics, joints2::setup_physics))
+        .add_systems(Startup, joints2::setup_physics)
         .add_systems(PostUpdate, print_physics)
         .add_systems(Last, quit)
         .run();
@@ -26,12 +26,12 @@ fn main() {
 
 pub fn print_physics(context: Res<RapierContext>) {
     #[cfg(feature = "serde-serialize")]
-    info!(
+    println!(
         "{}",
         serde_json::to_string_pretty(&(*context)).expect("Unable to serialize `RapierContext`")
     );
     #[cfg(not(feature = "serde-serialize"))]
-    error!("Example 'serialization' should be run with '--features serde-serialize'.");
+    panic!("Example 'serialization' should be run with '--features serde-serialize'.");
 }
 
 fn quit(mut exit_event: EventWriter<AppExit>) {
