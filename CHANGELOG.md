@@ -15,14 +15,14 @@ which was its hardcoded behaviour.
 
 ### Modified
 
-- `RapierContext`, `RapierConfiguration` and `RenderToSimulationTime` are now a `Component`
-  - Rapier now supports multiple worlds, see example `multi_world3` for usage details.
+- `RapierContext`, `RapierConfiguration` and `RenderToSimulationTime` are now a `Component` instead of resources.
+  - Rapier now supports multiple independent physics worlds, see example `multi_world3` for usage details.
   - Migration guide:
     - `ResMut<mut RapierContext>` -> `DefaultRapierContextAccessMut`
     - `Res<RapierContext>` -> `DefaultRapierContextAccess`
     - Access to `RapierConfiguration` and `RenderToSimulationTime` should query for it
 on the responsible entity owning the `RenderContext`.
-  - If you are building a library on top of `bevy_rapier` and would want to support multiple worlds too,
+  - If you are building a library on top of `bevy_rapier` and would want to support multiple independent physics worlds too,
 you can check out the details of [#545](https://github.com/dimforge/bevy_rapier/pull/545)
 to get more context and information.
 

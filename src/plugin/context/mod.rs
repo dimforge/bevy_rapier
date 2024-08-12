@@ -50,7 +50,6 @@ pub struct RapierContext {
     /// The island manager, which detects what object is sleeping
     /// (not moving much) to reduce computations.
     pub islands: IslandManager,
-    // FIXME: This should be serialized but a bug prevents it
     /// The broad-phase, which detects potential contact pairs.
     pub broad_phase: DefaultBroadPhase,
     /// The narrow-phase, which computes contact points, tests intersections,
@@ -367,7 +366,7 @@ impl RapierContext {
             }
         }
         if let Some(mut event_queue) = event_queue {
-            // SAFETY: event_queue and its inner locksare only accessed from
+            // NOTE: event_queue and its inner locks are only accessed from
             // within `self.pipeline.step` called above, so we can unwrap here safely.
             self.collision_events_to_send =
                 std::mem::take(event_queue.collision_events.get_mut().unwrap());

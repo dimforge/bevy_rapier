@@ -209,7 +209,7 @@ pub fn apply_rigid_body_user_changes(
                 interpolation.end = None;
             }
         }
-        // FIXME: avoid to run multiple times the mutable deref ?
+        // TODO: avoid to run multiple times the mutable deref ?
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             transform_changed = transform_changed.or_else(|| {
                 Some(transform_changed_fn(

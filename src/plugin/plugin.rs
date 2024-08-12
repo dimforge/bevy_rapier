@@ -375,13 +375,6 @@ mod test {
 
             app.add_systems(Update, setup_physics);
 
-            // while app.plugins_state() == bevy::app::PluginsState::Adding {
-            //     #[cfg(not(target_arch = "wasm32"))]
-            //     bevy::tasks::tick_global_task_pools_on_main_thread();
-            // }
-            // app.finish();
-            // app.cleanup();
-
             let mut stepping = Stepping::new();
 
             app.update();
