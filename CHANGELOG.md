@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Modified
+
+- Update from rapier `0.21` to rapier `0.22`,
+  see [rapier's changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md).
+
 ### Fix
 
 - Fix a crash when using `TimestepMode::Interpolated` and removing colliders
@@ -12,6 +17,9 @@ during a frame which would not run a simulation step.
 - Added a `TriMeshFlags` parameter for `ComputedColliderShape`,
 its default value is `TriMeshFlags::MERGE_DUPLICATE_VERTICES`,
 which was its hardcoded behaviour.
+- Added a way to configure which colliders should be debug rendered: `global` parameter for both 
+  `RapierDebugColliderPlugin` and `DebugRenderContext`, as well as individual collider setup via
+  a `ColliderDebug` component.
 
 ### Modified
 

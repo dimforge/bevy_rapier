@@ -2,6 +2,7 @@
 
 mod boxes2;
 mod debug_despawn2;
+mod debug_toggle2;
 mod despawn2;
 mod events2;
 mod joints2;
@@ -21,6 +22,7 @@ pub enum Examples {
     #[default]
     None,
     Boxes2,
+    DebugToggle2,
     RopeJoint2,
     DebugDespawn2,
     Despawn2,
@@ -89,6 +91,23 @@ fn main() {
             (boxes2::setup_graphics, boxes2::setup_physics),
         )
         .add_systems(OnExit(Examples::Boxes2), cleanup)
+        //
+        // Debug toggle
+        .add_systems(
+            OnEnter(Examples::DebugToggle2),
+            (debug_toggle2::setup_graphics, debug_toggle2::setup_physics),
+        )
+        .add_systems(
+            Update,
+            (
+                debug_toggle2::toggle_debug,
+                (|mut debug_render_context: ResMut<DebugRenderContext>| {
+                    debug_render_context.enabled = !debug_render_context.enabled;
+                })
+                .run_if(debug_toggle2::input_just_pressed(KeyCode::KeyV)),
+            )
+                .run_if(in_state(Examples::DebugToggle2)),
+        )
         //
         // rope joint
         .add_systems(
