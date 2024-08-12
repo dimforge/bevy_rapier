@@ -4,13 +4,13 @@ use crate::dynamics::RapierImpulseJointHandle;
 use crate::dynamics::RapierMultibodyJointHandle;
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::DefaultRapierContext;
-use crate::plugin::RapierContextAccessMut;
+use crate::plugin::WriteRapierContext;
 use bevy::prelude::*;
 
 /// System responsible for creating new Rapier joints from the related `bevy_rapier` components.
 pub fn init_joints(
     mut commands: Commands,
-    mut context_access: RapierContextAccessMut,
+    mut context_access: WriteRapierContext,
     default_context_access: Query<Entity, With<DefaultRapierContext>>,
     impulse_joints: Query<
         (Entity, Option<&RapierContextEntityLink>, &ImpulseJoint),
@@ -111,7 +111,7 @@ pub fn init_joints(
 
 /// System responsible for applying changes the user made to a joint component.
 pub fn apply_joint_user_changes(
-    mut context: RapierContextAccessMut,
+    mut context: WriteRapierContext,
     changed_impulse_joints: Query<
         (
             &RapierContextEntityLink,

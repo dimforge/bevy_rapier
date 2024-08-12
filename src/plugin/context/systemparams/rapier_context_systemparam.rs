@@ -8,11 +8,11 @@ use super::super::{DefaultRapierContext, RapierContext, RapierContextEntityLink}
 /// SAFETY: Dereferencing this struct will panic if its underlying query fails.
 /// See [`RapierContextAccess`] for a safer alternative.
 #[derive(SystemParam)]
-pub struct DefaultRapierContextAccess<'w, 's, T: Component = DefaultRapierContext> {
+pub struct ReadDefaultRapierContext<'w, 's, T: Component = DefaultRapierContext> {
     rapier_context: Query<'w, 's, &'static RapierContext, With<T>>,
 }
 
-impl<'w, 's, T: Component> DefaultRapierContextAccess<'w, 's, T> {
+impl<'w, 's, T: Component> ReadDefaultRapierContext<'w, 's, T> {
     /// Use this method if you only have one [`RapierContext`].
     ///
     /// SAFETY: This method will panic if its underlying query fails.
@@ -22,7 +22,7 @@ impl<'w, 's, T: Component> DefaultRapierContextAccess<'w, 's, T> {
     }
 }
 
-impl<'w, 's> Deref for DefaultRapierContextAccess<'w, 's> {
+impl<'w, 's> Deref for ReadDefaultRapierContext<'w, 's> {
     type Target = RapierContext;
 
     /// Use this method if you only have one [`RapierContext`].
@@ -39,11 +39,11 @@ impl<'w, 's> Deref for DefaultRapierContextAccess<'w, 's> {
 /// SAFETY: Dereferencing this struct will panic if its underlying query fails.
 /// See [`RapierContextAccess`] for a safer alternative.
 #[derive(SystemParam)]
-pub struct DefaultRapierContextAccessMut<'w, 's, T: Component = DefaultRapierContext> {
+pub struct WriteDefaultRapierContext<'w, 's, T: Component = DefaultRapierContext> {
     rapier_context: Query<'w, 's, &'static mut RapierContext, With<T>>,
 }
 
-impl<'w, 's, T: Component> Deref for DefaultRapierContextAccessMut<'w, 's, T> {
+impl<'w, 's, T: Component> Deref for WriteDefaultRapierContext<'w, 's, T> {
     type Target = RapierContext;
 
     /// Use this method if you only have one [`RapierContext`].
@@ -55,7 +55,7 @@ impl<'w, 's, T: Component> Deref for DefaultRapierContextAccessMut<'w, 's, T> {
     }
 }
 
-impl<'w, 's> DerefMut for DefaultRapierContextAccessMut<'w, 's> {
+impl<'w, 's> DerefMut for WriteDefaultRapierContext<'w, 's> {
     /// Use this method if you only have one [`RapierContext`].
     ///
     /// SAFETY: This method will panic if its underlying query fails.
@@ -103,7 +103,7 @@ impl<'w, 's> Deref for RapierContextAccess<'w, 's> {
 
 /// Utility [`SystemParam`] to easily access any [`RapierContext`] mutably
 #[derive(SystemParam)]
-pub struct RapierContextAccessMut<'w, 's> {
+pub struct WriteRapierContext<'w, 's> {
     /// Query used to retrieve a [`RapierContext`].
     /// It's helpful to iterate over every rapier contexts,
     /// or get a handle over a specific context, for example through:
@@ -112,7 +112,7 @@ pub struct RapierContextAccessMut<'w, 's> {
     pub rapier_context: Query<'w, 's, &'static mut RapierContext>,
 }
 
-impl<'w, 's> RapierContextAccessMut<'w, 's> {
+impl<'w, 's> WriteRapierContext<'w, 's> {
     /// Retrieves the rapier context responsible for the entity owning the given [`RapierContextEntityLink`].
     ///
     /// SAFETY: This method will panic if its underlying query fails.

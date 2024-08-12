@@ -1,7 +1,7 @@
-mod rapier_context_access;
+mod rapier_context_systemparam;
 
 use bevy::{ecs::query::QueryData, prelude::Entity};
-pub use rapier_context_access::*;
+pub use rapier_context_systemparam::*;
 
 use super::RapierContextEntityLink;
 

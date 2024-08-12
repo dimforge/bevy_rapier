@@ -3,7 +3,7 @@ use crate::dynamics::RapierRigidBodyHandle;
 use crate::geometry::RapierColliderHandle;
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::RapierConfiguration;
-use crate::plugin::RapierContextAccessMut;
+use crate::plugin::WriteRapierContext;
 use crate::prelude::KinematicCharacterController;
 use crate::prelude::KinematicCharacterControllerOutput;
 use crate::utils;
@@ -17,7 +17,7 @@ use rapier::pipeline::QueryFilter;
 pub fn update_character_controls(
     mut commands: Commands,
     config: Query<&RapierConfiguration>,
-    mut context_access: RapierContextAccessMut,
+    mut context_access: WriteRapierContext,
     mut character_controllers: Query<(
         Entity,
         &RapierContextEntityLink,

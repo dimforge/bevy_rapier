@@ -39,7 +39,7 @@ pub type RigidBodyComponents<'a> = (
 
 /// System responsible for applying changes the user made to a rigid-body-related component.
 pub fn apply_rigid_body_user_changes(
-    mut context: RapierContextAccessMut,
+    mut context: WriteRapierContext,
     config: Query<&RapierConfiguration>,
     changed_rb_types: Query<
         (&RapierRigidBodyHandle, &RapierContextEntityLink, &RigidBody),
@@ -353,7 +353,7 @@ pub fn apply_rigid_body_user_changes(
 /// System responsible for writing the result of the last simulation step into our `bevy_rapier`
 /// components and the [`GlobalTransform`] component.
 pub fn writeback_rigid_bodies(
-    mut context: RapierContextAccessMut,
+    mut context: WriteRapierContext,
     timestep_mode: Res<TimestepMode>,
     config: Query<&RapierConfiguration>,
     sim_to_render_time: Query<&SimulationToRenderTime>,
@@ -643,7 +643,7 @@ pub fn init_rigid_bodies(
 /// mass to be available, which it was not because colliders were not created yet. As a
 /// result, we run this system after the collider creation.
 pub fn apply_initial_rigid_body_impulses(
-    mut context: RapierContextAccessMut,
+    mut context: WriteRapierContext,
     // We can’t use RapierRigidBodyHandle yet because its creation command hasn’t been
     // executed yet.
     mut init_impulses: Query<

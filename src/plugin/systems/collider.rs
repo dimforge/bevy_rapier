@@ -3,7 +3,7 @@ use crate::geometry::Collider;
 use crate::plugin::context::systemparams::RapierEntity;
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::{
-    DefaultRapierContext, RapierConfiguration, RapierContext, RapierContextAccessMut,
+    DefaultRapierContext, RapierConfiguration, RapierContext, WriteRapierContext,
 };
 use crate::prelude::{
     ActiveCollisionTypes, ActiveEvents, ActiveHooks, ColliderDisabled, ColliderMassProperties,
@@ -85,7 +85,7 @@ pub fn apply_scale(
 
 /// System responsible for applying changes the user made to a collider-related component.
 pub fn apply_collider_user_changes(
-    mut context: RapierContextAccessMut,
+    mut context: WriteRapierContext,
     config: Query<&RapierConfiguration>,
     (changed_collider_transforms, parent_query, transform_query): (
         Query<
@@ -343,7 +343,7 @@ pub(crate) fn collider_offset(
 pub fn init_colliders(
     mut commands: Commands,
     config: Query<&RapierConfiguration>,
-    mut context_access: RapierContextAccessMut,
+    mut context_access: WriteRapierContext,
     default_context_access: Query<Entity, With<DefaultRapierContext>>,
     colliders: Query<(ColliderComponents, Option<&GlobalTransform>), Without<RapierColliderHandle>>,
     mut rigid_body_mprops: Query<&mut ReadMassProperties>,

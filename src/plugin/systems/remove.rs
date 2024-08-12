@@ -7,7 +7,7 @@ use crate::dynamics::RigidBody;
 use crate::geometry::Collider;
 use crate::geometry::ColliderDisabled;
 use crate::geometry::RapierColliderHandle;
-use crate::plugin::context::systemparams::RapierContextAccessMut;
+use crate::plugin::context::systemparams::WriteRapierContext;
 use crate::plugin::RapierContext;
 use crate::prelude::MassModifiedEvent;
 use crate::prelude::RigidBodyDisabled;
@@ -19,7 +19,7 @@ use bevy::prelude::*;
 /// despawn).
 pub fn sync_removals(
     mut commands: Commands,
-    mut context_accessor: RapierContextAccessMut,
+    mut context_writer: WriteRapierContext,
     mut removed_bodies: RemovedComponents<RapierRigidBodyHandle>,
     mut removed_colliders: RemovedComponents<RapierColliderHandle>,
     mut removed_impulse_joints: RemovedComponents<RapierImpulseJointHandle>,
@@ -42,7 +42,7 @@ pub fn sync_removals(
      * Rigid-bodies removal detection.
      */
     for entity in removed_bodies.read() {
-        let Some((mut context, handle)) = find_context(&mut context_accessor, |context| {
+        let Some((mut context, handle)) = find_context(&mut context_writer, |context| {
             context.entity2body.remove(&entity)
         }) else {
             continue;
@@ -61,7 +61,7 @@ pub fn sync_removals(
     }
 
     for entity in orphan_bodies.iter() {
-        if let Some((mut context, handle)) = find_context(&mut context_accessor, |context| {
+        if let Some((mut context, handle)) = find_context(&mut context_writer, |context| {
             context.entity2body.remove(&entity)
         }) {
             let context = &mut *context;
@@ -82,7 +82,7 @@ pub fn sync_removals(
      * Collider removal detection.
      */
     for entity in removed_colliders.read() {
-        let Some((mut context, handle)) = find_context(&mut context_accessor, |context| {
+        let Some((mut context, handle)) = find_context(&mut context_writer, |context| {
             context.entity2collider.remove(&entity)
         }) else {
             continue;
@@ -99,7 +99,7 @@ pub fn sync_removals(
     }
 
     for entity in orphan_colliders.iter() {
-        if let Some((mut context, handle)) = find_context(&mut context_accessor, |context| {
+        if let Some((mut context, handle)) = find_context(&mut context_writer, |context| {
             context.entity2collider.remove(&entity)
         }) {
             let context = &mut *context;
@@ -119,7 +119,7 @@ pub fn sync_removals(
      * Impulse joint removal detection.
      */
     for entity in removed_impulse_joints.read() {
-        let Some((mut context, handle)) = find_context(&mut context_accessor, |context| {
+        let Some((mut context, handle)) = find_context(&mut context_writer, |context| {
             context.entity2impulse_joint.remove(&entity)
         }) else {
             continue;
@@ -129,7 +129,7 @@ pub fn sync_removals(
     }
 
     for entity in orphan_impulse_joints.iter() {
-        if let Some((mut context, handle)) = find_context(&mut context_accessor, |context| {
+        if let Some((mut context, handle)) = find_context(&mut context_writer, |context| {
             context.entity2impulse_joint.remove(&entity)
         }) {
             let context = &mut *context;
@@ -142,7 +142,7 @@ pub fn sync_removals(
      * Multibody joint removal detection.
      */
     for entity in removed_multibody_joints.read() {
-        let Some((mut context, handle)) = find_context(&mut context_accessor, |context| {
+        let Some((mut context, handle)) = find_context(&mut context_writer, |context| {
             context.entity2multibody_joint.remove(&entity)
         }) else {
             continue;
@@ -152,7 +152,7 @@ pub fn sync_removals(
     }
 
     for entity in orphan_multibody_joints.iter() {
-        if let Some((mut context, handle)) = find_context(&mut context_accessor, |context| {
+        if let Some((mut context, handle)) = find_context(&mut context_writer, |context| {
             context.entity2multibody_joint.remove(&entity)
         }) {
             let context = &mut *context;
@@ -167,7 +167,7 @@ pub fn sync_removals(
      * Marker components removal detection.
      */
     for entity in removed_sensors.read() {
-        if let Some((mut context, handle)) = find_context(&mut context_accessor, |context| {
+        if let Some((mut context, handle)) = find_context(&mut context_writer, |context| {
             context.entity2collider.get(&entity).copied()
         }) {
             if let Some(co) = context.colliders.get_mut(handle) {
@@ -177,7 +177,7 @@ pub fn sync_removals(
     }
 
     for entity in removed_colliders_disabled.read() {
-        if let Some((mut context, handle)) = find_context(&mut context_accessor, |context| {
+        if let Some((mut context, handle)) = find_context(&mut context_writer, |context| {
             context.entity2collider.get(&entity).copied()
         }) {
             if let Some(co) = context.colliders.get_mut(handle) {
@@ -187,7 +187,7 @@ pub fn sync_removals(
     }
 
     for entity in removed_rigid_body_disabled.read() {
-        if let Some((mut context, handle)) = find_context(&mut context_accessor, |context| {
+        if let Some((mut context, handle)) = find_context(&mut context_writer, |context| {
             context.entity2body.get(&entity).copied()
         }) {
             if let Some(rb) = context.bodies.get_mut(handle) {
@@ -200,10 +200,10 @@ pub fn sync_removals(
 }
 
 fn find_context<'a, T>(
-    context_accessor: &'a mut RapierContextAccessMut,
+    context_writer: &'a mut WriteRapierContext,
     item_finder: impl Fn(&mut RapierContext) -> Option<T>,
 ) -> Option<(Mut<'a, RapierContext>, T)> {
-    context_accessor
+    context_writer
         .rapier_context
         .iter_mut()
         .find_map(|mut context| item_finder(&mut context).map(|handle| (context, handle)))

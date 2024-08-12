@@ -29,7 +29,7 @@ use crate::prelude::{ImpulseJoint, MultibodyJoint, RevoluteJoint, TypedJoint};
 
 /// Marker component for to access the default [`RapierContext`].
 ///
-/// This is used by [`systemparams::DefaultRapierContextAccess`] and other default accesses
+/// This is used by [`systemparams::ReadDefaultRapierContext`] and other default accesses
 /// to help with getting a reference to the correct RapierContext.
 ///
 /// If you're making a library, you might be interested in [`RapierContextEntityLink`]

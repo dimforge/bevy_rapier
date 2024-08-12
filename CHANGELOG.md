@@ -26,8 +26,8 @@ which was its hardcoded behaviour.
 - `RapierContext`, `RapierConfiguration` and `RenderToSimulationTime` are now a `Component` instead of resources.
   - Rapier now supports multiple independent physics worlds, see example `multi_world3` for usage details.
   - Migration guide:
-    - `ResMut<mut RapierContext>` -> `DefaultRapierContextAccessMut`
-    - `Res<RapierContext>` -> `DefaultRapierContextAccess`
+    - `ResMut<mut RapierContext>` -> `WriteDefaultRapierContext`
+    - `Res<RapierContext>` -> `ReadDefaultRapierContext`
     - Access to `RapierConfiguration` and `RenderToSimulationTime` should query for it
 on the responsible entity owning the `RenderContext`.
   - If you are building a library on top of `bevy_rapier` and would want to support multiple independent physics worlds too,

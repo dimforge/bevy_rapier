@@ -1,6 +1,6 @@
 pub use self::configuration::{RapierConfiguration, SimulationToRenderTime, TimestepMode};
 pub use self::context::{
-    systemparams::{DefaultRapierContextAccess, RapierContextAccess, RapierContextAccessMut},
+    systemparams::{RapierContextAccess, ReadDefaultRapierContext, WriteRapierContext},
     DefaultRapierContext, RapierContext, RapierContextEntityLink,
 };
 pub use self::plugin::{
