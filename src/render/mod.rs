@@ -85,7 +85,7 @@ pub struct DebugRenderContext {
     pub enabled: bool,
     /// Whether to show debug gizmos for all colliders.
     ///
-    /// Can be overriden for individual colliders by adding a [`ColliderDebug`] component.
+    /// Can be overridden for individual colliders by adding a [`ColliderDebug`] component.
     pub default_collider_debug: ColliderDebug,
     /// Pipeline responsible for rendering. Access `pipeline.mode` and `pipeline.style`
     /// to modify the set of rendered elements, and modify the default coloring rules.
@@ -225,7 +225,7 @@ fn debug_render_scene<'a>(
             custom_colors: &custom_colors,
             default_collider_debug: render_context.default_collider_debug,
             override_visibility: &override_visibility,
-            context: &rapier_context,
+            context: rapier_context,
             gizmos: &mut gizmos,
         };
 
