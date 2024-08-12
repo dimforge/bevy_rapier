@@ -2,9 +2,7 @@ use crate::dynamics::ReadMassProperties;
 use crate::geometry::Collider;
 use crate::plugin::context::systemparams::RapierEntity;
 use crate::plugin::context::RapierContextEntityLink;
-use crate::plugin::{
-    DefaultRapierContext, RapierConfiguration, RapierContext, WriteRapierContext,
-};
+use crate::plugin::{DefaultRapierContext, RapierConfiguration, RapierContext, WriteRapierContext};
 use crate::prelude::{
     ActiveCollisionTypes, ActiveEvents, ActiveHooks, ColliderDisabled, ColliderMassProperties,
     ColliderScale, CollidingEntities, CollisionEvent, CollisionGroups, ContactForceEventThreshold,
