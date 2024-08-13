@@ -14,6 +14,11 @@ use bevy_rapier3d::plugin::RapierContext;
 pub fn custom_bencher(steps: usize, setup: impl Fn(&mut App)) {
     let mut app = default_app();
     setup(&mut app);
+    #[cfg(feature = "visual")]
+    {
+        app.run();
+        return;
+    }
     wait_app_start(&mut app);
 
     let mut timer_total = rapier3d::counters::Timer::new();
