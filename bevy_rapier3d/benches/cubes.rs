@@ -7,8 +7,7 @@ mod common;
 use common::bench_app_updates;
 
 use bevy::prelude::*;
-use bevy_rapier3d::math::*;
-use bevy_rapier3d::prelude::*;
+use bevy_rapier3d::{math::*, prelude::*};
 
 fn setup_cubes(app: &mut App, size: u32) {
     app.add_systems(Startup, move |mut commands: Commands| {

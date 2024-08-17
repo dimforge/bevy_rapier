@@ -1,5 +1,7 @@
-use crate::dynamics::{GenericJoint, GenericJointBuilder};
-use crate::math::{Rot, Vect};
+use crate::{
+    dynamics::{GenericJoint, GenericJointBuilder},
+    math::{Rot, Vect},
+};
 use rapier::dynamics::JointAxesMask;
 
 use super::TypedJoint;

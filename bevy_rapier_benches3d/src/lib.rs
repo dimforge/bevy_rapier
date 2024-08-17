@@ -5,8 +5,7 @@
 pub mod common;
 pub mod pyramids;
 
-use common::default_app;
-use common::wait_app_start;
+use common::{default_app, wait_app_start};
 
 use bevy::prelude::*;
 use bevy_rapier3d::plugin::RapierContext;

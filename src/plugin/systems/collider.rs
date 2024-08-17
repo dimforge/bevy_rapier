@@ -1,16 +1,17 @@
-use crate::dynamics::ReadMassProperties;
-use crate::geometry::Collider;
-use crate::plugin::{RapierConfiguration, RapierContext};
-use crate::prelude::{
-    ActiveCollisionTypes, ActiveEvents, ActiveHooks, ColliderDisabled, ColliderMassProperties,
-    ColliderScale, CollidingEntities, CollisionEvent, CollisionGroups, ContactForceEventThreshold,
-    ContactSkin, Friction, MassModifiedEvent, MassProperties, RapierColliderHandle,
-    RapierRigidBodyHandle, Restitution, Sensor, SolverGroups,
+use crate::{
+    dynamics::ReadMassProperties,
+    geometry::Collider,
+    plugin::{RapierConfiguration, RapierContext},
+    prelude::{
+        ActiveCollisionTypes, ActiveEvents, ActiveHooks, ColliderDisabled, ColliderMassProperties,
+        ColliderScale, CollidingEntities, CollisionEvent, CollisionGroups,
+        ContactForceEventThreshold, ContactSkin, Friction, MassModifiedEvent, MassProperties,
+        RapierColliderHandle, RapierRigidBodyHandle, Restitution, Sensor, SolverGroups,
+    },
+    utils,
 };
-use crate::utils;
 use bevy::prelude::*;
-use rapier::dynamics::RigidBodyHandle;
-use rapier::geometry::ColliderBuilder;
+use rapier::{dynamics::RigidBodyHandle, geometry::ColliderBuilder};
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 use {
     crate::prelude::{AsyncCollider, AsyncSceneCollider},

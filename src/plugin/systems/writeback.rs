@@ -1,8 +1,8 @@
-use crate::dynamics::MassProperties;
-use crate::dynamics::ReadMassProperties;
-use crate::plugin::RapierConfiguration;
-use crate::plugin::RapierContext;
-use crate::prelude::MassModifiedEvent;
+use crate::{
+    dynamics::{MassProperties, ReadMassProperties},
+    plugin::{RapierConfiguration, RapierContext},
+    prelude::MassModifiedEvent,
+};
 use bevy::prelude::*;
 
 /// System responsible for writing updated mass properties back into the [`ReadMassProperties`] component.

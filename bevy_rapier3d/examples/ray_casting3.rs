@@ -1,6 +1,4 @@
-use bevy::color::palettes::basic;
-use bevy::prelude::*;
-use bevy::window::PrimaryWindow;
+use bevy::{color::palettes::basic, prelude::*, window::PrimaryWindow};
 use bevy_rapier3d::prelude::*;
 
 fn main() {

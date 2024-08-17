@@ -1,15 +1,7 @@
-pub use self::ball::*;
-pub use self::capsule::*;
-pub use self::collider_view::*;
-pub use self::compound::*;
-pub use self::cuboid::*;
-pub use self::halfspace::*;
-pub use self::heightfield::*;
-pub use self::polyline::*;
-pub use self::round_shape::*;
-pub use self::segment::*;
-pub use self::triangle::*;
-pub use self::trimesh::*;
+pub use self::{
+    ball::*, capsule::*, collider_view::*, compound::*, cuboid::*, halfspace::*, heightfield::*,
+    polyline::*, round_shape::*, segment::*, triangle::*, trimesh::*,
+};
 
 #[cfg(feature = "dim2")]
 pub use self::convex_polygon::*;

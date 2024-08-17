@@ -1,8 +1,9 @@
-use crate::dynamics::ImpulseJoint;
-use crate::dynamics::MultibodyJoint;
-use crate::dynamics::RapierImpulseJointHandle;
-use crate::dynamics::RapierMultibodyJointHandle;
-use crate::plugin::RapierContext;
+use crate::{
+    dynamics::{
+        ImpulseJoint, MultibodyJoint, RapierImpulseJointHandle, RapierMultibodyJointHandle,
+    },
+    plugin::RapierContext,
+};
 use bevy::prelude::*;
 
 /// System responsible for creating new Rapier joints from the related `bevy_rapier` components.

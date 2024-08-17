@@ -11,8 +11,10 @@ use rapier::prelude::{FeatureId, Point, Ray, SharedShape, Vector, DIM};
 use super::{get_snapped_scale, shape_views::*};
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 use crate::geometry::ComputedColliderShape;
-use crate::geometry::{Collider, PointProjection, RayIntersection, TriMeshFlags, VHACDParameters};
-use crate::math::{Real, Rot, Vect};
+use crate::{
+    geometry::{Collider, PointProjection, RayIntersection, TriMeshFlags, VHACDParameters},
+    math::{Real, Rot, Vect},
+};
 
 impl Collider {
     /// The scaling factor that was applied to this collider.

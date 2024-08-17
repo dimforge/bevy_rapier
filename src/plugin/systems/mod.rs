@@ -14,13 +14,16 @@ pub use remove::*;
 pub use rigid_body::*;
 pub use writeback::*;
 
-use crate::dynamics::{RapierRigidBodyHandle, TransformInterpolation};
-use crate::pipeline::{CollisionEvent, ContactForceEvent};
-use crate::plugin::configuration::SimulationToRenderTime;
-use crate::plugin::{RapierConfiguration, RapierContext};
-use crate::prelude::{BevyPhysicsHooks, BevyPhysicsHooksAdapter};
-use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
-use bevy::prelude::*;
+use crate::{
+    dynamics::{RapierRigidBodyHandle, TransformInterpolation},
+    pipeline::{CollisionEvent, ContactForceEvent},
+    plugin::{configuration::SimulationToRenderTime, RapierConfiguration, RapierContext},
+    prelude::{BevyPhysicsHooks, BevyPhysicsHooksAdapter},
+};
+use bevy::{
+    ecs::system::{StaticSystemParam, SystemParamItem},
+    prelude::*,
+};
 
 /// System responsible for advancing the physics simulation, and updating the internal state
 /// for scene queries.

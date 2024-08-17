@@ -1,12 +1,8 @@
-pub use self::generic_joint::*;
-pub use self::joint::*;
-pub use self::rigid_body::*;
+pub use self::{generic_joint::*, joint::*, rigid_body::*};
 
-pub use self::fixed_joint::*;
-pub use self::prismatic_joint::*;
-pub use self::revolute_joint::*;
-pub use self::rope_joint::*;
-pub use self::spring_joint::*;
+pub use self::{
+    fixed_joint::*, prismatic_joint::*, revolute_joint::*, rope_joint::*, spring_joint::*,
+};
 
 use bevy::reflect::Reflect;
 use rapier::dynamics::CoefficientCombineRule as RapierCoefficientCombineRule;

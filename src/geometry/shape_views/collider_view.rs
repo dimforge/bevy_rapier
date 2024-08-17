@@ -2,9 +2,10 @@ use std::fmt;
 
 use super::*;
 use crate::math::Vect;
-use rapier::geometry::{RoundShape, SharedShape};
-use rapier::parry::either::Either;
-use rapier::parry::shape::TypedShape;
+use rapier::{
+    geometry::{RoundShape, SharedShape},
+    parry::{either::Either, shape::TypedShape},
+};
 
 #[cfg(doc)]
 use rapier::parry;

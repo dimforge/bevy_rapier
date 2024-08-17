@@ -9,11 +9,15 @@ use {
 use bevy::prelude::*;
 
 use bevy::utils::HashSet;
-use rapier::geometry::Shape;
-use rapier::prelude::{ColliderHandle, InteractionGroups, SharedShape};
+use rapier::{
+    geometry::Shape,
+    prelude::{ColliderHandle, InteractionGroups, SharedShape},
+};
 
-use crate::dynamics::{CoefficientCombineRule, MassProperties};
-use crate::math::Vect;
+use crate::{
+    dynamics::{CoefficientCombineRule, MassProperties},
+    math::Vect,
+};
 
 #[cfg(doc)]
 use rapier::{dynamics::RigidBody, geometry::ContactForceEvent};

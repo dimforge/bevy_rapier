@@ -1,7 +1,5 @@
 use bevy::prelude::*;
-use bevy_rapier3d::dynamics::RigidBody;
-use bevy_rapier3d::geometry::Collider;
-use bevy_rapier3d::math::Vect;
+use bevy_rapier3d::{dynamics::RigidBody, geometry::Collider, math::Vect};
 
 pub fn create_pyramid(commands: &mut Commands, offset: Vect, stack_height: usize, rad: f32) {
     let shift = rad * 2.0;

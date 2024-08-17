@@ -1,5 +1,7 @@
-use crate::dynamics::{FixedJoint, PrismaticJoint, RevoluteJoint, RopeJoint};
-use crate::math::{Real, Rot, Vect};
+use crate::{
+    dynamics::{FixedJoint, PrismaticJoint, RevoluteJoint, RopeJoint},
+    math::{Real, Rot, Vect},
+};
 use rapier::dynamics::{
     GenericJoint as RapierGenericJoint, JointAxesMask, JointAxis, JointLimits, JointMotor,
     MotorModel,

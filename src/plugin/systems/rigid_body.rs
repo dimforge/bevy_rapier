@@ -1,7 +1,12 @@
-use crate::dynamics::RapierRigidBodyHandle;
-use crate::plugin::{configuration::TimestepMode, RapierConfiguration, RapierContext};
-use crate::{dynamics::RigidBody, plugin::configuration::SimulationToRenderTime};
-use crate::{prelude::*, utils};
+use crate::{
+    dynamics::{RapierRigidBodyHandle, RigidBody},
+    plugin::{
+        configuration::{SimulationToRenderTime, TimestepMode},
+        RapierConfiguration, RapierContext,
+    },
+    prelude::*,
+    utils,
+};
 use bevy::prelude::*;
 use rapier::dynamics::{RigidBodyBuilder, RigidBodyHandle, RigidBodyType};
 use std::collections::HashMap;
