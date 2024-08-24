@@ -339,8 +339,8 @@ impl RapierContext {
         }
     }
 
-    /// This method makes sure tha the rigid-body positions have been propagated to
-    /// their attached colliders, without having to perform a srimulation step.
+    /// This method makes sure that the rigid-body positions have been propagated to
+    /// their attached colliders, without having to perform a stimulation step.
     pub fn propagate_modified_body_positions_to_colliders(&mut self) {
         self.bodies
             .propagate_modified_body_positions_to_colliders(&mut self.colliders);
