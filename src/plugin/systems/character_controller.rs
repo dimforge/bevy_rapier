@@ -1,15 +1,16 @@
-use crate::control::CharacterCollision;
-use crate::dynamics::RapierRigidBodyHandle;
-use crate::geometry::RapierColliderHandle;
-use crate::plugin::RapierConfiguration;
-use crate::plugin::RapierContext;
-use crate::prelude::KinematicCharacterController;
-use crate::prelude::KinematicCharacterControllerOutput;
-use crate::utils;
+use crate::{
+    control::CharacterCollision,
+    dynamics::RapierRigidBodyHandle,
+    geometry::RapierColliderHandle,
+    plugin::{RapierConfiguration, RapierContext},
+    prelude::{KinematicCharacterController, KinematicCharacterControllerOutput},
+    utils,
+};
 use bevy::prelude::*;
-use rapier::math::Isometry;
-use rapier::math::Real;
-use rapier::pipeline::QueryFilter;
+use rapier::{
+    math::{Isometry, Real},
+    pipeline::QueryFilter,
+};
 
 /// System responsible for applying the character controller translation to the underlying
 /// collider.

@@ -67,12 +67,7 @@ pub mod utils;
 
 /// Groups the most often used types.
 pub mod prelude {
-    pub use crate::control::*;
-    pub use crate::dynamics::*;
-    pub use crate::geometry::*;
-    pub use crate::math::*;
-    pub use crate::pipeline::*;
-    pub use crate::plugin::*;
     #[cfg(any(feature = "debug-render-3d", feature = "debug-render-2d"))]
     pub use crate::render::*;
+    pub use crate::{control::*, dynamics::*, geometry::*, math::*, pipeline::*, plugin::*};
 }

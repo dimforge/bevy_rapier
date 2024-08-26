@@ -1,13 +1,17 @@
-use crate::pipeline::{CollisionEvent, ContactForceEvent};
-use crate::plugin::configuration::SimulationToRenderTime;
-use crate::plugin::{systems, RapierConfiguration, RapierContext};
-use crate::prelude::*;
-use bevy::ecs::{
-    intern::Interned,
-    schedule::{ScheduleLabel, SystemConfigs},
-    system::SystemParamItem,
+use crate::{
+    pipeline::{CollisionEvent, ContactForceEvent},
+    plugin::{configuration::SimulationToRenderTime, systems, RapierConfiguration, RapierContext},
+    prelude::*,
 };
-use bevy::{prelude::*, transform::TransformSystem};
+use bevy::{
+    ecs::{
+        intern::Interned,
+        schedule::{ScheduleLabel, SystemConfigs},
+        system::SystemParamItem,
+    },
+    prelude::*,
+    transform::TransformSystem,
+};
 use rapier::dynamics::IntegrationParameters;
 use std::marker::PhantomData;
 

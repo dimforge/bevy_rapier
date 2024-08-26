@@ -1,6 +1,7 @@
-use crate::dynamics::{GenericJoint, GenericJointBuilder, JointAxesMask};
-use crate::dynamics::{JointAxis, MotorModel};
-use crate::math::{Real, Vect};
+use crate::{
+    dynamics::{GenericJoint, GenericJointBuilder, JointAxesMask, JointAxis, MotorModel},
+    math::{Real, Vect},
+};
 
 use super::TypedJoint;
 

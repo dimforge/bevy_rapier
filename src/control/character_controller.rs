@@ -1,10 +1,11 @@
-use crate::geometry::{Collider, CollisionGroups, ShapeCastHit};
-use crate::math::{Real, Rot, Vect};
+use crate::{
+    geometry::{Collider, CollisionGroups, ShapeCastHit},
+    math::{Real, Rot, Vect},
+};
 use bevy::prelude::*;
 
 use crate::plugin::RapierContext;
-pub use rapier::control::CharacterAutostep;
-pub use rapier::control::CharacterLength;
+pub use rapier::control::{CharacterAutostep, CharacterLength};
 use rapier::prelude::{ColliderSet, QueryFilterFlags};
 
 /// A collision between the character and its environment during its movement.

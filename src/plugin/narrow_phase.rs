@@ -1,5 +1,7 @@
-use crate::math::{Real, Vect};
-use crate::plugin::RapierContext;
+use crate::{
+    math::{Real, Vect},
+    plugin::RapierContext,
+};
 use bevy::prelude::*;
 use rapier::geometry::{Contact, ContactManifold, ContactPair, SolverContact, SolverFlags};
 

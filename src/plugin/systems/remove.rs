@@ -1,16 +1,12 @@
-use crate::dynamics::ImpulseJoint;
-use crate::dynamics::MultibodyJoint;
-use crate::dynamics::RapierImpulseJointHandle;
-use crate::dynamics::RapierMultibodyJointHandle;
-use crate::dynamics::RapierRigidBodyHandle;
-use crate::dynamics::RigidBody;
-use crate::geometry::Collider;
-use crate::geometry::ColliderDisabled;
-use crate::geometry::RapierColliderHandle;
-use crate::plugin::RapierContext;
-use crate::prelude::MassModifiedEvent;
-use crate::prelude::RigidBodyDisabled;
-use crate::prelude::Sensor;
+use crate::{
+    dynamics::{
+        ImpulseJoint, MultibodyJoint, RapierImpulseJointHandle, RapierMultibodyJointHandle,
+        RapierRigidBodyHandle, RigidBody,
+    },
+    geometry::{Collider, ColliderDisabled, RapierColliderHandle},
+    plugin::RapierContext,
+    prelude::{MassModifiedEvent, RigidBodyDisabled, Sensor},
+};
 use bevy::prelude::*;
 
 /// System responsible for removing from Rapier the rigid-bodies/colliders/joints which had

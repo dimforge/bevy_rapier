@@ -1,9 +1,12 @@
-pub use self::collider::*;
-pub use self::shape_views::ColliderView;
-pub use rapier::geometry::SolverFlags;
-pub use rapier::parry::query::{ShapeCastOptions, ShapeCastStatus};
-pub use rapier::parry::shape::TriMeshFlags;
-pub use rapier::parry::transformation::{vhacd::VHACDParameters, voxelization::FillMode};
+pub use self::{collider::*, shape_views::ColliderView};
+pub use rapier::{
+    geometry::SolverFlags,
+    parry::{
+        query::{ShapeCastOptions, ShapeCastStatus},
+        shape::TriMeshFlags,
+        transformation::{vhacd::VHACDParameters, voxelization::FillMode},
+    },
+};
 
 use crate::math::{Real, Vect};
 use rapier::prelude::FeatureId;

@@ -1,6 +1,5 @@
 use bevy::prelude::*;
-use std::collections::HashMap;
-use std::sync::RwLock;
+use std::{collections::HashMap, sync::RwLock};
 
 use rapier::prelude::{
     CCDSolver, ColliderHandle, ColliderSet, EventHandler, FeatureId, ImpulseJointHandle,
@@ -9,18 +8,21 @@ use rapier::prelude::{
     Ray, Real, RigidBodyHandle, RigidBodySet,
 };
 
-use crate::geometry::{Collider, PointProjection, RayIntersection, ShapeCastHit};
-use crate::math::{Rot, Vect};
-use crate::pipeline::{CollisionEvent, ContactForceEvent, EventQueue, QueryFilter};
+use crate::{
+    geometry::{Collider, PointProjection, RayIntersection, ShapeCastHit},
+    math::{Rot, Vect},
+    pipeline::{CollisionEvent, ContactForceEvent, EventQueue, QueryFilter},
+};
 use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query};
 
-use crate::control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput};
-use crate::dynamics::TransformInterpolation;
-use crate::parry::query::details::ShapeCastOptions;
-use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
-use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
-use rapier::control::CharacterAutostep;
-use rapier::geometry::DefaultBroadPhase;
+use crate::{
+    control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput},
+    dynamics::TransformInterpolation,
+    parry::query::details::ShapeCastOptions,
+    plugin::configuration::{SimulationToRenderTime, TimestepMode},
+    prelude::{CollisionGroups, RapierRigidBodyHandle},
+};
+use rapier::{control::CharacterAutostep, geometry::DefaultBroadPhase};
 
 #[cfg(doc)]
 use crate::prelude::{ImpulseJoint, MultibodyJoint, RevoluteJoint, TypedJoint};

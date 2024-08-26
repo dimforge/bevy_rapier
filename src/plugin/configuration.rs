@@ -1,7 +1,9 @@
 use bevy::prelude::{FromWorld, Resource, World};
 
-use crate::math::{Real, Vect};
-use crate::plugin::RapierContext;
+use crate::{
+    math::{Real, Vect},
+    plugin::RapierContext,
+};
 
 #[cfg(doc)]
 use {crate::prelude::TransformInterpolation, rapier::dynamics::IntegrationParameters};

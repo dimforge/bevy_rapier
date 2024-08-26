@@ -1,9 +1,10 @@
 use crate::plugin::RapierContext;
-use bevy::prelude::*;
-use bevy::transform::TransformSystem;
-use rapier::math::{Point, Real};
-use rapier::pipeline::{DebugRenderBackend, DebugRenderObject, DebugRenderPipeline};
+use bevy::{prelude::*, transform::TransformSystem};
 pub use rapier::pipeline::{DebugRenderMode, DebugRenderStyle};
+use rapier::{
+    math::{Point, Real},
+    pipeline::{DebugRenderBackend, DebugRenderObject, DebugRenderPipeline},
+};
 use std::fmt::Debug;
 
 #[cfg(doc)]

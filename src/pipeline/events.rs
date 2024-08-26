@@ -1,13 +1,14 @@
 use crate::math::{Real, Vect};
 use bevy::prelude::{Entity, Event, EventWriter};
-use rapier::dynamics::RigidBodySet;
-use rapier::geometry::{
-    ColliderHandle, ColliderSet, CollisionEvent as RapierCollisionEvent, CollisionEventFlags,
-    ContactForceEvent as RapierContactForceEvent, ContactPair,
+use rapier::{
+    dynamics::RigidBodySet,
+    geometry::{
+        ColliderHandle, ColliderSet, CollisionEvent as RapierCollisionEvent, CollisionEventFlags,
+        ContactForceEvent as RapierContactForceEvent, ContactPair,
+    },
+    pipeline::EventHandler,
 };
-use rapier::pipeline::EventHandler;
-use std::collections::HashMap;
-use std::sync::RwLock;
+use std::{collections::HashMap, sync::RwLock};
 
 #[cfg(doc)]
 use crate::prelude::{ActiveEvents, ContactForceEventThreshold};
