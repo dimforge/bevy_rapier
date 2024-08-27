@@ -74,7 +74,13 @@ pub fn sync_removals(
     /*
      * Collider removal detection.
      */
-    for entity in removed_colliders.read() {
+    let removed_colliders = removed_colliders.read();
+    #[cfg(feature = "enhanced-determinism")]
+    let mut removed_colliders: Vec<Entity> = removed_colliders.collect();
+    #[cfg(feature = "enhanced-determinism")]
+    removed_colliders.sort_unstable();
+
+    for entity in removed_colliders {
         if let Some(parent) = context.collider_parent(entity) {
             mass_modified.send(parent.into());
         }
@@ -87,7 +93,13 @@ pub fn sync_removals(
         }
     }
 
-    for entity in orphan_colliders.iter() {
+    let orphan_colliders = orphan_colliders.iter();
+    #[cfg(feature = "enhanced-determinism")]
+    let mut orphan_colliders: Vec<Entity> = orphan_colliders.collect();
+    #[cfg(feature = "enhanced-determinism")]
+    orphan_colliders.sort_unstable();
+
+    for entity in orphan_colliders {
         if let Some(parent) = context.collider_parent(entity) {
             mass_modified.send(parent.into());
         }

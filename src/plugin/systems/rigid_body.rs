@@ -428,6 +428,12 @@ pub fn init_rigid_bodies(
     mut context: ResMut<RapierContext>,
     rigid_bodies: Query<RigidBodyComponents, Without<RapierRigidBodyHandle>>,
 ) {
+    let rigid_bodies = rigid_bodies.iter();
+    #[cfg(feature = "enhanced-determinism")]
+    let mut rigid_bodies: Vec<RigidBodyComponents> = rigid_bodies.collect();
+    #[cfg(feature = "enhanced-determinism")]
+    rigid_bodies.sort_unstable_by_key(|f| f.0);
+
     for (
         entity,
         rb,
@@ -444,7 +450,7 @@ pub fn init_rigid_bodies(
         damping,
         disabled,
         additional_solver_iters,
-    ) in rigid_bodies.iter()
+    ) in rigid_bodies
     {
         let mut builder = RigidBodyBuilder::new((*rb).into());
         builder = builder.enabled(disabled.is_none());

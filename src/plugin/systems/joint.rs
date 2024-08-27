@@ -15,7 +15,13 @@ pub fn init_joints(
 ) {
     let context = &mut *context;
 
-    for (entity, joint) in impulse_joints.iter() {
+    let impulse_joints = impulse_joints.iter();
+    #[cfg(feature = "enhanced-determinism")]
+    let mut impulse_joints: Vec<(Entity, &ImpulseJoint)> = impulse_joints.collect();
+    #[cfg(feature = "enhanced-determinism")]
+    impulse_joints.sort_unstable_by_key(|f| f.0);
+
+    for (entity, joint) in impulse_joints {
         let mut target = None;
         let mut body_entity = entity;
         while target.is_none() {
@@ -41,7 +47,13 @@ pub fn init_joints(
         }
     }
 
-    for (entity, joint) in multibody_joints.iter() {
+    let multibody_joints = multibody_joints.iter();
+    #[cfg(feature = "enhanced-determinism")]
+    let mut multibody_joints: Vec<(Entity, &MultibodyJoint)> = multibody_joints.collect();
+    #[cfg(feature = "enhanced-determinism")]
+    multibody_joints.sort_unstable_by_key(|f| f.0);
+
+    for (entity, joint) in multibody_joints {
         let target = context.entity2body.get(&entity);
 
         if let (Some(target), Some(source)) = (target, context.entity2body.get(&joint.parent)) {

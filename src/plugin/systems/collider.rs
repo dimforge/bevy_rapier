@@ -278,6 +278,12 @@ pub fn init_colliders(
 ) {
     let context = &mut *context;
 
+    let colliders = colliders.iter();
+    #[cfg(feature = "enhanced-determinism")]
+    let mut colliders: Vec<(ColliderComponents, Option<&GlobalTransform>)> = colliders.collect();
+    #[cfg(feature = "enhanced-determinism")]
+    colliders.sort_unstable_by_key(|f| f.0 .0);
+
     for (
         (
             entity,
@@ -296,7 +302,7 @@ pub fn init_colliders(
             disabled,
         ),
         global_transform,
-    ) in colliders.iter()
+    ) in colliders
     {
         let mut scaled_shape = shape.clone();
         scaled_shape.set_scale(shape.scale, config.scaled_shape_subdivision);
