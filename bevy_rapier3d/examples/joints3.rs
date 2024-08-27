@@ -1,9 +1,11 @@
-use bevy::prelude::*;
+use std::time::Duration;
+
+use bevy::{prelude::*, time::common_conditions::once_after_delay};
 use bevy_rapier3d::prelude::*;
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(
+        .insert_resource(ClearColor(Color::srgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
@@ -14,6 +16,11 @@ fn main() {
             RapierDebugRenderPlugin::default(),
         ))
         .add_systems(Startup, (setup_graphics, setup_physics))
+        .add_systems(
+            Last,
+            (print_impulse_revolute_joints,)
+                .run_if(once_after_delay(Duration::from_secs_f32(1f32))),
+        )
         .run();
 }
 
@@ -77,9 +84,7 @@ fn create_rope_joints(commands: &mut Commands, origin: Vect, num: usize) {
     for i in 0..num {
         let dz = (i + 1) as f32 * shift;
 
-        let rope = RopeJointBuilder::new()
-            .local_anchor2(Vec3::new(0.0, 0.0, -shift))
-            .limits([0.0, 2.0]);
+        let rope = RopeJointBuilder::new(2.0).local_anchor2(Vec3::new(0.0, 0.0, -shift));
         let joint = ImpulseJoint::new(curr_parent, rope);
 
         curr_parent = commands
@@ -136,7 +141,6 @@ fn create_revolute_joints(commands: &mut Commands, origin: Vec3, num: usize) {
             RevoluteJointBuilder::new(z).local_anchor2(Vec3::new(0.0, 0.0, -shift)),
             RevoluteJointBuilder::new(x).local_anchor2(Vec3::new(shift, 0.0, 0.0)),
         ];
-
         commands
             .entity(handles[0])
             .insert(ImpulseJoint::new(curr_parent, revs[0]));
@@ -277,4 +281,22 @@ pub fn setup_physics(mut commands: Commands) {
     create_fixed_joints(&mut commands, Vec3::new(0.0, 10.0, 0.0), 5);
     create_rope_joints(&mut commands, Vec3::new(30.0, 10.0, 0.0), 5);
     create_ball_joints(&mut commands, 15);
+}
+
+pub fn print_impulse_revolute_joints(
+    context: Res<RapierContext>,
+    joints: Query<(Entity, &ImpulseJoint)>,
+) {
+    for (entity, impulse_joint) in joints.iter() {
+        match &impulse_joint.data {
+            TypedJoint::RevoluteJoint(_revolute_joint) => {
+                println!(
+                    "angle for {}: {:?}",
+                    entity,
+                    context.impulse_revolute_joint_angle(entity),
+                );
+            }
+            _ => {}
+        }
+    }
 }

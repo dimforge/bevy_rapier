@@ -5,7 +5,7 @@
 //! physics simulation. Its target application include video games, animation, robotics, etc.
 //!
 //! The `bevy_rapier` projects implements two other crates `bevy_rapier2d` and `bevy_rapier3d` which
-//! defines physics plugins for the Bevy game engine.
+//! define physics plugins for the Bevy game engine.
 //!
 //! User documentation for `bevy_rapier` is on [the official Rapier site](https://rapier.rs/docs/).
 //!
@@ -22,7 +22,6 @@ pub extern crate rapier2d as rapier;
 #[cfg(feature = "dim3")]
 pub extern crate rapier3d as rapier;
 pub use rapier::parry;
-
 /// Type aliases to select the right vector/rotation types based
 /// on the dimension used by the engine.
 #[cfg(feature = "dim2")]

@@ -1,7 +1,7 @@
 pub use self::collider::*;
 pub use self::shape_views::ColliderView;
 pub use rapier::geometry::SolverFlags;
-pub use rapier::parry::query::TOIStatus;
+pub use rapier::parry::query::{ShapeCastOptions, ShapeCastStatus};
 pub use rapier::parry::shape::TriMeshFlags;
 pub use rapier::parry::transformation::{vhacd::VHACDParameters, voxelization::FillMode};
 
@@ -23,13 +23,10 @@ pub struct PointProjection {
 }
 
 impl PointProjection {
-    pub(crate) fn from_rapier(
-        physics_scale: Real,
-        raw: rapier::parry::query::PointProjection,
-    ) -> Self {
+    pub(crate) fn from_rapier(raw: rapier::parry::query::PointProjection) -> Self {
         Self {
             is_inside: raw.is_inside,
-            point: (raw.point * physics_scale).into(),
+            point: raw.point.into(),
         }
     }
 }
@@ -46,9 +43,9 @@ impl From<rapier::parry::query::PointProjection> for PointProjection {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct RayIntersection {
     /// The time of impact of the ray with the object.  The exact contact point can be computed
-    /// with `origin + dir * toi` where `origin` is the origin of the ray;
-    /// `dir` is its direction and `toi` is the value of this field.
-    pub toi: Real,
+    /// with `origin + dir * time_of_impact` where `origin` is the origin of the ray;
+    /// `dir` is its direction and `time_of_impact` is the value of this field.
+    pub time_of_impact: Real,
 
     /// The intersection point between the ray and the object.
     pub point: Vect,
@@ -69,30 +66,31 @@ impl RayIntersection {
         unscaled_dir: Vect,
     ) -> Self {
         Self {
-            toi: inter.toi,
-            point: unscaled_origin + unscaled_dir * inter.toi,
+            time_of_impact: inter.time_of_impact,
+            point: unscaled_origin + unscaled_dir * inter.time_of_impact,
             normal: inter.normal.into(),
             feature: inter.feature,
         }
     }
 }
 
-/// The result of a time-of-impact (TOI) computation.
+/// The result of a shape cast.
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub struct Toi {
+pub struct ShapeCastHit {
     /// The time at which the objects touch.
-    pub toi: Real,
+    pub time_of_impact: Real,
     /// Detail about the impact points.
     ///
-    /// `None` if `status` is `Penetrating`.
-    pub details: Option<ToiDetails>,
+    /// `None` if `status` is `PenetratingOrWithinTargetDist` and
+    /// [`ShapeCastOptions::compute_impact_geometry_on_penetration`] was `false`.
+    pub details: Option<ShapeCastHitDetails>,
     /// The way the time-of-impact computation algorithm terminated.
-    pub status: TOIStatus,
+    pub status: ShapeCastStatus,
 }
 
-/// In depth information about a time-of-impact (TOI) computation.
+/// In depth information about a shape-cast hit.
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub struct ToiDetails {
+pub struct ShapeCastHitDetails {
     /// The local-space closest point on the first shape at the time of impact.
     pub witness1: Vect,
     /// The local-space closest point on the second shape at the time of impact.
@@ -103,22 +101,25 @@ pub struct ToiDetails {
     pub normal2: Vect,
 }
 
-impl Toi {
-    /// Convert from internal `rapier::Toi`.
-    pub fn from_rapier(physics_scale: Real, toi: rapier::parry::query::TOI) -> Self {
-        let details = if toi.status != TOIStatus::Penetrating {
-            Some(ToiDetails {
-                witness1: (toi.witness1 * physics_scale).into(),
-                witness2: (toi.witness2 * physics_scale).into(),
-                normal1: toi.normal1.into(),
-                normal2: toi.normal2.into(),
-            })
-        } else {
-            None
+impl ShapeCastHit {
+    /// Convert from internal `rapier::query::ShapeCastHit`.
+    pub fn from_rapier(
+        hit: rapier::parry::query::ShapeCastHit,
+        details_always_computed: bool,
+    ) -> Self {
+        let details = match (details_always_computed, hit.status) {
+            (_, ShapeCastStatus::Failed) => None,
+            (false, ShapeCastStatus::PenetratingOrWithinTargetDist) => None,
+            _ => Some(ShapeCastHitDetails {
+                witness1: hit.witness1.into(),
+                witness2: hit.witness2.into(),
+                normal1: hit.normal1.into(),
+                normal2: hit.normal2.into(),
+            }),
         };
         Self {
-            toi: toi.toi,
-            status: toi.status,
+            time_of_impact: hit.time_of_impact,
+            status: hit.status,
             details,
         }
     }

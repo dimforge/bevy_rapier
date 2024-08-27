@@ -9,10 +9,13 @@ use rapier::pipeline::EventHandler;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
+#[cfg(doc)]
+use crate::prelude::{ActiveEvents, ContactForceEventThreshold};
+
 /// Events occurring when two colliders start or stop colliding
 ///
 /// This will only get triggered if the entity has the
-/// [`ActiveEvent::COLLISION_EVENTS`] flag enabled.
+/// [`ActiveEvents::COLLISION_EVENTS`] flag enabled.
 #[derive(Event, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum CollisionEvent {
     /// Event occurring when two colliders start colliding
@@ -25,7 +28,7 @@ pub enum CollisionEvent {
 /// between two colliders exceed a threshold ([`ContactForceEventThreshold`]).
 ///
 /// This will only get triggered if the entity has the
-/// [`ActiveEvent::CONTACT_FORCE_EVENTS`] flag enabled.
+/// [`ActiveEvents::CONTACT_FORCE_EVENTS`] flag enabled.
 #[derive(Event, Copy, Clone, Debug, PartialEq)]
 pub struct ContactForceEvent {
     /// The first collider involved in the contact.
@@ -52,7 +55,7 @@ pub struct ContactForceEvent {
 // issue).
 /// A set of queues collecting events emitted by the physics engine.
 pub(crate) struct EventQueue<'a> {
-    // Used ot retrieve the entity of colliders that have been removed from the simulation
+    // Used to retrieve the entity of colliders that have been removed from the simulation
     // since the last physics step.
     pub deleted_colliders: &'a HashMap<ColliderHandle, Entity>,
     pub collision_events: RwLock<EventWriter<'a, CollisionEvent>>,
@@ -91,7 +94,7 @@ impl<'a> EventHandler for EventQueue<'a> {
         };
 
         if let Ok(mut events) = self.collision_events.write() {
-            events.send(event)
+            events.send(event);
         }
     }
 
@@ -116,6 +119,194 @@ impl<'a> EventHandler for EventQueue<'a> {
 
         if let Ok(mut events) = self.contact_force_events.write() {
             events.send(event);
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use bevy::{
+        app::{App, Startup, Update},
+        prelude::{Commands, Component, Entity, Query, With},
+        time::{TimePlugin, TimeUpdateStrategy},
+        transform::{bundles::TransformBundle, components::Transform, TransformPlugin},
+        MinimalPlugins,
+    };
+    use systems::tests::HeadlessRenderPlugin;
+
+    use crate::{plugin::*, prelude::*};
+
+    #[cfg(feature = "dim3")]
+    fn cuboid(hx: Real, hy: Real, hz: Real) -> Collider {
+        Collider::cuboid(hx, hy, hz)
+    }
+    #[cfg(feature = "dim2")]
+    fn cuboid(hx: Real, hy: Real, _hz: Real) -> Collider {
+        Collider::cuboid(hx, hy)
+    }
+
+    #[test]
+    pub fn events_received() {
+        return main();
+
+        use bevy::prelude::*;
+
+        #[derive(Resource, Reflect)]
+        pub struct EventsSaver<E: Event> {
+            pub events: Vec<E>,
+        }
+
+        impl<E: Event> Default for EventsSaver<E> {
+            fn default() -> Self {
+                Self {
+                    events: Default::default(),
+                }
+            }
+        }
+
+        pub fn save_events<E: Event + Clone>(
+            mut events: EventReader<E>,
+            mut saver: ResMut<EventsSaver<E>>,
+        ) {
+            for event in events.read() {
+                saver.events.push(event.clone());
+            }
+        }
+
+        fn run_test(app: &mut App) {
+            app.add_systems(PostUpdate, save_events::<CollisionEvent>)
+                .add_systems(PostUpdate, save_events::<ContactForceEvent>)
+                .init_resource::<EventsSaver<CollisionEvent>>()
+                .init_resource::<EventsSaver<ContactForceEvent>>();
+
+            // Simulates 60 updates per seconds
+            app.insert_resource(TimeUpdateStrategy::ManualDuration(
+                std::time::Duration::from_secs_f32(1f32 / 60f32),
+            ));
+            // 2 seconds should be plenty of time for the cube to fall on the
+            // lowest collider.
+            for _ in 0..120 {
+                app.update();
+            }
+            let saved_collisions = app
+                .world()
+                .get_resource::<EventsSaver<CollisionEvent>>()
+                .unwrap();
+            assert_eq!(saved_collisions.events.len(), 3);
+            let saved_contact_forces = app
+                .world()
+                .get_resource::<EventsSaver<ContactForceEvent>>()
+                .unwrap();
+            assert_eq!(saved_contact_forces.events.len(), 1);
+        }
+
+        /// Adapted from events example
+        fn main() {
+            let mut app = App::new();
+            app.add_plugins((
+                HeadlessRenderPlugin,
+                TransformPlugin,
+                TimePlugin,
+                RapierPhysicsPlugin::<NoUserData>::default(),
+            ))
+            .add_systems(Startup, setup_physics);
+            run_test(&mut app);
+        }
+
+        pub fn setup_physics(mut commands: Commands) {
+            /*
+             * Ground
+             */
+            commands.spawn((
+                TransformBundle::from(Transform::from_xyz(0.0, -1.2, 0.0)),
+                cuboid(4.0, 1.0, 1.0),
+            ));
+
+            commands.spawn((
+                TransformBundle::from(Transform::from_xyz(0.0, 5.0, 0.0)),
+                cuboid(4.0, 1.5, 1.0),
+                Sensor,
+            ));
+
+            commands.spawn((
+                TransformBundle::from(Transform::from_xyz(0.0, 13.0, 0.0)),
+                RigidBody::Dynamic,
+                cuboid(0.5, 0.5, 0.5),
+                ActiveEvents::COLLISION_EVENTS | ActiveEvents::CONTACT_FORCE_EVENTS,
+                ContactForceEventThreshold(30.0),
+            ));
+        }
+    }
+
+    #[test]
+    pub fn spam_remove_rapier_entity_interpolated() {
+        let mut app = App::new();
+        app.add_plugins((
+            HeadlessRenderPlugin,
+            MinimalPlugins,
+            TransformPlugin,
+            RapierPhysicsPlugin::<NoUserData>::default(),
+        ))
+        .insert_resource(RapierConfiguration {
+            timestep_mode: TimestepMode::Interpolated {
+                dt: 1.0 / 30.0,
+                time_scale: 1.0,
+                substeps: 2,
+            },
+            ..RapierConfiguration::new(1f32)
+        })
+        .add_systems(Startup, setup_physics)
+        .add_systems(Update, remove_collider);
+        // Simulates 60 updates per seconds
+        app.insert_resource(TimeUpdateStrategy::ManualDuration(
+            std::time::Duration::from_secs_f32(1f32 / 60f32),
+        ));
+
+        for i in 0..100 {
+            dbg!(i);
+            app.update();
+        }
+        return;
+
+        #[derive(Component)]
+        pub struct ToRemove;
+
+        #[cfg(feature = "dim3")]
+        fn cuboid(hx: Real, hy: Real, hz: Real) -> Collider {
+            Collider::cuboid(hx, hy, hz)
+        }
+        #[cfg(feature = "dim2")]
+        fn cuboid(hx: Real, hy: Real, _hz: Real) -> Collider {
+            Collider::cuboid(hx, hy)
+        }
+        pub fn setup_physics(mut commands: Commands) {
+            for _i in 0..100 {
+                commands.spawn((
+                    TransformBundle::from(Transform::from_xyz(0.0, 0.0, 0.0)),
+                    RigidBody::Dynamic,
+                    cuboid(0.5, 0.5, 0.5),
+                    ActiveEvents::all(),
+                    ToRemove,
+                ));
+            }
+            /*
+             * Ground
+             */
+            let ground_size = 5.1;
+            let ground_height = 0.1;
+            let starting_y = -0.5 - ground_height;
+
+            commands.spawn((
+                TransformBundle::from(Transform::from_xyz(0.0, starting_y, 0.0)),
+                cuboid(ground_size, ground_height, ground_size),
+            ));
+        }
+
+        fn remove_collider(mut commands: Commands, query: Query<Entity, With<ToRemove>>) {
+            let Some(entity) = query.iter().next() else {
+                return;
+            };
+            commands.entity(entity).despawn();
         }
     }
 }

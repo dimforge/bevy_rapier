@@ -1,13 +1,13 @@
 [package]
 name = "bevy_rapier2d"
-version = "0.23.0"
+version = "0.27.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 description = "2-dimensional physics engine in Rust, official Bevy plugin."
 documentation = "http://docs.rs/bevy_rapier2d"
 homepage = "http://rapier.rs"
 repository = "https://github.com/dimforge/bevy_rapier"
 readme = "../README.md"
-keywords = [ "physics", "dynamics", "rigid", "real-time", "joints" ]
+keywords = ["physics", "dynamics", "rigid", "real-time", "joints"]
 license = "Apache-2.0"
 edition = "2021"
 
@@ -15,38 +15,56 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 path = "../src/lib.rs"
-required-features = [ "dim2" ]
+required-features = ["dim2"]
+
+[lints]
+workspace = true
 
 [features]
-default = [ "dim2", "async-collider", "debug-render-2d" ]
+default = ["dim2", "async-collider", "debug-render-2d"]
 dim2 = []
-debug-render-2d = [ "bevy/bevy_core_pipeline", "bevy/bevy_sprite", "bevy/bevy_gizmos", "rapier2d/debug-render", "bevy/bevy_asset" ]
-debug-render-3d = [ "bevy/bevy_core_pipeline", "bevy/bevy_pbr", "bevy/bevy_gizmos", "rapier2d/debug-render", "bevy/bevy_asset" ]
-parallel = [ "rapier2d/parallel" ]
-simd-stable = [ "rapier2d/simd-stable" ]
-simd-nightly = [ "rapier2d/simd-nightly" ]
-wasm-bindgen = [ "rapier2d/wasm-bindgen" ]
-serde-serialize = [ "rapier2d/serde-serialize", "bevy/serialize", "serde" ]
-enhanced-determinism = [ "rapier2d/enhanced-determinism" ]
+debug-render-2d = [
+    "bevy/bevy_core_pipeline",
+    "bevy/bevy_sprite",
+    "bevy/bevy_gizmos",
+    "rapier2d/debug-render",
+    "bevy/bevy_asset",
+]
+debug-render-3d = [
+    "bevy/bevy_core_pipeline",
+    "bevy/bevy_pbr",
+    "bevy/bevy_gizmos",
+    "rapier2d/debug-render",
+    "bevy/bevy_asset",
+]
+parallel = ["rapier2d/parallel"]
+simd-stable = ["rapier2d/simd-stable"]
+simd-nightly = ["rapier2d/simd-nightly"]
+wasm-bindgen = ["rapier2d/wasm-bindgen"]
+serde-serialize = ["rapier2d/serde-serialize", "bevy/serialize", "serde"]
+enhanced-determinism = ["rapier2d/enhanced-determinism"]
 headless = []
-async-collider = [ "bevy/bevy_asset", "bevy/bevy_scene" ]
+async-collider = ["bevy/bevy_asset", "bevy/bevy_scene"]
 
 [dependencies]
-bevy = { version = "0.12", default-features = false }
-nalgebra = { version = "0.32.3", features = [ "convert-glam024" ] }
-# Don't enable the default features because we don't need the ColliderSet/RigidBodySet
-rapier2d = "0.17.0"
+bevy = { version = "0.14", default-features = false }
+nalgebra = { version = "0.33", features = ["convert-glam027"] }
+rapier2d = "0.22"
 bitflags = "2.4"
-#bevy_prototype_debug_lines = { version = "0.6", optional = true }
 log = "0.4"
-serde = { version = "1", features = [ "derive" ], optional = true}
+serde = { version = "1", features = ["derive"], optional = true }
 
 [dev-dependencies]
-bevy = { version = "0.12", default-features = false, features = ["x11"]}
+bevy = { version = "0.14", default-features = false, features = [
+    "x11",
+    "bevy_state",
+] }
 oorandom = "11"
 approx = "0.5.1"
-glam = { version = "0.24", features = [ "approx" ] }
+glam = { version = "0.27", features = ["approx"] }
+bevy-inspector-egui = "0.25.1"
+bevy_egui = "0.28.0"
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
-features = [ "debug-render-2d", "serde-serialize" ]
+features = ["debug-render-2d", "serde-serialize"]

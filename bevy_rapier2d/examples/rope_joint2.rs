@@ -3,7 +3,7 @@ use bevy_rapier2d::prelude::*;
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(
+        .insert_resource(ClearColor(Color::srgb(
             0xF9 as f32 / 255.0,
             0xF9 as f32 / 255.0,
             0xFF as f32 / 255.0,
@@ -36,9 +36,7 @@ pub fn setup_physics(mut commands: Commands) {
         ))
         .id();
 
-    let joint = RopeJointBuilder::new()
-        .local_anchor2(Vec2::new(rope_length, 0.0))
-        .limits([0.0, rope_length]);
+    let joint = RopeJointBuilder::new(rope_length).local_anchor2(Vec2::new(rope_length, 0.0));
 
     commands
         .spawn((

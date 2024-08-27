@@ -1,6 +1,10 @@
-use bevy::prelude::Resource;
+use bevy::prelude::{FromWorld, Resource, World};
 
-use crate::math::Vect;
+use crate::math::{Real, Vect};
+use crate::plugin::RapierContext;
+
+#[cfg(doc)]
+use {crate::prelude::TransformInterpolation, rapier::dynamics::IntegrationParameters};
 
 /// Difference between simulation and rendering time
 #[derive(Resource, Default)]
@@ -35,7 +39,7 @@ pub enum TimestepMode {
     },
     /// Use a fixed timestep equal to `IntegrationParameters::dt`, but don't step if the
     /// physics simulation advanced by a time greater than the real-world elapsed time multiplied by `time_scale`.
-    /// Rigid-bodies with a component `InterpolatedTransform` attached will use interpolation to
+    /// Rigid-bodies with a component [`TransformInterpolation`] attached will use interpolation to
     /// estimate the rigid-bodies position in-between steps.
     Interpolated {
         /// The physics simulation will be advanced by this total amount at each Bevy tick, unless
@@ -68,17 +72,30 @@ pub struct RapierConfiguration {
     /// discretized into a convex polyhedron, using `scaled_shape_subdivision` as the number of subdivisions
     /// along each spherical coordinates angle.
     pub scaled_shape_subdivision: u32,
-    /// Specifies if backend sync should always accept tranform changes, which may be from the writeback stage.
+    /// Specifies if backend sync should always accept transform changes, which may be from the writeback stage.
     pub force_update_from_transform_changes: bool,
 }
 
-impl Default for RapierConfiguration {
-    fn default() -> Self {
+impl FromWorld for RapierConfiguration {
+    fn from_world(world: &mut World) -> Self {
+        let length_unit = world
+            .get_resource::<RapierContext>()
+            .map(|ctxt| ctxt.integration_parameters.length_unit)
+            .unwrap_or(1.0);
+        Self::new(length_unit)
+    }
+}
+
+impl RapierConfiguration {
+    /// Configures rapier with the specified length unit.
+    ///
+    /// See the documentation of [`IntegrationParameters::length_unit`] for additional details
+    /// on that argument.
+    ///
+    /// The default gravity is automatically scaled by that length unit.
+    pub fn new(length_unit: Real) -> Self {
         Self {
-            #[cfg(feature = "dim2")]
-            gravity: Vect::Y * -9.81 * 10.0,
-            #[cfg(feature = "dim3")]
-            gravity: Vect::Y * -9.81,
+            gravity: Vect::Y * -9.81 * length_unit,
             physics_pipeline_active: true,
             query_pipeline_active: true,
             timestep_mode: TimestepMode::Variable {

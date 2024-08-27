@@ -1,9 +1,11 @@
 use bevy::prelude::Entity;
 
-pub use rapier::geometry::InteractionGroups;
 pub use rapier::pipeline::QueryFilterFlags;
 
 use crate::geometry::CollisionGroups;
+
+#[cfg(doc)]
+use crate::prelude::RapierContext;
 
 /// A filter that describes what collider should be included or excluded from a scene query.
 ///
