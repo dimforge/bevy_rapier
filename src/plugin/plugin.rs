@@ -80,7 +80,7 @@ where
         match set {
             PhysicsSet::SyncBackend => (
                 // Run the character controller before the manual transform propagation.
-                systems::update_character_controls,
+                systems::update_character_controls.in_set(PhysicsSet::SyncBackend),
                 // Run Bevy transform propagation additionally to sync [`GlobalTransform`]
                 (
                     bevy::transform::systems::sync_simple_transforms,
@@ -88,30 +88,37 @@ where
                 )
                     .chain()
                     .in_set(RapierTransformPropagateSet),
-                #[cfg(all(feature = "dim3", feature = "async-collider"))]
-                systems::init_async_scene_colliders,
-                #[cfg(all(feature = "dim3", feature = "async-collider"))]
-                systems::init_async_colliders,
-                systems::init_rigid_bodies,
-                systems::init_colliders,
-                systems::init_joints,
-                systems::sync_removals,
-                // Run this here so the following systems do not have a 1 frame delay.
-                apply_deferred,
-                systems::apply_scale,
-                systems::apply_collider_user_changes,
-                systems::apply_rigid_body_user_changes,
-                systems::apply_joint_user_changes,
-                systems::apply_initial_rigid_body_impulses,
+                (
+                    #[cfg(all(feature = "dim3", feature = "async-collider"))]
+                    systems::init_async_scene_colliders,
+                    #[cfg(all(feature = "dim3", feature = "async-collider"))]
+                    systems::init_async_colliders,
+                    systems::init_rigid_bodies,
+                    systems::init_colliders,
+                    systems::init_joints,
+                    systems::sync_removals,
+                    // Run this here so the following systems do not have a 1 frame delay.
+                    apply_deferred,
+                    systems::apply_scale,
+                    systems::apply_collider_user_changes,
+                    systems::apply_rigid_body_user_changes,
+                    systems::apply_joint_user_changes,
+                    systems::apply_initial_rigid_body_impulses,
+                )
+                    .chain()
+                    .in_set(PhysicsSet::SyncBackend),
             )
                 .chain()
                 .into_configs(),
-            PhysicsSet::StepSimulation => (systems::step_simulation::<PhysicsHooks>).into_configs(),
+            PhysicsSet::StepSimulation => (systems::step_simulation::<PhysicsHooks>)
+                .in_set(PhysicsSet::StepSimulation)
+                .into_configs(),
             PhysicsSet::Writeback => (
                 systems::update_colliding_entities,
                 systems::writeback_rigid_bodies,
                 systems::writeback_mass_properties,
             )
+                .in_set(PhysicsSet::Writeback)
                 .into_configs(),
         }
     }
@@ -214,6 +221,10 @@ where
                     .chain()
                     .before(TransformSystem::TransformPropagate),
             );
+            app.configure_sets(
+                self.schedule,
+                RapierTransformPropagateSet.in_set(PhysicsSet::SyncBackend),
+            );
 
             // These *must* be in the main schedule currently so that they do not miss events.
             app.add_systems(PostUpdate, (systems::sync_removals,));
@@ -221,10 +232,9 @@ where
             app.add_systems(
                 self.schedule,
                 (
-                    Self::get_systems(PhysicsSet::SyncBackend).in_set(PhysicsSet::SyncBackend),
-                    Self::get_systems(PhysicsSet::StepSimulation)
-                        .in_set(PhysicsSet::StepSimulation),
-                    Self::get_systems(PhysicsSet::Writeback).in_set(PhysicsSet::Writeback),
+                    Self::get_systems(PhysicsSet::SyncBackend),
+                    Self::get_systems(PhysicsSet::StepSimulation),
+                    Self::get_systems(PhysicsSet::Writeback),
                 ),
             );
 
