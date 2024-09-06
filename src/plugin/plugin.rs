@@ -116,7 +116,8 @@ where
             PhysicsSet::Writeback => (
                 systems::update_colliding_entities,
                 systems::writeback_rigid_bodies,
-                systems::writeback_mass_properties,
+                // Each writeback write to different properties.
+                systems::writeback_mass_properties.ambiguous_with(systems::writeback_rigid_bodies),
             )
                 .in_set(PhysicsSet::Writeback)
                 .into_configs(),
