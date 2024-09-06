@@ -16,7 +16,7 @@ pub fn create_pyramid(commands: &mut Commands, offset: Vect, stack_height: usize
             // Build the rigid body.
             commands.spawn((
                 RigidBody::Dynamic,
-                SpatialBundle::from_transform(Transform::from_translation(
+                TransformBundle::from_transform(Transform::from_translation(
                     Vec3::new(x, y, 0.0) + offset,
                 )),
                 Collider::cuboid(rad, rad, rad),

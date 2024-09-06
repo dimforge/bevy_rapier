@@ -48,7 +48,10 @@ headless = []
 async-collider = ["bevy/bevy_asset", "bevy/bevy_scene"]
 
 [dependencies]
-bevy = { version = "0.14", default-features = false }
+bevy = { version = "0.14", default-features = false, features = [
+    # This has to be enabled for non headless as of bevy 0.14 because we use AAbb
+    # "bevy_render",
+] }
 nalgebra = { version = "0.33", features = ["convert-glam027"] }
 rapier3d = "0.22"
 bitflags = "2.4"

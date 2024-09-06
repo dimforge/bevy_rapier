@@ -12,16 +12,18 @@ edition = "2021"
 visual = [
     "bevy/x11",
     "bevy/tonemapping_luts",
-    "bevy/bevy_asset",
-    "bevy/bevy_scene",
     "bevy/bevy_core_pipeline",
     "bevy/bevy_pbr",
     "bevy/bevy_gizmos",
     "rapier3d/debug-render",
-    "bevy/bevy_asset",
+    #"bevy/bevy_asset",
+    "bevy_rapier3d/debug-render-3d",
 ]
 
 [dependencies]
 bevy = { version = "0.14", default-features = false }
 rapier3d = { features = ["profiler"], version = "0.22" }
-bevy_rapier3d = { version = "0.27", path = "../bevy_rapier3d", default-features = false }
+bevy_rapier3d = { version = "0.27", path = "../bevy_rapier3d", default-features = false, features = [
+    "dim3",
+    "headless",
+] }
