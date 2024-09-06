@@ -14,7 +14,7 @@ fn main() {
         RapierDebugRenderPlugin::default(),
     ))
     .add_systems(Startup, (setup_graphics, setup_physics))
-    .add_systems(PostUpdate, display_events);
+    .add_systems(PostUpdate, display_events.after(PhysicsSet::StepSimulation));
 
     bevy_mod_debugdump::print_schedule_graph(&mut app, PostUpdate);
 }
