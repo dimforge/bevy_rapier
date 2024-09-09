@@ -38,7 +38,7 @@ debug-render-3d = [
     "rapier3d/debug-render",
     "bevy/bevy_asset",
 ]
-custom-debug-render = ["rapier3d/debug-render"]
+rapier-debug-render = ["rapier3d/debug-render"]
 
 parallel = ["rapier3d/parallel"]
 simd-stable = ["rapier3d/simd-stable"]
