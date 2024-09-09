@@ -388,14 +388,13 @@ impl RapierContext {
         for collision_event in self.collision_events_to_send.drain(..) {
             collision_event_writer.send(collision_event);
         }
-
         for contact_force_event in self.contact_force_events_to_send.drain(..) {
             contact_force_event_writer.send(contact_force_event);
         }
     }
 
     /// This method makes sure that the rigid-body positions have been propagated to
-    /// their attached colliders, without having to perform a srimulation step.
+    /// their attached colliders, without having to perform a simulation step.
     pub fn propagate_modified_body_positions_to_colliders(&mut self) {
         self.bodies
             .propagate_modified_body_positions_to_colliders(&mut self.colliders);

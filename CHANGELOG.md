@@ -166,14 +166,14 @@ performance of the other parts of the simulation.
 
 - Add a joint for simulating ropes: the `RopeJoint`.
 - Add `Velocity::linear_velocity_at_point` to calculate the linear velocity at the given world-space point.
-- Add the `ComputedColliderShape::ConvexHull` variant to automatcially calculate the convex-hull of an imported mesh.
+- Add the `ComputedColliderShape::ConvexHull` variant to automatically calculate the convex-hull of an imported mesh.
 - Implement `Reflect` for the debug-renderer.
 
 ### Fix
 
 - Fix broken interpolation for rigid-bodies with the `TransformInterpolation` component.
 - Fix compilation when `bevy_rapier` is being used with headless bevy.
-- Improved performance of the writeback system by not iterting on non-rigid-body entities.
+- Improved performance of the writeback system by not iterating on non-rigid-body entities.
 - Fix typo by renaming `CuboidViewMut::sed_half_extents` to `set_half_extents`.
 - Properly scale parented collider’s offset based on changes on its `ColliderScale`.
 
@@ -183,7 +183,7 @@ performance of the other parts of the simulation.
 
 - Update to Bevy 0.10.
 - The `PhysicsHooksWithQuery` trait has been renamed to by the `BevyPhysicsHooks`.
-- Bevy resources and queries accessed by the physics hook are now specified by the implementor of `BevyPhysicsHooks`
+- Bevy resources and queries accessed by the physics hook are now specified by the implementer of `BevyPhysicsHooks`
   which must derive Bevy’s `SystemParam` trait. This implies that the physics hook’s `filter_contact_pair` (and
   all its other methods) no longer take the Bevy `Query` as argument. Queries and resources are accessed through
   `self`.
@@ -474,7 +474,7 @@ Finally, there is now a prelude: `use bevy_rapier2d::prelude::*`.
   is used. It will silently ignore the shape instead.
 - The crate has now a `render` feature that allows building it without any
   rendering support (avoiding some dependencies that may not compile when
-  targetting WASM).
+  targeting WASM).
 
 ## 0.7.0
 
@@ -504,7 +504,7 @@ Finally, there is now a prelude: `use bevy_rapier2d::prelude::*`.
 
 - It is now possible to attach multiple colliders to a single
   rigid-body by using Bevy hierarchy: an entity contains
-  the `RigidBodyBuider` whereas its children contain the `ColliderBuilder`.
+  the `RigidBodyBuilder` whereas its children contain the `ColliderBuilder`.
 
 ### Changed
 
