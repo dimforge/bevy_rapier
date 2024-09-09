@@ -60,6 +60,7 @@ serde = { version = "1", features = ["derive"], optional = true }
 bevy = { version = "0.14", default-features = false, features = [
     "x11",
     "bevy_state",
+    "bevy_debug_stepping",
 ] }
 oorandom = "11"
 approx = "0.5.1"
