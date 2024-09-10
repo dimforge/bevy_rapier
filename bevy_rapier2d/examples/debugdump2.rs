@@ -27,7 +27,7 @@ fn main() {
                 || system.name().starts_with("bevy_winit")
                 || system.name().starts_with("bevy_sprite")
             {
-                return dbg!(false);
+                return false;
             }
             true
         }));
