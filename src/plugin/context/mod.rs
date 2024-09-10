@@ -1,3 +1,5 @@
+pub mod systemparams;
+
 use bevy::prelude::*;
 use std::collections::HashMap;
 use std::sync::RwLock;
@@ -25,9 +27,25 @@ use rapier::geometry::DefaultBroadPhase;
 #[cfg(doc)]
 use crate::prelude::{ImpulseJoint, MultibodyJoint, RevoluteJoint, TypedJoint};
 
+/// Marker component for to access the default [`RapierContext`].
+///
+/// This is used by [`systemparams::ReadDefaultRapierContext`] and other default accesses
+/// to help with getting a reference to the correct RapierContext.
+///
+/// If you're making a library, you might be interested in [`RapierContextEntityLink`]
+/// and leverage a [`Query<&RapierContext>`] to find the correct [`RapierContext`] of an entity.
+#[derive(Component, Reflect, Debug, Clone, Copy)]
+pub struct DefaultRapierContext;
+
+/// This is a component applied to any entity containing a rapier handle component.
+/// The inner Entity referred to has the component [`RapierContext`] responsible for handling
+/// its rapier data.
+#[derive(Component, Reflect, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct RapierContextEntityLink(pub Entity);
+
 /// The Rapier context, containing all the state of the physics engine.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-#[derive(Resource)]
+#[derive(Component)]
 pub struct RapierContext {
     /// The island manager, which detects what object is sleeping
     /// (not moving much) to reduce computations.
@@ -72,6 +90,11 @@ pub struct RapierContext {
     // physics update, to the entity they was attached to.
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub(crate) deleted_colliders: HashMap<ColliderHandle, Entity>,
+
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
+    pub(crate) collision_events_to_send: Vec<CollisionEvent>,
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
+    pub(crate) contact_force_events_to_send: Vec<ContactForceEvent>,
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub(crate) character_collisions_collector: Vec<rapier::control::CharacterCollision>,
 }
@@ -97,7 +120,9 @@ impl Default for RapierContext {
             entity2impulse_joint: HashMap::new(),
             entity2multibody_joint: HashMap::new(),
             deleted_colliders: HashMap::new(),
-            character_collisions_collector: vec![],
+            collision_events_to_send: Vec::new(),
+            contact_force_events_to_send: Vec::new(),
+            character_collisions_collector: Vec::new(),
         }
     }
 }
@@ -205,21 +230,28 @@ impl RapierContext {
         &mut self,
         gravity: Vect,
         timestep_mode: TimestepMode,
-        events: Option<(EventWriter<CollisionEvent>, EventWriter<ContactForceEvent>)>,
+        events: Option<(
+            &EventWriter<CollisionEvent>,
+            &EventWriter<ContactForceEvent>,
+        )>,
         hooks: &dyn PhysicsHooks,
         time: &Time,
         sim_to_render_time: &mut SimulationToRenderTime,
         mut interpolation_query: Option<
-            Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
+            &mut Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
         >,
     ) {
-        let event_queue = events.map(|(ce, fe)| EventQueue {
-            deleted_colliders: &self.deleted_colliders,
-            collision_events: RwLock::new(ce),
-            contact_force_events: RwLock::new(fe),
-        });
+        let event_queue = if events.is_some() {
+            Some(EventQueue {
+                deleted_colliders: &self.deleted_colliders,
+                collision_events: RwLock::new(Vec::new()),
+                contact_force_events: RwLock::new(Vec::new()),
+            })
+        } else {
+            None
+        };
 
-        let events = self
+        let event_handler = self
             .event_handler
             .as_deref()
             .or_else(|| event_queue.as_ref().map(|q| q as &dyn EventHandler))
@@ -270,7 +302,7 @@ impl RapierContext {
                             &mut self.ccd_solver,
                             None,
                             hooks,
-                            events,
+                            event_handler,
                         );
                         executed_steps += 1;
                     }
@@ -302,7 +334,7 @@ impl RapierContext {
                         &mut self.ccd_solver,
                         None,
                         hooks,
-                        events,
+                        event_handler,
                     );
                     executed_steps += 1;
                 }
@@ -327,20 +359,42 @@ impl RapierContext {
                         &mut self.ccd_solver,
                         None,
                         hooks,
-                        events,
+                        event_handler,
                     );
                     executed_steps += 1;
                 }
             }
+        }
+        if let Some(mut event_queue) = event_queue {
+            // NOTE: event_queue and its inner locks are only accessed from
+            // within `self.pipeline.step` called above, so we can unwrap here safely.
+            self.collision_events_to_send =
+                std::mem::take(event_queue.collision_events.get_mut().unwrap());
+            self.contact_force_events_to_send =
+                std::mem::take(event_queue.contact_force_events.get_mut().unwrap());
         }
 
         if executed_steps > 0 {
             self.deleted_colliders.clear();
         }
     }
+    /// Generates bevy events for any physics interactions that have happened
+    /// that are stored in the events list
+    pub fn send_bevy_events(
+        &mut self,
+        collision_event_writer: &mut EventWriter<CollisionEvent>,
+        contact_force_event_writer: &mut EventWriter<ContactForceEvent>,
+    ) {
+        for collision_event in self.collision_events_to_send.drain(..) {
+            collision_event_writer.send(collision_event);
+        }
+        for contact_force_event in self.contact_force_events_to_send.drain(..) {
+            contact_force_event_writer.send(contact_force_event);
+        }
+    }
 
     /// This method makes sure that the rigid-body positions have been propagated to
-    /// their attached colliders, without having to perform a stimulation step.
+    /// their attached colliders, without having to perform a simulation step.
     pub fn propagate_modified_body_positions_to_colliders(&mut self) {
         self.bodies
             .propagate_modified_body_positions_to_colliders(&mut self.colliders);
