@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_mod_debugdump::{schedule_graph, schedule_graph_dot};
 use bevy_rapier2d::prelude::*;
 
 fn main() {
@@ -16,7 +17,22 @@ fn main() {
     .add_systems(Startup, (setup_graphics, setup_physics))
     .add_systems(PostUpdate, display_events.after(PhysicsSet::StepSimulation));
 
-    bevy_mod_debugdump::print_schedule_graph(&mut app, PostUpdate);
+    let mut debugdump_settings = schedule_graph::Settings::default();
+    // Filter out some less relevant systems.
+    debugdump_settings.include_system =
+        Some(Box::new(|system: &(dyn System<In = (), Out = ()>)| {
+            if system.name().starts_with("bevy_pbr")
+                || system.name().starts_with("bevy_render")
+                || system.name().starts_with("bevy_gizmos")
+                || system.name().starts_with("bevy_winit")
+                || system.name().starts_with("bevy_sprite")
+            {
+                return dbg!(false);
+            }
+            true
+        }));
+    let dot = schedule_graph_dot(&mut app, PostUpdate, &debugdump_settings);
+    println!("{dot}");
 }
 
 pub fn setup_graphics(mut commands: Commands) {
