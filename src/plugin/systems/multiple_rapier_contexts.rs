@@ -4,7 +4,9 @@ use crate::dynamics::{
     RapierImpulseJointHandle, RapierMultibodyJointHandle, RapierRigidBodyHandle,
 };
 use crate::geometry::RapierColliderHandle;
-use crate::plugin::{RapierContext, RapierContextEntityLink};
+use crate::plugin::{
+    RapierContext, RapierContextColliders, RapierContextEntityLink, RapierContextJoints,
+};
 use bevy::prelude::*;
 
 /// If an entity is turned into the child of something with a physics context link,
@@ -59,19 +61,23 @@ pub fn on_change_world(
     >,
     q_children: Query<&Children>,
     q_physics_world: Query<&RapierContextEntityLink>,
-    q_context: Query<&RapierContext>,
+    q_context: Query<(
+        &RapierContext,
+        &RapierContextColliders,
+        &RapierContextJoints,
+    )>,
     mut commands: Commands,
 ) {
     for (entity, new_physics_world) in &q_changed_worlds {
         let context = q_context.get(new_physics_world.0);
         // Ensure the world actually changed before removing them from the world
         if !context
-            .map(|x| {
+            .map(|(r, c, j)| {
                 // They are already apart of this world if any of these are true
-                x.entity2collider.contains_key(&entity)
-                    || x.entity2body.contains_key(&entity)
-                    || x.entity2impulse_joint.contains_key(&entity)
-                    || x.entity2multibody_joint.contains_key(&entity)
+                c.entity2collider.contains_key(&entity)
+                    || r.entity2body.contains_key(&entity)
+                    || j.entity2impulse_joint.contains_key(&entity)
+                    || j.entity2multibody_joint.contains_key(&entity)
             })
             .unwrap_or(false)
         {

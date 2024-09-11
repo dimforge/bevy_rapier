@@ -2,7 +2,13 @@ use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 use std::ops::{Deref, DerefMut};
 
+pub const RAPIER_CONTEXT_EXPECT_ERROR: &str =
+    "RapierContextEntityLink.0 refers to an entity without RapierContext.";
+
+use crate::plugin::RapierContextColliders;
+
 use super::super::{DefaultRapierContext, RapierContext, RapierContextEntityLink};
+
 /// Utility [`SystemParam`] to easily access the single default [`RapierContext`] immutably.
 ///
 /// SAFETY: Dereferencing this struct will panic if its underlying query fails.
@@ -31,6 +37,37 @@ impl<'w, 's> Deref for ReadDefaultRapierContext<'w, 's> {
     /// See [`RapierContextAccess`] for a safe alternative.
     fn deref(&self) -> &Self::Target {
         self.rapier_context.single()
+    }
+}
+
+/// Utility [`SystemParam`] to easily access the single default [`RapierContextColliders`] immutably.
+///
+/// SAFETY: Dereferencing this struct will panic if its underlying query fails.
+/// See [`RapierContextAccess`] for a safer alternative.
+#[derive(SystemParam)]
+pub struct ReadDefaultRapierContextColliders<'w, 's, T: Component = DefaultRapierContext> {
+    rapier_context_colliders: Query<'w, 's, &'static RapierContextColliders, With<T>>,
+}
+
+impl<'w, 's, T: Component> ReadDefaultRapierContextColliders<'w, 's, T> {
+    /// Use this method if you only have one [`RapierContext`].
+    ///
+    /// SAFETY: This method will panic if its underlying query fails.
+    /// See [`RapierContextAccess`] for a safe alternative.
+    pub fn single(&'_ self) -> &RapierContextColliders {
+        self.rapier_context_colliders.single()
+    }
+}
+
+impl<'w, 's> Deref for ReadDefaultRapierContextColliders<'w, 's> {
+    type Target = RapierContextColliders;
+
+    /// Use this method if you only have one [`RapierContext`].
+    ///
+    /// SAFETY: This method will panic if its underlying query fails.
+    /// See [`RapierContextAccess`] for a safe alternative.
+    fn deref(&self) -> &Self::Target {
+        self.rapier_context_colliders.single()
     }
 }
 
@@ -83,8 +120,7 @@ impl<'w, 's> RapierContextAccess<'w, 's> {
     /// SAFETY: This method will panic if its underlying query fails.
     /// See [`Self::try_context`] for a safe alternative.
     pub fn context(&self, link: &RapierContextEntityLink) -> &'_ RapierContext {
-        self.try_context(link)
-            .expect("RapierContextEntityLink.0 refers to an entity without RapierContext.")
+        self.try_context(link).expect(RAPIER_CONTEXT_EXPECT_ERROR)
     }
 
     /// Retrieves the rapier context responsible for the entity owning the given [`RapierContextEntityLink`].
@@ -118,8 +154,7 @@ impl<'w, 's> WriteRapierContext<'w, 's> {
     /// SAFETY: This method will panic if its underlying query fails.
     /// See [`Self::try_context`] for a safe alternative.
     pub fn context(&mut self, link: &RapierContextEntityLink) -> Mut<RapierContext> {
-        self.try_context(link)
-            .expect("RapierContextEntityLink.0 refers to an entity without RapierContext.")
+        self.try_context(link).expect(RAPIER_CONTEXT_EXPECT_ERROR)
     }
 
     /// Retrieves the rapier context responsible for the entity owning the given [`RapierContextEntityLink`].

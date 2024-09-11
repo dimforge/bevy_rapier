@@ -1,9 +1,11 @@
 use crate::control::CharacterCollision;
 use crate::dynamics::RapierRigidBodyHandle;
 use crate::geometry::RapierColliderHandle;
+use crate::plugin::context::systemparams::RAPIER_CONTEXT_EXPECT_ERROR;
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::RapierConfiguration;
-use crate::plugin::WriteRapierContext;
+use crate::plugin::RapierContext;
+use crate::plugin::RapierContextColliders;
 use crate::prelude::KinematicCharacterController;
 use crate::prelude::KinematicCharacterControllerOutput;
 use crate::utils;
@@ -17,7 +19,7 @@ use rapier::pipeline::QueryFilter;
 pub fn update_character_controls(
     mut commands: Commands,
     config: Query<&RapierConfiguration>,
-    mut context_access: WriteRapierContext,
+    mut context_access: Query<(&mut RapierContext, &RapierContextColliders)>,
     mut character_controllers: Query<(
         Entity,
         &RapierContextEntityLink,
@@ -45,7 +47,11 @@ pub fn update_character_controls(
             let config = config
                 .get(rapier_context_link.0)
                 .expect("Could not get [`RapierConfiguration`]");
-            let context = context_access.context(rapier_context_link).into_inner();
+            let mut context = context_access
+                .get_mut(rapier_context_link.0)
+                .expect(RAPIER_CONTEXT_EXPECT_ERROR);
+            let context_colliders = &*context.1;
+            let context = &mut *context.0;
             let scaled_custom_shape =
                 controller
                     .custom_shape
@@ -60,7 +66,7 @@ pub fn update_character_controls(
 
             let parent_rigid_body = body_handle.map(|h| h.0).or_else(|| {
                 collider_handle
-                    .and_then(|h| context.colliders.get(h.0))
+                    .and_then(|h| context_colliders.colliders.get(h.0))
                     .and_then(|c| c.parent())
             });
             let entity_to_move = parent_rigid_body
@@ -79,7 +85,8 @@ pub fn update_character_controls(
                 }
 
                 (&*scaled_shape.raw, shape_pos)
-            } else if let Some(collider) = collider_handle.and_then(|h| context.colliders.get(h.0))
+            } else if let Some(collider) =
+                collider_handle.and_then(|h| context_colliders.colliders.get(h.0))
             {
                 (collider.shape(), *collider.position())
             } else {
@@ -117,7 +124,7 @@ pub fn update_character_controls(
             let movement = raw_controller.move_shape(
                 context.integration_parameters.dt,
                 &context.bodies,
-                &context.colliders,
+                &context_colliders.colliders,
                 &context.query_pipeline,
                 character_shape,
                 &character_pos,
@@ -130,7 +137,7 @@ pub fn update_character_controls(
                 raw_controller.solve_character_collision_impulses(
                     context.integration_parameters.dt,
                     &mut context.bodies,
-                    &context.colliders,
+                    &context_colliders.colliders,
                     &context.query_pipeline,
                     character_shape,
                     character_mass,
@@ -152,7 +159,7 @@ pub fn update_character_controls(
             let converted_collisions = context
                 .character_collisions_collector
                 .iter()
-                .filter_map(|c| CharacterCollision::from_raw(context, c));
+                .filter_map(|c| CharacterCollision::from_raw(context_colliders, c));
 
             if let Some(mut output) = output {
                 output.desired_translation = controller.translation.unwrap();

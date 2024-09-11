@@ -1,4 +1,5 @@
 use crate::dynamics::RapierRigidBodyHandle;
+use crate::plugin::context::systemparams::RAPIER_CONTEXT_EXPECT_ERROR;
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::{configuration::TimestepMode, RapierConfiguration, RapierContext};
 use crate::{dynamics::RigidBody, plugin::configuration::SimulationToRenderTime};
@@ -643,7 +644,7 @@ pub fn init_rigid_bodies(
 /// mass to be available, which it was not because colliders were not created yet. As a
 /// result, we run this system after the collider creation.
 pub fn apply_initial_rigid_body_impulses(
-    mut context: WriteRapierContext,
+    mut context: Query<(&mut RapierContext, &RapierContextColliders)>,
     // We can’t use RapierRigidBodyHandle yet because its creation command hasn’t been
     // executed yet.
     mut init_impulses: Query<
@@ -652,7 +653,11 @@ pub fn apply_initial_rigid_body_impulses(
     >,
 ) {
     for (entity, link, mut impulse) in init_impulses.iter_mut() {
-        let context = context.context(link).into_inner();
+        let (mut context, context_colliders) =
+            context.get_mut(link.0).expect(RAPIER_CONTEXT_EXPECT_ERROR);
+        let context_colliders = &*context_colliders;
+        let context = &mut *context;
+
         let bodies = &mut context.bodies;
         if let Some(rb) = context
             .entity2body
@@ -660,7 +665,7 @@ pub fn apply_initial_rigid_body_impulses(
             .and_then(|h| bodies.get_mut(*h))
         {
             // Make sure the mass-properties are computed.
-            rb.recompute_mass_properties_from_colliders(&context.colliders);
+            rb.recompute_mass_properties_from_colliders(&context_colliders.colliders);
             // Apply the impulse.
             rb.apply_impulse(impulse.impulse.into(), false);
 

@@ -1,4 +1,4 @@
-use crate::plugin::RapierContext;
+use crate::plugin::{RapierContext, RapierContextColliders, RapierContextJoints};
 use bevy::prelude::*;
 use bevy::transform::TransformSystem;
 use rapier::math::{Point, Real};
@@ -120,25 +120,28 @@ impl Plugin for RapierDebugRenderPlugin {
     }
 }
 
-struct BevyLinesRenderBackend<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'v, 'p> {
+struct BevyLinesRenderBackend<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'd, 'v, 'p> {
     custom_colors: &'c Query<'world, 'state, &'a ColliderDebugColor>,
     default_collider_debug: ColliderDebug,
     override_visibility: &'v Query<'world, 'state, &'a ColliderDebug>,
     context: &'b RapierContext,
+    context_colliders: &'d RapierContextColliders,
     gizmos: &'p mut Gizmos<'world2, 'state2>,
 }
 
-impl<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'v, 'p>
-    BevyLinesRenderBackend<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'v, 'p>
+impl<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'd, 'v, 'p>
+    BevyLinesRenderBackend<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'd, 'v, 'p>
 {
     fn object_color(&self, object: DebugRenderObject, default: [f32; 4]) -> [f32; 4] {
         let color = match object {
-            DebugRenderObject::Collider(h, ..) => self.context.colliders.get(h).and_then(|co| {
-                self.custom_colors
-                    .get(Entity::from_bits(co.user_data as u64))
-                    .map(|co| co.0)
-                    .ok()
-            }),
+            DebugRenderObject::Collider(h, ..) => {
+                self.context_colliders.colliders.get(h).and_then(|co| {
+                    self.custom_colors
+                        .get(Entity::from_bits(co.user_data as u64))
+                        .map(|co| co.0)
+                        .ok()
+                })
+            }
             _ => None,
         };
 
@@ -148,7 +151,7 @@ impl<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'v, 'p>
     fn drawing_enabled(&self, object: DebugRenderObject) -> bool {
         match object {
             DebugRenderObject::Collider(h, ..) => {
-                let Some(collider) = self.context.colliders.get(h) else {
+                let Some(collider) = self.context_colliders.colliders.get(h) else {
                     return false;
                 };
                 let entity = Entity::from_bits(collider.user_data as u64);
@@ -166,8 +169,8 @@ impl<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'v, 'p>
     }
 }
 
-impl<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'v, 'p> DebugRenderBackend
-    for BevyLinesRenderBackend<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'v, 'p>
+impl<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'd, 'v, 'p> DebugRenderBackend
+    for BevyLinesRenderBackend<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'd, 'v, 'p>
 {
     #[cfg(feature = "dim2")]
     fn draw_line(
@@ -211,7 +214,11 @@ impl<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'v, 'p> DebugRenderBackend
 }
 
 fn debug_render_scene<'a>(
-    rapier_context: Query<&RapierContext>,
+    rapier_context: Query<(
+        &RapierContext,
+        &RapierContextColliders,
+        &RapierContextJoints,
+    )>,
     mut render_context: ResMut<DebugRenderContext>,
     mut gizmos: Gizmos,
     custom_colors: Query<&'a ColliderDebugColor>,
@@ -220,12 +227,13 @@ fn debug_render_scene<'a>(
     if !render_context.enabled {
         return;
     }
-    for rapier_context in rapier_context.iter() {
+    for (rapier_context, rapier_context_colliders, joints) in rapier_context.iter() {
         let mut backend = BevyLinesRenderBackend {
             custom_colors: &custom_colors,
             default_collider_debug: render_context.default_collider_debug,
             override_visibility: &override_visibility,
             context: rapier_context,
+            context_colliders: rapier_context_colliders,
             gizmos: &mut gizmos,
         };
 
@@ -233,9 +241,9 @@ fn debug_render_scene<'a>(
         render_context.pipeline.render(
             &mut backend,
             &rapier_context.bodies,
-            &rapier_context.colliders,
-            &rapier_context.impulse_joints,
-            &rapier_context.multibody_joints,
+            &rapier_context_colliders.colliders,
+            &joints.impulse_joints,
+            &joints.multibody_joints,
             &rapier_context.narrow_phase,
         );
         render_context.pipeline.style = unscaled_style;

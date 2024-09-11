@@ -108,24 +108,33 @@ where
                     .chain()
                     .in_set(RapierTransformPropagateSet),
                 (
-                    systems::on_add_entity_with_parent,
-                    systems::on_change_world,
-                    systems::sync_removals,
-                    #[cfg(all(feature = "dim3", feature = "async-collider"))]
-                    systems::init_async_scene_colliders,
-                    #[cfg(all(feature = "dim3", feature = "async-collider"))]
-                    systems::init_async_colliders,
-                    systems::init_rigid_bodies,
-                    systems::init_colliders,
-                    systems::init_joints,
-                    systems::apply_scale,
-                    systems::apply_collider_user_changes,
-                    systems::apply_rigid_body_user_changes,
-                    systems::apply_joint_user_changes,
-                    systems::apply_initial_rigid_body_impulses,
+                    (
+                        systems::on_add_entity_with_parent,
+                        systems::on_change_world,
+                        systems::sync_removals,
+                        #[cfg(all(feature = "dim3", feature = "async-collider"))]
+                        systems::init_async_scene_colliders,
+                        #[cfg(all(feature = "dim3", feature = "async-collider"))]
+                        systems::init_async_colliders,
+                        systems::init_rigid_bodies,
+                        systems::init_colliders,
+                        systems::init_joints,
+                    )
+                        .chain()
+                        .in_set(PhysicsSet::SyncBackend),
+                    (
+                        (
+                            systems::apply_collider_user_changes.in_set(RapierBevyComponentApply),
+                            systems::apply_scale.in_set(RapierBevyComponentApply),
+                        )
+                            .chain(),
+                        systems::apply_joint_user_changes.in_set(RapierBevyComponentApply),
+                    ),
+                    // TODO: joints (TODO: split that) and colliders might be parallelizable.
+                    systems::apply_initial_rigid_body_impulses.in_set(RapierBevyComponentApply),
+                    systems::apply_rigid_body_user_changes.in_set(RapierBevyComponentApply),
                 )
-                    .chain()
-                    .in_set(PhysicsSet::SyncBackend),
+                    .chain(),
             )
                 .chain()
                 .into_configs(),
@@ -143,6 +152,10 @@ where
         }
     }
 }
+
+/// A set for rapier's copying bevy_rapier's Bevy components back into rapier.
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+pub struct RapierBevyComponentApply;
 
 /// A set for rapier's copy of Bevy's transform propagation systems.
 ///
@@ -256,6 +269,10 @@ where
                 self.schedule,
                 RapierTransformPropagateSet.in_set(PhysicsSet::SyncBackend),
             );
+            app.configure_sets(
+                self.schedule,
+                RapierBevyComponentApply.in_set(PhysicsSet::SyncBackend),
+            );
 
             app.add_systems(
                 self.schedule,
@@ -323,6 +340,7 @@ pub fn insert_default_world(
                     },
                     ..RapierContext::default()
                 },
+                RapierContextColliders::default(),
                 DefaultRapierContext,
             ));
         }

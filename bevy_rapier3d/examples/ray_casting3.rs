@@ -77,6 +77,7 @@ pub fn cast_ray(
     mut commands: Commands,
     windows: Query<&Window, With<PrimaryWindow>>,
     rapier_context: ReadDefaultRapierContext,
+    rapier_context_colliders: ReadDefaultRapierContextColliders,
     cameras: Query<(&Camera, &GlobalTransform)>,
 ) {
     let window = windows.single();
@@ -94,6 +95,7 @@ pub fn cast_ray(
 
         // Then cast the ray.
         let hit = rapier_context.cast_ray(
+            &rapier_context_colliders,
             ray.origin,
             ray.direction.into(),
             f32::MAX,

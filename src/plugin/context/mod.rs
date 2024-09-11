@@ -43,107 +43,41 @@ pub struct DefaultRapierContext;
 #[derive(Component, Reflect, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RapierContextEntityLink(pub Entity);
 
-/// The Rapier context, containing all the state of the physics engine.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-#[derive(Component)]
-pub struct RapierContext {
-    /// The island manager, which detects what object is sleeping
-    /// (not moving much) to reduce computations.
-    pub islands: IslandManager,
-    /// The broad-phase, which detects potential contact pairs.
-    pub broad_phase: DefaultBroadPhase,
-    /// The narrow-phase, which computes contact points, tests intersections,
-    /// and maintain the contact and intersection graphs.
-    pub narrow_phase: NarrowPhase,
-    /// The set of rigid-bodies part of the simulation.
-    pub bodies: RigidBodySet,
+#[derive(Component, Default)]
+pub struct RapierContextColliders {
     /// The set of colliders part of the simulation.
     pub colliders: ColliderSet,
-    /// The set of impulse joints part of the simulation.
-    pub impulse_joints: ImpulseJointSet,
-    /// The set of multibody joints part of the simulation.
-    pub multibody_joints: MultibodyJointSet,
-    /// The solver, which handles Continuous Collision Detection (CCD).
-    pub ccd_solver: CCDSolver,
-    /// The physics pipeline, which advance the simulation step by step.
-    #[cfg_attr(feature = "serde-serialize", serde(skip))]
-    pub pipeline: PhysicsPipeline,
-    /// The query pipeline, which performs scene queries (ray-casting, point projection, etc.)
-    pub query_pipeline: QueryPipeline,
-    /// The integration parameters, controlling various low-level coefficient of the simulation.
-    pub integration_parameters: IntegrationParameters,
-    #[cfg_attr(feature = "serde-serialize", serde(skip))]
-    pub(crate) event_handler: Option<Box<dyn EventHandler>>,
-    // For transform change detection.
-    #[cfg_attr(feature = "serde-serialize", serde(skip))]
-    pub(crate) last_body_transform_set: HashMap<RigidBodyHandle, GlobalTransform>,
-    // NOTE: these maps are needed to handle despawning.
-    #[cfg_attr(feature = "serde-serialize", serde(skip))]
-    pub(crate) entity2body: HashMap<Entity, RigidBodyHandle>,
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub(crate) entity2collider: HashMap<Entity, ColliderHandle>,
-    #[cfg_attr(feature = "serde-serialize", serde(skip))]
-    pub(crate) entity2impulse_joint: HashMap<Entity, ImpulseJointHandle>,
-    #[cfg_attr(feature = "serde-serialize", serde(skip))]
-    pub(crate) entity2multibody_joint: HashMap<Entity, MultibodyJointHandle>,
-    // This maps the handles of colliders that have been deleted since the last
-    // physics update, to the entity they was attached to.
-    #[cfg_attr(feature = "serde-serialize", serde(skip))]
-    pub(crate) deleted_colliders: HashMap<ColliderHandle, Entity>,
-
-    #[cfg_attr(feature = "serde-serialize", serde(skip))]
-    pub(crate) collision_events_to_send: Vec<CollisionEvent>,
-    #[cfg_attr(feature = "serde-serialize", serde(skip))]
-    pub(crate) contact_force_events_to_send: Vec<ContactForceEvent>,
-    #[cfg_attr(feature = "serde-serialize", serde(skip))]
-    pub(crate) character_collisions_collector: Vec<rapier::control::CharacterCollision>,
 }
 
-impl Default for RapierContext {
-    fn default() -> Self {
-        Self {
-            islands: IslandManager::new(),
-            broad_phase: DefaultBroadPhase::new(),
-            narrow_phase: NarrowPhase::new(),
-            bodies: RigidBodySet::new(),
-            colliders: ColliderSet::new(),
-            impulse_joints: ImpulseJointSet::new(),
-            multibody_joints: MultibodyJointSet::new(),
-            ccd_solver: CCDSolver::new(),
-            pipeline: PhysicsPipeline::new(),
-            query_pipeline: QueryPipeline::new(),
-            integration_parameters: IntegrationParameters::default(),
-            event_handler: None,
-            last_body_transform_set: HashMap::new(),
-            entity2body: HashMap::new(),
-            entity2collider: HashMap::new(),
-            entity2impulse_joint: HashMap::new(),
-            entity2multibody_joint: HashMap::new(),
-            deleted_colliders: HashMap::new(),
-            collision_events_to_send: Vec::new(),
-            contact_force_events_to_send: Vec::new(),
-            character_collisions_collector: Vec::new(),
-        }
-    }
-}
-
-impl RapierContext {
+impl RapierContextColliders {
     /// If the collider attached to `entity` is attached to a rigid-body, this
     /// returns the `Entity` containing that rigid-body.
-    pub fn collider_parent(&self, entity: Entity) -> Option<Entity> {
+    pub fn collider_parent(
+        &self,
+        rapier_context_entities: &RapierContext,
+        entity: Entity,
+    ) -> Option<Entity> {
         self.entity2collider
             .get(&entity)
             .and_then(|h| self.colliders.get(*h))
             .and_then(|co| co.parent())
-            .and_then(|h| self.rigid_body_entity(h))
+            .and_then(|h| rapier_context_entities.rigid_body_entity(h))
     }
 
     /// If entity is a rigid-body, this returns the collider `Entity`s attached
     /// to that rigid-body.
-    pub fn rigid_body_colliders(&self, entity: Entity) -> impl Iterator<Item = Entity> + '_ {
-        self.entity2body()
+    pub fn rigid_body_colliders<'a, 'b: 'a>(
+        &'a self,
+        entity: Entity,
+        rapier_context_entities: &'b RapierContext,
+    ) -> impl Iterator<Item = Entity> + '_ {
+        rapier_context_entities
+            .entity2body()
             .get(&entity)
-            .and_then(|handle| self.bodies.get(*handle))
+            .and_then(|handle| rapier_context_entities.bodies.get(*handle))
             .map(|body| {
                 body.colliders()
                     .iter()
@@ -168,6 +102,105 @@ impl RapierContext {
             .map(|c| Entity::from_bits(c.user_data as u64))
     }
 
+    /// The map from entities to collider handles.
+    pub fn entity2collider(&self) -> &HashMap<Entity, ColliderHandle> {
+        &self.entity2collider
+    }
+}
+
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[derive(Component, Default)]
+pub struct RapierContextJoints {
+    /// The set of impulse joints part of the simulation.
+    pub impulse_joints: ImpulseJointSet,
+    /// The set of multibody joints part of the simulation.
+    pub multibody_joints: MultibodyJointSet,
+
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
+    pub(crate) entity2impulse_joint: HashMap<Entity, ImpulseJointHandle>,
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
+    pub(crate) entity2multibody_joint: HashMap<Entity, MultibodyJointHandle>,
+}
+
+impl RapierContextJoints {
+    /// The map from entities to impulse joint handles.
+    pub fn entity2impulse_joint(&self) -> &HashMap<Entity, ImpulseJointHandle> {
+        &self.entity2impulse_joint
+    }
+
+    /// The map from entities to multibody joint handles.
+    pub fn entity2multibody_joint(&self) -> &HashMap<Entity, MultibodyJointHandle> {
+        &self.entity2multibody_joint
+    }
+}
+
+/// The Rapier context, containing all the state of the physics engine.
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[derive(Component)]
+pub struct RapierContext {
+    /// The island manager, which detects what object is sleeping
+    /// (not moving much) to reduce computations.
+    pub islands: IslandManager,
+    /// The broad-phase, which detects potential contact pairs.
+    pub broad_phase: DefaultBroadPhase,
+    /// The narrow-phase, which computes contact points, tests intersections,
+    /// and maintain the contact and intersection graphs.
+    pub narrow_phase: NarrowPhase,
+    /// The set of rigid-bodies part of the simulation.
+    pub bodies: RigidBodySet,
+    /// The solver, which handles Continuous Collision Detection (CCD).
+    pub ccd_solver: CCDSolver,
+    /// The physics pipeline, which advance the simulation step by step.
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
+    pub pipeline: PhysicsPipeline,
+    /// The query pipeline, which performs scene queries (ray-casting, point projection, etc.)
+    pub query_pipeline: QueryPipeline,
+    /// The integration parameters, controlling various low-level coefficient of the simulation.
+    pub integration_parameters: IntegrationParameters,
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
+    pub(crate) event_handler: Option<Box<dyn EventHandler>>,
+    // For transform change detection.
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
+    pub(crate) last_body_transform_set: HashMap<RigidBodyHandle, GlobalTransform>,
+    // NOTE: these maps are needed to handle despawning.
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
+    pub(crate) entity2body: HashMap<Entity, RigidBodyHandle>,
+    // This maps the handles of colliders that have been deleted since the last
+    // physics update, to the entity they was attached to.
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
+    pub(crate) deleted_colliders: HashMap<ColliderHandle, Entity>,
+
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
+    pub(crate) collision_events_to_send: Vec<CollisionEvent>,
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
+    pub(crate) contact_force_events_to_send: Vec<ContactForceEvent>,
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
+    pub(crate) character_collisions_collector: Vec<rapier::control::CharacterCollision>,
+}
+
+impl Default for RapierContext {
+    fn default() -> Self {
+        Self {
+            islands: IslandManager::new(),
+            broad_phase: DefaultBroadPhase::new(),
+            narrow_phase: NarrowPhase::new(),
+            bodies: RigidBodySet::new(),
+            ccd_solver: CCDSolver::new(),
+            pipeline: PhysicsPipeline::new(),
+            query_pipeline: QueryPipeline::new(),
+            integration_parameters: IntegrationParameters::default(),
+            event_handler: None,
+            last_body_transform_set: HashMap::new(),
+            entity2body: HashMap::new(),
+            deleted_colliders: HashMap::new(),
+            collision_events_to_send: Vec::new(),
+            contact_force_events_to_send: Vec::new(),
+            character_collisions_collector: Vec::new(),
+        }
+    }
+}
+
+impl RapierContext {
     /// Retrieve the Bevy entity the given Rapier rigid-body (identified by its handle) is attached.
     pub fn rigid_body_entity(&self, handle: RigidBodyHandle) -> Option<Entity> {
         self.bodies
@@ -178,13 +211,14 @@ impl RapierContext {
     /// Calls the closure `f` once after converting the given [`QueryFilter`] into a raw `rapier::QueryFilter`.
     pub fn with_query_filter<T>(
         &self,
+        colliders: &RapierContextColliders,
         filter: QueryFilter,
         f: impl FnOnce(RapierQueryFilter) -> T,
     ) -> T {
         Self::with_query_filter_elts(
-            &self.entity2collider,
+            &colliders.entity2collider,
             &self.entity2body,
-            &self.colliders,
+            &colliders.colliders,
             filter,
             f,
         )
@@ -213,7 +247,7 @@ impl RapierContext {
 
         if let Some(predicate) = filter.predicate {
             let wrapped_predicate = |h: ColliderHandle, _: &rapier::geometry::Collider| {
-                Self::collider_entity_with_set(colliders, h)
+                RapierContextColliders::collider_entity_with_set(colliders, h)
                     .map(predicate)
                     .unwrap_or(false)
             };
@@ -228,6 +262,8 @@ impl RapierContext {
     #[allow(clippy::too_many_arguments)]
     pub fn step_simulation(
         &mut self,
+        colliders: &mut RapierContextColliders,
+        joints: &mut RapierContextJoints,
         gravity: Vect,
         timestep_mode: TimestepMode,
         events: Option<(
@@ -296,9 +332,9 @@ impl RapierContext {
                             &mut self.broad_phase,
                             &mut self.narrow_phase,
                             &mut self.bodies,
-                            &mut self.colliders,
-                            &mut self.impulse_joints,
-                            &mut self.multibody_joints,
+                            &mut colliders.colliders,
+                            &mut joints.impulse_joints,
+                            &mut joints.multibody_joints,
                             &mut self.ccd_solver,
                             None,
                             hooks,
@@ -328,9 +364,9 @@ impl RapierContext {
                         &mut self.broad_phase,
                         &mut self.narrow_phase,
                         &mut self.bodies,
-                        &mut self.colliders,
-                        &mut self.impulse_joints,
-                        &mut self.multibody_joints,
+                        &mut colliders.colliders,
+                        &mut joints.impulse_joints,
+                        &mut joints.multibody_joints,
                         &mut self.ccd_solver,
                         None,
                         hooks,
@@ -353,9 +389,9 @@ impl RapierContext {
                         &mut self.broad_phase,
                         &mut self.narrow_phase,
                         &mut self.bodies,
-                        &mut self.colliders,
-                        &mut self.impulse_joints,
-                        &mut self.multibody_joints,
+                        &mut colliders.colliders,
+                        &mut joints.impulse_joints,
+                        &mut joints.multibody_joints,
                         &mut self.ccd_solver,
                         None,
                         hooks,
@@ -395,35 +431,23 @@ impl RapierContext {
 
     /// This method makes sure that the rigid-body positions have been propagated to
     /// their attached colliders, without having to perform a simulation step.
-    pub fn propagate_modified_body_positions_to_colliders(&mut self) {
+    pub fn propagate_modified_body_positions_to_colliders(
+        &self,
+        colliders: &mut RapierContextColliders,
+    ) {
         self.bodies
-            .propagate_modified_body_positions_to_colliders(&mut self.colliders);
+            .propagate_modified_body_positions_to_colliders(&mut colliders.colliders);
     }
 
     /// Updates the state of the query pipeline, based on the collider positions known
     /// from the last timestep or the last call to `self.propagate_modified_body_positions_to_colliders()`.
-    pub fn update_query_pipeline(&mut self) {
-        self.query_pipeline.update(&self.colliders);
+    pub fn update_query_pipeline(&mut self, colliders: &RapierContextColliders) {
+        self.query_pipeline.update(&colliders.colliders);
     }
 
     /// The map from entities to rigid-body handles.
     pub fn entity2body(&self) -> &HashMap<Entity, RigidBodyHandle> {
         &self.entity2body
-    }
-
-    /// The map from entities to collider handles.
-    pub fn entity2collider(&self) -> &HashMap<Entity, ColliderHandle> {
-        &self.entity2collider
-    }
-
-    /// The map from entities to impulse joint handles.
-    pub fn entity2impulse_joint(&self) -> &HashMap<Entity, ImpulseJointHandle> {
-        &self.entity2impulse_joint
-    }
-
-    /// The map from entities to multibody joint handles.
-    pub fn entity2multibody_joint(&self) -> &HashMap<Entity, MultibodyJointHandle> {
-        &self.entity2multibody_joint
     }
 
     /// Attempts to move shape, optionally sliding or climbing obstacles.
@@ -441,6 +465,7 @@ impl RapierContext {
     #[allow(clippy::too_many_arguments)]
     pub fn move_shape(
         &mut self,
+        rapier_colliders: &RapierContextColliders,
         movement: Vect,
         shape: &Collider,
         shape_translation: Vect,
@@ -480,16 +505,16 @@ impl RapierContext {
         // TODO: having to grab all the references to avoid having self in
         //       the closure is ugly.
         let dt = self.integration_parameters.dt;
-        let colliders = &self.colliders;
+        let colliders = &rapier_colliders.colliders;
         let bodies = &mut self.bodies;
         let query_pipeline = &self.query_pipeline;
         let collisions = &mut self.character_collisions_collector;
         collisions.clear();
 
         let result = Self::with_query_filter_elts(
-            &self.entity2collider,
+            &rapier_colliders.entity2collider,
             &self.entity2body,
-            &self.colliders,
+            &rapier_colliders.colliders,
             filter,
             move |filter| {
                 let result = controller.move_shape(
@@ -548,6 +573,7 @@ impl RapierContext {
     /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     pub fn cast_ray(
         &self,
+        rapier_colliders: &RapierContextColliders,
         ray_origin: Vect,
         ray_dir: Vect,
         max_toi: Real,
@@ -556,10 +582,10 @@ impl RapierContext {
     ) -> Option<(Entity, Real)> {
         let ray = Ray::new(ray_origin.into(), ray_dir.into());
 
-        let (h, toi) = self.with_query_filter(filter, move |filter| {
+        let (h, toi) = self.with_query_filter(rapier_colliders, filter, move |filter| {
             self.query_pipeline.cast_ray(
                 &self.bodies,
-                &self.colliders,
+                &rapier_colliders.colliders,
                 &ray,
                 max_toi,
                 solid,
@@ -567,7 +593,7 @@ impl RapierContext {
             )
         })?;
 
-        self.collider_entity(h).map(|e| (e, toi))
+        rapier_colliders.collider_entity(h).map(|e| (e, toi))
     }
 
     /// Find the closest intersection between a ray and a set of collider.
@@ -583,6 +609,7 @@ impl RapierContext {
     /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     pub fn cast_ray_and_get_normal(
         &self,
+        rapier_colliders: &RapierContextColliders,
         ray_origin: Vect,
         ray_dir: Vect,
         max_toi: Real,
@@ -591,10 +618,10 @@ impl RapierContext {
     ) -> Option<(Entity, RayIntersection)> {
         let ray = Ray::new(ray_origin.into(), ray_dir.into());
 
-        let (h, result) = self.with_query_filter(filter, move |filter| {
+        let (h, result) = self.with_query_filter(rapier_colliders, filter, move |filter| {
             self.query_pipeline.cast_ray_and_get_normal(
                 &self.bodies,
-                &self.colliders,
+                &rapier_colliders.colliders,
                 &ray,
                 max_toi,
                 solid,
@@ -602,7 +629,8 @@ impl RapierContext {
             )
         })?;
 
-        self.collider_entity(h)
+        rapier_colliders
+            .collider_entity(h)
             .map(|e| (e, RayIntersection::from_rapier(result, ray_origin, ray_dir)))
     }
 
@@ -623,6 +651,7 @@ impl RapierContext {
     #[allow(clippy::too_many_arguments)]
     pub fn intersections_with_ray(
         &self,
+        rapier_colliders: &RapierContextColliders,
         ray_origin: Vect,
         ray_dir: Vect,
         max_toi: Real,
@@ -632,15 +661,16 @@ impl RapierContext {
     ) {
         let ray = Ray::new(ray_origin.into(), ray_dir.into());
         let callback = |h, inter: rapier::prelude::RayIntersection| {
-            self.collider_entity(h)
+            rapier_colliders
+                .collider_entity(h)
                 .map(|e| callback(e, RayIntersection::from_rapier(inter, ray_origin, ray_dir)))
                 .unwrap_or(true)
         };
 
-        self.with_query_filter(filter, move |filter| {
+        self.with_query_filter(rapier_colliders, filter, move |filter| {
             self.query_pipeline.intersections_with_ray(
                 &self.bodies,
-                &self.colliders,
+                &rapier_colliders.colliders,
                 &ray,
                 max_toi,
                 solid,
@@ -658,6 +688,7 @@ impl RapierContext {
     /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     pub fn intersection_with_shape(
         &self,
+        rapier_colliders: &RapierContextColliders,
         shape_pos: Vect,
         shape_rot: Rot,
         shape: &Collider,
@@ -669,17 +700,17 @@ impl RapierContext {
         //       RapierConfiguration::scaled_shape_subdivision here.
         scaled_shape.set_scale(shape.scale, 20);
 
-        let h = self.with_query_filter(filter, move |filter| {
+        let h = self.with_query_filter(rapier_colliders, filter, move |filter| {
             self.query_pipeline.intersection_with_shape(
                 &self.bodies,
-                &self.colliders,
+                &rapier_colliders.colliders,
                 &scaled_transform,
                 &*scaled_shape.raw,
                 filter,
             )
         })?;
 
-        self.collider_entity(h)
+        rapier_colliders.collider_entity(h)
     }
 
     /// Find the projection of a point on the closest collider.
@@ -694,21 +725,23 @@ impl RapierContext {
     /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     pub fn project_point(
         &self,
+        rapier_colliders: &RapierContextColliders,
         point: Vect,
         solid: bool,
         filter: QueryFilter,
     ) -> Option<(Entity, PointProjection)> {
-        let (h, result) = self.with_query_filter(filter, move |filter| {
+        let (h, result) = self.with_query_filter(rapier_colliders, filter, move |filter| {
             self.query_pipeline.project_point(
                 &self.bodies,
-                &self.colliders,
+                &rapier_colliders.colliders,
                 &point.into(),
                 solid,
                 filter,
             )
         })?;
 
-        self.collider_entity(h)
+        rapier_colliders
+            .collider_entity(h)
             .map(|e| (e, PointProjection::from_rapier(result)))
     }
 
@@ -722,18 +755,24 @@ impl RapierContext {
     ///                further point projection.
     pub fn intersections_with_point(
         &self,
+        rapier_colliders: &RapierContextColliders,
         point: Vect,
         filter: QueryFilter,
         mut callback: impl FnMut(Entity) -> bool,
     ) {
         #[allow(clippy::redundant_closure)]
         // False-positive, we can't move callback, closure becomes `FnOnce`
-        let callback = |h| self.collider_entity(h).map(|e| callback(e)).unwrap_or(true);
+        let callback = |h| {
+            rapier_colliders
+                .collider_entity(h)
+                .map(|e| callback(e))
+                .unwrap_or(true)
+        };
 
-        self.with_query_filter(filter, move |filter| {
+        self.with_query_filter(rapier_colliders, filter, move |filter| {
             self.query_pipeline.intersections_with_point(
                 &self.bodies,
-                &self.colliders,
+                &rapier_colliders.colliders,
                 &point.into(),
                 filter,
                 callback,
@@ -755,19 +794,21 @@ impl RapierContext {
     /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     pub fn project_point_and_get_feature(
         &self,
+        rapier_colliders: &RapierContextColliders,
         point: Vect,
         filter: QueryFilter,
     ) -> Option<(Entity, PointProjection, FeatureId)> {
-        let (h, proj, fid) = self.with_query_filter(filter, move |filter| {
+        let (h, proj, fid) = self.with_query_filter(rapier_colliders, filter, move |filter| {
             self.query_pipeline.project_point_and_get_feature(
                 &self.bodies,
-                &self.colliders,
+                &rapier_colliders.colliders,
                 &point.into(),
                 filter,
             )
         })?;
 
-        self.collider_entity(h)
+        rapier_colliders
+            .collider_entity(h)
             .map(|e| (e, PointProjection::from_rapier(proj), fid))
     }
 
@@ -775,6 +816,7 @@ impl RapierContext {
     #[cfg(not(feature = "headless"))]
     pub fn colliders_with_aabb_intersecting_aabb(
         &self,
+        rapier_colliders: &RapierContextColliders,
         aabb: bevy::render::primitives::Aabb,
         mut callback: impl FnMut(Entity) -> bool,
     ) {
@@ -791,7 +833,8 @@ impl RapierContext {
         #[allow(clippy::redundant_closure)]
         // False-positive, we can't move callback, closure becomes `FnOnce`
         let callback = |h: &ColliderHandle| {
-            self.collider_entity(*h)
+            rapier_colliders
+                .collider_entity(*h)
                 .map(|e| callback(e))
                 .unwrap_or(true)
         };
@@ -823,6 +866,7 @@ impl RapierContext {
     #[allow(clippy::too_many_arguments)]
     pub fn cast_shape(
         &self,
+        rapier_colliders: &RapierContextColliders,
         shape_pos: Vect,
         shape_rot: Rot,
         shape_vel: Vect,
@@ -836,10 +880,10 @@ impl RapierContext {
         //       RapierConfiguration::scaled_shape_subdivision here.
         scaled_shape.set_scale(shape.scale, 20);
 
-        let (h, result) = self.with_query_filter(filter, move |filter| {
+        let (h, result) = self.with_query_filter(rapier_colliders, filter, move |filter| {
             self.query_pipeline.cast_shape(
                 &self.bodies,
-                &self.colliders,
+                &rapier_colliders.colliders,
                 &scaled_transform,
                 &shape_vel.into(),
                 &*scaled_shape.raw,
@@ -848,7 +892,7 @@ impl RapierContext {
             )
         })?;
 
-        self.collider_entity(h).map(|e| {
+        rapier_colliders.collider_entity(h).map(|e| {
             (
                 e,
                 ShapeCastHit::from_rapier(result, options.compute_impact_geometry_on_penetration),
@@ -918,6 +962,7 @@ impl RapierContext {
     /// * `callback` - A function called with the entities of each collider intersecting the `shape`.
     pub fn intersections_with_shape(
         &self,
+        rapier_colliders: &RapierContextColliders,
         shape_pos: Vect,
         shape_rot: Rot,
         shape: &Collider,
@@ -932,12 +977,17 @@ impl RapierContext {
 
         #[allow(clippy::redundant_closure)]
         // False-positive, we can't move callback, closure becomes `FnOnce`
-        let callback = |h| self.collider_entity(h).map(|e| callback(e)).unwrap_or(true);
+        let callback = |h| {
+            rapier_colliders
+                .collider_entity(h)
+                .map(|e| callback(e))
+                .unwrap_or(true)
+        };
 
-        self.with_query_filter(filter, move |filter| {
+        self.with_query_filter(rapier_colliders, filter, move |filter| {
             self.query_pipeline.intersections_with_shape(
                 &self.bodies,
-                &self.colliders,
+                &rapier_colliders.colliders,
                 &scaled_transform,
                 &*scaled_shape.raw,
                 filter,
@@ -951,9 +1001,13 @@ impl RapierContext {
     /// The angle is computed along the revolute joint’s principal axis.
     ///
     /// Parameter `entity` should have a [`ImpulseJoint`] component with a [`TypedJoint::RevoluteJoint`] variant as `data`.
-    pub fn impulse_revolute_joint_angle(&self, entity: Entity) -> Option<f32> {
-        let joint_handle = self.entity2impulse_joint().get(&entity)?;
-        let impulse_joint = self.impulse_joints.get(*joint_handle)?;
+    pub fn impulse_revolute_joint_angle(
+        &self,
+        joints: &RapierContextJoints,
+        entity: Entity,
+    ) -> Option<f32> {
+        let joint_handle = joints.entity2impulse_joint().get(&entity)?;
+        let impulse_joint = joints.impulse_joints.get(*joint_handle)?;
         let revolute_joint = impulse_joint.data.as_revolute()?;
 
         let rb1 = &self.bodies[impulse_joint.body1];
