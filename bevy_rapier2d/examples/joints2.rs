@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
+#[allow(unused)]
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::srgb(
