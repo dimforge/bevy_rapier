@@ -67,6 +67,7 @@ approx = "0.5.1"
 glam = { version = "0.27", features = ["approx"] }
 bevy-inspector-egui = "0.25.1"
 bevy_egui = "0.28.0"
+bevy_mod_debugdump = "0.11"
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
