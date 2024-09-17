@@ -257,7 +257,6 @@ mod test {
         ));
 
         for i in 0..100 {
-            dbg!(i);
             app.update();
         }
         return;
