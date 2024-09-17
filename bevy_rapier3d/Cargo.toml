@@ -82,3 +82,8 @@ harness = false
 [[bench]]
 name = "many_pyramids3"
 harness = false
+
+[[example]]
+name = "ambiguity_detection"
+path = "tests/ambiguity_detection.rs"
+doc-scrape-examples = true
