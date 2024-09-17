@@ -24,7 +24,7 @@ use crate::prelude::{BevyPhysicsHooks, BevyPhysicsHooksAdapter};
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
 use bevy::prelude::*;
 
-use super::context::RapierContextJoints;
+use super::context::{RapierContextJoints, RapierQueryPipeline};
 use super::RapierContextColliders;
 
 /// System responsible for advancing the physics simulation, and updating the internal state
@@ -33,6 +33,7 @@ pub fn step_simulation<Hooks>(
     mut context: Query<(
         &mut RapierContext,
         &mut RapierContextColliders,
+        &mut RapierQueryPipeline,
         &mut RapierContextJoints,
         &RapierConfiguration,
         &mut SimulationToRenderTime,
@@ -49,8 +50,14 @@ pub fn step_simulation<Hooks>(
 {
     let hooks_adapter = BevyPhysicsHooksAdapter::new(hooks.into_inner());
 
-    for (mut context, mut context_colliders, mut joints, config, mut sim_to_render_time) in
-        context.iter_mut()
+    for (
+        mut context,
+        mut context_colliders,
+        mut query_pipeline,
+        mut joints,
+        config,
+        mut sim_to_render_time,
+    ) in context.iter_mut()
     {
         let context = &mut *context;
         let context_colliders = &mut *context_colliders;
@@ -72,7 +79,7 @@ pub fn step_simulation<Hooks>(
         }
 
         if config.query_pipeline_active {
-            context.update_query_pipeline(context_colliders);
+            query_pipeline.update_query_pipeline(context_colliders);
         }
         context.send_bevy_events(&mut collision_events, &mut contact_force_events);
     }

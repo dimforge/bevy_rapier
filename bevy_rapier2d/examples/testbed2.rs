@@ -207,8 +207,10 @@ fn main() {
                 |mut rapier_config: Query<&mut RapierConfiguration>,
                  ctxt: ReadDefaultRapierContext| {
                     let mut rapier_config = rapier_config.single_mut();
-                    rapier_config.gravity =
-                        RapierConfiguration::new(ctxt.integration_parameters.length_unit).gravity;
+                    rapier_config.gravity = RapierConfiguration::new(
+                        ctxt.single().context.integration_parameters.length_unit,
+                    )
+                    .gravity;
                 },
             ),
         )

@@ -1,11 +1,16 @@
+use crate::math::{Rot, Vect};
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
+use rapier::prelude::Real;
 use std::ops::{Deref, DerefMut};
 
 pub const RAPIER_CONTEXT_EXPECT_ERROR: &str =
     "RapierContextEntityLink.0 refers to an entity without RapierContext.";
 
-use crate::plugin::RapierContextColliders;
+use crate::{
+    plugin::{context::RapierQueryPipeline, RapierContextColliders, RapierContextJoints},
+    prelude::QueryFilter,
+};
 
 use super::super::{DefaultRapierContext, RapierContext, RapierContextEntityLink};
 
@@ -15,7 +20,17 @@ use super::super::{DefaultRapierContext, RapierContext, RapierContextEntityLink}
 /// See [`RapierContextAccess`] for a safer alternative.
 #[derive(SystemParam)]
 pub struct ReadDefaultRapierContext<'w, 's, T: Component = DefaultRapierContext> {
-    rapier_context: Query<'w, 's, &'static RapierContext, With<T>>,
+    rapier_context: Query<
+        'w,
+        's,
+        (
+            &'static RapierContext,
+            &'static RapierContextColliders,
+            &'static RapierContextJoints,
+            &'static RapierQueryPipeline,
+        ),
+        With<T>,
+    >,
 }
 
 impl<'w, 's, T: Component> ReadDefaultRapierContext<'w, 's, T> {
@@ -23,20 +38,50 @@ impl<'w, 's, T: Component> ReadDefaultRapierContext<'w, 's, T> {
     ///
     /// SAFETY: This method will panic if its underlying query fails.
     /// See [`RapierContextAccess`] for a safe alternative.
-    pub fn single(&'_ self) -> &RapierContext {
-        self.rapier_context.single()
+    pub fn single(&'_ self) -> RapierContextWhole {
+        let (context, colliders, joints, query) = self.rapier_context.single();
+        RapierContextWhole {
+            context,
+            colliders,
+            joints,
+            query_pipeline: query,
+        }
     }
 }
 
-impl<'w, 's> Deref for ReadDefaultRapierContext<'w, 's> {
-    type Target = RapierContext;
+/// A helper struct to avoid passing too many parameters to most rapier functions.
+/// This helps with reducing boilerplate, at the (small) price of maybe getting too much information from the ECS.
+pub struct RapierContextWhole<'a> {
+    pub context: &'a RapierContext,
+    pub colliders: &'a RapierContextColliders,
+    pub joints: &'a RapierContextJoints,
+    pub query_pipeline: &'a RapierQueryPipeline,
+}
 
-    /// Use this method if you only have one [`RapierContext`].
-    ///
-    /// SAFETY: This method will panic if its underlying query fails.
-    /// See [`RapierContextAccess`] for a safe alternative.
-    fn deref(&self) -> &Self::Target {
-        self.rapier_context.single()
+impl<'a> RapierContextWhole<'a> {
+    /// Shortcut to [`RapierContext::impulse_revolute_joint_angle`]
+    pub fn impulse_revolute_joint_angle(&self, entity: Entity) -> Option<f32> {
+        self.context
+            .impulse_revolute_joint_angle(self.joints, entity)
+    }
+    /// Shortcut to [`RapierQueryPipeline::cast_ray`]
+    pub fn cast_ray(
+        &self,
+        ray_origin: Vect,
+        ray_dir: Vect,
+        max_toi: Real,
+        solid: bool,
+        filter: QueryFilter,
+    ) -> Option<(Entity, Real)> {
+        self.query_pipeline.cast_ray(
+            &self.context,
+            &self.colliders,
+            ray_origin,
+            ray_dir,
+            max_toi,
+            solid,
+            filter,
+        )
     }
 }
 

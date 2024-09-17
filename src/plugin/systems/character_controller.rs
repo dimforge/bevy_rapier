@@ -3,6 +3,7 @@ use crate::dynamics::RapierRigidBodyHandle;
 use crate::geometry::RapierColliderHandle;
 use crate::plugin::context::systemparams::RAPIER_CONTEXT_EXPECT_ERROR;
 use crate::plugin::context::RapierContextEntityLink;
+use crate::plugin::context::RapierQueryPipeline;
 use crate::plugin::RapierConfiguration;
 use crate::plugin::RapierContext;
 use crate::plugin::RapierContextColliders;
@@ -19,7 +20,11 @@ use rapier::pipeline::QueryFilter;
 pub fn update_character_controls(
     mut commands: Commands,
     config: Query<&RapierConfiguration>,
-    mut context_access: Query<(&mut RapierContext, &RapierContextColliders)>,
+    mut context_access: Query<(
+        &mut RapierContext,
+        &RapierContextColliders,
+        &RapierQueryPipeline,
+    )>,
     mut character_controllers: Query<(
         Entity,
         &RapierContextEntityLink,
@@ -47,11 +52,13 @@ pub fn update_character_controls(
             let config = config
                 .get(rapier_context_link.0)
                 .expect("Could not get [`RapierConfiguration`]");
-            let mut context = context_access
+            let (mut context, colliders, query_pipeline) = context_access
                 .get_mut(rapier_context_link.0)
                 .expect(RAPIER_CONTEXT_EXPECT_ERROR);
-            let context_colliders = &*context.1;
-            let context = &mut *context.0;
+
+            let context_colliders = &*colliders;
+            let context = &mut *context;
+            let query_pipeline = &*query_pipeline;
             let scaled_custom_shape =
                 controller
                     .custom_shape
@@ -125,7 +132,7 @@ pub fn update_character_controls(
                 context.integration_parameters.dt,
                 &context.bodies,
                 &context_colliders.colliders,
-                &context.query_pipeline,
+                &query_pipeline.query_pipeline,
                 character_shape,
                 &character_pos,
                 translation.into(),
@@ -138,7 +145,7 @@ pub fn update_character_controls(
                     context.integration_parameters.dt,
                     &mut context.bodies,
                     &context_colliders.colliders,
-                    &context.query_pipeline,
+                    &query_pipeline.query_pipeline,
                     character_shape,
                     character_mass,
                     collisions.iter(),

@@ -128,9 +128,11 @@ fn bubble_down_world_change(
 
 #[cfg(test)]
 mod test {
+    use crate::plugin::context::RapierQueryPipeline;
     use crate::plugin::systems::tests::HeadlessRenderPlugin;
     use crate::plugin::{
-        NoUserData, PhysicsSet, RapierContext, RapierContextEntityLink, RapierPhysicsPlugin,
+        NoUserData, PhysicsSet, RapierContext, RapierContextColliders, RapierContextEntityLink,
+        RapierContextJoints, RapierPhysicsPlugin,
     };
     use crate::prelude::{ActiveEvents, Collider, ContactForceEventThreshold, RigidBody, Sensor};
     use bevy::prelude::*;
@@ -166,7 +168,14 @@ mod test {
                 .unwrap_or_else(|| panic!("no link to rapier context entity from {entity}."));
         }
         // Verify link is correctly updated for children.
-        let new_rapier_context = world.spawn(RapierContext::default()).id();
+        let new_rapier_context = world
+            .spawn((
+                RapierContext::default(),
+                RapierContextColliders::default(),
+                RapierContextJoints::default(),
+                RapierQueryPipeline::default(),
+            ))
+            .id();
         // FIXME: We need to wait 1 frame when creating a world.
         // Ideally we should be able to order the systems so that we don't have to wait.
         app.update();

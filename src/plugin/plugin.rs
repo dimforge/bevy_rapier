@@ -11,7 +11,7 @@ use bevy::{prelude::*, transform::TransformSystem};
 use rapier::dynamics::IntegrationParameters;
 use std::marker::PhantomData;
 
-use super::context::DefaultRapierContext;
+use super::context::{DefaultRapierContext, RapierQueryPipeline};
 
 /// No specific user-data is associated to the hooks.
 pub type NoUserData = ();
@@ -341,6 +341,8 @@ pub fn insert_default_world(
                     ..RapierContext::default()
                 },
                 RapierContextColliders::default(),
+                RapierContextJoints::default(),
+                RapierQueryPipeline::default(),
                 DefaultRapierContext,
             ));
         }
