@@ -3,6 +3,7 @@ use crate::plugin::RapierContext;
 use bevy::prelude::*;
 use rapier::geometry::{Contact, ContactManifold, ContactPair, SolverContact, SolverFlags};
 
+use super::context::RapierRigidBodySet;
 use super::RapierContextColliders;
 
 impl RapierContext {
@@ -14,6 +15,7 @@ impl RapierContext {
     pub fn contact_pairs_with<'a, 'b: 'a>(
         &'a self,
         context_colliders: &'b RapierContextColliders,
+        rigidbody_set: &'b RapierRigidBodySet,
         collider: Entity,
     ) -> impl Iterator<Item = ContactPairView> {
         context_colliders
@@ -26,6 +28,7 @@ impl RapierContext {
                     .map(|raw| ContactPairView {
                         context: self,
                         context_colliders,
+                        rigidbody_set,
                         raw,
                     })
             })
@@ -68,6 +71,7 @@ impl RapierContext {
     pub fn contact_pair<'a, 'b: 'a>(
         &'a self,
         context_colliders: &'b RapierContextColliders,
+        rigidbody_set: &'b RapierRigidBodySet,
         collider1: Entity,
         collider2: Entity,
     ) -> Option<ContactPairView> {
@@ -78,6 +82,7 @@ impl RapierContext {
             .map(|raw| ContactPairView {
                 context: self,
                 context_colliders,
+                rigidbody_set,
                 raw,
             })
     }
@@ -101,12 +106,14 @@ impl RapierContext {
     pub fn contact_pairs<'a, 'b: 'a>(
         &'a self,
         context_colliders: &'b RapierContextColliders,
+        rigidbody_set: &'b RapierRigidBodySet,
     ) -> impl Iterator<Item = ContactPairView> {
         self.narrow_phase
             .contact_pairs()
             .map(|raw| ContactPairView {
                 context: self,
                 context_colliders,
+                rigidbody_set,
                 raw,
             })
     }
@@ -133,6 +140,7 @@ impl RapierContext {
 pub struct ContactManifoldView<'a> {
     context: &'a RapierContext,
     context_colliders: &'a RapierContextColliders,
+    rigidbody_set: &'a RapierRigidBodySet,
     /// The raw contact manifold from Rapier.
     pub raw: &'a ContactManifold,
 }
@@ -182,7 +190,7 @@ impl<'a> ContactManifoldView<'a> {
         self.raw
             .data
             .rigid_body1
-            .and_then(|h| self.context.rigid_body_entity(h))
+            .and_then(|h| self.rigidbody_set.rigid_body_entity(h))
     }
 
     /// The second rigid-body involved in this contact manifold.
@@ -190,7 +198,7 @@ impl<'a> ContactManifoldView<'a> {
         self.raw
             .data
             .rigid_body2
-            .and_then(|h| self.context.rigid_body_entity(h))
+            .and_then(|h| self.rigidbody_set.rigid_body_entity(h))
     }
 
     /// Flags used to control some aspects of the constraints solver for this contact manifold.
@@ -341,6 +349,7 @@ impl<'a> SolverContactView<'a> {
 pub struct ContactPairView<'a> {
     context: &'a RapierContext,
     context_colliders: &'a RapierContextColliders,
+    rigidbody_set: &'a RapierRigidBodySet,
     /// The raw contact pair from Rapier.
     pub raw: &'a ContactPair,
 }
@@ -370,6 +379,7 @@ impl<'a> ContactPairView<'a> {
         self.raw.manifolds.get(i).map(|raw| ContactManifoldView {
             context: self.context,
             context_colliders: &self.context_colliders,
+            rigidbody_set: &self.rigidbody_set,
             raw,
         })
     }
@@ -379,6 +389,7 @@ impl<'a> ContactPairView<'a> {
         self.raw.manifolds.iter().map(|raw| ContactManifoldView {
             context: self.context,
             context_colliders: &self.context_colliders,
+            rigidbody_set: &self.rigidbody_set,
             raw,
         })
     }
@@ -401,6 +412,7 @@ impl<'a> ContactPairView<'a> {
                 ContactManifoldView {
                     context: self.context,
                     context_colliders: &self.context_colliders,
+                    rigidbody_set: &self.rigidbody_set,
                     raw: manifold,
                 },
                 ContactView { raw: contact },

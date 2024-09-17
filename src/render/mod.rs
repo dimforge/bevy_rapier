@@ -1,4 +1,6 @@
-use crate::plugin::{RapierContext, RapierContextColliders, RapierContextJoints};
+use crate::plugin::{
+    RapierContext, RapierContextColliders, RapierContextJoints, RapierRigidBodySet,
+};
 use bevy::prelude::*;
 use bevy::transform::TransformSystem;
 use rapier::math::{Point, Real};
@@ -218,6 +220,7 @@ fn debug_render_scene<'a>(
         &RapierContext,
         &RapierContextColliders,
         &RapierContextJoints,
+        &RapierRigidBodySet,
     )>,
     mut render_context: ResMut<DebugRenderContext>,
     mut gizmos: Gizmos,
@@ -227,7 +230,7 @@ fn debug_render_scene<'a>(
     if !render_context.enabled {
         return;
     }
-    for (rapier_context, rapier_context_colliders, joints) in rapier_context.iter() {
+    for (rapier_context, rapier_context_colliders, joints, rigidbody_set) in rapier_context.iter() {
         let mut backend = BevyLinesRenderBackend {
             custom_colors: &custom_colors,
             default_collider_debug: render_context.default_collider_debug,
@@ -240,7 +243,7 @@ fn debug_render_scene<'a>(
         let unscaled_style = render_context.pipeline.style;
         render_context.pipeline.render(
             &mut backend,
-            &rapier_context.bodies,
+            &rigidbody_set.bodies,
             &rapier_context_colliders.colliders,
             &joints.impulse_joints,
             &joints.multibody_joints,

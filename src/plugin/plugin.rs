@@ -130,7 +130,7 @@ where
                             .chain(),
                         systems::apply_joint_user_changes.in_set(RapierBevyComponentApply),
                     ),
-                    // TODO: joints (TODO: split that) and colliders might be parallelizable.
+                    // TODO: joints and colliders might be parallelizable.
                     systems::apply_initial_rigid_body_impulses.in_set(RapierBevyComponentApply),
                     systems::apply_rigid_body_user_changes.in_set(RapierBevyComponentApply),
                 )
@@ -343,6 +343,7 @@ pub fn insert_default_world(
                 RapierContextColliders::default(),
                 RapierContextJoints::default(),
                 RapierQueryPipeline::default(),
+                RapierRigidBodySet::default(),
                 DefaultRapierContext,
             ));
         }
@@ -456,22 +457,23 @@ mod test {
                 let mut stepping = world.resource_mut::<Stepping>();
                 stepping.continue_frame();
                 app.update();
-                let context = app
+
+                let rigidbody_set = app
                     .world_mut()
-                    .query::<&RapierContext>()
+                    .query::<&RapierRigidBodySet>()
                     .get_single(&app.world())
                     .unwrap();
 
-                println!("{:?}", &context.entity2body);
+                println!("{:?}", &rigidbody_set.entity2body);
             }
-            let context = app
+            let rigidbody_set = app
                 .world_mut()
-                .query::<&RapierContext>()
+                .query::<&RapierRigidBodySet>()
                 .get_single(&app.world())
                 .unwrap();
 
             assert_eq!(
-                context.entity2body.iter().next().unwrap().1,
+                rigidbody_set.entity2body.iter().next().unwrap().1,
                 // assert the generation is 0, that means we didn't modify it twice (due to change world detection)
                 &RigidBodyHandle(Index::from_raw_parts(0, 0))
             );

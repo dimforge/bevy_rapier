@@ -6,14 +6,13 @@ use crate::plugin::context::systemparams::RAPIER_CONTEXT_EXPECT_ERROR;
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::context::RapierContextJoints;
 use crate::plugin::DefaultRapierContext;
-use crate::plugin::RapierContext;
-use crate::plugin::WriteRapierContext;
+use crate::plugin::RapierRigidBodySet;
 use bevy::prelude::*;
 
 /// System responsible for creating new Rapier joints from the related `bevy_rapier` components.
 pub fn init_joints(
     mut commands: Commands,
-    mut context_access: Query<(&mut RapierContext, &mut RapierContextJoints)>,
+    mut context_access: Query<(&RapierRigidBodySet, &mut RapierContextJoints)>,
     default_context_access: Query<Entity, With<DefaultRapierContext>>,
     impulse_joints: Query<
         (Entity, Option<&RapierContextEntityLink>, &ImpulseJoint),
@@ -41,24 +40,25 @@ pub fn init_joints(
             continue;
         };
 
-        let Ok(context_joints) = context_access.get_mut(context_entity) else {
+        let Ok(rigidbody_set_joints) = context_access.get_mut(context_entity) else {
             log::error!("Could not find entity {context_entity} with rapier context while initializing {entity}");
             continue;
         };
-        let context = context_joints.0.into_inner();
+        let rigidbody_set = rigidbody_set_joints.0;
         let mut target = None;
         let mut body_entity = entity;
         while target.is_none() {
-            target = context.entity2body.get(&body_entity).copied();
+            target = rigidbody_set.entity2body.get(&body_entity).copied();
             if let Ok(parent_entity) = parent_query.get(body_entity) {
                 body_entity = parent_entity.get();
             } else {
                 break;
             }
         }
-        let joints = context_joints.1.into_inner();
+        let joints = rigidbody_set_joints.1.into_inner();
 
-        if let (Some(target), Some(source)) = (target, context.entity2body.get(&joint.parent)) {
+        if let (Some(target), Some(source)) = (target, rigidbody_set.entity2body.get(&joint.parent))
+        {
             let handle = joints.impulse_joints.insert(
                 *source,
                 target,
@@ -92,7 +92,7 @@ pub fn init_joints(
             log::error!("Could not find entity {context_entity} with rapier context while initializing {entity}");
             continue;
         };
-        let context = context_joints.0.into_inner();
+        let context = context_joints.0;
         let target = context.entity2body.get(&entity);
         let joints = context_joints.1.into_inner();
 

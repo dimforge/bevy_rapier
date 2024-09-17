@@ -7,6 +7,7 @@ use crate::plugin::context::RapierQueryPipeline;
 use crate::plugin::RapierConfiguration;
 use crate::plugin::RapierContext;
 use crate::plugin::RapierContextColliders;
+use crate::plugin::RapierRigidBodySet;
 use crate::prelude::KinematicCharacterController;
 use crate::prelude::KinematicCharacterControllerOutput;
 use crate::utils;
@@ -24,6 +25,7 @@ pub fn update_character_controls(
         &mut RapierContext,
         &RapierContextColliders,
         &RapierQueryPipeline,
+        &mut RapierRigidBodySet,
     )>,
     mut character_controllers: Query<(
         Entity,
@@ -52,12 +54,13 @@ pub fn update_character_controls(
             let config = config
                 .get(rapier_context_link.0)
                 .expect("Could not get [`RapierConfiguration`]");
-            let (mut context, colliders, query_pipeline) = context_access
+            let (mut context, colliders, query_pipeline, mut rigidbody_set) = context_access
                 .get_mut(rapier_context_link.0)
                 .expect(RAPIER_CONTEXT_EXPECT_ERROR);
 
             let context_colliders = &*colliders;
             let context = &mut *context;
+            let rigidbody_set = &mut *rigidbody_set;
             let query_pipeline = &*query_pipeline;
             let scaled_custom_shape =
                 controller
@@ -77,7 +80,7 @@ pub fn update_character_controls(
                     .and_then(|c| c.parent())
             });
             let entity_to_move = parent_rigid_body
-                .and_then(|rb| context.rigid_body_entity(rb))
+                .and_then(|rb| rigidbody_set.rigid_body_entity(rb))
                 .unwrap_or(entity);
 
             let (character_shape, character_pos) = if let Some((scaled_shape, tra, rot)) =
@@ -85,7 +88,7 @@ pub fn update_character_controls(
             {
                 let mut shape_pos: Isometry<Real> = (*tra, *rot).into();
 
-                if let Some(body) = body_handle.and_then(|h| context.bodies.get(h.0)) {
+                if let Some(body) = body_handle.and_then(|h| rigidbody_set.bodies.get(h.0)) {
                     shape_pos = body.position() * shape_pos
                 } else if let Some(gtransform) = glob_transform {
                     shape_pos = utils::transform_to_iso(&gtransform.compute_transform()) * shape_pos
@@ -106,7 +109,7 @@ pub fn update_character_controls(
                 .custom_mass
                 .or_else(|| {
                     parent_rigid_body
-                        .and_then(|h| context.bodies.get(h))
+                        .and_then(|h| rigidbody_set.bodies.get(h))
                         .map(|rb| rb.mass())
                 })
                 .unwrap_or(0.0);
@@ -130,7 +133,7 @@ pub fn update_character_controls(
 
             let movement = raw_controller.move_shape(
                 context.integration_parameters.dt,
-                &context.bodies,
+                &rigidbody_set.bodies,
                 &context_colliders.colliders,
                 &query_pipeline.query_pipeline,
                 character_shape,
@@ -143,7 +146,7 @@ pub fn update_character_controls(
             if controller.apply_impulse_to_dynamic_bodies {
                 raw_controller.solve_character_collision_impulses(
                     context.integration_parameters.dt,
-                    &mut context.bodies,
+                    &mut rigidbody_set.bodies,
                     &context_colliders.colliders,
                     &query_pipeline.query_pipeline,
                     character_shape,

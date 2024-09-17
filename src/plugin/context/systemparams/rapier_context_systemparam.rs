@@ -1,4 +1,7 @@
-use crate::math::{Rot, Vect};
+use crate::{
+    math::{Rot, Vect},
+    plugin::context::RapierRigidBodySet,
+};
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 use rapier::prelude::Real;
@@ -28,6 +31,7 @@ pub struct ReadDefaultRapierContext<'w, 's, T: Component = DefaultRapierContext>
             &'static RapierContextColliders,
             &'static RapierContextJoints,
             &'static RapierQueryPipeline,
+            &'static RapierRigidBodySet,
         ),
         With<T>,
     >,
@@ -39,12 +43,14 @@ impl<'w, 's, T: Component> ReadDefaultRapierContext<'w, 's, T> {
     /// SAFETY: This method will panic if its underlying query fails.
     /// See [`RapierContextAccess`] for a safe alternative.
     pub fn single(&'_ self) -> RapierContextWhole {
-        let (context, colliders, joints, query) = self.rapier_context.single();
+        let (context, colliders, joints, query_pipeline, rigidbody_set) =
+            self.rapier_context.single();
         RapierContextWhole {
             context,
             colliders,
             joints,
-            query_pipeline: query,
+            query_pipeline,
+            rigidbody_set: rigidbody_set,
         }
     }
 }
@@ -56,12 +62,13 @@ pub struct RapierContextWhole<'a> {
     pub colliders: &'a RapierContextColliders,
     pub joints: &'a RapierContextJoints,
     pub query_pipeline: &'a RapierQueryPipeline,
+    pub rigidbody_set: &'a RapierRigidBodySet,
 }
 
 impl<'a> RapierContextWhole<'a> {
     /// Shortcut to [`RapierContext::impulse_revolute_joint_angle`]
     pub fn impulse_revolute_joint_angle(&self, entity: Entity) -> Option<f32> {
-        self.context
+        self.rigidbody_set
             .impulse_revolute_joint_angle(self.joints, entity)
     }
     /// Shortcut to [`RapierQueryPipeline::cast_ray`]
@@ -74,8 +81,8 @@ impl<'a> RapierContextWhole<'a> {
         filter: QueryFilter,
     ) -> Option<(Entity, Real)> {
         self.query_pipeline.cast_ray(
-            &self.context,
             &self.colliders,
+            &self.rigidbody_set,
             ray_origin,
             ray_dir,
             max_toi,

@@ -25,7 +25,7 @@ use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
 use bevy::prelude::*;
 
 use super::context::{RapierContextJoints, RapierQueryPipeline};
-use super::RapierContextColliders;
+use super::{RapierContextColliders, RapierRigidBodySet};
 
 /// System responsible for advancing the physics simulation, and updating the internal state
 /// for scene queries.
@@ -35,6 +35,7 @@ pub fn step_simulation<Hooks>(
         &mut RapierContextColliders,
         &mut RapierQueryPipeline,
         &mut RapierContextJoints,
+        &mut RapierRigidBodySet,
         &RapierConfiguration,
         &mut SimulationToRenderTime,
     )>,
@@ -55,6 +56,7 @@ pub fn step_simulation<Hooks>(
         mut context_colliders,
         mut query_pipeline,
         mut joints,
+        mut rigidbody_set,
         config,
         mut sim_to_render_time,
     ) in context.iter_mut()
@@ -66,6 +68,7 @@ pub fn step_simulation<Hooks>(
             context.step_simulation(
                 context_colliders,
                 &mut *joints,
+                &mut rigidbody_set,
                 config.gravity,
                 *timestep_mode,
                 Some((&collision_events, &contact_force_events)),
@@ -75,7 +78,7 @@ pub fn step_simulation<Hooks>(
                 Some(&mut interpolation_query),
             );
         } else {
-            context.propagate_modified_body_positions_to_colliders(context_colliders);
+            rigidbody_set.propagate_modified_body_positions_to_colliders(context_colliders);
         }
 
         if config.query_pipeline_active {
@@ -103,7 +106,7 @@ pub mod tests {
 
     use super::*;
     use crate::{
-        plugin::{NoUserData, RapierContextColliders, RapierPhysicsPlugin},
+        plugin::{NoUserData, RapierContextColliders, RapierPhysicsPlugin, RapierRigidBodySet},
         prelude::{Collider, CollidingEntities, RigidBody},
         utils,
     };
@@ -238,10 +241,14 @@ pub mod tests {
             app.update();
 
             let world = app.world_mut();
-            let context = world.query::<&RapierContext>().iter(&world).next().unwrap();
+            let rigidbody_set = world
+                .query::<&RapierRigidBodySet>()
+                .iter(&world)
+                .next()
+                .unwrap();
             let child_transform = world.entity(child).get::<GlobalTransform>().unwrap();
-            let child_handle = context.entity2body[&child];
-            let child_body = context.bodies.get(child_handle).unwrap();
+            let child_handle = rigidbody_set.entity2body[&child];
+            let child_body = rigidbody_set.bodies.get(child_handle).unwrap();
             let body_transform = utils::iso_to_transform(child_body.position());
             assert_eq!(
                 GlobalTransform::from(body_transform),
@@ -302,13 +309,13 @@ pub mod tests {
                 .unwrap()
                 .compute_transform();
             let world = app.world_mut();
-            let (context, context_colliders) = world
-                .query::<(&RapierContext, &RapierContextColliders)>()
+            let (rigidbody_set, context_colliders) = world
+                .query::<(&RapierRigidBodySet, &RapierContextColliders)>()
                 .iter(&world)
                 .next()
                 .unwrap();
-            let parent_handle = context.entity2body[&parent];
-            let parent_body = context.bodies.get(parent_handle).unwrap();
+            let parent_handle = rigidbody_set.entity2body[&parent];
+            let parent_body = rigidbody_set.bodies.get(parent_handle).unwrap();
             let child_collider_handle = parent_body.colliders()[0];
             let child_collider = context_colliders
                 .colliders

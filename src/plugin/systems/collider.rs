@@ -3,8 +3,7 @@ use crate::geometry::Collider;
 use crate::plugin::context::systemparams::{RapierEntity, RAPIER_CONTEXT_EXPECT_ERROR};
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::{
-    DefaultRapierContext, RapierConfiguration, RapierContext, RapierContextColliders,
-    WriteRapierContext,
+    DefaultRapierContext, RapierConfiguration, RapierContextColliders, RapierRigidBodySet,
 };
 use crate::prelude::{
     ActiveCollisionTypes, ActiveEvents, ActiveHooks, ColliderDisabled, ColliderMassProperties,
@@ -86,7 +85,7 @@ pub fn apply_scale(
 
 /// System responsible for applying changes the user made to a collider-related component.
 pub fn apply_collider_user_changes(
-    mut context: Query<(&RapierContext, &mut RapierContextColliders)>,
+    mut context: Query<(&RapierRigidBodySet, &mut RapierContextColliders)>,
     config: Query<&RapierConfiguration>,
     (changed_collider_transforms, parent_query, transform_query): (
         Query<
@@ -144,16 +143,16 @@ pub fn apply_collider_user_changes(
     mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
     for (rapier_entity, handle, transform) in changed_collider_transforms.iter() {
-        let (context, mut context_colliders) = context
+        let (rigidbody_set, mut context_colliders) = context
             .get_mut(rapier_entity.rapier_context_link.0)
             .expect(RAPIER_CONTEXT_EXPECT_ERROR);
         if context_colliders
-            .collider_parent(context, rapier_entity.entity)
+            .collider_parent(rigidbody_set, rapier_entity.entity)
             .is_some()
         {
             let (_, collider_position) = collider_offset(
                 rapier_entity.entity,
-                context,
+                rigidbody_set,
                 &parent_query,
                 &transform_query,
             );
@@ -167,7 +166,7 @@ pub fn apply_collider_user_changes(
     }
 
     for (rapier_entity, handle, shape) in changed_shapes.iter() {
-        let (context, mut context_colliders) = context
+        let (rigidbody_set, mut context_colliders) = context
             .get_mut(rapier_entity.rapier_context_link.0)
             .expect(RAPIER_CONTEXT_EXPECT_ERROR);
         let config = config.get(rapier_entity.rapier_context_link.0).unwrap();
@@ -177,7 +176,7 @@ pub fn apply_collider_user_changes(
             co.set_shape(scaled_shape.raw.clone());
 
             if let Some(body) = co.parent() {
-                if let Some(body_entity) = context.rigid_body_entity(body) {
+                if let Some(body_entity) = rigidbody_set.rigid_body_entity(body) {
                     mass_modified.send(body_entity.into());
                 }
             }
@@ -286,7 +285,7 @@ pub fn apply_collider_user_changes(
     }
 
     for (rapier_entity, handle, mprops) in changed_collider_mass_props.iter() {
-        let (context, mut context_colliders) = context
+        let (rigidbody_set, mut context_colliders) = context
             .get_mut(rapier_entity.rapier_context_link.0)
             .expect(RAPIER_CONTEXT_EXPECT_ERROR);
         if let Some(co) = context_colliders.colliders.get_mut(handle.0) {
@@ -299,7 +298,7 @@ pub fn apply_collider_user_changes(
             }
 
             if let Some(body) = co.parent() {
-                if let Some(body_entity) = context.rigid_body_entity(body) {
+                if let Some(body_entity) = rigidbody_set.rigid_body_entity(body) {
                     mass_modified.send(body_entity.into());
                 }
             }
@@ -309,12 +308,12 @@ pub fn apply_collider_user_changes(
 
 pub(crate) fn collider_offset(
     entity: Entity,
-    context: &RapierContext,
+    rigidbody_set: &RapierRigidBodySet,
     parent_query: &Query<&Parent>,
     transform_query: &Query<&Transform>,
 ) -> (Option<RigidBodyHandle>, Transform) {
     let mut body_entity = entity;
-    let mut body_handle = context.entity2body.get(&body_entity).copied();
+    let mut body_handle = rigidbody_set.entity2body.get(&body_entity).copied();
     let mut child_transform = Transform::default();
     while body_handle.is_none() {
         if let Ok(parent_entity) = parent_query.get(body_entity) {
@@ -326,7 +325,7 @@ pub(crate) fn collider_offset(
             break;
         }
 
-        body_handle = context.entity2body.get(&body_entity).copied();
+        body_handle = rigidbody_set.entity2body.get(&body_entity).copied();
     }
 
     if body_handle.is_some() {
@@ -347,7 +346,7 @@ pub(crate) fn collider_offset(
 pub fn init_colliders(
     mut commands: Commands,
     config: Query<&RapierConfiguration>,
-    mut context_access: Query<(&mut RapierContext, &mut RapierContextColliders)>,
+    mut context_access: Query<(&mut RapierRigidBodySet, &mut RapierContextColliders)>,
     default_context_access: Query<Entity, With<DefaultRapierContext>>,
     colliders: Query<(ColliderComponents, Option<&GlobalTransform>), Without<RapierColliderHandle>>,
     mut rigid_body_mprops: Query<&mut ReadMassProperties>,
@@ -393,12 +392,13 @@ pub fn init_colliders(
             panic!("Failed to retrieve `RapierConfiguration` on entity {context_entity}.")
         });
 
-        let Some(mut context) = context_access.get_mut(context_entity).ok() else {
+        let Some(mut rigidbody_set_collider_set) = context_access.get_mut(context_entity).ok()
+        else {
             log::error!("Could not find entity {context_entity} with rapier context while initializing {entity}");
             continue;
         };
-        let context_colliders = &mut *context.1;
-        let context = &mut *context.0;
+        let context_colliders = &mut *rigidbody_set_collider_set.1;
+        let rigidbody_set = &mut *rigidbody_set_collider_set.0;
         let mut scaled_shape = shape.clone();
         scaled_shape.set_scale(shape.scale, config.scaled_shape_subdivision);
         let mut builder = ColliderBuilder::new(scaled_shape.raw.clone());
@@ -457,7 +457,7 @@ pub fn init_colliders(
         }
         let body_entity = entity;
         let (body_handle, child_transform) =
-            collider_offset(entity, context, &parent_query, &transform_query);
+            collider_offset(entity, &rigidbody_set, &parent_query, &transform_query);
 
         builder = builder.user_data(entity.to_bits() as u128);
 
@@ -466,12 +466,12 @@ pub fn init_colliders(
             let handle = context_colliders.colliders.insert_with_parent(
                 builder,
                 body_handle,
-                &mut context.bodies,
+                &mut rigidbody_set.bodies,
             );
             if let Ok(mut mprops) = rigid_body_mprops.get_mut(body_entity) {
                 // Inserting the collider changed the rigid-body’s mass properties.
                 // Read them back from the engine.
-                if let Some(parent_body) = context.bodies.get(body_handle) {
+                if let Some(parent_body) = rigidbody_set.bodies.get(body_handle) {
                     mprops.set(MassProperties::from_rapier(
                         parent_body.mass_properties().local_mprops,
                     ));

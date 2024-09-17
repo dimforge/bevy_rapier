@@ -4,9 +4,8 @@ use crate::dynamics::{
     RapierImpulseJointHandle, RapierMultibodyJointHandle, RapierRigidBodyHandle,
 };
 use crate::geometry::RapierColliderHandle;
-use crate::plugin::{
-    RapierContext, RapierContextColliders, RapierContextEntityLink, RapierContextJoints,
-};
+use crate::plugin::context::RapierRigidBodySet;
+use crate::plugin::{RapierContextColliders, RapierContextEntityLink, RapierContextJoints};
 use bevy::prelude::*;
 
 /// If an entity is turned into the child of something with a physics context link,
@@ -62,9 +61,9 @@ pub fn on_change_world(
     q_children: Query<&Children>,
     q_physics_world: Query<&RapierContextEntityLink>,
     q_context: Query<(
-        &RapierContext,
         &RapierContextColliders,
         &RapierContextJoints,
+        &RapierRigidBodySet,
     )>,
     mut commands: Commands,
 ) {
@@ -72,12 +71,12 @@ pub fn on_change_world(
         let context = q_context.get(new_physics_world.0);
         // Ensure the world actually changed before removing them from the world
         if !context
-            .map(|(r, c, j)| {
+            .map(|(colliders, joints, rigidbody_set)| {
                 // They are already apart of this world if any of these are true
-                c.entity2collider.contains_key(&entity)
-                    || r.entity2body.contains_key(&entity)
-                    || j.entity2impulse_joint.contains_key(&entity)
-                    || j.entity2multibody_joint.contains_key(&entity)
+                colliders.entity2collider.contains_key(&entity)
+                    || rigidbody_set.entity2body.contains_key(&entity)
+                    || joints.entity2impulse_joint.contains_key(&entity)
+                    || joints.entity2multibody_joint.contains_key(&entity)
             })
             .unwrap_or(false)
         {
@@ -132,7 +131,7 @@ mod test {
     use crate::plugin::systems::tests::HeadlessRenderPlugin;
     use crate::plugin::{
         NoUserData, PhysicsSet, RapierContext, RapierContextColliders, RapierContextEntityLink,
-        RapierContextJoints, RapierPhysicsPlugin,
+        RapierContextJoints, RapierPhysicsPlugin, RapierRigidBodySet,
     };
     use crate::prelude::{ActiveEvents, Collider, ContactForceEventThreshold, RigidBody, Sensor};
     use bevy::prelude::*;
@@ -174,6 +173,7 @@ mod test {
                 RapierContextColliders::default(),
                 RapierContextJoints::default(),
                 RapierQueryPipeline::default(),
+                RapierRigidBodySet::default(),
             ))
             .id();
         // FIXME: We need to wait 1 frame when creating a world.
