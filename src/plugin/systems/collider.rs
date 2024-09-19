@@ -3,7 +3,8 @@ use crate::geometry::Collider;
 use crate::plugin::context::systemparams::{RapierEntity, RAPIER_CONTEXT_EXPECT_ERROR};
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::{
-    DefaultRapierContext, RapierConfiguration, RapierContextColliders, RapierRigidBodySet,
+    context::{DefaultRapierContext, RapierContextColliders, RapierRigidBodySet},
+    RapierConfiguration,
 };
 use crate::prelude::{
     ActiveCollisionTypes, ActiveEvents, ActiveHooks, ColliderDisabled, ColliderMassProperties,

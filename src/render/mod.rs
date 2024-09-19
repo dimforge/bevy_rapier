@@ -1,5 +1,5 @@
-use crate::plugin::{
-    RapierContext, RapierContextColliders, RapierContextJoints, RapierRigidBodySet,
+use crate::plugin::context::{
+    RapierContextColliders, RapierContextJoints, RapierContextSimulation, RapierRigidBodySet,
 };
 use bevy::prelude::*;
 use bevy::transform::TransformSystem;
@@ -126,7 +126,7 @@ struct BevyLinesRenderBackend<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'd, 
     custom_colors: &'c Query<'world, 'state, &'a ColliderDebugColor>,
     default_collider_debug: ColliderDebug,
     override_visibility: &'v Query<'world, 'state, &'a ColliderDebug>,
-    context: &'b RapierContext,
+    context: &'b RapierContextSimulation,
     context_colliders: &'d RapierContextColliders,
     gizmos: &'p mut Gizmos<'world2, 'state2>,
 }
@@ -217,7 +217,7 @@ impl<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'd, 'v, 'p> DebugRenderBacken
 
 fn debug_render_scene<'a>(
     rapier_context: Query<(
-        &RapierContext,
+        &RapierContextSimulation,
         &RapierContextColliders,
         &RapierContextJoints,
         &RapierRigidBodySet,

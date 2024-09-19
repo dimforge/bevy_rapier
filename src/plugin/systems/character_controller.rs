@@ -5,9 +5,9 @@ use crate::plugin::context::systemparams::RAPIER_CONTEXT_EXPECT_ERROR;
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::context::RapierQueryPipeline;
 use crate::plugin::RapierConfiguration;
-use crate::plugin::RapierContext;
-use crate::plugin::RapierContextColliders;
-use crate::plugin::RapierRigidBodySet;
+use crate::prelude::context::RapierContextColliders;
+use crate::prelude::context::RapierContextSimulation;
+use crate::prelude::context::RapierRigidBodySet;
 use crate::prelude::KinematicCharacterController;
 use crate::prelude::KinematicCharacterControllerOutput;
 use crate::utils;
@@ -22,7 +22,7 @@ pub fn update_character_controls(
     mut commands: Commands,
     config: Query<&RapierConfiguration>,
     mut context_access: Query<(
-        &mut RapierContext,
+        &mut RapierContextSimulation,
         &RapierContextColliders,
         &RapierQueryPipeline,
         &mut RapierRigidBodySet,

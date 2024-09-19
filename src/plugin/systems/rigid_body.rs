@@ -1,8 +1,10 @@
 use crate::dynamics::RapierRigidBodyHandle;
 use crate::plugin::context::systemparams::RAPIER_CONTEXT_EXPECT_ERROR;
-use crate::plugin::context::RapierContextEntityLink;
-use crate::plugin::{configuration::TimestepMode, RapierConfiguration, RapierContext};
-use crate::{dynamics::RigidBody, plugin::configuration::SimulationToRenderTime};
+use crate::plugin::context::{
+    DefaultRapierContext, RapierContextColliders, RapierContextEntityLink, RapierRigidBodySet,
+};
+use crate::plugin::{configuration::TimestepMode, RapierConfiguration};
+use crate::{dynamics::RigidBody, plugin::context::SimulationToRenderTime};
 use crate::{prelude::*, utils};
 use bevy::prelude::*;
 use rapier::dynamics::{RigidBodyBuilder, RigidBodyHandle, RigidBodyType};

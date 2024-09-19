@@ -1,10 +1,13 @@
 use crate::dynamics::{GenericJoint, GenericJointBuilder};
 use crate::math::{Real, Vect};
-use crate::plugin::RapierRigidBodySet;
+use crate::plugin::context::RapierRigidBodySet;
 use bevy::prelude::Entity;
 use rapier::dynamics::{
     JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel, RigidBodyHandle, RigidBodySet,
 };
+
+#[cfg(doc)]
+use crate::prelude::RapierContext;
 
 use super::TypedJoint;
 

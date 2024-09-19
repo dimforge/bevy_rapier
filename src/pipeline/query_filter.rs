@@ -5,7 +5,7 @@ pub use rapier::pipeline::QueryFilterFlags;
 use crate::geometry::CollisionGroups;
 
 #[cfg(doc)]
-use crate::prelude::RapierContext;
+use crate::prelude::{RapierContext, RapierContextSimulation};
 
 /// A filter that describes what collider should be included or excluded from a scene query.
 ///

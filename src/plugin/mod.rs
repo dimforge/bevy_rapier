@@ -1,11 +1,4 @@
-pub use self::configuration::{RapierConfiguration, SimulationToRenderTime, TimestepMode};
-pub use self::context::{
-    systemparams::{
-        RapierContextAccess, ReadDefaultRapierContext, ReadDefaultRapierContextColliders,
-    },
-    DefaultRapierContext, RapierContext, RapierContextColliders, RapierContextEntityLink,
-    RapierContextJoints, RapierRigidBodySet,
-};
+pub use self::configuration::{RapierConfiguration, TimestepMode};
 pub use self::plugin::{
     NoUserData, PhysicsSet, RapierContextInitialization, RapierPhysicsPlugin,
     RapierTransformPropagateSet,
@@ -16,8 +9,8 @@ pub use narrow_phase::{ContactManifoldView, ContactPairView, ContactView, Solver
 #[allow(clippy::too_many_arguments)]
 pub mod systems;
 
-mod configuration;
-mod context;
+pub mod configuration;
+pub mod context;
 mod narrow_phase;
 #[allow(clippy::module_inception)]
 mod plugin;

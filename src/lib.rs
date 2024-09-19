@@ -72,6 +72,8 @@ pub mod prelude {
     pub use crate::geometry::*;
     pub use crate::math::*;
     pub use crate::pipeline::*;
+    pub use crate::plugin::context::systemparams::*;
+    pub use crate::plugin::context::*;
     pub use crate::plugin::*;
     #[cfg(any(feature = "debug-render-3d", feature = "debug-render-2d"))]
     pub use crate::render::*;

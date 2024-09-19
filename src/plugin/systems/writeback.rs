@@ -1,8 +1,7 @@
 use crate::dynamics::MassProperties;
 use crate::dynamics::ReadMassProperties;
-use crate::plugin::context::RapierContextEntityLink;
+use crate::plugin::context::{RapierContextEntityLink, RapierRigidBodySet};
 use crate::plugin::RapierConfiguration;
-use crate::plugin::RapierRigidBodySet;
 use crate::prelude::MassModifiedEvent;
 use bevy::prelude::*;
 

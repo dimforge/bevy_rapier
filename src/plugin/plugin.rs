@@ -1,6 +1,4 @@
 use crate::pipeline::{CollisionEvent, ContactForceEvent};
-use crate::plugin::configuration::SimulationToRenderTime;
-use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
 use bevy::ecs::{
     intern::Interned,
@@ -11,7 +9,10 @@ use bevy::{prelude::*, transform::TransformSystem};
 use rapier::dynamics::IntegrationParameters;
 use std::marker::PhantomData;
 
-use super::context::{DefaultRapierContext, RapierQueryPipeline};
+use super::context::{DefaultRapierContext, RapierQueryPipeline, RapierRigidBodySet};
+
+#[cfg(doc)]
+use crate::plugin::context::systemparams::RapierContext;
 
 /// No specific user-data is associated to the hooks.
 pub type NoUserData = ();
@@ -333,12 +334,12 @@ pub fn insert_default_world(
         RapierContextInitialization::InitializeDefaultRapierContext { length_unit } => {
             commands.spawn((
                 Name::new("Rapier Context"),
-                RapierContext {
+                RapierContextSimulation {
                     integration_parameters: IntegrationParameters {
                         length_unit: *length_unit,
                         ..default()
                     },
-                    ..RapierContext::default()
+                    ..RapierContextSimulation::default()
                 },
                 RapierContextColliders::default(),
                 RapierContextJoints::default(),
@@ -352,7 +353,7 @@ pub fn insert_default_world(
 
 pub fn setup_rapier_configuration(
     mut commands: Commands,
-    rapier_context: Query<(Entity, &RapierContext), Without<RapierConfiguration>>,
+    rapier_context: Query<(Entity, &RapierContextSimulation), Without<RapierConfiguration>>,
 ) {
     for (e, rapier_context) in rapier_context.iter() {
         commands.entity(e).insert(RapierConfiguration::new(
@@ -362,7 +363,13 @@ pub fn setup_rapier_configuration(
 }
 pub fn setup_rapier_simulation_to_render_time(
     mut commands: Commands,
-    rapier_context: Query<Entity, (With<RapierContext>, Without<SimulationToRenderTime>)>,
+    rapier_context: Query<
+        Entity,
+        (
+            With<RapierContextSimulation>,
+            Without<SimulationToRenderTime>,
+        ),
+    >,
 ) {
     for e in rapier_context.iter() {
         commands.entity(e).insert(SimulationToRenderTime::default());
@@ -380,7 +387,7 @@ mod test {
     use rapier::{data::Index, dynamics::RigidBodyHandle};
     use systems::tests::HeadlessRenderPlugin;
 
-    use crate::{plugin::*, prelude::*};
+    use crate::{plugin::context::*, plugin::*, prelude::*};
 
     #[cfg(feature = "dim3")]
     fn cuboid(hx: Real, hy: Real, hz: Real) -> Collider {

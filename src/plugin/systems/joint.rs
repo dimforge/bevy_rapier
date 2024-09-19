@@ -3,10 +3,10 @@ use crate::dynamics::MultibodyJoint;
 use crate::dynamics::RapierImpulseJointHandle;
 use crate::dynamics::RapierMultibodyJointHandle;
 use crate::plugin::context::systemparams::RAPIER_CONTEXT_EXPECT_ERROR;
+use crate::plugin::context::DefaultRapierContext;
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::context::RapierContextJoints;
-use crate::plugin::DefaultRapierContext;
-use crate::plugin::RapierRigidBodySet;
+use crate::plugin::context::RapierRigidBodySet;
 use bevy::prelude::*;
 
 /// System responsible for creating new Rapier joints from the related `bevy_rapier` components.

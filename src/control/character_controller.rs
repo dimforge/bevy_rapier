@@ -2,7 +2,7 @@ use crate::geometry::{Collider, CollisionGroups, ShapeCastHit};
 use crate::math::{Real, Rot, Vect};
 use bevy::prelude::*;
 
-use crate::plugin::{RapierContext, RapierContextColliders};
+use crate::plugin::context::RapierContextColliders;
 pub use rapier::control::CharacterAutostep;
 pub use rapier::control::CharacterLength;
 use rapier::prelude::{ColliderSet, QueryFilterFlags};

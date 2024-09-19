@@ -18,20 +18,22 @@ pub use writeback::*;
 
 use crate::dynamics::{RapierRigidBodyHandle, TransformInterpolation};
 use crate::pipeline::{CollisionEvent, ContactForceEvent};
-use crate::plugin::configuration::SimulationToRenderTime;
-use crate::plugin::{RapierConfiguration, RapierContext, TimestepMode};
+use crate::plugin::context::SimulationToRenderTime;
+use crate::plugin::{RapierConfiguration, TimestepMode};
 use crate::prelude::{BevyPhysicsHooks, BevyPhysicsHooksAdapter};
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
 use bevy::prelude::*;
 
-use super::context::{RapierContextJoints, RapierQueryPipeline};
-use super::{RapierContextColliders, RapierRigidBodySet};
+use super::context::{
+    RapierContextColliders, RapierContextJoints, RapierContextSimulation, RapierQueryPipeline,
+    RapierRigidBodySet,
+};
 
 /// System responsible for advancing the physics simulation, and updating the internal state
 /// for scene queries.
 pub fn step_simulation<Hooks>(
     mut context: Query<(
-        &mut RapierContext,
+        &mut RapierContextSimulation,
         &mut RapierContextColliders,
         &mut RapierQueryPipeline,
         &mut RapierContextJoints,
@@ -106,7 +108,7 @@ pub mod tests {
 
     use super::*;
     use crate::{
-        plugin::{NoUserData, RapierContextColliders, RapierPhysicsPlugin, RapierRigidBodySet},
+        plugin::{NoUserData, RapierPhysicsPlugin},
         prelude::{Collider, CollidingEntities, RigidBody},
         utils,
     };

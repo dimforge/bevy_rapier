@@ -7,10 +7,9 @@ use crate::dynamics::RigidBody;
 use crate::geometry::Collider;
 use crate::geometry::ColliderDisabled;
 use crate::geometry::RapierColliderHandle;
-use crate::plugin::context::RapierContextJoints;
-use crate::plugin::RapierContext;
-use crate::plugin::RapierContextColliders;
-use crate::plugin::RapierRigidBodySet;
+use crate::plugin::context::{
+    RapierContextColliders, RapierContextJoints, RapierContextSimulation, RapierRigidBodySet,
+};
 use crate::prelude::MassModifiedEvent;
 use crate::prelude::RigidBodyDisabled;
 use crate::prelude::Sensor;
@@ -23,7 +22,7 @@ use bevy::prelude::*;
 pub fn sync_removals(
     mut commands: Commands,
     mut context_writer: Query<(
-        &mut RapierContext,
+        &mut RapierContextSimulation,
         &mut RapierContextColliders,
         &mut RapierContextJoints,
         &mut RapierRigidBodySet,

@@ -1,3 +1,5 @@
+//! These are components used and modified during a simulation frame.
+
 pub mod systemparams;
 
 use bevy::prelude::*;
@@ -19,33 +21,45 @@ use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query};
 use crate::control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput};
 use crate::dynamics::TransformInterpolation;
 use crate::parry::query::details::ShapeCastOptions;
-use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
+use crate::plugin::configuration::TimestepMode;
 use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
 use rapier::control::CharacterAutostep;
 use rapier::geometry::DefaultBroadPhase;
 
 #[cfg(doc)]
-use crate::prelude::{ImpulseJoint, MultibodyJoint, RevoluteJoint, TypedJoint};
+use crate::prelude::{
+    systemparams::{RapierContext, ReadRapierContext},
+    ImpulseJoint, MultibodyJoint, RevoluteJoint, TypedJoint,
+};
 
-/// Marker component for to access the default [`RapierContext`].
+/// Difference between simulation and rendering time
+#[derive(Component, Default, Reflect)]
+pub struct SimulationToRenderTime {
+    /// Difference between simulation and rendering time
+    pub diff: f32,
+}
+
+/// Marker component for to access the default [`ReadRapierContext`].
 ///
-/// This is used by [`systemparams::ReadDefaultRapierContext`] and other default accesses
+/// This is use as the default marker filter for [`systemparams::ReadRapierContext`] and [`systemparams::WriteRapierContext`]
 /// to help with getting a reference to the correct RapierContext.
 ///
 /// If you're making a library, you might be interested in [`RapierContextEntityLink`]
-/// and leverage a [`Query<&RapierContext>`] to find the correct [`RapierContext`] of an entity.
+/// and leverage a [`Query`] to have precise access to relevant components (for example [`RapierContextSimulation`]).
+///
+/// See the list of full components in [`RapierContext`]
 #[derive(Component, Reflect, Debug, Clone, Copy)]
 pub struct DefaultRapierContext;
 
 /// This is a component applied to any entity containing a rapier handle component.
-/// The inner Entity referred to has the component [`RapierContext`] responsible for handling
+/// The inner Entity referred to has the component [`RapierContextSimulation`] responsible for handling
 /// its rapier data.
 #[derive(Component, Reflect, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RapierContextEntityLink(pub Entity);
 
 /// The set of colliders part of the simulation.
 ///
-/// This should be attached on an entity with a [`RapierContext`]
+/// This should be attached on an entity with a [`RapierContextSimulation`]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Component, Default)]
 pub struct RapierContextColliders {
@@ -113,7 +127,7 @@ impl RapierContextColliders {
 
 /// The sets of joints part of the simulation.
 ///
-/// This should be attached on an entity with a [`RapierContext`]
+/// This should be attached on an entity with a [`RapierContextSimulation`]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Component, Default)]
 pub struct RapierContextJoints {
@@ -643,7 +657,7 @@ impl RapierQueryPipeline {
 
 /// The set of rigid-bodies part of the simulation.
 ///
-/// This should be attached on an entity with a [`RapierContext`]
+/// This should be attached on an entity with a [`RapierContextSimulation`]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Component, Default)]
 pub struct RapierRigidBodySet {
@@ -720,7 +734,7 @@ impl RapierRigidBodySet {
 /// The Rapier context, containing all the state of the physics engine.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Component)]
-pub struct RapierContext {
+pub struct RapierContextSimulation {
     /// The island manager, which detects what object is sleeping
     /// (not moving much) to reduce computations.
     pub islands: IslandManager,
@@ -752,7 +766,7 @@ pub struct RapierContext {
     pub(crate) character_collisions_collector: Vec<rapier::control::CharacterCollision>,
 }
 
-impl Default for RapierContext {
+impl Default for RapierContextSimulation {
     fn default() -> Self {
         Self {
             islands: IslandManager::new(),
@@ -770,7 +784,7 @@ impl Default for RapierContext {
     }
 }
 
-impl RapierContext {
+impl RapierContextSimulation {
     /// Advance the simulation, based on the given timestep mode.
     #[allow(clippy::too_many_arguments)]
     pub fn step_simulation(

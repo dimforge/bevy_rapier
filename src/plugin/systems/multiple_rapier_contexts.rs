@@ -5,7 +5,9 @@ use crate::dynamics::{
 };
 use crate::geometry::RapierColliderHandle;
 use crate::plugin::context::RapierRigidBodySet;
-use crate::plugin::{RapierContextColliders, RapierContextEntityLink, RapierContextJoints};
+use crate::plugin::context::{
+    RapierContextColliders, RapierContextEntityLink, RapierContextJoints,
+};
 use bevy::prelude::*;
 
 /// If an entity is turned into the child of something with a physics context link,
@@ -130,8 +132,11 @@ mod test {
     use crate::plugin::context::RapierQueryPipeline;
     use crate::plugin::systems::tests::HeadlessRenderPlugin;
     use crate::plugin::{
-        NoUserData, PhysicsSet, RapierContext, RapierContextColliders, RapierContextEntityLink,
-        RapierContextJoints, RapierPhysicsPlugin, RapierRigidBodySet,
+        context::{
+            RapierContextColliders, RapierContextEntityLink, RapierContextJoints,
+            RapierContextSimulation, RapierRigidBodySet,
+        },
+        NoUserData, PhysicsSet, RapierPhysicsPlugin,
     };
     use crate::prelude::{ActiveEvents, Collider, ContactForceEventThreshold, RigidBody, Sensor};
     use bevy::prelude::*;
@@ -169,7 +174,7 @@ mod test {
         // Verify link is correctly updated for children.
         let new_rapier_context = world
             .spawn((
-                RapierContext::default(),
+                RapierContextSimulation::default(),
                 RapierContextColliders::default(),
                 RapierContextJoints::default(),
                 RapierQueryPipeline::default(),
