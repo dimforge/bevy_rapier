@@ -1,6 +1,4 @@
 use crate::pipeline::{CollisionEvent, ContactForceEvent};
-use crate::plugin::configuration::SimulationToRenderTime;
-use crate::plugin::{systems, RapierConfiguration, RapierContext};
 use crate::prelude::*;
 use bevy::ecs::{
     intern::Interned,
@@ -11,7 +9,10 @@ use bevy::{prelude::*, transform::TransformSystem};
 use rapier::dynamics::IntegrationParameters;
 use std::marker::PhantomData;
 
-use super::context::DefaultRapierContext;
+use super::context::{DefaultRapierContext, RapierQueryPipeline, RapierRigidBodySet};
+
+#[cfg(doc)]
+use crate::plugin::context::systemparams::RapierContext;
 
 /// No specific user-data is associated to the hooks.
 pub type NoUserData = ();
@@ -99,7 +100,7 @@ where
         match set {
             PhysicsSet::SyncBackend => (
                 // Run the character controller before the manual transform propagation.
-                systems::update_character_controls,
+                systems::update_character_controls.in_set(PhysicsSet::SyncBackend),
                 // Run Bevy transform propagation additionally to sync [`GlobalTransform`]
                 (
                     bevy::transform::systems::sync_simple_transforms,
@@ -107,34 +108,55 @@ where
                 )
                     .chain()
                     .in_set(RapierTransformPropagateSet),
-                systems::on_add_entity_with_parent,
-                systems::on_change_world,
-                systems::sync_removals,
-                #[cfg(all(feature = "dim3", feature = "async-collider"))]
-                systems::init_async_scene_colliders,
-                #[cfg(all(feature = "dim3", feature = "async-collider"))]
-                systems::init_async_colliders,
-                systems::init_rigid_bodies,
-                systems::init_colliders,
-                systems::init_joints,
-                systems::apply_scale,
-                systems::apply_collider_user_changes,
-                systems::apply_rigid_body_user_changes,
-                systems::apply_joint_user_changes,
-                systems::apply_initial_rigid_body_impulses,
+                (
+                    (
+                        systems::on_add_entity_with_parent,
+                        systems::on_change_world,
+                        systems::sync_removals,
+                        #[cfg(all(feature = "dim3", feature = "async-collider"))]
+                        systems::init_async_scene_colliders,
+                        #[cfg(all(feature = "dim3", feature = "async-collider"))]
+                        systems::init_async_colliders,
+                        systems::init_rigid_bodies,
+                        systems::init_colliders,
+                        systems::init_joints,
+                    )
+                        .chain()
+                        .in_set(PhysicsSet::SyncBackend),
+                    (
+                        (
+                            systems::apply_collider_user_changes.in_set(RapierBevyComponentApply),
+                            systems::apply_scale.in_set(RapierBevyComponentApply),
+                        )
+                            .chain(),
+                        systems::apply_joint_user_changes.in_set(RapierBevyComponentApply),
+                    ),
+                    // TODO: joints and colliders might be parallelizable.
+                    systems::apply_initial_rigid_body_impulses.in_set(RapierBevyComponentApply),
+                    systems::apply_rigid_body_user_changes.in_set(RapierBevyComponentApply),
+                )
+                    .chain(),
             )
                 .chain()
                 .into_configs(),
-            PhysicsSet::StepSimulation => (systems::step_simulation::<PhysicsHooks>).into_configs(),
+            PhysicsSet::StepSimulation => (systems::step_simulation::<PhysicsHooks>)
+                .in_set(PhysicsSet::StepSimulation)
+                .into_configs(),
             PhysicsSet::Writeback => (
                 systems::update_colliding_entities,
                 systems::writeback_rigid_bodies,
-                systems::writeback_mass_properties,
+                // Each writeback write to different properties.
+                systems::writeback_mass_properties.ambiguous_with(systems::writeback_rigid_bodies),
             )
+                .in_set(PhysicsSet::Writeback)
                 .into_configs(),
         }
     }
 }
+
+/// A set for rapier's copying bevy_rapier's Bevy components back into rapier.
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+pub struct RapierBevyComponentApply;
 
 /// A set for rapier's copy of Bevy's transform propagation systems.
 ///
@@ -244,14 +266,21 @@ where
                     .chain()
                     .before(TransformSystem::TransformPropagate),
             );
+            app.configure_sets(
+                self.schedule,
+                RapierTransformPropagateSet.in_set(PhysicsSet::SyncBackend),
+            );
+            app.configure_sets(
+                self.schedule,
+                RapierBevyComponentApply.in_set(PhysicsSet::SyncBackend),
+            );
 
             app.add_systems(
                 self.schedule,
                 (
-                    Self::get_systems(PhysicsSet::SyncBackend).in_set(PhysicsSet::SyncBackend),
-                    Self::get_systems(PhysicsSet::StepSimulation)
-                        .in_set(PhysicsSet::StepSimulation),
-                    Self::get_systems(PhysicsSet::Writeback).in_set(PhysicsSet::Writeback),
+                    Self::get_systems(PhysicsSet::SyncBackend),
+                    Self::get_systems(PhysicsSet::StepSimulation),
+                    Self::get_systems(PhysicsSet::Writeback),
                 ),
             );
             app.init_resource::<TimestepMode>();
@@ -305,13 +334,17 @@ pub fn insert_default_world(
         RapierContextInitialization::InitializeDefaultRapierContext { length_unit } => {
             commands.spawn((
                 Name::new("Rapier Context"),
-                RapierContext {
+                RapierContextSimulation {
                     integration_parameters: IntegrationParameters {
                         length_unit: *length_unit,
                         ..default()
                     },
-                    ..RapierContext::default()
+                    ..RapierContextSimulation::default()
                 },
+                RapierContextColliders::default(),
+                RapierContextJoints::default(),
+                RapierQueryPipeline::default(),
+                RapierRigidBodySet::default(),
                 DefaultRapierContext,
             ));
         }
@@ -320,7 +353,7 @@ pub fn insert_default_world(
 
 pub fn setup_rapier_configuration(
     mut commands: Commands,
-    rapier_context: Query<(Entity, &RapierContext), Without<RapierConfiguration>>,
+    rapier_context: Query<(Entity, &RapierContextSimulation), Without<RapierConfiguration>>,
 ) {
     for (e, rapier_context) in rapier_context.iter() {
         commands.entity(e).insert(RapierConfiguration::new(
@@ -330,7 +363,13 @@ pub fn setup_rapier_configuration(
 }
 pub fn setup_rapier_simulation_to_render_time(
     mut commands: Commands,
-    rapier_context: Query<Entity, (With<RapierContext>, Without<SimulationToRenderTime>)>,
+    rapier_context: Query<
+        Entity,
+        (
+            With<RapierContextSimulation>,
+            Without<SimulationToRenderTime>,
+        ),
+    >,
 ) {
     for e in rapier_context.iter() {
         commands.entity(e).insert(SimulationToRenderTime::default());
@@ -348,7 +387,7 @@ mod test {
     use rapier::{data::Index, dynamics::RigidBodyHandle};
     use systems::tests::HeadlessRenderPlugin;
 
-    use crate::{plugin::*, prelude::*};
+    use crate::{plugin::context::*, plugin::*, prelude::*};
 
     #[cfg(feature = "dim3")]
     fn cuboid(hx: Real, hy: Real, hz: Real) -> Collider {
@@ -425,22 +464,23 @@ mod test {
                 let mut stepping = world.resource_mut::<Stepping>();
                 stepping.continue_frame();
                 app.update();
-                let context = app
+
+                let rigidbody_set = app
                     .world_mut()
-                    .query::<&RapierContext>()
+                    .query::<&RapierRigidBodySet>()
                     .get_single(&app.world())
                     .unwrap();
 
-                println!("{:?}", &context.entity2body);
+                println!("{:?}", &rigidbody_set.entity2body);
             }
-            let context = app
+            let rigidbody_set = app
                 .world_mut()
-                .query::<&RapierContext>()
+                .query::<&RapierRigidBodySet>()
                 .get_single(&app.world())
                 .unwrap();
 
             assert_eq!(
-                context.entity2body.iter().next().unwrap().1,
+                rigidbody_set.entity2body.iter().next().unwrap().1,
                 // assert the generation is 0, that means we didn't modify it twice (due to change world detection)
                 &RigidBodyHandle(Index::from_raw_parts(0, 0))
             );

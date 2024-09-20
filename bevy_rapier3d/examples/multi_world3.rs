@@ -30,7 +30,7 @@ fn main() {
 
 fn create_worlds(mut commands: Commands) {
     for i in 0..N_WORLDS {
-        let mut world = commands.spawn((RapierContext::default(), WorldId(i)));
+        let mut world = commands.spawn((RapierContextSimulation::default(), WorldId(i)));
         if i == 0 {
             world.insert(DefaultRapierContext);
         }
@@ -75,7 +75,7 @@ fn change_world(
 }
 
 pub fn setup_physics(
-    context: Query<(Entity, &WorldId), With<RapierContext>>,
+    context: Query<(Entity, &WorldId), With<RapierContextSimulation>>,
     mut commands: Commands,
 ) {
     for (context_entity, id) in context.iter() {
