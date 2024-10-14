@@ -1,6 +1,6 @@
 //! Example using bevy_mod_debugdump to output a graph of systems execution order.
 //! run with:
-//! `cargo run --example debugdump2 > dump.dot  && dot -Tsvg dump.dot > dump.svg`
+//! `cargo run --example debugdump2 > dump.dot && dot -Tsvg dump.dot > dump.svg`
 
 use bevy::prelude::*;
 use bevy_mod_debugdump::{schedule_graph, schedule_graph_dot};

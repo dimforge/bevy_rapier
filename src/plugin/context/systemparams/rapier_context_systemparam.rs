@@ -4,16 +4,18 @@ use bevy::prelude::*;
 use rapier::prelude::Real;
 
 pub(crate) const RAPIER_CONTEXT_EXPECT_ERROR: &str =
-    "RapierContextEntityLink.0 refers to an entity without RapierContext.";
+    "RapierContextEntityLink.0 refers to an entity missing components from RapierContextBundle.";
 
 use crate::{
     plugin::context::{
-        RapierContextColliders, RapierContextJoints, RapierQueryPipeline, RapierRigidBodySet,
+        DefaultRapierContext, RapierContextColliders, RapierContextJoints, RapierContextSimulation,
+        RapierQueryPipeline, RapierRigidBodySet,
     },
     prelude::QueryFilter,
 };
 
-use super::super::{DefaultRapierContext, RapierContextSimulation};
+#[cfg(doc)]
+use crate::prelude::RapierContextBundle;
 
 /// Utility [`SystemParam`] to easily access every required components of a [`RapierContext`] immutably.
 ///
@@ -58,7 +60,7 @@ impl<'w, 's, T: query::QueryFilter + 'static> ReadRapierContext<'w, 's, T> {
 /// A helper struct to avoid passing too many parameters to most rapier functions.
 /// This helps with reducing boilerplate, at the (small) price of maybe getting too much information from the ECS.
 ///
-/// Note: This is not a component, refer to [`ReadRapierContext`] or [`WriteRapierContext`]
+/// Note: This is not a component, refer to [`ReadRapierContext`], [`WriteRapierContext`], or [`RapierContextBundle`]
 #[derive(query::QueryData)]
 pub struct RapierContext<'a> {
     /// The Rapier context, containing all the state of the physics engine.
