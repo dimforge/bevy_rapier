@@ -23,7 +23,6 @@ impl RapierContextSimulation {
                 self.narrow_phase
                     .contact_pairs_with(*h)
                     .map(|raw| ContactPairView {
-                        context: self,
                         context_colliders,
                         rigidbody_set,
                         raw,
@@ -77,7 +76,6 @@ impl RapierContextSimulation {
         self.narrow_phase
             .contact_pair(*h1, *h2)
             .map(|raw| ContactPairView {
-                context: self,
                 context_colliders,
                 rigidbody_set,
                 raw,
@@ -108,7 +106,6 @@ impl RapierContextSimulation {
         self.narrow_phase
             .contact_pairs()
             .map(|raw| ContactPairView {
-                context: self,
                 context_colliders,
                 rigidbody_set,
                 raw,
@@ -135,8 +132,6 @@ impl RapierContextSimulation {
 
 /// Read-only access to the properties of a contact manifold.
 pub struct ContactManifoldView<'a> {
-    context: &'a RapierContextSimulation,
-    context_colliders: &'a RapierContextColliders,
     rigidbody_set: &'a RapierRigidBodySet,
     /// The raw contact manifold from Rapier.
     pub raw: &'a ContactManifold,
@@ -344,7 +339,6 @@ impl<'a> SolverContactView<'a> {
 
 /// Read-only access to the properties of a contact pair.
 pub struct ContactPairView<'a> {
-    context: &'a RapierContextSimulation,
     context_colliders: &'a RapierContextColliders,
     rigidbody_set: &'a RapierRigidBodySet,
     /// The raw contact pair from Rapier.
@@ -374,9 +368,7 @@ impl<'a> ContactPairView<'a> {
     /// Gets the i-th contact manifold.
     pub fn manifold(&self, i: usize) -> Option<ContactManifoldView> {
         self.raw.manifolds.get(i).map(|raw| ContactManifoldView {
-            context: self.context,
-            context_colliders: &self.context_colliders,
-            rigidbody_set: &self.rigidbody_set,
+            rigidbody_set: self.rigidbody_set,
             raw,
         })
     }
@@ -384,9 +376,7 @@ impl<'a> ContactPairView<'a> {
     /// Iterate through all the contact manifolds of this contact pair.
     pub fn manifolds(&self) -> impl ExactSizeIterator<Item = ContactManifoldView> {
         self.raw.manifolds.iter().map(|raw| ContactManifoldView {
-            context: self.context,
-            context_colliders: &self.context_colliders,
-            rigidbody_set: &self.rigidbody_set,
+            rigidbody_set: self.rigidbody_set,
             raw,
         })
     }
@@ -407,9 +397,7 @@ impl<'a> ContactPairView<'a> {
         self.raw.find_deepest_contact().map(|(manifold, contact)| {
             (
                 ContactManifoldView {
-                    context: self.context,
-                    context_colliders: &self.context_colliders,
-                    rigidbody_set: &self.rigidbody_set,
+                    rigidbody_set: self.rigidbody_set,
                     raw: manifold,
                 },
                 ContactView { raw: contact },

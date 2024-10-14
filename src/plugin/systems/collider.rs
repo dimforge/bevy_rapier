@@ -458,7 +458,7 @@ pub fn init_colliders(
         }
         let body_entity = entity;
         let (body_handle, child_transform) =
-            collider_offset(entity, &rigidbody_set, &parent_query, &transform_query);
+            collider_offset(entity, rigidbody_set, &parent_query, &transform_query);
 
         builder = builder.user_data(entity.to_bits() as u128);
 

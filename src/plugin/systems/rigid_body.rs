@@ -707,7 +707,6 @@ pub fn apply_initial_rigid_body_impulses(
     for (entity, link, mut impulse) in init_impulses.iter_mut() {
         let (mut rigidbody_set, context_colliders) =
             context.get_mut(link.0).expect(RAPIER_CONTEXT_EXPECT_ERROR);
-        let context_colliders = &*context_colliders;
         let rigidbody_set = &mut *rigidbody_set;
 
         let bodies = &mut rigidbody_set.bodies;

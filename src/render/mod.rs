@@ -122,17 +122,16 @@ impl Plugin for RapierDebugRenderPlugin {
     }
 }
 
-struct BevyLinesRenderBackend<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'd, 'v, 'p> {
+struct BevyLinesRenderBackend<'world, 'state, 'world2, 'state2, 'a, 'c, 'd, 'v, 'p> {
     custom_colors: &'c Query<'world, 'state, &'a ColliderDebugColor>,
     default_collider_debug: ColliderDebug,
     override_visibility: &'v Query<'world, 'state, &'a ColliderDebug>,
-    context: &'b RapierContextSimulation,
     context_colliders: &'d RapierContextColliders,
     gizmos: &'p mut Gizmos<'world2, 'state2>,
 }
 
-impl<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'd, 'v, 'p>
-    BevyLinesRenderBackend<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'd, 'v, 'p>
+impl<'world, 'state, 'world2, 'state2, 'a, 'c, 'd, 'v, 'p>
+    BevyLinesRenderBackend<'world, 'state, 'world2, 'state2, 'a, 'c, 'd, 'v, 'p>
 {
     fn object_color(&self, object: DebugRenderObject, default: [f32; 4]) -> [f32; 4] {
         let color = match object {
@@ -171,8 +170,8 @@ impl<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'd, 'v, 'p>
     }
 }
 
-impl<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'd, 'v, 'p> DebugRenderBackend
-    for BevyLinesRenderBackend<'world, 'state, 'world2, 'state2, 'a, 'b, 'c, 'd, 'v, 'p>
+impl<'world, 'state, 'world2, 'state2, 'a, 'c, 'd, 'v, 'p> DebugRenderBackend
+    for BevyLinesRenderBackend<'world, 'state, 'world2, 'state2, 'a, 'c, 'd, 'v, 'p>
 {
     #[cfg(feature = "dim2")]
     fn draw_line(
@@ -235,7 +234,6 @@ fn debug_render_scene<'a>(
             custom_colors: &custom_colors,
             default_collider_debug: render_context.default_collider_debug,
             override_visibility: &override_visibility,
-            context: rapier_context,
             context_colliders: rapier_context_colliders,
             gizmos: &mut gizmos,
         };

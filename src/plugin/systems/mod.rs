@@ -69,7 +69,7 @@ pub fn step_simulation<Hooks>(
         if config.physics_pipeline_active {
             context.step_simulation(
                 context_colliders,
-                &mut *joints,
+                &mut joints,
                 &mut rigidbody_set,
                 config.gravity,
                 *timestep_mode,

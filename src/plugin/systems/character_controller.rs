@@ -54,14 +54,13 @@ pub fn update_character_controls(
             let config = config
                 .get(rapier_context_link.0)
                 .expect("Could not get [`RapierConfiguration`]");
-            let (mut context, colliders, query_pipeline, mut rigidbody_set) = context_access
-                .get_mut(rapier_context_link.0)
-                .expect(RAPIER_CONTEXT_EXPECT_ERROR);
+            let (mut context, context_colliders, query_pipeline, mut rigidbody_set) =
+                context_access
+                    .get_mut(rapier_context_link.0)
+                    .expect(RAPIER_CONTEXT_EXPECT_ERROR);
 
-            let context_colliders = &*colliders;
             let context = &mut *context;
             let rigidbody_set = &mut *rigidbody_set;
-            let query_pipeline = &*query_pipeline;
             let scaled_custom_shape =
                 controller
                     .custom_shape

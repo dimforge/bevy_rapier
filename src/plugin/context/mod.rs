@@ -52,7 +52,8 @@ pub struct SimulationToRenderTime {
 pub struct DefaultRapierContext;
 
 /// This is a component applied to any entity containing a rapier handle component.
-/// The inner Entity referred to has the component [`RapierContextSimulation`] responsible for handling
+/// The inner Entity referred to has the component [`RapierContextSimulation`]
+/// and others from [`crate::plugin::context`], responsible for handling
 /// its rapier data.
 #[derive(Component, Reflect, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RapierContextEntityLink(pub Entity);
@@ -182,6 +183,7 @@ impl RapierQueryPipeline {
     ///            it starts inside of a shape. If this `false` then the ray will hit the shape's boundary
     ///            even if its starts inside of it.
     /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
+    #[expect(clippy::too_many_arguments)]
     pub fn cast_ray(
         &self,
         rapier_colliders: &RapierContextColliders,
@@ -220,6 +222,7 @@ impl RapierQueryPipeline {
     ///            it starts inside of a shape. If this `false` then the ray will hit the shape's boundary
     ///            even if its starts inside of it.
     /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
+    #[expect(clippy::too_many_arguments)]
     pub fn cast_ray_and_get_normal(
         &self,
         rapier_colliders: &RapierContextColliders,
@@ -584,6 +587,7 @@ impl RapierQueryPipeline {
     /// * `shape` - The shape to test.
     /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     /// * `callback` - A function called with the entities of each collider intersecting the `shape`.
+    #[expect(clippy::too_many_arguments)]
     pub fn intersections_with_shape(
         &self,
         rapier_colliders: &RapierContextColliders,
@@ -621,7 +625,7 @@ impl RapierQueryPipeline {
         });
     }
     /// Without borrowing the [`RapierContext`], calls the closure `f` once
-    /// after converting the given [`QueryFilter`] into a raw `rapier::QueryFilter`.
+    /// after converting the given [`QueryFilter`] into a raw [`RapierQueryFilter`].
     pub fn with_query_filter_elts<T>(
         entity2collider: &HashMap<Entity, ColliderHandle>,
         entity2body: &HashMap<Entity, RigidBodyHandle>,
@@ -673,7 +677,7 @@ pub struct RapierRigidBodySet {
 }
 
 impl RapierRigidBodySet {
-    /// Calls the closure `f` once after converting the given [`QueryFilter`] into a raw `rapier::QueryFilter`.
+    /// Calls the closure `f` once after converting the given [`QueryFilter`] into a raw [`RapierQueryFilter`].
     pub fn with_query_filter<T>(
         &self,
         colliders: &RapierContextColliders,

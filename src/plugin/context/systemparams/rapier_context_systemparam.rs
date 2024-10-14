@@ -1,7 +1,4 @@
-use crate::{
-    math::{Rot, Vect},
-    plugin::context::RapierRigidBodySet,
-};
+use crate::math::{Rot, Vect};
 use bevy::ecs::{query, system::SystemParam};
 use bevy::prelude::*;
 use rapier::prelude::Real;
@@ -10,57 +7,13 @@ pub(crate) const RAPIER_CONTEXT_EXPECT_ERROR: &str =
     "RapierContextEntityLink.0 refers to an entity without RapierContext.";
 
 use crate::{
-    plugin::context::{RapierContextColliders, RapierContextJoints, RapierQueryPipeline},
+    plugin::context::{
+        RapierContextColliders, RapierContextJoints, RapierQueryPipeline, RapierRigidBodySet,
+    },
     prelude::QueryFilter,
 };
 
 use super::super::{DefaultRapierContext, RapierContextSimulation};
-
-macro_rules! define_forwarding_function {
-    (
-        $fn_name:ident,
-        $caller:ident: $caller_type:ty,
-        [ $( $self_params:ident ),* ],  // Optional self elements
-        [$( $param_name:ident : $param_type:ty ),*$(,)?]
-        , $return_value:ty $(,)?
-    ) => {
-        /// Shortcut to [`$caller_type::$fn_name`]
-        pub fn $fn_name(
-            &self,
-            $( $param_name : $param_type ),*
-        ) -> $return_value {
-            self.$caller.$fn_name(
-                $(
-                    &self.$self_params,  // Inject optional self elements (colliders, joints, etc.)
-                )*
-                $( $param_name ),*  // Forward the other parameters
-            )
-        }
-    };
-}
-
-macro_rules! define_forwarding_function_mut {
-    (
-        $fn_name:ident,
-        $caller:ident: $caller_type:ty,
-        [ $( $self_params:ident ),* ],  // Optional self elements
-        [$( $param_name:ident : $param_type:ty ),*$(,)?]
-        , $return_value:ty $(,)?
-    ) => {
-        /// Shortcut to [`$caller_type::$fn_name`]
-        pub fn $fn_name(
-            &mut self,
-            $( $param_name : $param_type ),*
-        ) -> $return_value {
-            self.$caller.$fn_name(
-                $(
-                    &mut self.$self_params,  // Inject optional self elements (colliders, joints, etc.)
-                )*
-                $( $param_name ),*  // Forward the other parameters
-            )
-        }
-    };
-}
 
 /// Utility [`SystemParam`] to easily access every required components of a [`RapierContext`] immutably.
 ///
@@ -97,7 +50,7 @@ impl<'w, 's, T: query::QueryFilter + 'static> ReadRapierContext<'w, 's, T> {
             colliders,
             joints,
             query_pipeline,
-            rigidbody_set: rigidbody_set,
+            rigidbody_set,
         }
     }
 }
@@ -156,7 +109,7 @@ impl<'w, 's, T: query::QueryFilter + 'static> WriteRapierContext<'w, 's, T> {
             colliders,
             joints,
             query_pipeline,
-            rigidbody_set: rigidbody_set,
+            rigidbody_set,
         }
     }
     /// Use this method if you only have one [`RapierContext`].
@@ -171,7 +124,7 @@ impl<'w, 's, T: query::QueryFilter + 'static> WriteRapierContext<'w, 's, T> {
             colliders,
             joints,
             query_pipeline,
-            rigidbody_set: rigidbody_set,
+            rigidbody_set,
         }
     }
 }
@@ -211,7 +164,11 @@ mod simulation {
 
     /// [`RapierContextSimulation`] functions for mutable accesses
     impl<'a> RapierContextMut<'a> {
-        define_forwarding_function_mut!(step_simulation, simulation: RapierContextSimulation, [colliders, joints, rigidbody_set], [gravity: Vect,
+        /// Shortcut to [`RapierContextSimulation::step_simulation`].
+        #[expect(clippy::too_many_arguments)]
+        pub fn step_simulation(
+            &mut self,
+            gravity: Vect,
             timestep_mode: TimestepMode,
             events: Option<(
                 &EventWriter<CollisionEvent>,
@@ -222,17 +179,49 @@ mod simulation {
             sim_to_render_time: &mut SimulationToRenderTime,
             interpolation_query: Option<
                 &mut Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
-            >], ());
+            >,
+        ) {
+            self.simulation.step_simulation(
+                &mut self.colliders,
+                &mut self.joints,
+                &mut self.rigidbody_set,
+                gravity,
+                timestep_mode,
+                events,
+                hooks,
+                time,
+                sim_to_render_time,
+                interpolation_query,
+            )
+        }
 
-        define_forwarding_function_mut!(move_shape, simulation: RapierContextSimulation, [colliders, query_pipeline, rigidbody_set],
-            [movement: Vect,
+        /// Shortcut to [`RapierContextSimulation::move_shape`].
+        #[expect(clippy::too_many_arguments)]
+        pub fn move_shape(
+            &mut self,
+            movement: Vect,
             shape: &Collider,
             shape_translation: Vect,
             shape_rotation: Rot,
             shape_mass: Real,
             options: &MoveShapeOptions,
             filter: QueryFilter,
-            events: impl FnMut(CharacterCollision)], MoveShapeOutput);
+            events: impl FnMut(CharacterCollision),
+        ) -> MoveShapeOutput {
+            self.simulation.move_shape(
+                &self.colliders,
+                &self.query_pipeline,
+                &mut self.rigidbody_set,
+                movement,
+                shape,
+                shape_translation,
+                shape_rotation,
+                shape_mass,
+                options,
+                filter,
+                events,
+            )
+        }
     }
 }
 
@@ -244,48 +233,131 @@ mod query_pipeline {
     use super::*;
 
     impl<'a> RapierContext<'a> {
-        define_forwarding_function!(cast_ray, query_pipeline: RapierQueryPipeline, [colliders, rigidbody_set], [ray_origin: Vect,
-            ray_dir: Vect,
-            max_toi: Real,
-            solid: bool,
-            filter: QueryFilter], Option<(Entity, Real)>);
-
-        define_forwarding_function!(cast_ray_and_get_normal, query_pipeline: RapierQueryPipeline, [colliders, rigidbody_set], [ray_origin: Vect,
-            ray_dir: Vect,
-            max_toi: Real,
-            solid: bool,
-            filter: QueryFilter], Option<(Entity, RayIntersection)>);
-    }
-
-    impl<'a> RapierContextMut<'a> {
-        define_forwarding_function!(cast_ray, query_pipeline:RapierQueryPipeline, [colliders, rigidbody_set], [ray_origin: Vect,
-            ray_dir: Vect,
-            max_toi: Real,
-            solid: bool,
-            filter: QueryFilter,], Option<(Entity, Real)>);
-
-        define_forwarding_function!(cast_ray_and_get_normal, query_pipeline:RapierQueryPipeline, [colliders, rigidbody_set], [ray_origin: Vect,
-            ray_dir: Vect,
-            max_toi: Real,
-            solid: bool,
-            filter: QueryFilter], Option<(Entity, RayIntersection)>);
-
-        define_forwarding_function!(intersections_with_ray, query_pipeline:RapierQueryPipeline, [colliders, rigidbody_set], [ray_origin: Vect,
+        /// Shortcut to [`RapierQueryPipeline::cast_ray`].
+        pub fn cast_ray(
+            &self,
+            ray_origin: Vect,
             ray_dir: Vect,
             max_toi: Real,
             solid: bool,
             filter: QueryFilter,
-            callback: impl FnMut(Entity, RayIntersection) -> bool,], ());
+        ) -> Option<(Entity, Real)> {
+            self.query_pipeline.cast_ray(
+                self.colliders,
+                self.rigidbody_set,
+                ray_origin,
+                ray_dir,
+                max_toi,
+                solid,
+                filter,
+            )
+        }
 
-        define_forwarding_function!(intersections_with_shape, query_pipeline:RapierQueryPipeline, [colliders, rigidbody_set], [
+        /// Shortcut to [`RapierQueryPipeline::cast_ray_and_get_normal`].
+        pub fn cast_ray_and_get_normal(
+            &self,
+            ray_origin: Vect,
+            ray_dir: Vect,
+            max_toi: Real,
+            solid: bool,
+            filter: QueryFilter,
+        ) -> Option<(Entity, RayIntersection)> {
+            self.query_pipeline.cast_ray_and_get_normal(
+                self.colliders,
+                self.rigidbody_set,
+                ray_origin,
+                ray_dir,
+                max_toi,
+                solid,
+                filter,
+            )
+        }
+    }
+
+    impl<'a> RapierContextMut<'a> {
+        /// Shortcut to [`RapierQueryPipeline::cast_ray`].
+        pub fn cast_ray(
+            &self,
+            ray_origin: Vect,
+            ray_dir: Vect,
+            max_toi: Real,
+            solid: bool,
+            filter: QueryFilter,
+        ) -> Option<(Entity, Real)> {
+            self.query_pipeline.cast_ray(
+                &self.colliders,
+                &self.rigidbody_set,
+                ray_origin,
+                ray_dir,
+                max_toi,
+                solid,
+                filter,
+            )
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::cast_ray_and_get_normal`].
+        pub fn cast_ray_and_get_normal(
+            &self,
+            ray_origin: Vect,
+            ray_dir: Vect,
+            max_toi: Real,
+            solid: bool,
+            filter: QueryFilter,
+        ) -> Option<(Entity, RayIntersection)> {
+            self.query_pipeline.cast_ray_and_get_normal(
+                &self.colliders,
+                &self.rigidbody_set,
+                ray_origin,
+                ray_dir,
+                max_toi,
+                solid,
+                filter,
+            )
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::intersections_with_ray`].
+        pub fn intersections_with_ray(
+            &self,
+            ray_origin: Vect,
+            ray_dir: Vect,
+            max_toi: Real,
+            solid: bool,
+            filter: QueryFilter,
+            callback: impl FnMut(Entity, RayIntersection) -> bool,
+        ) {
+            self.query_pipeline.intersections_with_ray(
+                &self.colliders,
+                &self.rigidbody_set,
+                ray_origin,
+                ray_dir,
+                max_toi,
+                solid,
+                filter,
+                callback,
+            )
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::intersections_with_shape`].
+        pub fn intersections_with_shape(
+            &self,
             shape_pos: Vect,
             shape_rot: Rot,
             shape: &Collider,
             filter: QueryFilter,
-            callback: impl FnMut(Entity) -> bool,], ());
+            callback: impl FnMut(Entity) -> bool,
+        ) {
+            self.query_pipeline.intersections_with_shape(
+                &self.colliders,
+                &self.rigidbody_set,
+                shape_pos,
+                shape_rot,
+                shape,
+                filter,
+                callback,
+            )
+        }
 
-        // NOTE: `with_query_filter_elts` doesn´t use macro as it's a bit difficult to make it support generics.
-        /// Shortcut to [`RapierQueryPipeline::with_query_filter_elts`]
+        /// Shortcut to [`RapierQueryPipeline::with_query_filter_elts`].
         pub fn with_query_filter_elts<T>(
             &self,
             filter: crate::prelude::QueryFilter,
@@ -306,29 +378,47 @@ mod rigidbody_set {
     use std::collections::HashMap;
 
     use super::*;
-    use rapier::prelude::RigidBodyHandle;
+    pub use rapier::prelude::RigidBodyHandle;
 
     impl<'a> RapierContext<'a> {
-        define_forwarding_function!(entity2body, rigidbody_set:RigidBodySet, [], [], &HashMap<Entity, RigidBodyHandle>);
+        /// Shortcut to [`RapierRigidBodySet::entity2body`].
+        pub fn entity2body(&self) -> &HashMap<Entity, RigidBodyHandle> {
+            self.rigidbody_set.entity2body()
+        }
 
-        define_forwarding_function!(rigid_body_entity, rigidbody_set:RigidBodySet, [], [handle: RigidBodyHandle], Option<Entity>);
+        /// Shortcut to [`RapierRigidBodySet::rigid_body_entity`].
+        pub fn rigid_body_entity(&self, handle: RigidBodyHandle) -> Option<Entity> {
+            self.rigidbody_set.rigid_body_entity(handle)
+        }
 
-        define_forwarding_function!(impulse_revolute_joint_angle, rigidbody_set:RigidBodySet, [joints], [entity: Entity], Option<f32>);
+        /// Shortcut to [`RapierRigidBodySet::impulse_revolute_joint_angle`].
+        pub fn impulse_revolute_joint_angle(&self, entity: Entity) -> Option<f32> {
+            self.rigidbody_set
+                .impulse_revolute_joint_angle(self.joints, entity)
+        }
     }
 
     impl<'a> RapierContextMut<'a> {
-        define_forwarding_function_mut!(
-            propagate_modified_body_positions_to_colliders,
-            rigidbody_set:RigidBodySet,
-            [colliders],
-            [],
-            ()
-        );
+        /// Shortcut to [`RapierRigidBodySet::propagate_modified_body_positions_to_colliders`].
+        pub fn propagate_modified_body_positions_to_colliders(&mut self) {
+            self.rigidbody_set
+                .propagate_modified_body_positions_to_colliders(&mut self.colliders)
+        }
 
-        define_forwarding_function!(entity2body, rigidbody_set:RigidBodySet, [], [], &HashMap<Entity, RigidBodyHandle>);
+        /// Shortcut to [`RapierRigidBodySet::entity2body`].
+        pub fn entity2body(&self) -> &HashMap<Entity, RigidBodyHandle> {
+            self.rigidbody_set.entity2body()
+        }
 
-        define_forwarding_function!(rigid_body_entity, rigidbody_set:RigidBodySet, [], [handle: RigidBodyHandle], Option<Entity>);
+        /// Shortcut to [`RapierRigidBodySet::rigid_body_entity`].
+        pub fn rigid_body_entity(&self, handle: RigidBodyHandle) -> Option<Entity> {
+            self.rigidbody_set.rigid_body_entity(handle)
+        }
 
-        define_forwarding_function!(impulse_revolute_joint_angle, rigidbody_set:RigidBodySet, [joints], [entity: Entity], Option<f32>);
+        /// Shortcut to [`RapierRigidBodySet::impulse_revolute_joint_angle`].
+        pub fn impulse_revolute_joint_angle(&self, entity: Entity) -> Option<f32> {
+            self.rigidbody_set
+                .impulse_revolute_joint_angle(&self.joints, entity)
+        }
     }
 }

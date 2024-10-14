@@ -10,8 +10,12 @@ pub use rapier_context_systemparam::*;
 
 use super::RapierContextEntityLink;
 
+/// Information needed to access the rapier data from an entity managed by rapier.
 #[derive(QueryData)]
-pub(crate) struct RapierEntity {
+pub struct RapierEntity {
+    /// This bevy [`Entity`].
     pub entity: Entity,
+    /// Link to another bevy [`Entity`], which owns the context of this [`RapierEntity`]:
+    /// i.e. the relevant components from [`crate::plugin::context`].
     pub rapier_context_link: &'static RapierContextEntityLink,
 }
