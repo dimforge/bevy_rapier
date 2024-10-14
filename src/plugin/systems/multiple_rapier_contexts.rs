@@ -82,7 +82,7 @@ pub fn on_change_world(
             })
             .unwrap_or(false)
         {
-            remove_old_physics(dbg!(entity), &mut commands);
+            remove_old_physics(entity, &mut commands);
             bubble_down_world_change(
                 &mut commands,
                 entity,

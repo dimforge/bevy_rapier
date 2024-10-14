@@ -256,8 +256,7 @@ mod test {
             std::time::Duration::from_secs_f32(1f32 / 60f32),
         ));
 
-        for i in 0..100 {
-            dbg!(i);
+        for _ in 0..100 {
             app.update();
         }
         return;
