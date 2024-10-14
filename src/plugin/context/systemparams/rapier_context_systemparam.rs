@@ -18,10 +18,6 @@ use crate::{
 use crate::prelude::RapierContextBundle;
 
 /// Utility [`SystemParam`] to easily access every required components of a [`RapierContext`] immutably.
-///
-/// SAFETY: Dereferencing this struct will panic if its underlying query fails.<br />
-/// Use [`ReadRapierContext::rapier_context`] query,
-/// or a regular bevy query instead of this [`ReadRapierContext`] for a safer alternative.
 #[derive(SystemParam)]
 pub struct ReadRapierContext<'w, 's, T: query::QueryFilter + 'static = With<DefaultRapierContext>> {
     /// The query used to feed components into [`RapierContext`] struct through [`ReadRapierContext::single`].
@@ -43,6 +39,7 @@ impl<'w, 's, T: query::QueryFilter + 'static> ReadRapierContext<'w, 's, T> {
     /// Use this method if you only have one [`RapierContext`].
     ///
     /// SAFETY: This method will panic if its underlying query fails.
+    ///
     /// Use the underlying query [`ReadRapierContext::rapier_context`] for safer alternatives.
     pub fn single(&'_ self) -> RapierContext {
         let (simulation, colliders, joints, query_pipeline, rigidbody_set) =
@@ -75,11 +72,7 @@ pub struct RapierContext<'a> {
     pub rigidbody_set: &'a RapierRigidBodySet,
 }
 
-/// Utility [`SystemParam`] to easily access every required components of a [`RapierContext`] immutably.
-///
-/// SAFETY: Dereferencing this struct will panic if its underlying query fails.<br />
-/// Use [`ReadRapierContext::rapier_context`] query,
-/// or a regular bevy [`Query`] instead of this [`ReadRapierContext`] for a safer alternative.
+/// Utility [`SystemParam`] to easily access every required components of a [`RapierContext`] mutably.
 #[derive(SystemParam)]
 pub struct WriteRapierContext<'w, 's, T: query::QueryFilter + 'static = With<DefaultRapierContext>>
 {
