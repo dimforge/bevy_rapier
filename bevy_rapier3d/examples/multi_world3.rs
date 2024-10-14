@@ -30,9 +30,9 @@ fn main() {
 
 fn create_worlds(mut commands: Commands) {
     for i in 0..N_WORLDS {
-        let mut world = commands.spawn((RapierContextSimulation::default(), WorldId(i)));
+        let mut world = commands.spawn((RapierContextBundle::default(), WorldId(i)));
         if i == 0 {
-            world.insert(DefaultRapierContext);
+            world.insert((DefaultRapierContext, RapierContextBundle::default()));
         }
     }
 }

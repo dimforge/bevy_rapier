@@ -304,14 +304,14 @@ where
 /// Designed to be passed as parameter to [`RapierPhysicsPlugin::with_custom_initialization`].
 #[derive(Resource, Debug, Reflect, Clone)]
 pub enum RapierContextInitialization {
-    /// [`RapierPhysicsPlugin`] will not spawn any entity containing [`RapierContext`] automatically.
+    /// [`RapierPhysicsPlugin`] will not spawn any entity containing [`RapierContextBundle`] automatically.
     ///
-    /// You are responsible for creating a [`RapierContext`],
+    /// You are responsible for creating a [`RapierContextBundle`],
     /// before spawning any rapier entities (rigidbodies, colliders, joints).
     ///
     /// You might be interested in adding [`DefaultRapierContext`] to the created world.
     NoAutomaticRapierContext,
-    /// [`RapierPhysicsPlugin`] will spawn an entity containing a [`RapierContext`]
+    /// [`RapierPhysicsPlugin`] will spawn an entity containing a [`RapierContextBundle`]
     /// automatically during [`PreStartup`], with the [`DefaultRapierContext`] marker component.
     InitializeDefaultRapierContext {
         /// See [`IntegrationParameters::length_unit`]
@@ -334,17 +334,20 @@ pub fn insert_default_world(
         RapierContextInitialization::InitializeDefaultRapierContext { length_unit } => {
             commands.spawn((
                 Name::new("Rapier Context"),
-                RapierContextSimulation {
-                    integration_parameters: IntegrationParameters {
-                        length_unit: *length_unit,
-                        ..default()
+                RapierContextBundle {
+                    colliders: RapierContextColliders::default(),
+                    joints: RapierContextJoints::default(),
+                    query: RapierQueryPipeline::default(),
+                    simulation: RapierContextSimulation {
+                        integration_parameters: IntegrationParameters {
+                            length_unit: *length_unit,
+                            ..default()
+                        },
+                        ..RapierContextSimulation::default()
                     },
-                    ..RapierContextSimulation::default()
+                    bodies: RapierRigidBodySet::default(),
+                    simulation_to_render_time: SimulationToRenderTime::default(),
                 },
-                RapierContextColliders::default(),
-                RapierContextJoints::default(),
-                RapierQueryPipeline::default(),
-                RapierRigidBodySet::default(),
                 DefaultRapierContext,
             ));
         }

@@ -33,7 +33,7 @@ use crate::prelude::{
 };
 
 /// Difference between simulation and rendering time
-#[derive(Component, Default, Reflect)]
+#[derive(Component, Default, Reflect, Clone)]
 pub struct SimulationToRenderTime {
     /// Difference between simulation and rendering time
     pub diff: f32,
@@ -51,6 +51,23 @@ pub struct SimulationToRenderTime {
 #[derive(Component, Reflect, Debug, Clone, Copy)]
 pub struct DefaultRapierContext;
 
+/// A Bundle to regroup useful components for a rapier context.
+#[derive(Bundle, Default)]
+pub struct RapierContextBundle {
+    /// See [`RapierContextColliders`]
+    pub colliders: RapierContextColliders,
+    /// See [`RapierContextJoints`]
+    pub joints: RapierContextJoints,
+    /// See [`RapierQueryPipeline`]
+    pub query: RapierQueryPipeline,
+    /// See [`RapierContextSimulation`]
+    pub simulation: RapierContextSimulation,
+    /// See [`RapierRigidBodySet`]
+    pub bodies: RapierRigidBodySet,
+    /// See [`SimulationToRenderTime`]
+    pub simulation_to_render_time: SimulationToRenderTime,
+}
+
 /// This is a component applied to any entity containing a rapier handle component.
 /// The inner Entity referred to has the component [`RapierContextSimulation`]
 /// and others from [`crate::plugin::context`], responsible for handling
@@ -62,7 +79,7 @@ pub struct RapierContextEntityLink(pub Entity);
 ///
 /// This should be attached on an entity with a [`RapierContextSimulation`]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-#[derive(Component, Default)]
+#[derive(Component, Default, Debug, Clone)]
 pub struct RapierContextColliders {
     /// The set of colliders part of the simulation.
     pub colliders: ColliderSet,
@@ -130,7 +147,7 @@ impl RapierContextColliders {
 ///
 /// This should be attached on an entity with a [`RapierContextSimulation`]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-#[derive(Component, Default)]
+#[derive(Component, Default, Debug, Clone)]
 pub struct RapierContextJoints {
     /// The set of impulse joints part of the simulation.
     pub impulse_joints: ImpulseJointSet,
@@ -159,7 +176,7 @@ impl RapierContextJoints {
 ///
 /// This should be attached on an entity with a [`RapierContext`]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-#[derive(Component, Default)]
+#[derive(Component, Default, Clone)]
 pub struct RapierQueryPipeline {
     /// The query pipeline, which performs scene queries (ray-casting, point projection, etc.)
     pub query_pipeline: QueryPipeline,
@@ -663,7 +680,7 @@ impl RapierQueryPipeline {
 ///
 /// This should be attached on an entity with a [`RapierContextSimulation`]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-#[derive(Component, Default)]
+#[derive(Component, Default, Clone)]
 pub struct RapierRigidBodySet {
     /// The set of rigid-bodies part of the simulation.
     pub bodies: RigidBodySet,
@@ -735,7 +752,7 @@ impl RapierRigidBodySet {
     }
 }
 
-/// The Rapier context, containing all the state of the physics engine.
+/// The Rapier context, containing parts of the state of the physics engine, specific to the simulation step.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Component)]
 pub struct RapierContextSimulation {
