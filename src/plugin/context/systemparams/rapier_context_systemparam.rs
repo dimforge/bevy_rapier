@@ -147,6 +147,7 @@ mod simulation {
     use crate::control::MoveShapeOptions;
     use crate::control::MoveShapeOutput;
     use crate::plugin::context::SimulationToRenderTime;
+    use crate::plugin::ContactPairView;
     use crate::plugin::TimestepMode;
     use crate::prelude::Collider;
     use crate::prelude::CollisionEvent;
@@ -156,6 +157,43 @@ mod simulation {
     use rapier::prelude::PhysicsHooks;
 
     use super::*;
+
+    /// [`RapierContextSimulation`] functions for immutable accesses
+    impl<'a> RapierContext<'a> {
+        /// Shortcut to [`RapierContextSimulation::contact_pair`].
+        pub fn contact_pair(
+            &self,
+            collider1: Entity,
+            collider2: Entity,
+        ) -> Option<ContactPairView> {
+            self.simulation
+                .contact_pair(self.colliders, self.rigidbody_set, collider1, collider2)
+        }
+
+        /// Shortcut to [`RapierContextSimulation::contact_pairs_with`].
+        pub fn contact_pairs_with(
+            &self,
+            collider: Entity,
+        ) -> impl Iterator<Item = ContactPairView> {
+            self.simulation
+                .contact_pairs_with(self.colliders, self.rigidbody_set, collider)
+        }
+
+        /// Shortcut to [`RapierContextSimulation::intersection_pair`].
+        pub fn intersection_pair(&self, collider1: Entity, collider2: Entity) -> Option<bool> {
+            self.simulation
+                .intersection_pair(self.colliders, collider1, collider2)
+        }
+
+        /// Shortcut to [`RapierContextSimulation::intersection_pairs_with`].
+        pub fn intersection_pairs_with(
+            &self,
+            collider: Entity,
+        ) -> impl Iterator<Item = (Entity, Entity, bool)> + '_ {
+            self.simulation
+                .intersection_pairs_with(self.colliders, collider)
+        }
+    }
 
     /// [`RapierContextSimulation`] functions for mutable accesses
     impl<'a> RapierContextMut<'a> {
@@ -217,13 +255,47 @@ mod simulation {
                 events,
             )
         }
+
+        /// Shortcut to [`RapierContextSimulation::contact_pair`].
+        pub fn contact_pair(
+            &self,
+            collider1: Entity,
+            collider2: Entity,
+        ) -> Option<ContactPairView> {
+            self.simulation
+                .contact_pair(&self.colliders, &self.rigidbody_set, collider1, collider2)
+        }
+
+        /// Shortcut to [`RapierContextSimulation::contact_pairs_with`].
+        pub fn contact_pairs_with(
+            &self,
+            collider: Entity,
+        ) -> impl Iterator<Item = ContactPairView> {
+            self.simulation
+                .contact_pairs_with(&self.colliders, &self.rigidbody_set, collider)
+        }
+
+        /// Shortcut to [`RapierContextSimulation::intersection_pair`].
+        pub fn intersection_pair(&self, collider1: Entity, collider2: Entity) -> Option<bool> {
+            self.simulation
+                .intersection_pair(&self.colliders, collider1, collider2)
+        }
+
+        /// Shortcut to [`RapierContextSimulation::intersection_pairs_with`].
+        pub fn intersection_pairs_with(
+            &self,
+            collider: Entity,
+        ) -> impl Iterator<Item = (Entity, Entity, bool)> + '_ {
+            self.simulation
+                .intersection_pairs_with(&self.colliders, collider)
+        }
     }
 }
 
 mod query_pipeline {
-    use rapier::prelude::QueryFilter as RapierQueryFilter;
+    use rapier::{parry::query::ShapeCastOptions, prelude::QueryFilter as RapierQueryFilter};
 
-    use crate::prelude::{Collider, RayIntersection};
+    use crate::prelude::{Collider, PointProjection, RayIntersection, ShapeCastHit};
 
     use super::*;
 
@@ -265,6 +337,130 @@ mod query_pipeline {
                 max_toi,
                 solid,
                 filter,
+            )
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::intersections_with_point`].
+        pub fn intersections_with_point(
+            &self,
+            point: Vect,
+            filter: QueryFilter,
+            callback: impl FnMut(Entity) -> bool,
+        ) {
+            self.query_pipeline.intersections_with_point(
+                self.colliders,
+                self.rigidbody_set,
+                point,
+                filter,
+                callback,
+            );
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::intersections_with_ray`].
+        pub fn intersections_with_ray(
+            &self,
+            ray_origin: Vect,
+            ray_dir: Vect,
+            max_toi: Real,
+            solid: bool,
+            filter: QueryFilter,
+            callback: impl FnMut(Entity, RayIntersection) -> bool,
+        ) {
+            self.query_pipeline.intersections_with_ray(
+                self.colliders,
+                self.rigidbody_set,
+                ray_origin,
+                ray_dir,
+                max_toi,
+                solid,
+                filter,
+                callback,
+            )
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::intersections_with_shape`].
+        pub fn intersections_with_shape(
+            &self,
+            shape_pos: Vect,
+            shape_rot: Rot,
+            shape: &Collider,
+            filter: QueryFilter,
+            callback: impl FnMut(Entity) -> bool,
+        ) {
+            self.query_pipeline.intersections_with_shape(
+                self.colliders,
+                self.rigidbody_set,
+                shape_pos,
+                shape_rot,
+                shape,
+                filter,
+                callback,
+            )
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::colliders_with_aabb_intersecting_aabb`].
+        pub fn colliders_with_aabb_intersecting_aabb(
+            &self,
+            aabb: bevy::render::primitives::Aabb,
+            callback: impl FnMut(Entity) -> bool,
+        ) {
+            self.query_pipeline.colliders_with_aabb_intersecting_aabb(
+                self.colliders,
+                aabb,
+                callback,
+            )
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::cast_shape`].
+        pub fn cast_shape(
+            &self,
+            shape_pos: Vect,
+            shape_rot: Rot,
+            shape_vel: Vect,
+            shape: &Collider,
+            options: ShapeCastOptions,
+            filter: QueryFilter,
+        ) -> Option<(Entity, ShapeCastHit)> {
+            self.query_pipeline.cast_shape(
+                self.colliders,
+                self.rigidbody_set,
+                shape_pos,
+                shape_rot,
+                shape_vel,
+                shape,
+                options,
+                filter,
+            )
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::project_point`].
+        pub fn project_point(
+            &self,
+            point: Vect,
+            solid: bool,
+            filter: QueryFilter,
+        ) -> Option<(Entity, PointProjection)> {
+            self.query_pipeline.project_point(
+                self.colliders,
+                self.rigidbody_set,
+                point,
+                solid,
+                filter,
+            )
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::with_query_filter_elts`].
+        pub fn with_query_filter_elts<T>(
+            &self,
+            filter: crate::prelude::QueryFilter,
+            f: impl FnOnce(RapierQueryFilter) -> T,
+        ) -> T {
+            RapierQueryPipeline::with_query_filter_elts(
+                &self.colliders.entity2collider,
+                &self.rigidbody_set.entity2body,
+                &self.colliders.colliders,
+                filter,
+                f,
             )
         }
     }
@@ -310,6 +506,22 @@ mod query_pipeline {
             )
         }
 
+        /// Shortcut to [`RapierQueryPipeline::intersections_with_point`].
+        pub fn intersections_with_point(
+            &self,
+            point: Vect,
+            filter: QueryFilter,
+            callback: impl FnMut(Entity) -> bool,
+        ) {
+            self.query_pipeline.intersections_with_point(
+                &self.colliders,
+                &self.rigidbody_set,
+                point,
+                filter,
+                callback,
+            );
+        }
+
         /// Shortcut to [`RapierQueryPipeline::intersections_with_ray`].
         pub fn intersections_with_ray(
             &self,
@@ -349,6 +561,57 @@ mod query_pipeline {
                 shape,
                 filter,
                 callback,
+            )
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::colliders_with_aabb_intersecting_aabb`].
+        pub fn colliders_with_aabb_intersecting_aabb(
+            &self,
+            aabb: bevy::render::primitives::Aabb,
+            callback: impl FnMut(Entity) -> bool,
+        ) {
+            self.query_pipeline.colliders_with_aabb_intersecting_aabb(
+                &self.colliders,
+                aabb,
+                callback,
+            )
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::cast_shape`].
+        pub fn cast_shape(
+            &self,
+            shape_pos: Vect,
+            shape_rot: Rot,
+            shape_vel: Vect,
+            shape: &Collider,
+            options: ShapeCastOptions,
+            filter: QueryFilter,
+        ) -> Option<(Entity, ShapeCastHit)> {
+            self.query_pipeline.cast_shape(
+                &self.colliders,
+                &self.rigidbody_set,
+                shape_pos,
+                shape_rot,
+                shape_vel,
+                shape,
+                options,
+                filter,
+            )
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::project_point`].
+        pub fn project_point(
+            &self,
+            point: Vect,
+            solid: bool,
+            filter: QueryFilter,
+        ) -> Option<(Entity, PointProjection)> {
+            self.query_pipeline.project_point(
+                &self.colliders,
+                &self.rigidbody_set,
+                point,
+                solid,
+                filter,
             )
         }
 
