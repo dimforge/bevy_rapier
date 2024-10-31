@@ -498,7 +498,7 @@ pub fn init_colliders(
 pub fn init_async_colliders(
     mut commands: Commands,
     meshes: Res<Assets<Mesh>>,
-    async_colliders: Query<(Entity, &Handle<Mesh>, &AsyncCollider)>,
+    async_colliders: Query<(Entity, &Mesh3d, &AsyncCollider)>,
 ) {
     for (entity, mesh_handle, async_collider) in async_colliders.iter() {
         if let Some(mesh) = meshes.get(mesh_handle) {
@@ -524,7 +524,7 @@ pub fn init_async_scene_colliders(
     scene_spawner: Res<SceneSpawner>,
     async_colliders: Query<(Entity, &SceneInstance, &AsyncSceneCollider)>,
     children: Query<&Children>,
-    mesh_handles: Query<(&Name, &Handle<Mesh>)>,
+    mesh_handles: Query<(&Name, &Mesh3d)>,
 ) {
     for (scene_entity, scene_instance, async_collider) in async_colliders.iter() {
         if scene_spawner.instance_is_ready(**scene_instance) {
@@ -597,7 +597,10 @@ pub mod test {
         let mut meshes = app.world_mut().resource_mut::<Assets<Mesh>>();
         let cube = meshes.add(Cuboid::default());
 
-        let entity = app.world_mut().spawn((cube, AsyncCollider::default())).id();
+        let entity = app
+            .world_mut()
+            .spawn((Mesh3d(cube), AsyncCollider::default()))
+            .id();
 
         app.update();
 
@@ -625,10 +628,13 @@ pub mod test {
         let mut meshes = app.world_mut().resource_mut::<Assets<Mesh>>();
         let cube_handle = meshes.add(Cuboid::default());
         let capsule_handle = meshes.add(Capsule3d::default());
-        let cube = app.world_mut().spawn((Name::new("Cube"), cube_handle)).id();
+        let cube = app
+            .world_mut()
+            .spawn((Name::new("Cube"), Mesh3d(cube_handle)))
+            .id();
         let capsule = app
             .world_mut()
-            .spawn((Name::new("Capsule"), capsule_handle))
+            .spawn((Name::new("Capsule"), Mesh3d(capsule_handle)))
             .id();
 
         let mut scenes = app.world_mut().resource_mut::<Assets<Scene>>();
@@ -639,13 +645,13 @@ pub mod test {
         let parent = app
             .world_mut()
             .spawn((
-                scene,
+                SceneRoot(scene),
                 AsyncSceneCollider {
                     named_shapes,
                     ..Default::default()
                 },
             ))
-            .push_children(&[cube, capsule])
+            .add_children(&[cube, capsule])
             .id();
 
         app.update();

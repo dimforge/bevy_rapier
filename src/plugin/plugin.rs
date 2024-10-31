@@ -516,7 +516,7 @@ mod test {
             }
 
             commands.spawn((
-                TransformBundle::from(Transform::from_xyz(0.0, 13.0, 0.0)),
+                Transform::from_xyz(0.0, 13.0, 0.0),
                 RigidBody::Dynamic,
                 cuboid(0.5, 0.5, 0.5),
                 TestMarker,
