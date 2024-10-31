@@ -30,11 +30,10 @@ fn main() {
 pub fn setup_graphics(mut commands: Commands, mut res: ResMut<DespawnResource>) {
     res.timer = Timer::from_seconds(5.0, TimerMode::Once);
 
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(-30.0, 30.0, 100.0)
-            .looking_at(Vec3::new(0.0, 10.0, 0.0), Vec3::Y),
-        ..Default::default()
-    });
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(-30.0, 30.0, 100.0).looking_at(Vec3::new(0.0, 10.0, 0.0), Vec3::Y),
+    ));
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -45,7 +44,7 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_height = 0.1;
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
+        Transform::from_xyz(0.0, -ground_height, 0.0),
         Collider::cuboid(ground_size, ground_height, ground_size),
         Despawn,
     ));
@@ -78,7 +77,7 @@ pub fn setup_physics(mut commands: Commands) {
                 color += 1;
 
                 commands.spawn((
-                    TransformBundle::from(Transform::from_xyz(x, y, z)),
+                    Transform::from_xyz(x, y, z),
                     RigidBody::Dynamic,
                     Collider::cuboid(rad, rad, rad),
                     ColliderDebugColor(colors[color % 3]),

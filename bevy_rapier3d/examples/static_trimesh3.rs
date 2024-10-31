@@ -22,11 +22,10 @@ fn main() {
 }
 
 pub fn setup_graphics(mut commands: Commands) {
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(-15.0, 8.0, 15.0)
-            .looking_at(Vec3::new(-5.0, 0.0, 5.0), Vec3::Y),
-        ..Default::default()
-    });
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(-15.0, 8.0, 15.0).looking_at(Vec3::new(-5.0, 0.0, 5.0), Vec3::Y),
+    ));
 }
 
 fn ramp_size() -> Vec3 {
@@ -93,11 +92,11 @@ pub fn setup_physics(mut commands: Commands, mut ball_state: ResMut<BallState>) 
     // Position so ramp connects smoothly
     // to one edge of the lip of the bowl.
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(
+        Transform::from_xyz(
             -bowl_size.x / 2.0,
             -bowl_size.y / 2.0,
             bowl_size.z / 2.0 - ramp_size.z / 2.0,
-        )),
+        ),
         Collider::trimesh(vertices, indices),
     ));
 }
@@ -130,11 +129,7 @@ pub fn ball_spawner(mut commands: Commands, time: Res<Time>, mut ball_state: Res
         let rad = 0.3;
 
         commands.spawn((
-            TransformBundle::from(Transform::from_xyz(
-                ramp_size.x * 0.9,
-                ramp_size.y / 2.0 + rad * 3.0,
-                0.0,
-            )),
+            Transform::from_xyz(ramp_size.x * 0.9, ramp_size.y / 2.0 + rad * 3.0, 0.0),
             RigidBody::Dynamic,
             Collider::ball(rad),
             Restitution::new(0.5),
