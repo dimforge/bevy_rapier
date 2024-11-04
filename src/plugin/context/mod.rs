@@ -774,15 +774,10 @@ impl RapierContext {
     /// Finds all entities of all the colliders with an Aabb intersecting the given Aabb.
     pub fn colliders_with_aabb_intersecting_aabb(
         &self,
-        aabb: bevy::math::bounding::Aabb3d,
+        #[cfg(feature = "dim2")] aabb: bevy::math::bounding::Aabb2d,
+        #[cfg(feature = "dim3")] aabb: bevy::math::bounding::Aabb3d,
         mut callback: impl FnMut(Entity) -> bool,
     ) {
-        #[cfg(feature = "dim2")]
-        let scaled_aabb = rapier::prelude::Aabb {
-            mins: aabb.min.xy().into(),
-            maxs: aabb.max.xy().into(),
-        };
-        #[cfg(feature = "dim3")]
         let scaled_aabb = rapier::prelude::Aabb {
             mins: aabb.min.into(),
             maxs: aabb.max.into(),

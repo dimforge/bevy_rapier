@@ -33,6 +33,8 @@ on the responsible entity owning the `RenderContext`.
   - If you are building a library on top of `bevy_rapier` and would want to support multiple independent physics worlds too,
 you can check out the details of [#545](https://github.com/dimforge/bevy_rapier/pull/545)
 to get more context and information.
+- `colliders_with_aabb_intersecting_aabb` now takes `bevy::math::bounding::Aabb3d` (or `[..]::Aabb2d` in 2D) as parameter.
+  - it is now accessible with `headless` feature enabled.
 
 ## v0.27.0 (07 July 2024)
 
