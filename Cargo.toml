@@ -23,9 +23,10 @@ codegen-units = 1
 #parry3d = { path = "../parry/crates/parry3d" }
 #rapier2d = { path = "../rapier/crates/rapier2d" }
 #rapier3d = { path = "../rapier/crates/rapier3d" }
-
 #nalgebra = { git = "https://github.com/dimforge/nalgebra", branch = "dev" }
 #parry2d = { git = "https://github.com/dimforge/parry", branch = "master" }
 #parry3d = { git = "https://github.com/dimforge/parry", branch = "master" }
 #rapier2d = { git = "https://github.com/dimforge/rapier", branch = "character-controller" }
 #rapier3d = { git = "https://github.com/dimforge/rapier", branch = "character-controller" }
+bevy_egui = { git = "https://github.com/Vrixyz/bevy_egui", branch = "bevy_main" }
+bevy-inspector-egui = { git = "https://github.com/Vrixyz/bevy-inspector-egui", branch = "bevy_0.15" }

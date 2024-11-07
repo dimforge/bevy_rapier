@@ -65,8 +65,8 @@ bevy = { version = "0.15.0-rc.2", default-features = false, features = [
 oorandom = "11"
 approx = "0.5.1"
 glam = { version = "0.29", features = ["approx"] }
-# bevy-inspector-egui = "0.25.1"
-# bevy_egui = "0.28.0"
+bevy-inspector-egui = "0.28.0"
+bevy_egui = "0.30.0"
 # bevy_mod_debugdump = "0.11"
 bevy_mod_debugdump = { git = "https://github.com/andriyDev/bevy_mod_debugdump.git", branch = "bevy-0.15" }
 
