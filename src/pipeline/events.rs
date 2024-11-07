@@ -271,7 +271,8 @@ mod test {
         }
         pub fn setup_physics(mut commands: Commands) {
             for _i in 0..100 {
-                commands.spawn((Transform::from_xyz(0.0, 0.0, 0.0),
+                commands.spawn((
+                    Transform::from_xyz(0.0, 0.0, 0.0),
                     RigidBody::Dynamic,
                     cuboid(0.5, 0.5, 0.5),
                     ActiveEvents::all(),
@@ -285,7 +286,8 @@ mod test {
             let ground_height = 0.1;
             let starting_y = -0.5 - ground_height;
 
-            commands.spawn((Transform::from_xyz(0.0, starting_y, 0.0),
+            commands.spawn((
+                Transform::from_xyz(0.0, starting_y, 0.0),
                 cuboid(ground_size, ground_height, ground_size),
             ));
         }
