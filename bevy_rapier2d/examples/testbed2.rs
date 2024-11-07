@@ -13,8 +13,8 @@ mod player_movement2;
 mod rope_joint2;
 
 use bevy::prelude::*;
-// use bevy_egui::{egui, EguiContexts, EguiPlugin};
-//use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_egui::{egui, EguiContexts, EguiPlugin};
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier2d::prelude::*;
 
 #[derive(Debug, Reflect, Clone, Copy, Eq, PartialEq, Default, Hash, States)]
@@ -62,10 +62,10 @@ fn main() {
     app.init_resource::<ExamplesRes>()
         .add_plugins((
             DefaultPlugins,
-            //EguiPlugin,
+            EguiPlugin,
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(10.0),
             RapierDebugRenderPlugin::default(),
-            //WorldInspectorPlugin::new(),
+            WorldInspectorPlugin::new(),
         ))
         .register_type::<Examples>()
         .register_type::<ExamplesRes>()
