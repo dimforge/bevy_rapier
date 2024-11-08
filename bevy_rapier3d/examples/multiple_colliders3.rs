@@ -18,11 +18,10 @@ fn main() {
 }
 
 pub fn setup_graphics(mut commands: Commands) {
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(-30.0, 30.0, 100.0)
-            .looking_at(Vec3::new(0.0, 10.0, 0.0), Vec3::Y),
-        ..Default::default()
-    });
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(-30.0, 30.0, 100.0).looking_at(Vec3::new(0.0, 10.0, 0.0), Vec3::Y),
+    ));
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -33,7 +32,7 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_height = 0.1;
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
+        Transform::from_xyz(0.0, -ground_height, 0.0),
         Collider::cuboid(ground_size, ground_height, ground_size),
     ));
 
@@ -66,26 +65,19 @@ pub fn setup_physics(mut commands: Commands) {
 
                 // Crate a rigid-body with multiple colliders attached, using Bevy hierarchy.
                 commands
-                    .spawn((
-                        TransformBundle::from(Transform::from_xyz(x, y, z)),
-                        RigidBody::Dynamic,
-                    ))
+                    .spawn((Transform::from_xyz(x, y, z), RigidBody::Dynamic))
                     .with_children(|children| {
                         children.spawn((
                             Collider::cuboid(rad * 10.0, rad, rad),
                             ColliderDebugColor(colors[color % 3]),
                         ));
                         children.spawn((
-                            TransformBundle::from(Transform::from_xyz(rad * 10.0, rad * 10.0, 0.0)),
+                            Transform::from_xyz(rad * 10.0, rad * 10.0, 0.0),
                             Collider::cuboid(rad, rad * 10.0, rad),
                             ColliderDebugColor(colors[color % 3]),
                         ));
                         children.spawn((
-                            TransformBundle::from(Transform::from_xyz(
-                                -rad * 10.0,
-                                rad * 10.0,
-                                0.0,
-                            )),
+                            Transform::from_xyz(-rad * 10.0, rad * 10.0, 0.0),
                             Collider::cuboid(rad, rad * 10.0, rad),
                             ColliderDebugColor(colors[color % 3]),
                         ));

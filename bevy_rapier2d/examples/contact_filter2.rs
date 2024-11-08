@@ -45,10 +45,7 @@ fn main() {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    commands.spawn(Camera2dBundle {
-        transform: Transform::from_xyz(0.0, 20.0, 0.0),
-        ..default()
-    });
+    commands.spawn((Camera2d::default(), Transform::from_xyz(0.0, 20.0, 0.0)));
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -58,13 +55,13 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_size = 100.0;
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, -100.0, 0.0)),
+        Transform::from_xyz(0.0, -100.0, 0.0),
         Collider::cuboid(ground_size, 12.0),
         CustomFilterTag::GroupA,
     ));
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, 0.0, 0.0)),
+        Transform::from_xyz(0.0, 0.0, 0.0),
         Collider::cuboid(ground_size, 12.0),
         CustomFilterTag::GroupB,
     ));
@@ -89,7 +86,7 @@ pub fn setup_physics(mut commands: Commands) {
             group_id += 1;
 
             commands.spawn((
-                TransformBundle::from(Transform::from_xyz(x, y, 0.0)),
+                Transform::from_xyz(x, y, 0.0),
                 RigidBody::Dynamic,
                 Collider::cuboid(rad, rad),
                 ActiveHooks::FILTER_CONTACT_PAIRS,

@@ -92,7 +92,7 @@ pub fn setup_game(mut commands: Commands, mut game: ResMut<Game>) {
         byte_rgb(255, 0, 0),
     ];
 
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d::default());
 
     setup_board(&mut commands, &game);
 
@@ -131,15 +131,12 @@ fn setup_board(commands: &mut Commands, game: &Game) {
 
     // Add floor
     commands.spawn((
-        SpriteBundle {
-            sprite: Sprite {
-                color: Color::srgb(0.5, 0.5, 0.5),
-                custom_size: Some(Vec2::new(game.n_lanes as f32 * 30.0, 60.0)),
-                ..Default::default()
-            },
-            transform: Transform::from_xyz(0.0, floor_y - 30.0 * 0.5, 0.0),
+        Sprite {
+            color: Color::srgb(0.5, 0.5, 0.5),
+            custom_size: Some(Vec2::new(game.n_lanes as f32 * 30.0, 60.0)),
             ..Default::default()
         },
+        Transform::from_xyz(0.0, floor_y - 30.0 * 0.5, 0.0),
         RigidBody::Fixed,
         Collider::cuboid(game.n_lanes as f32 * 30.0 / 2.0, 60.0 / 2.0),
     ));
@@ -200,15 +197,12 @@ fn spawn_block(
 
     commands
         .spawn((
-            SpriteBundle {
-                sprite: Sprite {
-                    color: game.cube_colors[kind as usize],
-                    custom_size: Some(Vec2::new(30.0, 30.0)),
-                    ..Default::default()
-                },
-                transform: Transform::from_xyz(x, y, 0.0),
+            Sprite {
+                color: game.cube_colors[kind as usize],
+                custom_size: Some(Vec2::new(30.0, 30.0)),
                 ..Default::default()
             },
+            Transform::from_xyz(x, y, 0.0),
             RigidBody::Dynamic,
             Damping {
                 linear_damping,

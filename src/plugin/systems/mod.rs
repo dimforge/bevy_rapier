@@ -207,16 +207,12 @@ pub mod tests {
         for (child_transform, parent_transform) in [zero, same, different] {
             let child = app
                 .world_mut()
-                .spawn((
-                    TransformBundle::from(child_transform),
-                    RigidBody::Fixed,
-                    Collider::ball(1.0),
-                ))
+                .spawn((child_transform, RigidBody::Fixed, Collider::ball(1.0)))
                 .id();
 
             app.world_mut()
-                .spawn(TransformBundle::from(parent_transform))
-                .push_children(&[child]);
+                .spawn(parent_transform)
+                .add_children(&[child]);
 
             app.update();
 
@@ -267,13 +263,13 @@ pub mod tests {
         for (child_transform, parent_transform) in [zero, same, different] {
             let child = app
                 .world_mut()
-                .spawn((TransformBundle::from(child_transform), Collider::ball(1.0)))
+                .spawn((child_transform, Collider::ball(1.0)))
                 .id();
 
             let parent = app
                 .world_mut()
-                .spawn((TransformBundle::from(parent_transform), RigidBody::Fixed))
-                .push_children(&[child])
+                .spawn((parent_transform, RigidBody::Fixed))
+                .add_children(&[child])
                 .id();
 
             app.update();
