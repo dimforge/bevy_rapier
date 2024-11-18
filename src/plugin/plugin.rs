@@ -169,7 +169,7 @@ impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystem
         Self {
             schedule: PostUpdate.intern(),
             default_system_setup: true,
-            default_world_setup: default(),
+            default_world_setup: Default::default(),
             _phantom: PhantomData,
         }
     }

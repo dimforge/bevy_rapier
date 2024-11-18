@@ -455,22 +455,16 @@ impl RapierQueryPipeline {
     }
 
     /// Finds all entities of all the colliders with an Aabb intersecting the given Aabb.
-    #[cfg(not(feature = "headless"))]
     pub fn colliders_with_aabb_intersecting_aabb(
         &self,
         rapier_colliders: &RapierContextColliders,
-        aabb: bevy::render::primitives::Aabb,
+        #[cfg(feature = "dim2")] aabb: bevy::math::bounding::Aabb2d,
+        #[cfg(feature = "dim3")] aabb: bevy::math::bounding::Aabb3d,
         mut callback: impl FnMut(Entity) -> bool,
     ) {
-        #[cfg(feature = "dim2")]
         let scaled_aabb = rapier::prelude::Aabb {
-            mins: aabb.min().xy().into(),
-            maxs: aabb.max().xy().into(),
-        };
-        #[cfg(feature = "dim3")]
-        let scaled_aabb = rapier::prelude::Aabb {
-            mins: aabb.min().into(),
-            maxs: aabb.max().into(),
+            mins: aabb.min.into(),
+            maxs: aabb.max.into(),
         };
         #[allow(clippy::redundant_closure)]
         // False-positive, we can't move callback, closure becomes `FnOnce`

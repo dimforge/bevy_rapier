@@ -41,7 +41,7 @@ impl<'w, 's, T: query::QueryFilter + 'static> ReadRapierContext<'w, 's, T> {
     /// SAFETY: This method will panic if its underlying query fails.
     ///
     /// Use the underlying query [`ReadRapierContext::rapier_context`] for safer alternatives.
-    pub fn single(&'_ self) -> RapierContext {
+    pub fn single(&self) -> RapierContext {
         let (simulation, colliders, joints, query_pipeline, rigidbody_set) =
             self.rapier_context.single();
         RapierContext {
@@ -401,11 +401,12 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::colliders_with_aabb_intersecting_aabb`].
         pub fn colliders_with_aabb_intersecting_aabb(
             &self,
-            aabb: bevy::render::primitives::Aabb,
+            #[cfg(feature = "dim2")] aabb: bevy::math::bounding::Aabb2d,
+            #[cfg(feature = "dim3")] aabb: bevy::math::bounding::Aabb3d,
             callback: impl FnMut(Entity) -> bool,
         ) {
             self.query_pipeline.colliders_with_aabb_intersecting_aabb(
-                self.colliders,
+                &self.colliders,
                 aabb,
                 callback,
             )
@@ -567,7 +568,8 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::colliders_with_aabb_intersecting_aabb`].
         pub fn colliders_with_aabb_intersecting_aabb(
             &self,
-            aabb: bevy::render::primitives::Aabb,
+            #[cfg(feature = "dim2")] aabb: bevy::math::bounding::Aabb2d,
+            #[cfg(feature = "dim3")] aabb: bevy::math::bounding::Aabb3d,
             callback: impl FnMut(Entity) -> bool,
         ) {
             self.query_pipeline.colliders_with_aabb_intersecting_aabb(
