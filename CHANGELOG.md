@@ -23,36 +23,36 @@ which was its hardcoded behaviour.
 
 ### Modified
 
-- Rapier now supports multiple independent physics worlds, see example `multi_world3` for usage details.
-  - `RapierContext`, `RapierConfiguration` and `SimulationToRenderTime` are no longer `Resource`s.
-    - They have been split in multiple `Component`s:
-      - `RapierContextColliders`
-      - `RapierContextJoints`
-      - `RapierContextSimulation`
-      - `RapierRigidBodySet`
-      - `SimulationToRenderTime`
-      - `RapierConfiguration`
-    - Migration guide:
-      - `ResMut<mut RapierContext>` -> `WriteRapierContext`
-      - `Res<RapierContext>` -> `ReadRapierContext`
-      - Access to `RapierConfiguration` and `SimulationToRenderTime` should query for it
-  on the responsible entity owning the `RenderContext`.
-    - See [`ray_casting`](bevy_rapier3d/examples/ray_casting3.rs) example for a usage example.
+- Rapier now supports multiple independent physics contexts, see example `multi_contexts3` for usage details.
   - Each entity managed by bevy_rapier has a `RapierContextEntityLink` pointing to the entity containing the components above.
-    - If you are building a library on top of `bevy_rapier` and would want to support multiple independent physics worlds too,
+    - If you are building a library on top of `bevy_rapier` and would want to support multiple independent physics contexts too,
   you can check out the details of [#545](https://github.com/dimforge/bevy_rapier/pull/545)
   to find more information.
-  - Rapier now supports multiple independent physics worlds, see example `multi_world3` for usage details.
+  - Rapier now supports multiple independent physics contexts, see example `multi_contexts3` for usage details.
   - Migration guide:
     - `ResMut<mut RapierContext>` -> `WriteDefaultRapierContext`
     - `Res<RapierContext>` -> `ReadDefaultRapierContext`
     - Access to `RapierConfiguration` and `RenderToSimulationTime` should query for it
 on the responsible entity owning the `RenderContext`.
-  - If you are building a library on top of `bevy_rapier` and would want to support multiple independent physics worlds too,
+  - If you are building a library on top of `bevy_rapier` and would want to support multiple independent physics contexts too,
 you can check out the details of [#545](https://github.com/dimforge/bevy_rapier/pull/545)
 to get more context and information.
 - `colliders_with_aabb_intersecting_aabb` now takes `bevy::math::bounding::Aabb3d` (or `[..]::Aabb2d` in 2D) as parameter.
   - it is now accessible with `headless` feature enabled.
+- `RapierContext`, `RapierConfiguration` and `SimulationToRenderTime` are no longer `Resource`s.
+  - They have been split in multiple `Component`s:
+    - `RapierContextColliders`
+    - `RapierContextJoints`
+    - `RapierContextSimulation`
+    - `RapierRigidBodySet`
+    - `SimulationToRenderTime`
+    - `RapierConfiguration`
+  - Migration guide:
+    - `ResMut<mut RapierContext>` -> `WriteRapierContext`
+    - `Res<RapierContext>` -> `ReadRapierContext`
+    - Access to `RapierConfiguration` and `SimulationToRenderTime` should query for it
+  on the responsible entity owning the `RenderContext`.
+  - See [`ray_casting`](bevy_rapier3d/examples/ray_casting3.rs) example for a usage example.
 
 ## v0.27.0 (07 July 2024)
 

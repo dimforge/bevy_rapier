@@ -111,7 +111,7 @@ where
                 (
                     (
                         systems::on_add_entity_with_parent,
-                        systems::on_change_world,
+                        systems::on_change_context,
                         systems::sync_removals,
                         #[cfg(all(feature = "dim3", feature = "async-collider"))]
                         systems::init_async_scene_colliders,
@@ -252,7 +252,7 @@ where
             )
                 .before(PhysicsSet::SyncBackend),
         );
-        app.add_systems(PreStartup, insert_default_world);
+        app.add_systems(PreStartup, insert_default_context);
 
         // Add each set as necessary
         if self.default_system_setup {
@@ -309,7 +309,7 @@ pub enum RapierContextInitialization {
     /// You are responsible for creating a [`RapierContextBundle`],
     /// before spawning any rapier entities (rigidbodies, colliders, joints).
     ///
-    /// You might be interested in adding [`DefaultRapierContext`] to the created world.
+    /// You might be interested in adding [`DefaultRapierContext`] to the created physics context.
     NoAutomaticRapierContext,
     /// [`RapierPhysicsPlugin`] will spawn an entity containing a [`RapierContextBundle`]
     /// automatically during [`PreStartup`], with the [`DefaultRapierContext`] marker component.
@@ -325,7 +325,7 @@ impl Default for RapierContextInitialization {
     }
 }
 
-pub fn insert_default_world(
+pub fn insert_default_context(
     mut commands: Commands,
     initialization_data: Res<RapierContextInitialization>,
 ) {
@@ -427,7 +427,7 @@ mod test {
                 .enable()
                 .set_breakpoint(PostUpdate, systems::on_add_entity_with_parent)
                 .set_breakpoint(PostUpdate, systems::init_rigid_bodies)
-                .set_breakpoint(PostUpdate, systems::on_change_world)
+                .set_breakpoint(PostUpdate, systems::on_change_context)
                 .set_breakpoint(PostUpdate, systems::sync_removals)
                 .set_breakpoint(Update, setup_physics);
 

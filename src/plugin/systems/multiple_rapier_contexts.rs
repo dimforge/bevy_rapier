@@ -1,4 +1,4 @@
-//! systems to support multiple worlds, and changes between them.
+//! systems to support multiple physics contexts, and changes between them.
 
 use crate::dynamics::{
     RapierImpulseJointHandle, RapierMultibodyJointHandle, RapierRigidBodyHandle,
@@ -52,16 +52,16 @@ fn remove_old_physics(entity: Entity, commands: &mut Commands) {
         .remove::<RapierImpulseJointHandle>();
 }
 
-/// Flags the entity to have its physics updated to reflect new world
+/// Flags the entity to have its physics updated to reflect new context
 ///
-/// Also recursively bubbles down world changes to children & flags them to apply any needed physics changes
-pub fn on_change_world(
-    q_changed_worlds: Query<
+/// Also recursively bubbles down context changes to children & flags them to apply any needed physics changes
+pub fn on_change_context(
+    q_changed_contexts: Query<
         (Entity, Ref<RapierContextEntityLink>),
         Changed<RapierContextEntityLink>,
     >,
     q_children: Query<&Children>,
-    q_physics_world: Query<&RapierContextEntityLink>,
+    q_physics_context: Query<&RapierContextEntityLink>,
     q_context: Query<(
         &RapierContextColliders,
         &RapierContextJoints,
@@ -69,12 +69,12 @@ pub fn on_change_world(
     )>,
     mut commands: Commands,
 ) {
-    for (entity, new_physics_world) in &q_changed_worlds {
-        let context = q_context.get(new_physics_world.0);
-        // Ensure the world actually changed before removing them from the world
+    for (entity, new_physics_context) in &q_changed_contexts {
+        let context = q_context.get(new_physics_context.0);
+        // Ensure the context actually changed before removing them from the context
         if !context
             .map(|(colliders, joints, rigidbody_set)| {
-                // They are already apart of this world if any of these are true
+                // They are already apart of this context if any of these are true
                 colliders.entity2collider.contains_key(&entity)
                     || rigidbody_set.entity2body.contains_key(&entity)
                     || joints.entity2impulse_joint.contains_key(&entity)
@@ -83,46 +83,46 @@ pub fn on_change_world(
             .unwrap_or(false)
         {
             remove_old_physics(entity, &mut commands);
-            bubble_down_world_change(
+            bubble_down_context_change(
                 &mut commands,
                 entity,
                 &q_children,
-                *new_physics_world,
-                &q_physics_world,
+                *new_physics_context,
+                &q_physics_context,
             );
         }
     }
 }
 
-fn bubble_down_world_change(
+fn bubble_down_context_change(
     commands: &mut Commands,
     entity: Entity,
     q_children: &Query<&Children>,
-    new_physics_world: RapierContextEntityLink,
-    q_physics_world: &Query<&RapierContextEntityLink>,
+    new_physics_context: RapierContextEntityLink,
+    q_physics_context: &Query<&RapierContextEntityLink>,
 ) {
     let Ok(children) = q_children.get(entity) else {
         return;
     };
 
     children.iter().for_each(|&child| {
-        if q_physics_world
+        if q_physics_context
             .get(child)
-            .map(|x| *x == new_physics_world)
+            .map(|x| *x == new_physics_context)
             .unwrap_or(false)
         {
             return;
         }
 
         remove_old_physics(child, commands);
-        commands.entity(child).insert(new_physics_world);
+        commands.entity(child).insert(new_physics_context);
 
-        bubble_down_world_change(
+        bubble_down_context_change(
             commands,
             child,
             q_children,
-            new_physics_world,
-            q_physics_world,
+            new_physics_context,
+            q_physics_context,
         );
     });
 }
@@ -144,7 +144,7 @@ mod test {
     use rapier::math::Real;
 
     #[test]
-    pub fn multi_world_hierarchy_update() {
+    pub fn multi_context_hierarchy_update() {
         let mut app = App::new();
         app.add_plugins((
             HeadlessRenderPlugin,
@@ -181,7 +181,7 @@ mod test {
                 RapierRigidBodySet::default(),
             ))
             .id();
-        // FIXME: We need to wait 1 frame when creating a world.
+        // FIXME: We need to wait 1 frame when creating a context.
         // Ideally we should be able to order the systems so that we don't have to wait.
         app.update();
         let mut world = app.world_mut();
