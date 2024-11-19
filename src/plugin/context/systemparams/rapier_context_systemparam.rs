@@ -406,7 +406,7 @@ mod query_pipeline {
             callback: impl FnMut(Entity) -> bool,
         ) {
             self.query_pipeline.colliders_with_aabb_intersecting_aabb(
-                &self.colliders,
+                self.colliders,
                 aabb,
                 callback,
             )
