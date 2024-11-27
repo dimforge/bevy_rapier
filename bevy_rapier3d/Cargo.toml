@@ -63,6 +63,9 @@ bevy = { version = "0.15.0-rc.3", default-features = false, features = [
     "tonemapping_luts",
     "bevy_state",
     "bevy_debug_stepping",
+    "bevy_text",
+    "bevy_ui",
+    "default_font",
 ] }
 approx = "0.5.1"
 glam = { version = "0.29", features = ["approx"] }
