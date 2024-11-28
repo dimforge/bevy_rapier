@@ -23,7 +23,7 @@ use super::RapierContext;
 /// Runtime settings for the [`MeshPickingPlugin`].
 #[derive(Resource, Reflect)]
 #[reflect(Resource, Default)]
-pub struct RapierPickingSettings {
+pub struct ColliderPickingSettings {
     /// When set to `true` ray casting will only happen between cameras and entities marked with
     /// [`RayCastPickable`]. `false` by default.
     ///
@@ -39,7 +39,7 @@ pub struct RapierPickingSettings {
     pub ray_cast_visibility: RayCastVisibility,
 }
 
-impl Default for RapierPickingSettings {
+impl Default for ColliderPickingSettings {
     fn default() -> Self {
         Self {
             require_markers: false,
@@ -48,7 +48,7 @@ impl Default for RapierPickingSettings {
     }
 }
 
-/// An optional component that marks cameras and target entities that should be used in the [`MeshPickingPlugin`].
+/// An optional component that marks cameras and target entities that should be used in the [`ColliderPickingPlugin`].
 /// Only needed if [`MeshPickingSettings::require_markers`] is set to `true`, and ignored otherwise.
 #[derive(Debug, Clone, Default, Component, Reflect)]
 #[reflect(Component, Default)]
@@ -56,12 +56,12 @@ pub struct RayCastPickable;
 
 /// Adds the mesh picking backend to your app.
 #[derive(Clone, Default)]
-pub struct RapierPickingPlugin;
+pub struct ColliderPickingPlugin;
 
-impl Plugin for RapierPickingPlugin {
+impl Plugin for ColliderPickingPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MeshPickingSettings>()
-            .register_type::<(RayCastPickable, RapierPickingSettings)>()
+            .register_type::<(RayCastPickable, ColliderPickingSettings)>()
             .add_systems(PreUpdate, update_hits.in_set(PickSet::Backend));
     }
 }

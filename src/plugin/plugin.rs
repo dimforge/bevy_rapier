@@ -230,11 +230,6 @@ where
             app.insert_resource(self.default_world_setup.clone());
         }
 
-        // TODO: feature gate this
-        if !app.is_plugin_added::<picking_backend::RapierPickingPlugin>() {
-            app.add_plugins(picking_backend::RapierPickingPlugin::default());
-        }
-
         app.add_systems(
             self.schedule,
             (

@@ -1,25 +1,22 @@
-//! A simple scene to demonstrate picking events for UI and mesh entities.
+//! A simple scene to demonstrate picking events for rapier [`Collider`] entities.
 
 use bevy::prelude::*;
+use bevy_rapier3d::plugin::picking_backend::ColliderPickingPlugin;
 use bevy_rapier3d::prelude::*;
 
 fn main() {
     App::new()
-        // Unlike UiPickingPlugin, MeshPickingPlugin is not a default plugin
         .add_plugins((
             DefaultPlugins,
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
+            ColliderPickingPlugin::default(),
         ))
         .add_systems(Startup, setup_scene)
         .run();
 }
 
-fn setup_scene(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
+fn setup_scene(mut commands: Commands) {
     commands
         .spawn((
             Text::new("Click Me to get a box\nDrag cubes to rotate"),
@@ -43,21 +40,13 @@ fn setup_scene(
                 color.0 = bevy::color::palettes::tailwind::CYAN_400.into();
             },
         );
-
     // Base
+    let ground_size = 3.1;
+    let ground_height = 0.1;
     commands.spawn((
-        Mesh3d(meshes.add(Circle::new(4.0))),
-        MeshMaterial3d(materials.add(Color::WHITE)),
-        Transform::from_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
-    ));
-
-    // Light
-    commands.spawn((
-        PointLight {
-            shadows_enabled: true,
-            ..default()
-        },
-        Transform::from_xyz(4.0, 8.0, 4.0),
+        Transform::from_xyz(0.0, -ground_height / 2.0, 0.0),
+        Collider::cuboid(ground_size, ground_height, ground_size),
+        ColliderDebugColor(Hsla::BLACK),
     ));
 
     // Camera
@@ -70,17 +59,22 @@ fn setup_scene(
 fn on_click_spawn_cube(
     _click: Trigger<Pointer<Click>>,
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
     mut num: Local<usize>,
 ) {
+    let rad = 0.25;
+    let colors = [
+        Hsla::hsl(220.0, 1.0, 0.3),
+        Hsla::hsl(180.0, 1.0, 0.3),
+        Hsla::hsl(260.0, 1.0, 0.7),
+    ];
     commands
         .spawn((
-            Mesh3d(meshes.add(Cuboid::new(0.5, 0.5, 0.5))),
-            MeshMaterial3d(materials.add(Color::srgb_u8(124, 144, 255))),
             Transform::from_xyz(0.0, 0.25 + 0.55 * *num as f32, 0.0),
+            RigidBody::Dynamic,
+            Collider::cuboid(rad, rad, rad),
+            ColliderDebugColor(colors[*num % 3]),
         ))
-        // With the MeshPickingPlugin added, you can add pointer event observers to meshes:
+        // With the ColliderPickingPlugin added, you can add pointer event observers to colliders:
         .observe(on_drag_rotate);
     *num += 1;
 }

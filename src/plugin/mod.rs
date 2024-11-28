@@ -13,7 +13,7 @@ pub use narrow_phase::{ContactManifoldView, ContactPairView, ContactView, Solver
 #[allow(clippy::too_many_arguments)]
 pub mod systems;
 
-// #[cfg(feature = "picking_backend")]
+#[cfg(feature = "collider-picking")]
 pub mod picking_backend;
 
 mod configuration;
