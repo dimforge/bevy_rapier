@@ -1,8 +1,9 @@
 //! A simple scene to demonstrate picking events for rapier [`Collider`] entities.
 
 use bevy::prelude::*;
-use bevy_rapier3d::plugin::picking_backend::ColliderPickingPlugin;
+use bevy_rapier3d::plugin::picking_backend::{RapierPickingPlugin, RapierPickingSettings};
 use bevy_rapier3d::prelude::*;
+use picking_backend::RapierPickable;
 
 fn main() {
     App::new()
@@ -10,8 +11,17 @@ fn main() {
             DefaultPlugins,
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
-            ColliderPickingPlugin::default(),
+            RapierPickingPlugin::default(),
         ))
+        .insert_resource(RapierPickingSettings {
+            // Optional: only needed when you want fine-grained control
+            // over which cameras and entities should be used with the rapier picking backend.
+            // This is disabled by default, and no marker components are required on cameras or colliders.
+            // This resource is inserted by default,
+            // you only need to add it if you want to override the default settings.
+            require_markers: true,
+            ..Default::default()
+        })
         .add_systems(Startup, setup_scene)
         .run();
 }
@@ -53,6 +63,7 @@ fn setup_scene(mut commands: Commands) {
     commands.spawn((
         Camera3d::default(),
         Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
+        RapierPickable,
     ));
 }
 
@@ -70,11 +81,13 @@ fn on_click_spawn_cube(
     commands
         .spawn((
             Transform::from_xyz(0.0, 0.25 + 0.55 * *num as f32, 0.0),
+            Visibility::default(),
             RigidBody::Dynamic,
             Collider::cuboid(rad, rad, rad),
             ColliderDebugColor(colors[*num % 3]),
+            RapierPickable,
         ))
-        // With the ColliderPickingPlugin added, you can add pointer event observers to colliders:
+        // With the RapierPickingPlugin added, you can add pointer event observers to colliders:
         .observe(on_drag_rotate);
     *num += 1;
 }

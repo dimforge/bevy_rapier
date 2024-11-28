@@ -4,7 +4,7 @@
 //! by adding [`PickingBehavior::IGNORE`].
 //!
 //! To make mesh picking entirely opt-in, set [`RapierPickingSettings::require_markers`]
-//! to `true` and add a [`RayCastPickable`] component to the desired camera and target entities.
+//! to `true` and add a [`RapierPickable`] component to the desired camera and target entities.
 //!
 //! To manually perform mesh ray casts independent of picking, use [`QueryPipeline`].
 
@@ -20,48 +20,55 @@ use bevy::render::{prelude::*, view::RenderLayers};
 
 use super::RapierContext;
 
+/// How a ray cast should handle [`Visibility`].
+#[derive(Clone, Copy, Reflect)]
+pub enum RapierCastVisibility {
+    /// Completely ignore visibility checks. Hidden items can still be ray casted against.
+    Any,
+    /// Only cast rays against entities that are visible in the hierarchy. See [`Visibility`].
+    Visible,
+}
 /// Runtime settings for the [`MeshPickingPlugin`].
 #[derive(Resource, Reflect)]
 #[reflect(Resource, Default)]
-pub struct ColliderPickingSettings {
+pub struct RapierPickingSettings {
     /// When set to `true` ray casting will only happen between cameras and entities marked with
-    /// [`RayCastPickable`]. `false` by default.
+    /// [`RapierPickable`]. `false` by default.
     ///
     /// This setting is provided to give you fine-grained control over which cameras and entities
     /// should be used by the mesh picking backend at runtime.
     pub require_markers: bool,
 
-    /// Determines how mesh picking should consider [`Visibility`]. When set to [`RayCastVisibility::Any`],
+    /// Determines how mesh picking should consider [`Visibility`]. When set to [`RapierCastVisibility::Any`],
     /// ray casts can be performed against both visible and hidden entities.
     ///
-    /// Defaults to [`RayCastVisibility::VisibleInView`], only performing picking against visible entities
-    /// that are in the view of a camera.
-    pub ray_cast_visibility: RayCastVisibility,
+    /// Defaults to [`RapierCastVisibility::Visible`], only performing picking against entities with [`InheritedVisibility`] set to `true`.
+    pub ray_cast_visibility: RapierCastVisibility,
 }
 
-impl Default for ColliderPickingSettings {
+impl Default for RapierPickingSettings {
     fn default() -> Self {
         Self {
             require_markers: false,
-            ray_cast_visibility: RayCastVisibility::VisibleInView,
+            ray_cast_visibility: RapierCastVisibility::Visible,
         }
     }
 }
 
-/// An optional component that marks cameras and target entities that should be used in the [`ColliderPickingPlugin`].
-/// Only needed if [`MeshPickingSettings::require_markers`] is set to `true`, and ignored otherwise.
+/// An optional component that marks cameras and target entities that should be used in the [`RapierPickingPlugin`].
+/// Only needed if [`RapierBackendSettings::require_markers`] is set to `true`, and ignored otherwise.
 #[derive(Debug, Clone, Default, Component, Reflect)]
 #[reflect(Component, Default)]
-pub struct RayCastPickable;
+pub struct RapierPickable;
 
 /// Adds the mesh picking backend to your app.
 #[derive(Clone, Default)]
-pub struct ColliderPickingPlugin;
+pub struct RapierPickingPlugin;
 
-impl Plugin for ColliderPickingPlugin {
+impl Plugin for RapierPickingPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<MeshPickingSettings>()
-            .register_type::<(RayCastPickable, ColliderPickingSettings)>()
+        app.register_type::<(RapierPickable, RapierPickingSettings)>()
+            .init_resource::<RapierPickingSettings>()
             .add_systems(PreUpdate, update_hits.in_set(PickSet::Backend));
     }
 }
@@ -69,29 +76,66 @@ impl Plugin for ColliderPickingPlugin {
 /// Casts rays into the scene using [`MeshPickingSettings`] and sends [`PointerHits`] events.
 #[allow(clippy::too_many_arguments)]
 pub fn update_hits(
-    backend_settings: Res<MeshPickingSettings>,
+    backend_settings: Res<RapierPickingSettings>,
     ray_map: Res<RayMap>,
-    picking_cameras: Query<(&Camera, Option<&RayCastPickable>, Option<&RenderLayers>)>,
+    picking_cameras: Query<(&Camera, Option<&RapierPickable>, Option<&RenderLayers>)>,
     pickables: Query<&PickingBehavior>,
-    marked_targets: Query<&RayCastPickable>,
+    marked_targets: Query<&RapierPickable>,
+    culling_query: Query<(Option<&InheritedVisibility>, Option<&ViewVisibility>)>,
     layers: Query<&RenderLayers>,
     rapier_context: Query<&RapierContext>,
     mut output: EventWriter<PointerHits>,
 ) {
+    dbg!("update_hits");
     for (&ray_id, &ray) in ray_map.map().iter() {
         let Ok((camera, cam_pickable, cam_layers)) = picking_cameras.get(ray_id.camera) else {
+            dbg!("No camera found for ray_id");
             continue;
         };
         if backend_settings.require_markers && cam_pickable.is_none() {
+            dbg!("Camera not marked as pickable");
             continue;
         }
         let order = camera.order as f32;
         for rapier_context in rapier_context.iter() {
+            let predicate = |entity| {
+                let marker_requirement =
+                    !backend_settings.require_markers || marked_targets.get(entity).is_ok();
+                if !marker_requirement {
+                    return false;
+                }
+
+                let visibility_requirement = match backend_settings.ray_cast_visibility {
+                    RapierCastVisibility::Any => true,
+                    RapierCastVisibility::Visible => {
+                        let is_visible = culling_query
+                            .get(entity)
+                            .map(|(inherited_visibility, _)| {
+                                inherited_visibility.map(|v| v.get()).unwrap_or(false)
+                            })
+                            .unwrap_or(false);
+                        is_visible
+                    }
+                };
+                if !visibility_requirement {
+                    return false;
+                }
+                // Other entities missing render layers are on the default layer 0
+                let entity_layers = layers.get(entity).to_owned().unwrap_or_default();
+                let cam_layers = cam_layers.to_owned().unwrap_or_default();
+                let render_layers_match = cam_layers.intersects(entity_layers);
+                if !render_layers_match {
+                    return false;
+                }
+
+                return true;
+            };
+
             let mut picks = Vec::new();
             #[cfg(feature = "dim2")]
             rapier_context.intersections_with_point(
                 bevy::math::Vec2::new(ray.origin.x, ray.origin.y),
-                crate::prelude::QueryFilter::default(),
+                crate::prelude::QueryFilter::default().predicate(&predicate),
                 |entity| {
                     let hit_data = HitData {
                         camera: ray_id.camera,
@@ -109,7 +153,7 @@ pub fn update_hits(
                 ray.direction.into(),
                 f32::MAX,
                 true,
-                crate::prelude::QueryFilter::default(),
+                crate::prelude::QueryFilter::default().predicate(&predicate),
                 |entity, intersection| {
                     let hit_data = HitData {
                         camera: ray_id.camera,
@@ -121,6 +165,9 @@ pub fn update_hits(
                     true
                 },
             );
+
+            // TODO: Sort picks by depth and check picking behavior ; or use raycast rather than intersections
+            dbg!(&picks);
             if !picks.is_empty() {
                 output.send(PointerHits::new(ray_id.pointer, picks, order));
             }
