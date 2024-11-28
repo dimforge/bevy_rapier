@@ -39,7 +39,7 @@ debug-render-3d = [
     "bevy/bevy_asset",
 ]
 rapier-debug-render = ["rapier3d/debug-render"]
-rapier-picking-backend = []
+picking-backend = ["bevy/bevy_picking"]
 
 parallel = ["rapier3d/parallel"]
 simd-stable = ["rapier3d/simd-stable"]
@@ -81,7 +81,7 @@ features = ["debug-render-3d", "serde-serialize"]
 
 [[example]]
 name = "picking3"
-required-features = ["rapier-picking-backend"]
+required-features = ["picking-backend"]
 
 [[bench]]
 name = "cubes"

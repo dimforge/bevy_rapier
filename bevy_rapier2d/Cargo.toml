@@ -47,6 +47,7 @@ serde-serialize = ["rapier2d/serde-serialize", "bevy/serialize", "serde"]
 enhanced-determinism = ["rapier2d/enhanced-determinism"]
 headless = []
 async-collider = ["bevy/bevy_asset", "bevy/bevy_scene"]
+picking-backend = ["bevy/bevy_picking"]
 
 [dependencies]
 bevy = { version = "0.15.0-rc.2", default-features = false }

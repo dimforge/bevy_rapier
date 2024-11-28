@@ -3,16 +3,13 @@
 //! By default, all colliders are pickable. Picking can be disabled for individual entities
 //! by adding [`PickingBehavior::IGNORE`].
 //!
-//! To make mesh picking entirely opt-in, set [`RapierPickingSettings::require_markers`]
+//! To make rapier picking entirely opt-in, set [`RapierPickingSettings::require_markers`]
 //! to `true` and add a [`RapierPickable`] component to the desired camera and target entities.
-//!
-//! To manually perform mesh ray casts independent of picking, use [`QueryPipeline`].
 
 use bevy::app::prelude::*;
 use bevy::ecs::prelude::*;
 use bevy::picking::{
     backend::{ray::RayMap, HitData, PointerHits},
-    prelude::*,
     PickSet,
 };
 use bevy::reflect::prelude::*;
@@ -36,10 +33,10 @@ pub struct RapierPickingSettings {
     /// [`RapierPickable`]. `false` by default.
     ///
     /// This setting is provided to give you fine-grained control over which cameras and entities
-    /// should be used by the mesh picking backend at runtime.
+    /// should be used by the rapier picking backend at runtime.
     pub require_markers: bool,
 
-    /// Determines how mesh picking should consider [`Visibility`]. When set to [`RapierCastVisibility::Any`],
+    /// Determines how rapier picking should consider [`Visibility`]. When set to [`RapierCastVisibility::Any`],
     /// ray casts can be performed against both visible and hidden entities.
     ///
     /// Defaults to [`RapierCastVisibility::Visible`], only performing picking against entities with [`InheritedVisibility`] set to `true`.
@@ -61,7 +58,7 @@ impl Default for RapierPickingSettings {
 #[reflect(Component, Default)]
 pub struct RapierPickable;
 
-/// Adds the mesh picking backend to your app.
+/// Adds the rapier picking backend to your app.
 #[derive(Clone, Default)]
 pub struct RapierPickingPlugin;
 
@@ -73,27 +70,23 @@ impl Plugin for RapierPickingPlugin {
     }
 }
 
-/// Casts rays into the scene using [`MeshPickingSettings`] and sends [`PointerHits`] events.
+/// Casts rays into the scene using [`RapierPickingSettings`] and sends [`PointerHits`] events.
 #[allow(clippy::too_many_arguments)]
 pub fn update_hits(
     backend_settings: Res<RapierPickingSettings>,
     ray_map: Res<RayMap>,
     picking_cameras: Query<(&Camera, Option<&RapierPickable>, Option<&RenderLayers>)>,
-    pickables: Query<&PickingBehavior>,
     marked_targets: Query<&RapierPickable>,
     culling_query: Query<(Option<&InheritedVisibility>, Option<&ViewVisibility>)>,
     layers: Query<&RenderLayers>,
     rapier_context: Query<&RapierContext>,
     mut output: EventWriter<PointerHits>,
 ) {
-    dbg!("update_hits");
     for (&ray_id, &ray) in ray_map.map().iter() {
         let Ok((camera, cam_pickable, cam_layers)) = picking_cameras.get(ray_id.camera) else {
-            dbg!("No camera found for ray_id");
             continue;
         };
         if backend_settings.require_markers && cam_pickable.is_none() {
-            dbg!("Camera not marked as pickable");
             continue;
         }
         let order = camera.order as f32;
@@ -128,7 +121,7 @@ pub fn update_hits(
                     return false;
                 }
 
-                return true;
+                true
             };
 
             let mut picks = Vec::new();
@@ -166,8 +159,6 @@ pub fn update_hits(
                 },
             );
 
-            // TODO: Sort picks by depth and check picking behavior ; or use raycast rather than intersections
-            dbg!(&picks);
             if !picks.is_empty() {
                 output.send(PointerHits::new(ray_id.pointer, picks, order));
             }
