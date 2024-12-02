@@ -68,8 +68,7 @@ approx = "0.5.1"
 glam = { version = "0.29", features = ["approx"] }
 bevy-inspector-egui = "0.28.0"
 bevy_egui = "0.31"
-# bevy_mod_debugdump = "0.11"
-bevy_mod_debugdump = { git = "https://github.com/andriyDev/bevy_mod_debugdump.git", branch = "bevy-0.15" }
+bevy_mod_debugdump = { git = "https://github.com/jakobhellermann/bevy_mod_debugdump.git", branch = "main" }
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
