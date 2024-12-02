@@ -6,6 +6,7 @@
 
 - Update from rapier `0.21` to rapier `0.22`,
   see [rapier's changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md).
+- update bevy to 0.15
 
 ### Fix
 
