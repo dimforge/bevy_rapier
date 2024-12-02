@@ -7,6 +7,18 @@
 - Update from rapier `0.21` to rapier `0.22`,
   see [rapier's changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md).
 - update bevy to 0.15
+- `RapierContext`, `RapierConfiguration` and `RenderToSimulationTime` are now a `Component` instead of resources.
+  - Rapier now supports multiple independent physics worlds, see example `multi_world3` for usage details.
+  - Migration guide:
+    - `ResMut<mut RapierContext>` -> `WriteDefaultRapierContext`
+    - `Res<RapierContext>` -> `ReadDefaultRapierContext`
+    - Access to `RapierConfiguration` and `RenderToSimulationTime` should query for it
+on the responsible entity owning the `RenderContext`.
+  - If you are building a library on top of `bevy_rapier` and would want to support multiple independent physics worlds too,
+you can check out the details of [#545](https://github.com/dimforge/bevy_rapier/pull/545)
+to get more context and information.
+- `colliders_with_aabb_intersecting_aabb` now takes `bevy::math::bounding::Aabb3d` (or `[..]::Aabb2d` in 2D) as parameter.
+  - it is now accessible with `headless` feature enabled.
 
 ### Fix
 
@@ -21,21 +33,6 @@ which was its hardcoded behaviour.
 - Added a way to configure which colliders should be debug rendered: `global` parameter for both 
   `RapierDebugColliderPlugin` and `DebugRenderContext`, as well as individual collider setup via
   a `ColliderDebug` component.
-
-### Modified
-
-- `RapierContext`, `RapierConfiguration` and `RenderToSimulationTime` are now a `Component` instead of resources.
-  - Rapier now supports multiple independent physics worlds, see example `multi_world3` for usage details.
-  - Migration guide:
-    - `ResMut<mut RapierContext>` -> `WriteDefaultRapierContext`
-    - `Res<RapierContext>` -> `ReadDefaultRapierContext`
-    - Access to `RapierConfiguration` and `RenderToSimulationTime` should query for it
-on the responsible entity owning the `RenderContext`.
-  - If you are building a library on top of `bevy_rapier` and would want to support multiple independent physics worlds too,
-you can check out the details of [#545](https://github.com/dimforge/bevy_rapier/pull/545)
-to get more context and information.
-- `colliders_with_aabb_intersecting_aabb` now takes `bevy::math::bounding::Aabb3d` (or `[..]::Aabb2d` in 2D) as parameter.
-  - it is now accessible with `headless` feature enabled.
 
 ## v0.27.0 (07 July 2024)
 
