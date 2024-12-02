@@ -80,7 +80,6 @@ pub mod tests {
         },
         scene::ScenePlugin,
         time::TimePlugin,
-        window::WindowPlugin,
     };
     use rapier::geometry::CollisionEventFlags;
     use std::f32::consts::PI;
@@ -317,7 +316,6 @@ pub mod tests {
     impl Plugin for HeadlessRenderPlugin {
         fn build(&self, app: &mut App) {
             app.add_plugins((
-                WindowPlugin::default(),
                 AssetPlugin::default(),
                 ScenePlugin,
                 RenderPlugin {
