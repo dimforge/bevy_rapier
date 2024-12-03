@@ -59,6 +59,7 @@ serde = { version = "1", features = ["derive"], optional = true }
 
 [dev-dependencies]
 bevy = { version = "0.15", default-features = false, features = [
+    "bevy_window",
     "x11",
     "tonemapping_luts",
     "bevy_state",
