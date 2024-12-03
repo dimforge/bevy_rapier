@@ -210,12 +210,10 @@ where
             .register_type::<ContactSkin>()
             .register_type::<Group>()
             .register_type::<RapierContextEntityLink>()
-            .register_type::<ColliderDebugColor>()
             .register_type::<RapierConfiguration>()
             .register_type::<SimulationToRenderTime>()
             .register_type::<DefaultRapierContext>()
-            .register_type::<RapierContextInitialization>()
-            .register_type::<ColliderDebugColor>();
+            .register_type::<RapierContextInitialization>();
 
         app.insert_resource(Events::<CollisionEvent>::default())
             .insert_resource(Events::<ContactForceEvent>::default())
