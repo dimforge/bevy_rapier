@@ -247,6 +247,10 @@ where
                 .chain(),
         );
 
+        // These *must* be in the main schedule currently so that they do not miss events.
+        // See test `test_sync_removal` for an example of this.
+        app.add_systems(PostUpdate, (systems::sync_removals,));
+
         // Add each set as necessary
         if self.default_system_setup {
             app.configure_sets(
@@ -496,6 +500,96 @@ mod test {
                 cuboid(0.5, 0.5, 0.5),
                 TestMarker,
             ));
+        }
+    }
+
+    #[test]
+    pub fn test_sync_removal() {
+        return main();
+
+        use bevy::prelude::*;
+
+        fn run_test(app: &mut App) {
+            app.insert_resource(TimeUpdateStrategy::ManualDuration(
+                std::time::Duration::from_secs_f32(1f32 / 60f32),
+            ));
+            app.insert_resource(Time::<Fixed>::from_hz(20.0));
+
+            app.add_systems(Startup, setup_physics);
+            app.add_systems(Update, remove_rapier_entity);
+            app.add_systems(FixedUpdate, || println!("Fixed Update"));
+            app.add_systems(Update, || println!("Update"));
+            // startup
+            app.update();
+            // normal updates starting
+            // render only
+            app.update();
+            app.update();
+            // render + physics
+            app.update();
+
+            let context = app
+                .world_mut()
+                .query::<&RapierContext>()
+                .get_single(&app.world())
+                .unwrap();
+            assert_eq!(context.entity2body.len(), 1);
+
+            // render only + remove entities
+            app.update();
+            // Fixed Update hasn´t run yet, so it's a risk of not having caught the removed event, which will be cleaned next frame.
+            app.update();
+            // render + physics
+            app.update();
+            // render only
+            app.update();
+            app.update();
+            // render + physics
+            app.update();
+
+            let context = app
+                .world_mut()
+                .query::<&RapierContext>()
+                .get_single(&app.world())
+                .unwrap();
+
+            println!("{:?}", &context.entity2body);
+            assert_eq!(context.entity2body.len(), 0);
+        }
+
+        fn main() {
+            let mut app = App::new();
+            app.add_plugins((
+                HeadlessRenderPlugin,
+                TransformPlugin,
+                TimePlugin,
+                RapierPhysicsPlugin::<NoUserData>::default().in_fixed_schedule(),
+            ));
+            run_test(&mut app);
+        }
+
+        pub fn setup_physics(mut commands: Commands) {
+            commands.spawn((
+                TransformBundle::from(Transform::from_xyz(0.0, 13.0, 0.0)),
+                RigidBody::Dynamic,
+                cuboid(0.5, 0.5, 0.5),
+                TestMarker,
+            ));
+            println!("spawned rapier entity");
+        }
+        pub fn remove_rapier_entity(
+            mut commands: Commands,
+            to_remove: Query<Entity, With<TestMarker>>,
+            mut counter: Local<i32>,
+        ) {
+            *counter += 1;
+            if *counter != 5 {
+                return;
+            }
+            println!("removing rapier entity");
+            for e in &to_remove {
+                commands.entity(e).despawn();
+            }
         }
     }
 }
