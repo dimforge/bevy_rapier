@@ -228,6 +228,7 @@ where
             app.insert_resource(self.default_world_setup.clone());
         }
 
+        // FIXME: Those are great candidates for RequiredComponents with bevy 0.15
         app.add_systems(
             self.schedule,
             (
@@ -236,7 +237,15 @@ where
             )
                 .before(PhysicsSet::SyncBackend),
         );
-        app.add_systems(PreStartup, insert_default_world);
+        app.add_systems(
+            PreStartup,
+            (
+                insert_default_world,
+                setup_rapier_configuration,
+                setup_rapier_simulation_to_render_time,
+            )
+                .chain(),
+        );
 
         // Add each set as necessary
         if self.default_system_setup {
