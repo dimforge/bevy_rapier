@@ -69,6 +69,7 @@ pub fn step_simulation<Hooks>(
 }
 
 #[cfg(test)]
+#[allow(missing_docs)]
 pub mod tests {
     use bevy::{
         asset::AssetPlugin,
