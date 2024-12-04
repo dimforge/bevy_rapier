@@ -537,15 +537,7 @@ mod test {
 
             // render only + remove entities
             app.update();
-            // Fixed Update hasn´t run yet, so it's a risk of not having caught the removed event, which will be cleaned next frame.
-            app.update();
-            // render + physics
-            app.update();
-            // render only
-            app.update();
-            app.update();
-            // render + physics
-            app.update();
+            // Fixed Update hasn´t run yet, so it's a risk of not having caught the bevy removed event, which will be cleaned next frame.
 
             let context = app
                 .world_mut()
