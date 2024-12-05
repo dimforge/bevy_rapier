@@ -109,7 +109,7 @@ where
                     .in_set(RapierTransformPropagateSet),
                 (
                     systems::on_add_entity_with_parent,
-                    systems::on_change_world,
+                    systems::on_change_context,
                     systems::sync_removals,
                     #[cfg(all(feature = "dim3", feature = "async-collider"))]
                     systems::init_async_scene_colliders,
@@ -249,7 +249,12 @@ where
 
         // These *must* be in the main schedule currently so that they do not miss events.
         // See test `test_sync_removal` for an example of this.
-        app.add_systems(PostUpdate, (systems::sync_removals,));
+        if self.schedule != PostUpdate.intern() {
+            app.add_systems(
+                PostUpdate,
+                (systems::sync_removals,).before(TransformSystem::TransformPropagate),
+            );
+        }
 
         // Add each set as necessary
         if self.default_system_setup {
@@ -407,7 +412,7 @@ mod test {
                 .enable()
                 .set_breakpoint(PostUpdate, systems::on_add_entity_with_parent)
                 .set_breakpoint(PostUpdate, systems::init_rigid_bodies)
-                .set_breakpoint(PostUpdate, systems::on_change_world)
+                .set_breakpoint(PostUpdate, systems::on_change_context)
                 .set_breakpoint(PostUpdate, systems::sync_removals)
                 .set_breakpoint(Update, setup_physics);
 
