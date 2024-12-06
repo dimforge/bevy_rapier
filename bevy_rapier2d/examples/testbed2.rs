@@ -108,6 +108,7 @@ fn main() {
             )
                 .run_if(in_state(Examples::DebugToggle2)),
         )
+        .add_systems(OnExit(Examples::DebugToggle2), cleanup)
         //
         // rope joint
         .add_systems(

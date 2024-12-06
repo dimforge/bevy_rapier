@@ -19,10 +19,10 @@ fn main() {
 }
 
 pub fn setup_graphics(mut commands: Commands) {
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(0.0, 0.0, 25.0).looking_at(Vec3::ZERO, Vec3::Y),
-        ..Default::default()
-    });
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(0.0, 0.0, 25.0).looking_at(Vec3::ZERO, Vec3::Y),
+    ));
 }
 
 pub fn display_events(
@@ -43,18 +43,18 @@ pub fn setup_physics(mut commands: Commands) {
      * Ground
      */
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, -1.2, 0.0)),
+        Transform::from_xyz(0.0, -1.2, 0.0),
         Collider::cuboid(4.0, 1.0, 1.0),
     ));
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, 5.0, 0.0)),
+        Transform::from_xyz(0.0, 5.0, 0.0),
         Collider::cuboid(4.0, 1.5, 1.0),
         Sensor,
     ));
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, 13.0, 0.0)),
+        Transform::from_xyz(0.0, 13.0, 0.0),
         RigidBody::Dynamic,
         Collider::cuboid(0.5, 0.5, 0.5),
         ActiveEvents::COLLISION_EVENTS,
