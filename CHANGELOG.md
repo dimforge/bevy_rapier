@@ -6,7 +6,7 @@
 
 - Update from rapier `0.21` to rapier `0.22`,
   see [rapier's changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md).
-- update bevy to 0.15
+- Update bevy to 0.15.
 - `RapierContext`, `RapierConfiguration` and `RenderToSimulationTime` are now a `Component` instead of resources.
   - Rapier now supports multiple independent physics worlds, see example `multi_world3` for usage details.
   - Migration guide:
