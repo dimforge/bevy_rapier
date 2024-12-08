@@ -32,12 +32,14 @@ pub struct AsyncCollider(pub ComputedColliderShape);
 #[derive(Component, Clone)]
 pub struct ComHandle<A: Asset>(pub Handle<A>);
 
+#[cfg(all(feature = "dim3", feature = "async-collider"))]
 impl<A: Asset> Into<Handle<A>> for ComHandle<A> {
     fn into(self) -> Handle<A> {
         self.0
     }
 }
 
+#[cfg(all(feature = "dim3", feature = "async-collider"))]
 impl<A: Asset> From<Handle<A>> for ComHandle<A> {
     fn from(value: Handle<A>) -> Self {
         Self (value)

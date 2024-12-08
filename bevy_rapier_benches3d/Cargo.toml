@@ -11,4 +11,4 @@ edition = "2021"
 [dependencies]
 rapier3d = { features = ["profiler"], git = "https://github.com/GhostMinerPlus/rapier.git" }
 bevy_rapier3d = { version = "0.27", path = "../bevy_rapier3d" }
-bevy = { version = "0.15", default-features = false }
+bevy = { version = "0.15", default-features = false, features = ["bevy_window"]}
