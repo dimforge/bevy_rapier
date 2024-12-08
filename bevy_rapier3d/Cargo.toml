@@ -47,7 +47,7 @@ wasm-bindgen = ["rapier3d/wasm-bindgen"]
 serde-serialize = ["rapier3d/serde-serialize", "bevy/serialize", "serde"]
 enhanced-determinism = ["rapier3d/enhanced-determinism"]
 headless = []
-async-collider = ["bevy/bevy_asset", "bevy/bevy_scene"]
+async-collider = ["bevy/bevy_asset", "bevy/bevy_scene", "bevy/bevy_render"]
 
 [dependencies]
 bevy = { version = "0.14", default-features = false }
