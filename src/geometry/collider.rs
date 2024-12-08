@@ -27,6 +27,23 @@ pub struct RapierColliderHandle(pub ColliderHandle);
 #[derive(Component, Debug, Clone, Default)]
 pub struct AsyncCollider(pub ComputedColliderShape);
 
+/// A component handle.
+#[cfg(all(feature = "dim3", feature = "async-collider"))]
+#[derive(Component, Clone)]
+pub struct ComHandle<A: Asset>(pub Handle<A>);
+
+impl<A: Asset> Into<Handle<A>> for ComHandle<A> {
+    fn into(self) -> Handle<A> {
+        self.0
+    }
+}
+
+impl<A: Asset> From<Handle<A>> for ComHandle<A> {
+    fn from(value: Handle<A>) -> Self {
+        Self (value)
+    }
+}
+
 /// A component which will be replaced the specified collider types on children with meshes after the referenced scene become available.
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 #[derive(Component, Debug, Clone)]

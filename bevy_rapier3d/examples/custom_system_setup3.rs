@@ -76,7 +76,7 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_height = 0.1;
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
+        Transform::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
         Collider::cuboid(ground_size, ground_height, ground_size),
     ));
 
@@ -108,7 +108,7 @@ pub fn setup_physics(mut commands: Commands) {
                 color += 1;
 
                 commands.spawn((
-                    TransformBundle::from(Transform::from_xyz(x, y, z)),
+                    Transform::from(Transform::from_xyz(x, y, z)),
                     RigidBody::Dynamic,
                     Collider::cuboid(rad, rad, rad),
                     ColliderDebugColor(colors[color % 3]),

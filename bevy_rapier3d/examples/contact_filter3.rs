@@ -59,13 +59,13 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_size = 10.0;
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, -10.0, 0.0)),
+        Transform::from(Transform::from_xyz(0.0, -10.0, 0.0)),
         Collider::cuboid(ground_size, 1.2, ground_size),
         CustomFilterTag::GroupA,
     ));
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, 0.0, 0.0)),
+        Transform::from(Transform::from_xyz(0.0, 0.0, 0.0)),
         Collider::cuboid(ground_size, 1.2, ground_size),
         CustomFilterTag::GroupB,
     ));
@@ -90,7 +90,7 @@ pub fn setup_physics(mut commands: Commands) {
             group_id += 1;
 
             commands.spawn((
-                TransformBundle::from(Transform::from_xyz(x, y, 0.0)),
+                Transform::from(Transform::from_xyz(x, y, 0.0)),
                 RigidBody::Dynamic,
                 Collider::cuboid(rad, rad, rad),
                 ActiveHooks::FILTER_CONTACT_PAIRS,

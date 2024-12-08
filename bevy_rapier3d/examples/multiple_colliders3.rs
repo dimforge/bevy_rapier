@@ -33,7 +33,7 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_height = 0.1;
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
+        Transform::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
         Collider::cuboid(ground_size, ground_height, ground_size),
     ));
 
@@ -67,7 +67,7 @@ pub fn setup_physics(mut commands: Commands) {
                 // Crate a rigid-body with multiple colliders attached, using Bevy hierarchy.
                 commands
                     .spawn((
-                        TransformBundle::from(Transform::from_xyz(x, y, z)),
+                        Transform::from(Transform::from_xyz(x, y, z)),
                         RigidBody::Dynamic,
                     ))
                     .with_children(|children| {
@@ -76,12 +76,12 @@ pub fn setup_physics(mut commands: Commands) {
                             ColliderDebugColor(colors[color % 3]),
                         ));
                         children.spawn((
-                            TransformBundle::from(Transform::from_xyz(rad * 10.0, rad * 10.0, 0.0)),
+                            Transform::from(Transform::from_xyz(rad * 10.0, rad * 10.0, 0.0)),
                             Collider::cuboid(rad, rad * 10.0, rad),
                             ColliderDebugColor(colors[color % 3]),
                         ));
                         children.spawn((
-                            TransformBundle::from(Transform::from_xyz(
+                            Transform::from(Transform::from_xyz(
                                 -rad * 10.0,
                                 rad * 10.0,
                                 0.0,

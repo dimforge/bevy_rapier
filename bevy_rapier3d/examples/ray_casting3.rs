@@ -36,7 +36,7 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_height = 0.1;
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
+        Transform::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
         Collider::cuboid(ground_size, ground_height, ground_size),
     ));
 
@@ -62,7 +62,7 @@ pub fn setup_physics(mut commands: Commands) {
 
                 // Build the rigid body.
                 commands.spawn((
-                    TransformBundle::from(Transform::from_xyz(x, y, z)),
+                    Transform::from(Transform::from_xyz(x, y, z)),
                     RigidBody::Dynamic,
                     Collider::cuboid(rad, rad, rad),
                 ));
@@ -88,7 +88,7 @@ pub fn cast_ray(
     // We will color in read the colliders hovered by the mouse.
     for (camera, camera_transform) in &cameras {
         // First, compute a ray from the mouse position.
-        let Some(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
+        let Ok(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
             return;
         };
 

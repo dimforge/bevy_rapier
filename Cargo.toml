@@ -1,5 +1,5 @@
 [workspace]
-members = ["bevy_rapier2d", "bevy_rapier3d", "bevy_rapier_benches3d"]
+members = [ "bevy_rapier3d", "bevy_rapier_benches3d"]
 resolver = "2"
 
 [workspace.lints]

@@ -79,7 +79,6 @@ pub mod tests {
         },
         scene::ScenePlugin,
         time::TimePlugin,
-        window::WindowPlugin,
     };
     use rapier::geometry::CollisionEventFlags;
     use std::f32::consts::PI;
@@ -208,15 +207,15 @@ pub mod tests {
             let child = app
                 .world_mut()
                 .spawn((
-                    TransformBundle::from(child_transform),
+                    Transform::from(child_transform),
                     RigidBody::Fixed,
                     Collider::ball(1.0),
                 ))
                 .id();
 
             app.world_mut()
-                .spawn(TransformBundle::from(parent_transform))
-                .push_children(&[child]);
+                .spawn(Transform::from(parent_transform))
+                .add_child(child);
 
             app.update();
 
@@ -267,13 +266,13 @@ pub mod tests {
         for (child_transform, parent_transform) in [zero, same, different] {
             let child = app
                 .world_mut()
-                .spawn((TransformBundle::from(child_transform), Collider::ball(1.0)))
+                .spawn((Transform::from(child_transform), Collider::ball(1.0)))
                 .id();
 
             let parent = app
                 .world_mut()
-                .spawn((TransformBundle::from(parent_transform), RigidBody::Fixed))
-                .push_children(&[child])
+                .spawn((Transform::from(parent_transform), RigidBody::Fixed))
+                .add_child(child)
                 .id();
 
             app.update();

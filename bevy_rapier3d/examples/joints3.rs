@@ -38,7 +38,7 @@ fn create_prismatic_joints(commands: &mut Commands, origin: Vect, num: usize) {
 
     let mut curr_parent = commands
         .spawn((
-            TransformBundle::from(Transform::from_xyz(origin.x, origin.y, origin.z)),
+            Transform::from(Transform::from_xyz(origin.x, origin.y, origin.z)),
             RigidBody::Fixed,
             Collider::cuboid(rad, rad, rad),
         ))
@@ -60,7 +60,7 @@ fn create_prismatic_joints(commands: &mut Commands, origin: Vect, num: usize) {
 
         curr_parent = commands
             .spawn((
-                TransformBundle::from(Transform::from_xyz(origin.x, origin.y, origin.z + dz)),
+                Transform::from(Transform::from_xyz(origin.x, origin.y, origin.z + dz)),
                 RigidBody::Dynamic,
                 Collider::cuboid(rad, rad, rad),
                 joint,
@@ -75,7 +75,7 @@ fn create_rope_joints(commands: &mut Commands, origin: Vect, num: usize) {
 
     let mut curr_parent = commands
         .spawn((
-            TransformBundle::from(Transform::from_xyz(origin.x, origin.y, origin.z)),
+            Transform::from(Transform::from_xyz(origin.x, origin.y, origin.z)),
             RigidBody::Fixed,
             Collider::cuboid(rad, rad, rad),
         ))
@@ -89,7 +89,7 @@ fn create_rope_joints(commands: &mut Commands, origin: Vect, num: usize) {
 
         curr_parent = commands
             .spawn((
-                TransformBundle::from(Transform::from_xyz(origin.x, origin.y, origin.z + dz)),
+                Transform::from(Transform::from_xyz(origin.x, origin.y, origin.z + dz)),
                 RigidBody::Dynamic,
                 Collider::cuboid(rad, rad, rad),
                 joint,
@@ -104,7 +104,7 @@ fn create_revolute_joints(commands: &mut Commands, origin: Vec3, num: usize) {
 
     let mut curr_parent = commands
         .spawn((
-            TransformBundle::from(Transform::from_xyz(origin.x, origin.y, 0.0)),
+            Transform::from(Transform::from_xyz(origin.x, origin.y, 0.0)),
             RigidBody::Fixed,
             Collider::cuboid(rad, rad, rad),
         ))
@@ -124,7 +124,7 @@ fn create_revolute_joints(commands: &mut Commands, origin: Vec3, num: usize) {
         for k in 0..4 {
             handles[k] = commands
                 .spawn((
-                    TransformBundle::from(Transform::from_translation(positions[k])),
+                    Transform::from(Transform::from_translation(positions[k])),
                     RigidBody::Dynamic,
                     Collider::cuboid(rad, rad, rad),
                 ))
@@ -180,7 +180,7 @@ fn create_fixed_joints(commands: &mut Commands, origin: Vec3, num: usize) {
 
             let child_entity = commands
                 .spawn((
-                    TransformBundle::from(Transform::from_xyz(
+                    Transform::from(Transform::from_xyz(
                         origin.x + fk * shift,
                         origin.y,
                         origin.z + fi * shift,
@@ -239,7 +239,7 @@ fn create_ball_joints(commands: &mut Commands, num: usize) {
 
             let child_entity = commands
                 .spawn((
-                    TransformBundle::from(Transform::from_xyz(fk * shift, 0.0, fi * shift)),
+                    Transform::from(Transform::from_xyz(fk * shift, 0.0, fi * shift)),
                     rigid_body,
                     Collider::ball(rad),
                 ))

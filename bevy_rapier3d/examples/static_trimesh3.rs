@@ -93,7 +93,7 @@ pub fn setup_physics(mut commands: Commands, mut ball_state: ResMut<BallState>) 
     // Position so ramp connects smoothly
     // to one edge of the lip of the bowl.
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(
+        Transform::from(Transform::from_xyz(
             -bowl_size.x / 2.0,
             -bowl_size.y / 2.0,
             bowl_size.z / 2.0 - ramp_size.z / 2.0,
@@ -130,7 +130,7 @@ pub fn ball_spawner(mut commands: Commands, time: Res<Time>, mut ball_state: Res
         let rad = 0.3;
 
         commands.spawn((
-            TransformBundle::from(Transform::from_xyz(
+            Transform::from(Transform::from_xyz(
                 ramp_size.x * 0.9,
                 ramp_size.y / 2.0 + rad * 3.0,
                 0.0,

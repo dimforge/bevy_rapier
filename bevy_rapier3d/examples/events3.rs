@@ -43,18 +43,18 @@ pub fn setup_physics(mut commands: Commands) {
      * Ground
      */
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, -1.2, 0.0)),
+        Transform::from(Transform::from_xyz(0.0, -1.2, 0.0)),
         Collider::cuboid(4.0, 1.0, 1.0),
     ));
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, 5.0, 0.0)),
+        Transform::from(Transform::from_xyz(0.0, 5.0, 0.0)),
         Collider::cuboid(4.0, 1.5, 1.0),
         Sensor,
     ));
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, 13.0, 0.0)),
+        Transform::from(Transform::from_xyz(0.0, 13.0, 0.0)),
         RigidBody::Dynamic,
         Collider::cuboid(0.5, 0.5, 0.5),
         ActiveEvents::COLLISION_EVENTS,

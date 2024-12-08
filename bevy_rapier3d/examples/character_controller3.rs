@@ -75,7 +75,7 @@ fn setup_map(mut commands: Commands) {
     let ground_height = 0.1;
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
+        Transform::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
         Collider::cuboid(ground_size, ground_height, ground_size),
     ));
     /*
@@ -87,7 +87,7 @@ fn setup_map(mut commands: Commands) {
         let step = i as f32;
         let collider = Collider::cuboid(1.0, step * stair_step, 1.0);
         commands.spawn((
-            TransformBundle::from(Transform::from_xyz(
+            Transform::from(Transform::from_xyz(
                 40.0,
                 step * stair_step,
                 step * 2.0 - 20.0,
@@ -95,7 +95,7 @@ fn setup_map(mut commands: Commands) {
             collider.clone(),
         ));
         commands.spawn((
-            TransformBundle::from(Transform::from_xyz(
+            Transform::from(Transform::from_xyz(
                 -40.0,
                 step * stair_step,
                 step * -2.0 + 20.0,
@@ -103,7 +103,7 @@ fn setup_map(mut commands: Commands) {
             collider.clone(),
         ));
         commands.spawn((
-            TransformBundle::from(Transform::from_xyz(
+            Transform::from(Transform::from_xyz(
                 step * 2.0 - 20.0,
                 step * stair_step,
                 40.0,
@@ -111,7 +111,7 @@ fn setup_map(mut commands: Commands) {
             collider.clone(),
         ));
         commands.spawn((
-            TransformBundle::from(Transform::from_xyz(
+            Transform::from(Transform::from_xyz(
                 step * -2.0 + 20.0,
                 step * stair_step,
                 -40.0,
@@ -176,7 +176,7 @@ fn player_movement(
     let Ok((transform, mut controller, output)) = player.get_single_mut() else {
         return;
     };
-    let delta_time = time.delta_seconds();
+    let delta_time = time.delta_secs();
     // Retrieve input
     let mut movement = Vec3::new(input.x, 0.0, input.z) * MOVEMENT_SPEED;
     let jump_speed = input.y * JUMP_SPEED;

@@ -49,25 +49,26 @@ headless = []
 async-collider = ["bevy/bevy_asset", "bevy/bevy_scene"]
 
 [dependencies]
-bevy = { version = "0.14", default-features = false }
-nalgebra = { version = "0.33", features = ["convert-glam027"] }
+bevy = { version = "0.15", default-features = false }
+nalgebra = { version = "0.33", features = ["convert-glam029"] }
 rapier2d = { git = "https://github.com/GhostMinerPlus/rapier.git" }
 bitflags = "2.4"
 log = "0.4"
 serde = { version = "1", features = ["derive"], optional = true }
 
 [dev-dependencies]
-bevy = { version = "0.14", default-features = false, features = [
+bevy = { version = "0.15", default-features = false, features = [
     "x11",
     "bevy_state",
     "bevy_debug_stepping",
+    "bevy_window",
 ] }
 oorandom = "11"
 approx = "0.5.1"
-glam = { version = "0.27", features = ["approx"] }
-bevy-inspector-egui = "0.25.1"
-bevy_egui = "0.28.0"
-bevy_mod_debugdump = "0.11"
+glam = { version = "0.29", features = ["approx"] }
+bevy-inspector-egui = "0.28.0"
+bevy_egui = "0.31.1"
+bevy_mod_debugdump = "0.12.0"
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
