@@ -733,7 +733,7 @@ impl RapierRigidBodySet {
 ///
 /// This is the main driver for a rapier context, which will create other required components if needed.
 ///
-/// Additionally to its required components, this component is also always paired with a [`RapierConfiguration`] component.
+/// Additionally to its required components, this component is also always paired with a [`RapierConfiguration`][crate::prelude::RapierConfiguration] component.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Component)]
 #[require(
