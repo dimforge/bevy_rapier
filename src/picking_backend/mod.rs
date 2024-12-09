@@ -1,7 +1,7 @@
 //! A picking backend for Rapier physics entities.
 //!
 //! By default, all colliders are pickable. Picking can be disabled for individual entities
-//! by adding [`PickingBehavior::IGNORE`].
+//! by adding [`PickingBehavior::IGNORE`](bevy::picking::PickingBehavior::IGNORE).
 //!
 //! To make rapier picking entirely opt-in, set [`RapierPickingSettings::require_markers`]
 //! to `true` and add a [`RapierPickable`] component to the desired camera and target entities.
@@ -25,7 +25,7 @@ pub enum RapierCastVisibility {
     /// Only cast rays against entities that are visible in the hierarchy. See [`Visibility`].
     Visible,
 }
-/// Runtime settings for the [`MeshPickingPlugin`].
+/// Runtime settings for the [`RapierPickingPlugin`].
 #[derive(Resource, Reflect)]
 #[reflect(Resource, Default)]
 pub struct RapierPickingSettings {
@@ -53,7 +53,8 @@ impl Default for RapierPickingSettings {
 }
 
 /// An optional component that marks cameras and target entities that should be used in the [`RapierPickingPlugin`].
-/// Only needed if [`RapierBackendSettings::require_markers`] is set to `true`, and ignored otherwise.
+///
+/// Only needed if [`RapierPickingSettings::require_markers`] is set to `true`, and ignored otherwise.
 #[derive(Debug, Clone, Default, Component, Reflect)]
 #[reflect(Component, Default)]
 pub struct RapierPickable;
@@ -70,7 +71,7 @@ impl Plugin for RapierPickingPlugin {
     }
 }
 
-/// Casts rays into the scene using [`RapierPickingSettings`] and sends [`PointerHits`] events.
+/// System which casts rays into the scene using [`RapierPickingSettings`] and sends [`PointerHits`] events.
 #[allow(clippy::too_many_arguments)]
 pub fn update_hits(
     backend_settings: Res<RapierPickingSettings>,
