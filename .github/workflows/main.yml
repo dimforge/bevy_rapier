@@ -46,6 +46,7 @@ jobs:
         with:
           prefix-key: ${{ env.RUST_CACHE_KEY }}
       - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
+      - run: cargo install cargo-all-features
       - name: Clippy for bevy_rapier2d
         run: cargo clippy --verbose -p bevy_rapier2d
       - name: Clippy for bevy_rapier3d
@@ -58,6 +59,8 @@ jobs:
         run: cargo test --verbose -p bevy_rapier2d
       - name: Test for bevy_rapier3d
         run: cargo test --verbose -p bevy_rapier3d
+      - name: Check all features individually
+        run: cargo check-all-features
   test-wasm:
     runs-on: ubuntu-latest
     env:
