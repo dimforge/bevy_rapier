@@ -18,7 +18,10 @@ path = "../src/lib.rs"
 required-features = ["dim3"]
 
 [lints]
-workspace = true
+rust.unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(feature, values("dim2"))',
+] }
+clippy = { needless_lifetimes = "allow" }
 
 [features]
 default = ["dim3", "async-collider", "debug-render-3d"]
