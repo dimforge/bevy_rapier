@@ -23,9 +23,8 @@ fn display_nb_colliders(
 ) {
     let nb_colliders = query_context.single().colliders.len();
     println!("There are {nb_colliders} colliders.");
-    if nb_colliders > 0 {
-        exit.send(AppExit::Success);
-    }
+    assert!(nb_colliders > 0);
+    exit.send(AppExit::Success);
 }
 
 pub fn setup_physics(mut commands: Commands) {
