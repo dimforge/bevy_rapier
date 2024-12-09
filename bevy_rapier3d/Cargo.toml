@@ -51,6 +51,7 @@ serde-serialize = ["rapier3d/serde-serialize", "bevy/serialize", "serde"]
 enhanced-determinism = ["rapier3d/enhanced-determinism"]
 headless = []
 async-collider = ["bevy/bevy_asset", "bevy/bevy_scene", "bevy/bevy_render"]
+picking-backend = ["bevy/bevy_picking"]
 
 [dependencies]
 bevy = { version = "0.15", default-features = false }
@@ -67,6 +68,9 @@ bevy = { version = "0.15", default-features = false, features = [
     "tonemapping_luts",
     "bevy_state",
     "bevy_debug_stepping",
+    "bevy_text",
+    "bevy_ui",
+    "default_font",
 ] }
 approx = "0.5.1"
 glam = { version = "0.29", features = ["approx"] }
@@ -75,4 +79,11 @@ bevy_egui = "0.31"
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
-features = ["debug-render-3d", "serde-serialize"]
+
+[[example]]
+name = "picking3"
+required-features = ["picking-backend"]
+
+[[example]]
+name = "testbed3"
+required-features = ["picking-backend"]
