@@ -90,7 +90,7 @@ pub struct TriangleViewMut<'a> {
 
 impl_ref_methods!(TriangleViewMut);
 
-impl<'a> TriangleViewMut<'a> {
+impl TriangleViewMut<'_> {
     /// Set the first point of the segment.
     pub fn set_a(&mut self, a: Vect) {
         self.raw.a = a.into();
