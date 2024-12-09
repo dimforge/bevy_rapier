@@ -87,10 +87,7 @@ pub fn cast_ray(
     // We will color in read the colliders hovered by the mouse.
     for (camera, camera_transform) in &cameras {
         // First, compute a ray from the mouse position.
-        let Some(ray) = camera
-            .viewport_to_world(camera_transform, cursor_position)
-            .ok()
-        else {
+        let Ok(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
             return;
         };
 

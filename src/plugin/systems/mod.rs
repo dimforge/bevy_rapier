@@ -69,6 +69,7 @@ pub fn step_simulation<Hooks>(
 }
 
 #[cfg(test)]
+#[allow(missing_docs)]
 pub mod tests {
     use bevy::{
         asset::AssetPlugin,
@@ -79,7 +80,6 @@ pub mod tests {
         },
         scene::ScenePlugin,
         time::TimePlugin,
-        window::WindowPlugin,
     };
     use rapier::geometry::CollisionEventFlags;
     use std::f32::consts::PI;
@@ -316,7 +316,6 @@ pub mod tests {
     impl Plugin for HeadlessRenderPlugin {
         fn build(&self, app: &mut App) {
             app.add_plugins((
-                WindowPlugin::default(),
                 AssetPlugin::default(),
                 ScenePlugin,
                 RenderPlugin {

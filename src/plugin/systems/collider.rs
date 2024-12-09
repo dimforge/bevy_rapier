@@ -573,6 +573,7 @@ pub fn update_colliding_entities(
 }
 
 #[cfg(test)]
+#[allow(missing_docs)]
 pub mod test {
     #[test]
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
