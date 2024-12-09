@@ -1,31 +1,11 @@
-use bevy::{
-    app::PluginsState,
-    prelude::*,
-    render::{
-        settings::{RenderCreation, WgpuSettings},
-        RenderPlugin,
-    },
-    scene::ScenePlugin,
-    time::TimeUpdateStrategy,
-};
+use bevy::{app::PluginsState, prelude::*, time::TimeUpdateStrategy};
 use bevy_rapier3d::prelude::*;
 
 pub fn default_app() -> App {
     let mut app = App::new();
 
     app.add_plugins((
-        WindowPlugin::default(),
         MinimalPlugins,
-        AssetPlugin::default(),
-        ScenePlugin,
-        RenderPlugin {
-            render_creation: RenderCreation::Automatic(WgpuSettings {
-                backends: None,
-                ..Default::default()
-            }),
-            ..Default::default()
-        },
-        ImagePlugin::default(),
         HierarchyPlugin,
         TransformPlugin,
         RapierPhysicsPlugin::<()>::default(),

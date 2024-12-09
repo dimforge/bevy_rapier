@@ -1,5 +1,8 @@
 [advisories]
 yanked = "deny"
+ignore = [
+    { id = "RUSTSEC-2024-0384", reason = "this is about instant crate, which is only used for benchmarks + an upstream fix is in the works." },
+]
 
 [licenses]
 allow = [

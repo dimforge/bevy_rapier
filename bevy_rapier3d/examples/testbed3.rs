@@ -106,6 +106,7 @@ fn main() {
             )
                 .run_if(in_state(Examples::DebugToggle3)),
         )
+        .add_systems(OnExit(Examples::DebugToggle3), cleanup)
         //
         // despawn
         .init_resource::<despawn3::DespawnResource>()
