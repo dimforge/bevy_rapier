@@ -9,7 +9,7 @@ use bevy::{prelude::*, transform::TransformSystem};
 use rapier::dynamics::IntegrationParameters;
 use std::marker::PhantomData;
 
-use super::context::{DefaultRapierContext, RapierQueryPipeline, RapierRigidBodySet};
+use super::context::DefaultRapierContext;
 
 #[cfg(doc)]
 use crate::plugin::context::systemparams::RapierContext;
@@ -242,24 +242,14 @@ where
             app.insert_resource(self.default_world_setup.clone());
         }
 
-        // FIXME: Those are great candidates for RequiredComponents with bevy 0.15
         app.add_systems(
             self.schedule,
-            (
-                setup_rapier_configuration,
-                setup_rapier_simulation_to_render_time,
-            )
-                .before(PhysicsSet::SyncBackend),
+            setup_rapier_configuration.before(PhysicsSet::SyncBackend),
         );
 
         app.add_systems(
             PreStartup,
-            (
-                insert_default_context,
-                setup_rapier_configuration,
-                setup_rapier_simulation_to_render_time,
-            )
-                .chain(),
+            (insert_default_context, setup_rapier_configuration).chain(),
         );
 
         // These *must* be in the main schedule currently so that they do not miss events.
@@ -321,14 +311,14 @@ where
 /// Designed to be passed as parameter to [`RapierPhysicsPlugin::with_custom_initialization`].
 #[derive(Resource, Debug, Reflect, Clone)]
 pub enum RapierContextInitialization {
-    /// [`RapierPhysicsPlugin`] will not spawn any entity containing [`RapierContextBundle`] automatically.
+    /// [`RapierPhysicsPlugin`] will not spawn any entity containing [`RapierContextSimulation`] automatically.
     ///
-    /// You are responsible for creating a [`RapierContextBundle`],
+    /// You are responsible for creating a [`RapierContextSimulation`],
     /// before spawning any rapier entities (rigidbodies, colliders, joints).
     ///
     /// You might be interested in adding [`DefaultRapierContext`] to the created physics context.
     NoAutomaticRapierContext,
-    /// [`RapierPhysicsPlugin`] will spawn an entity containing a [`RapierContextBundle`]
+    /// [`RapierPhysicsPlugin`] will spawn an entity containing a [`RapierContextSimulation`]
     /// automatically during [`PreStartup`], with the [`DefaultRapierContext`] marker component.
     InitializeDefaultRapierContext {
         /// See [`IntegrationParameters::length_unit`]
@@ -351,19 +341,12 @@ pub fn insert_default_context(
         RapierContextInitialization::InitializeDefaultRapierContext { length_unit } => {
             commands.spawn((
                 Name::new("Rapier Context"),
-                RapierContextBundle {
-                    colliders: RapierContextColliders::default(),
-                    joints: RapierContextJoints::default(),
-                    query: RapierQueryPipeline::default(),
-                    simulation: RapierContextSimulation {
-                        integration_parameters: IntegrationParameters {
-                            length_unit: *length_unit,
-                            ..default()
-                        },
-                        ..RapierContextSimulation::default()
+                RapierContextSimulation {
+                    integration_parameters: IntegrationParameters {
+                        length_unit: *length_unit,
+                        ..default()
                     },
-                    bodies: RapierRigidBodySet::default(),
-                    simulation_to_render_time: SimulationToRenderTime::default(),
+                    ..RapierContextSimulation::default()
                 },
                 DefaultRapierContext,
             ));
@@ -379,20 +362,6 @@ pub fn setup_rapier_configuration(
         commands.entity(e).insert(RapierConfiguration::new(
             rapier_context.integration_parameters.length_unit,
         ));
-    }
-}
-pub fn setup_rapier_simulation_to_render_time(
-    mut commands: Commands,
-    rapier_context: Query<
-        Entity,
-        (
-            With<RapierContextSimulation>,
-            Without<SimulationToRenderTime>,
-        ),
-    >,
-) {
-    for e in rapier_context.iter() {
-        commands.entity(e).insert(SimulationToRenderTime::default());
     }
 }
 

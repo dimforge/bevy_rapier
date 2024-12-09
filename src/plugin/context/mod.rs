@@ -51,23 +51,6 @@ pub struct SimulationToRenderTime {
 #[derive(Component, Reflect, Debug, Clone, Copy)]
 pub struct DefaultRapierContext;
 
-/// A Bundle to regroup useful components for a rapier context.
-#[derive(Bundle, Default)]
-pub struct RapierContextBundle {
-    /// See [`RapierContextColliders`]
-    pub colliders: RapierContextColliders,
-    /// See [`RapierContextJoints`]
-    pub joints: RapierContextJoints,
-    /// See [`RapierQueryPipeline`]
-    pub query: RapierQueryPipeline,
-    /// See [`RapierContextSimulation`]
-    pub simulation: RapierContextSimulation,
-    /// See [`RapierRigidBodySet`]
-    pub bodies: RapierRigidBodySet,
-    /// See [`SimulationToRenderTime`]
-    pub simulation_to_render_time: SimulationToRenderTime,
-}
-
 /// This is a component applied to any entity containing a rapier handle component.
 /// The inner Entity referred to has the component [`RapierContextSimulation`]
 /// and others from [`crate::plugin::context`], responsible for handling
@@ -747,8 +730,19 @@ impl RapierRigidBodySet {
 }
 
 /// The Rapier context, containing parts of the state of the physics engine, specific to the simulation step.
+///
+/// This is the main driver for a rapier context, which will create other required components if needed.
+///
+/// Additionally to its required components, this component is also always paired with a [`RapierConfiguration`] component.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Component)]
+#[require(
+    RapierContextColliders,
+    RapierRigidBodySet,
+    RapierContextJoints,
+    RapierQueryPipeline,
+    SimulationToRenderTime
+)]
 pub struct RapierContextSimulation {
     /// The island manager, which detects what object is sleeping
     /// (not moving much) to reduce computations.

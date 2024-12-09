@@ -30,9 +30,9 @@ fn main() {
 
 fn create_contexts(mut commands: Commands) {
     for i in 0..N_CONTEXTS {
-        let mut context = commands.spawn((RapierContextBundle::default(), ContextId(i)));
+        let mut context = commands.spawn((RapierContextSimulation::default(), ContextId(i)));
         if i == 0 {
-            context.insert((DefaultRapierContext, RapierContextBundle::default()));
+            context.insert((DefaultRapierContext, RapierContextSimulation::default()));
         }
     }
 }
