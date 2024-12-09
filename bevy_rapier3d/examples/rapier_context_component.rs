@@ -9,7 +9,10 @@ fn main() {
             RapierDebugRenderPlugin::default(),
         ))
         .add_systems(Startup, (setup_physics, setup_graphics))
-        .add_systems(PostUpdate, display_nb_colliders)
+        .add_systems(
+            PostUpdate,
+            display_nb_colliders.after(PhysicsSet::SyncBackend),
+        )
         .run();
 }
 
