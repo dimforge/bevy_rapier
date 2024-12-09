@@ -41,7 +41,7 @@ pub struct SimulationToRenderTime {
 
 /// Marker component for to access the default [`ReadRapierContext`].
 ///
-/// This is use as the default marker filter for [`systemparams::ReadRapierContext`] and [`systemparams::WriteRapierContext`]
+/// This is used as the default marker filter for [`systemparams::ReadRapierContext`] and [`systemparams::WriteRapierContext`]
 /// to help with getting a reference to the correct RapierContext.
 ///
 /// If you're making a library, you might be interested in [`RapierContextEntityLink`]

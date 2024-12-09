@@ -11,6 +11,8 @@
     - `RapierContextJoints`
     - `RapierContextSimulation`
     - `RapierRigidBodySet`
+- Renamed `DefaultReadRapierContext` and `DefaultWriteRapierContext`.
+  - Use `ReadRapierContext` and its associated `single()` method.
 
 ## v0.28.0 (09 December 2024)
 

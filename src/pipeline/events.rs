@@ -182,7 +182,7 @@ mod test {
             ));
             // 2 seconds should be plenty of time for the cube to fall on the
             // lowest collider.
-            for _ in 0..1020 {
+            for _ in 0..120 {
                 app.update();
             }
             let saved_collisions = app

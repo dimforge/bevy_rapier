@@ -18,6 +18,8 @@ use crate::{
 use crate::prelude::RapierContextBundle;
 
 /// Utility [`SystemParam`] to easily access every required components of a [`RapierContext`] immutably.
+///
+/// This uses the [`DefaultRapierContext`] filter by default, but you can use a custom query filter with the `T` type parameter.
 #[derive(SystemParam)]
 pub struct ReadRapierContext<'w, 's, T: query::QueryFilter + 'static = With<DefaultRapierContext>> {
     /// The query used to feed components into [`RapierContext`] struct through [`ReadRapierContext::single`].
@@ -73,6 +75,8 @@ pub struct RapierContext<'a> {
 }
 
 /// Utility [`SystemParam`] to easily access every required components of a [`RapierContext`] mutably.
+///
+/// This uses the [`DefaultRapierContext`] filter by default, but you can use a custom query filter with the `T` type parameter.
 #[derive(SystemParam)]
 pub struct WriteRapierContext<'w, 's, T: query::QueryFilter + 'static = With<DefaultRapierContext>>
 {
