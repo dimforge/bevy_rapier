@@ -83,3 +83,7 @@ bevy_egui = "0.31"
 [[example]]
 name = "picking3"
 required-features = ["picking-backend"]
+
+[[example]]
+name = "testbed3"
+required-features = ["picking-backend"]

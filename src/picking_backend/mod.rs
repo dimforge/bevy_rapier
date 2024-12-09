@@ -15,7 +15,7 @@ use bevy::picking::{
 use bevy::reflect::prelude::*;
 use bevy::render::{prelude::*, view::RenderLayers};
 
-use super::RapierContext;
+use crate::prelude::RapierContext;
 
 /// How a ray cast should handle [`Visibility`].
 #[derive(Clone, Copy, Reflect)]

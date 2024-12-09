@@ -57,6 +57,10 @@ pub mod pipeline;
 /// The physics plugin and systems.
 pub mod plugin;
 
+#[cfg(feature = "picking-backend")]
+/// The bevy_picking rapier backend plugin and systems.
+pub mod picking_backend;
+
 /// Components related to character control.
 pub mod control;
 /// The debug-renderer.
@@ -71,6 +75,8 @@ pub mod prelude {
     pub use crate::dynamics::*;
     pub use crate::geometry::*;
     pub use crate::math::*;
+    #[cfg(feature = "picking-backend")]
+    pub use crate::picking_backend::*;
     pub use crate::pipeline::*;
     pub use crate::plugin::*;
     #[cfg(any(feature = "debug-render-3d", feature = "debug-render-2d"))]

@@ -16,9 +16,6 @@ pub use narrow_phase::{ContactManifoldView, ContactPairView, ContactView, Solver
 #[allow(clippy::too_many_arguments)]
 pub mod systems;
 
-#[cfg(feature = "picking-backend")]
-pub mod picking_backend;
-
 mod configuration;
 mod context;
 mod narrow_phase;

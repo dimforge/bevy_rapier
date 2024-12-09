@@ -1,9 +1,7 @@
 //! A simple scene to demonstrate picking events for rapier [`Collider`] entities.
 
 use bevy::prelude::*;
-use bevy_rapier3d::plugin::picking_backend::{RapierPickingPlugin, RapierPickingSettings};
 use bevy_rapier3d::prelude::*;
-use picking_backend::RapierPickable;
 
 fn main() {
     App::new()
@@ -22,11 +20,20 @@ fn main() {
             require_markers: true,
             ..Default::default()
         })
-        .add_systems(Startup, setup_scene)
+        .add_systems(Startup, (setup_graphics, setup_physics))
         .run();
 }
 
-fn setup_scene(mut commands: Commands) {
+pub fn setup_graphics(mut commands: Commands) {
+    // Camera
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
+        RapierPickable,
+    ));
+}
+
+pub fn setup_physics(mut commands: Commands) {
     commands
         .spawn((
             Text::new("Click Me to get a box\nDrag cubes to rotate"),
@@ -57,13 +64,6 @@ fn setup_scene(mut commands: Commands) {
         Transform::from_xyz(0.0, -ground_height / 2.0, 0.0),
         Collider::cuboid(ground_size, ground_height, ground_size),
         ColliderDebugColor(Hsla::BLACK),
-    ));
-
-    // Camera
-    commands.spawn((
-        Camera3d::default(),
-        Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
-        RapierPickable,
     ));
 }
 
