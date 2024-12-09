@@ -10,7 +10,7 @@ pub struct PairFilterContextView<'a> {
     pub raw: &'a PairFilterContext<'a>,
 }
 
-impl<'a> PairFilterContextView<'a> {
+impl PairFilterContextView<'_> {
     /// The entity of the first collider involved in the potential collision.
     pub fn collider1(&self) -> Entity {
         let co1 = &self.raw.colliders[self.raw.collider1];
@@ -48,7 +48,7 @@ pub struct ContactModificationContextView<'a, 'b> {
     pub raw: &'a mut ContactModificationContext<'b>,
 }
 
-impl<'a, 'b> ContactModificationContextView<'a, 'b> {
+impl ContactModificationContextView<'_, '_> {
     /// The entity of the first collider involved in the potential collision.
     pub fn collider1(&self) -> Entity {
         let co1 = &self.raw.colliders[self.raw.collider1];

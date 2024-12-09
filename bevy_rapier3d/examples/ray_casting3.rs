@@ -75,7 +75,7 @@ pub fn setup_physics(mut commands: Commands) {
 pub fn cast_ray(
     mut commands: Commands,
     windows: Query<&Window, With<PrimaryWindow>>,
-    rapier_context: ReadDefaultRapierContext,
+    rapier_context: ReadRapierContext,
     cameras: Query<(&Camera, &GlobalTransform)>,
 ) {
     let window = windows.single();
@@ -90,9 +90,9 @@ pub fn cast_ray(
         let Ok(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
             return;
         };
-
+        let context = rapier_context.single();
         // Then cast the ray.
-        let hit = rapier_context.cast_ray(
+        let hit = context.cast_ray(
             ray.origin,
             ray.direction.into(),
             f32::MAX,

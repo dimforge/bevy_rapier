@@ -8,7 +8,7 @@ pub struct ConvexPolygonView<'a> {
     pub raw: &'a ConvexPolygon,
 }
 
-impl<'a> ConvexPolygonView<'a> {
+impl ConvexPolygonView<'_> {
     /// The vertices of this convex polygon.
     pub fn points(&self) -> impl ExactSizeIterator<Item = Vect> + '_ {
         self.raw.points().iter().map(|pt| (*pt).into())
@@ -26,7 +26,7 @@ pub struct ConvexPolygonViewMut<'a> {
     pub raw: &'a mut ConvexPolygon,
 }
 
-impl<'a> ConvexPolygonViewMut<'a> {
+impl ConvexPolygonViewMut<'_> {
     /// The vertices of this convex polygon.
     pub fn points(&self) -> impl ExactSizeIterator<Item = Vect> + '_ {
         self.raw.points().iter().map(|pt| (*pt).into())

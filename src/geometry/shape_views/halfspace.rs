@@ -29,7 +29,7 @@ pub struct HalfSpaceViewMut<'a> {
 
 impl_ref_methods!(HalfSpaceViewMut);
 
-impl<'a> HalfSpaceViewMut<'a> {
+impl HalfSpaceViewMut<'_> {
     /// Set the normal of the half-space.
     pub fn set_normal(&mut self, normal: Vect) {
         let normal: rapier::math::Vector<_> = normal.into();

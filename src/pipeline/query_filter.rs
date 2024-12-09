@@ -5,11 +5,11 @@ pub use rapier::pipeline::QueryFilterFlags;
 use crate::geometry::CollisionGroups;
 
 #[cfg(doc)]
-use crate::prelude::RapierContext;
+use crate::prelude::RapierRigidBodySet;
 
 /// A filter that describes what collider should be included or excluded from a scene query.
 ///
-/// For testing manually check [`RapierContext::with_query_filter`].
+/// For testing manually check [`RapierRigidBodySet::with_query_filter`].
 #[derive(Copy, Clone, Default)]
 pub struct QueryFilter<'a> {
     /// Flags indicating what particular type of colliders should be excluded.
@@ -26,7 +26,7 @@ pub struct QueryFilter<'a> {
     pub predicate: Option<&'a dyn Fn(Entity) -> bool>,
 }
 
-impl<'a> From<QueryFilterFlags> for QueryFilter<'a> {
+impl From<QueryFilterFlags> for QueryFilter<'_> {
     fn from(flags: QueryFilterFlags) -> Self {
         Self {
             flags,
@@ -35,7 +35,7 @@ impl<'a> From<QueryFilterFlags> for QueryFilter<'a> {
     }
 }
 
-impl<'a> From<CollisionGroups> for QueryFilter<'a> {
+impl From<CollisionGroups> for QueryFilter<'_> {
     fn from(groups: CollisionGroups) -> Self {
         Self {
             groups: Some(groups),

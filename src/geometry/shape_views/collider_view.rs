@@ -65,7 +65,7 @@ pub enum ColliderView<'a> {
     #[cfg(feature = "dim2")]
     RoundConvexPolygon(RoundConvexPolygonView<'a>),
 }
-impl<'a> fmt::Debug for ColliderView<'a> {
+impl fmt::Debug for ColliderView<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ColliderView::Ball(view) => write!(f, "{:?}", view.raw),
