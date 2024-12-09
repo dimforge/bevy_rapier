@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.28.0 (09 December 2024)
+
 ### Modified
 
 - Update from rapier `0.21` to rapier `0.22`,
