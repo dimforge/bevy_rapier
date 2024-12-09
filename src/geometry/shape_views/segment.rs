@@ -86,7 +86,7 @@ pub struct SegmentViewMut<'a> {
 
 impl_ref_methods!(SegmentViewMut);
 
-impl<'a> SegmentViewMut<'a> {
+impl SegmentViewMut<'_> {
     /// Set the first point of the segment.
     pub fn set_a(&mut self, a: Vect) {
         self.raw.a = a.into();

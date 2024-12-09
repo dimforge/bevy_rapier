@@ -109,6 +109,7 @@ impl Plugin for RapierDebugRenderPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<DebugRenderContext>();
         app.register_type::<ColliderDebug>();
+        app.register_type::<ColliderDebugColor>();
 
         app.insert_resource(DebugRenderContext {
             enabled: self.enabled,

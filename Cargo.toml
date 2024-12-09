@@ -2,11 +2,6 @@
 members = ["bevy_rapier2d", "bevy_rapier3d", "bevy_rapier_benches3d"]
 resolver = "2"
 
-[workspace.lints]
-rust.unexpected_cfgs = { level = "warn", check-cfg = [
-    'cfg(feature, values("dim2", "dim3"))',
-] }
-
 [profile.dev]
 # Use slightly better optimization by default, as examples otherwise seem laggy.
 opt-level = 1
@@ -20,7 +15,6 @@ codegen-units = 1
 #parry3d = { path = "../parry/crates/parry3d" }
 #rapier2d = { path = "../rapier/crates/rapier2d" }
 #rapier3d = { path = "../rapier/crates/rapier3d" }
-
 #nalgebra = { git = "https://github.com/dimforge/nalgebra", branch = "dev" }
 #parry2d = { git = "https://github.com/dimforge/parry", branch = "master" }
 #parry3d = { git = "https://github.com/dimforge/parry", branch = "master" }

@@ -38,11 +38,10 @@ fn create_contexts(mut commands: Commands) {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(0.0, 3.0, -10.0)
-            .looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
-        ..Default::default()
-    });
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(0.0, 3.0, -10.0).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
+    ));
 }
 
 #[derive(Component)]
@@ -55,7 +54,7 @@ struct Platform {
 
 fn move_platforms(time: Res<Time>, mut query: Query<(&mut Transform, &Platform)>) {
     for (mut transform, platform) in query.iter_mut() {
-        transform.translation.y = platform.starting_y + -time.elapsed_seconds().sin();
+        transform.translation.y = platform.starting_y + -time.elapsed_secs().sin();
     }
 }
 
@@ -96,7 +95,7 @@ pub fn setup_physics(
         let starting_y = (id as f32) * -0.5 - ground_height;
 
         let mut platforms = commands.spawn((
-            TransformBundle::from(Transform::from_xyz(0.0, starting_y, 0.0)),
+            Transform::from_xyz(0.0, starting_y, 0.0),
             Collider::cuboid(ground_size, ground_height, ground_size),
             ColliderDebugColor(color),
             RapierContextEntityLink(context_entity),
@@ -110,7 +109,7 @@ pub fn setup_physics(
          */
 
         commands.spawn((
-            TransformBundle::from(Transform::from_xyz(0.0, 1.0 + id as f32 * 5.0, 0.0)),
+            Transform::from_xyz(0.0, 1.0 + id as f32 * 5.0, 0.0),
             RigidBody::Dynamic,
             Collider::cuboid(0.5, 0.5, 0.5),
             ColliderDebugColor(color),

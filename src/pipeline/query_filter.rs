@@ -26,7 +26,7 @@ pub struct QueryFilter<'a> {
     pub predicate: Option<&'a dyn Fn(Entity) -> bool>,
 }
 
-impl<'a> From<QueryFilterFlags> for QueryFilter<'a> {
+impl From<QueryFilterFlags> for QueryFilter<'_> {
     fn from(flags: QueryFilterFlags) -> Self {
         Self {
             flags,
@@ -35,7 +35,7 @@ impl<'a> From<QueryFilterFlags> for QueryFilter<'a> {
     }
 }
 
-impl<'a> From<CollisionGroups> for QueryFilter<'a> {
+impl From<CollisionGroups> for QueryFilter<'_> {
     fn from(groups: CollisionGroups) -> Self {
         Self {
             groups: Some(groups),

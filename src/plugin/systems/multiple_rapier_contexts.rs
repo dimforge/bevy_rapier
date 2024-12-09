@@ -52,7 +52,8 @@ fn remove_old_physics(entity: Entity, commands: &mut Commands) {
         .remove::<RapierImpulseJointHandle>();
 }
 
-/// Flags the entity to have its physics updated to reflect new context
+/// Reacts to modifications to [`RapierContextEntityLink`]
+/// to move an entity's physics data from a context to another.
 ///
 /// Also recursively bubbles down context changes to children & flags them to apply any needed physics changes
 pub fn on_change_context(
@@ -155,7 +156,7 @@ mod test {
         .add_systems(
             PostUpdate,
             setup_physics
-                .run_if(run_once())
+                .run_if(run_once)
                 .before(PhysicsSet::SyncBackend),
         );
         // Simulates 60 updates per seconds
@@ -208,13 +209,13 @@ mod test {
         }
         pub fn setup_physics(mut commands: Commands) {
             commands.spawn((
-                TransformBundle::from(Transform::from_xyz(0.0, -1.2, 0.0)),
+                Transform::from_xyz(0.0, -1.2, 0.0),
                 cuboid(4.0, 1.0, 1.0),
                 Marker::<'R'>,
             ));
 
             commands.spawn((
-                TransformBundle::from(Transform::from_xyz(0.0, 5.0, 0.0)),
+                Transform::from_xyz(0.0, 5.0, 0.0),
                 cuboid(4.0, 1.5, 1.0),
                 Sensor,
                 Marker::<'R'>,
@@ -222,7 +223,7 @@ mod test {
 
             commands
                 .spawn((
-                    TransformBundle::from(Transform::from_xyz(0.0, 13.0, 0.0)),
+                    Transform::from_xyz(0.0, 13.0, 0.0),
                     RigidBody::Dynamic,
                     cuboid(0.5, 0.5, 0.5),
                     ActiveEvents::COLLISION_EVENTS,
@@ -232,7 +233,7 @@ mod test {
                 ))
                 .with_children(|child_builder| {
                     child_builder.spawn((
-                        TransformBundle::from(Transform::from_xyz(0.0, -1.2, 0.0)),
+                        Transform::from_xyz(0.0, -1.2, 0.0),
                         cuboid(4.0, 1.0, 1.0),
                         Marker::<'C'>,
                         Marker::<'R'>,

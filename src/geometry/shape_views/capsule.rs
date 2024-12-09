@@ -75,7 +75,7 @@ pub struct CapsuleViewMut<'a> {
 
 impl_ref_methods!(CapsuleViewMut);
 
-impl<'a> CapsuleViewMut<'a> {
+impl CapsuleViewMut<'_> {
     /// Set the segment of this capsule.
     pub fn set_segment(&mut self, start: Vect, end: Vect) {
         self.raw.segment.a = start.into();

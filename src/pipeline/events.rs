@@ -62,7 +62,7 @@ pub(crate) struct EventQueue<'a> {
     pub contact_force_events: RwLock<Vec<ContactForceEvent>>,
 }
 
-impl<'a> EventQueue<'a> {
+impl EventQueue<'_> {
     fn collider2entity(&self, colliders: &ColliderSet, handle: ColliderHandle) -> Entity {
         colliders
             .get(handle)
@@ -72,7 +72,7 @@ impl<'a> EventQueue<'a> {
     }
 }
 
-impl<'a> EventHandler for EventQueue<'a> {
+impl EventHandler for EventQueue<'_> {
     fn handle_collision_event(
         &self,
         _bodies: &RigidBodySet,
@@ -129,7 +129,7 @@ mod test {
         app::{App, Startup, Update},
         prelude::{Commands, Component, Entity, Query, With},
         time::{TimePlugin, TimeUpdateStrategy},
-        transform::{bundles::TransformBundle, components::Transform, TransformPlugin},
+        transform::{components::Transform, TransformPlugin},
         MinimalPlugins,
     };
     use systems::tests::HeadlessRenderPlugin;
@@ -214,19 +214,16 @@ mod test {
             /*
              * Ground
              */
-            commands.spawn((
-                TransformBundle::from(Transform::from_xyz(0.0, -1.2, 0.0)),
-                cuboid(4.0, 1.0, 1.0),
-            ));
+            commands.spawn((Transform::from_xyz(0.0, -1.2, 0.0), cuboid(4.0, 1.0, 1.0)));
 
             commands.spawn((
-                TransformBundle::from(Transform::from_xyz(0.0, 5.0, 0.0)),
+                Transform::from_xyz(0.0, 5.0, 0.0),
                 cuboid(4.0, 1.5, 1.0),
                 Sensor,
             ));
 
             commands.spawn((
-                TransformBundle::from(Transform::from_xyz(0.0, 13.0, 0.0)),
+                Transform::from_xyz(0.0, 13.0, 0.0),
                 RigidBody::Dynamic,
                 cuboid(0.5, 0.5, 0.5),
                 ActiveEvents::COLLISION_EVENTS,
@@ -275,7 +272,7 @@ mod test {
         pub fn setup_physics(mut commands: Commands) {
             for _i in 0..100 {
                 commands.spawn((
-                    TransformBundle::from(Transform::from_xyz(0.0, 0.0, 0.0)),
+                    Transform::from_xyz(0.0, 0.0, 0.0),
                     RigidBody::Dynamic,
                     cuboid(0.5, 0.5, 0.5),
                     ActiveEvents::all(),
@@ -290,7 +287,7 @@ mod test {
             let starting_y = -0.5 - ground_height;
 
             commands.spawn((
-                TransformBundle::from(Transform::from_xyz(0.0, starting_y, 0.0)),
+                Transform::from_xyz(0.0, starting_y, 0.0),
                 cuboid(ground_size, ground_height, ground_size),
             ));
         }

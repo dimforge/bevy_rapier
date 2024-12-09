@@ -159,7 +159,7 @@ mod simulation {
     use super::*;
 
     /// [`RapierContextSimulation`] functions for immutable accesses
-    impl<'a> RapierContext<'a> {
+    impl RapierContext<'_> {
         /// Shortcut to [`RapierContextSimulation::contact_pair`].
         pub fn contact_pair(
             &self,
@@ -196,7 +196,7 @@ mod simulation {
     }
 
     /// [`RapierContextSimulation`] functions for mutable accesses
-    impl<'a> RapierContextMut<'a> {
+    impl RapierContextMut<'_> {
         /// Shortcut to [`RapierContextSimulation::step_simulation`].
         #[expect(clippy::too_many_arguments)]
         pub fn step_simulation(
@@ -299,7 +299,7 @@ mod query_pipeline {
 
     use super::*;
 
-    impl<'a> RapierContext<'a> {
+    impl RapierContext<'_> {
         /// Shortcut to [`RapierQueryPipeline::cast_ray`].
         pub fn cast_ray(
             &self,
@@ -466,7 +466,7 @@ mod query_pipeline {
         }
     }
 
-    impl<'a> RapierContextMut<'a> {
+    impl RapierContextMut<'_> {
         /// Shortcut to [`RapierQueryPipeline::cast_ray`].
         pub fn cast_ray(
             &self,
@@ -640,7 +640,7 @@ mod rigidbody_set {
     use super::*;
     pub use rapier::prelude::RigidBodyHandle;
 
-    impl<'a> RapierContext<'a> {
+    impl RapierContext<'_> {
         /// Shortcut to [`RapierRigidBodySet::entity2body`].
         pub fn entity2body(&self) -> &HashMap<Entity, RigidBodyHandle> {
             self.rigidbody_set.entity2body()
@@ -658,7 +658,7 @@ mod rigidbody_set {
         }
     }
 
-    impl<'a> RapierContextMut<'a> {
+    impl RapierContextMut<'_> {
         /// Shortcut to [`RapierRigidBodySet::propagate_modified_body_positions_to_colliders`].
         pub fn propagate_modified_body_positions_to_colliders(&mut self) {
             self.rigidbody_set
