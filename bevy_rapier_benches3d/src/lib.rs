@@ -9,7 +9,7 @@ use common::default_app;
 use common::wait_app_start;
 
 use bevy::prelude::*;
-use bevy_rapier3d::plugin::RapierContext;
+use bevy_rapier3d::plugin::context::RapierContextSimulation;
 
 pub fn custom_bencher(steps: usize, setup: impl Fn(&mut App)) {
     let mut app = default_app();
@@ -28,7 +28,7 @@ pub fn custom_bencher(steps: usize, setup: impl Fn(&mut App)) {
         let elapsed_time = timer_full_update.time() as f32;
         let rc = app
             .world_mut()
-            .query::<&RapierContext>()
+            .query::<&RapierContextSimulation>()
             .single(app.world());
         rapier_step_times.push(rc.pipeline.counters.step_time.time() as f32);
         total_update_times.push(elapsed_time);

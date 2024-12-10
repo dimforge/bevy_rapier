@@ -155,7 +155,7 @@ pub struct HeightFieldViewMut<'a> {
 impl_ref_methods!(HeightFieldViewMut);
 
 #[cfg(feature = "dim2")]
-impl<'a> HeightFieldViewMut<'a> {
+impl HeightFieldViewMut<'_> {
     /// Sets whether or not the given cell of the heightfield is deleted.
     pub fn set_segment_removed(&mut self, i: usize, removed: bool) {
         self.raw.set_segment_removed(i, removed)
@@ -163,7 +163,7 @@ impl<'a> HeightFieldViewMut<'a> {
 }
 
 #[cfg(feature = "dim3")]
-impl<'a> HeightFieldViewMut<'a> {
+impl HeightFieldViewMut<'_> {
     /// Set the status of the `(i, j)`-th cell.
     pub fn set_cell_status(&mut self, i: usize, j: usize, status: HeightFieldCellStatus) {
         self.raw.set_cell_status(i, j, status)

@@ -1,10 +1,13 @@
 use crate::dynamics::{GenericJoint, GenericJointBuilder};
 use crate::math::{Real, Vect};
-use crate::plugin::RapierContext;
+use crate::plugin::context::RapierRigidBodySet;
 use bevy::prelude::Entity;
 use rapier::dynamics::{
     JointAxesMask, JointAxis, JointLimits, JointMotor, MotorModel, RigidBodyHandle, RigidBodySet,
 };
+
+#[cfg(doc)]
+use crate::prelude::RapierContext;
 
 use super::TypedJoint;
 
@@ -147,7 +150,7 @@ impl RevoluteJoint {
     /// Similarly [`RapierContext::impulse_revolute_joint_angle`] only takes a single entity as argument to compute that angle.
     ///
     /// # Parameters
-    /// - `bodies` : the rigid body set from [`RapierContext`]
+    /// - `bodies` : the rigid body set from [`RapierRigidBodySet`]
     /// - `body1`: the first rigid-body attached to this revolute joint, obtained through [`rapier::dynamics::ImpulseJoint`] or [`rapier::dynamics::MultibodyJoint`].
     /// - `body2`: the second rigid-body attached to this revolute joint, obtained through [`rapier::dynamics::ImpulseJoint`] or [`rapier::dynamics::MultibodyJoint`].
     pub fn angle_from_handles(
@@ -167,13 +170,13 @@ impl RevoluteJoint {
     /// The angle along the free degree of freedom of this revolute joint in `[-π, π]`.
     ///
     /// # Parameters
-    /// - `bodies` : the rigid body set from [`RapierContext`]
+    /// - `bodies` : the rigid body set from [`RapierRigidBodySet`]
     /// - `body1`: the first rigid-body attached to this revolute joint.
     /// - `body2`: the second rigid-body attached to this revolute joint.
-    pub fn angle(&self, context: &RapierContext, body1: Entity, body2: Entity) -> f32 {
-        let rb1 = context.entity2body().get(&body1).unwrap();
-        let rb2 = context.entity2body().get(&body2).unwrap();
-        self.angle_from_handles(&context.bodies, *rb1, *rb2)
+    pub fn angle(&self, rigidbody_set: &RapierRigidBodySet, body1: Entity, body2: Entity) -> f32 {
+        let rb1 = rigidbody_set.entity2body().get(&body1).unwrap();
+        let rb2 = rigidbody_set.entity2body().get(&body2).unwrap();
+        self.angle_from_handles(&rigidbody_set.bodies, *rb1, *rb2)
     }
 }
 
