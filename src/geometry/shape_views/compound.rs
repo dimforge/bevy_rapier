@@ -9,7 +9,7 @@ pub struct CompoundView<'a> {
     pub raw: &'a Compound,
 }
 
-impl<'a> CompoundView<'a> {
+impl CompoundView<'_> {
     /// The shapes of this compound shape.
     #[inline]
     pub fn shapes(&self) -> impl ExactSizeIterator<Item = (Vect, Rot, ColliderView)> {

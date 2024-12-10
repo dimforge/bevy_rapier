@@ -1,7 +1,7 @@
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_rapier3d::prelude::*;
 
-const N_WORLDS: usize = 2;
+const N_CONTEXTS: usize = 2;
 
 fn main() {
     App::new()
@@ -18,21 +18,21 @@ fn main() {
         ))
         .add_systems(
             Startup,
-            ((create_worlds, setup_physics).chain(), setup_graphics),
+            ((create_contexts, setup_physics).chain(), setup_graphics),
         )
         .add_systems(Update, move_platforms)
         .add_systems(
             Update,
-            change_world.run_if(input_just_pressed(KeyCode::KeyC)),
+            change_context.run_if(input_just_pressed(KeyCode::KeyC)),
         )
         .run();
 }
 
-fn create_worlds(mut commands: Commands) {
-    for i in 0..N_WORLDS {
-        let mut world = commands.spawn((RapierContext::default(), WorldId(i)));
+fn create_contexts(mut commands: Commands) {
+    for i in 0..N_CONTEXTS {
+        let mut context = commands.spawn((RapierContextSimulation::default(), ContextId(i)));
         if i == 0 {
-            world.insert(DefaultRapierContext);
+            context.insert((DefaultRapierContext, RapierContextSimulation::default()));
         }
     }
 }
@@ -45,7 +45,7 @@ fn setup_graphics(mut commands: Commands) {
 }
 
 #[derive(Component)]
-pub struct WorldId(pub usize);
+pub struct ContextId(pub usize);
 
 #[derive(Component)]
 struct Platform {
@@ -58,8 +58,8 @@ fn move_platforms(time: Res<Time>, mut query: Query<(&mut Transform, &Platform)>
     }
 }
 
-/// Demonstrates how easy it is to move one entity to another world.
-fn change_world(
+/// Demonstrates how easy it is to move one entity to another context.
+fn change_context(
     query_context: Query<Entity, With<DefaultRapierContext>>,
     mut query_links: Query<(Entity, &mut RapierContextEntityLink)>,
 ) {
@@ -69,12 +69,12 @@ fn change_world(
             continue;
         }
         link.0 = default_context;
-        println!("changing world of {} for world {}", e, link.0);
+        println!("changing context of {} for context {}", e, link.0);
     }
 }
 
 pub fn setup_physics(
-    context: Query<(Entity, &WorldId), With<RapierContext>>,
+    context: Query<(Entity, &ContextId), With<RapierContextSimulation>>,
     mut commands: Commands,
 ) {
     for (context_entity, id) in context.iter() {

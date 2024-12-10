@@ -29,7 +29,7 @@ pub struct BallViewMut<'a> {
 
 impl_ref_methods!(BallViewMut);
 
-impl<'a> BallViewMut<'a> {
+impl BallViewMut<'_> {
     /// Set the radius of the ball.
     pub fn set_radius(&mut self, radius: Real) {
         self.raw.radius = radius;

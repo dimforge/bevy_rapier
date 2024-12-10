@@ -1,3 +1,5 @@
+//! Components used to configure a simulation run by rapier, these are not modified by bevy_rapier.
+
 use bevy::{
     prelude::{Component, Resource},
     reflect::Reflect,
@@ -7,13 +9,6 @@ use crate::math::{Real, Vect};
 
 #[cfg(doc)]
 use {crate::prelude::TransformInterpolation, rapier::dynamics::IntegrationParameters};
-
-/// Difference between simulation and rendering time
-#[derive(Component, Default, Reflect)]
-pub struct SimulationToRenderTime {
-    /// Difference between simulation and rendering time
-    pub diff: f32,
-}
 
 /// The different ways of adjusting the timestep length each frame.
 #[derive(Copy, Clone, Debug, PartialEq, Resource)]
