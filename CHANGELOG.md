@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Added
+
+- Added optional feature `picking-backend` to support bevy_picking.
+  - See `picking_backend` module documentation for more details.
+
 ## v0.28.0 (09 December 2024)
 
 ### Modified
