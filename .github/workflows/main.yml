@@ -58,6 +58,8 @@ jobs:
         run: cargo test --verbose -p bevy_rapier2d
       - name: Test for bevy_rapier3d
         run: cargo test --verbose -p bevy_rapier3d
+      - name: Test for no conflicting system order ambiguity
+        run: cargo run --bin ambiguity_detection
   test-wasm:
     runs-on: ubuntu-latest
     env:
