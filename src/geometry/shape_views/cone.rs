@@ -34,7 +34,7 @@ pub struct ConeViewMut<'a> {
 
 impl_ref_methods!(ConeViewMut);
 
-impl<'a> ConeViewMut<'a> {
+impl ConeViewMut<'_> {
     /// Set the half-height of the cone.
     pub fn set_half_height(&mut self, half_height: Real) {
         self.raw.half_height = half_height;

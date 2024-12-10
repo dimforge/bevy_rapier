@@ -1,15 +1,14 @@
 use crate::dynamics::MassProperties;
 use crate::dynamics::ReadMassProperties;
-use crate::plugin::context::RapierContextEntityLink;
+use crate::plugin::context::{RapierContextEntityLink, RapierRigidBodySet};
 use crate::plugin::RapierConfiguration;
-use crate::plugin::RapierContextAccess;
 use crate::prelude::MassModifiedEvent;
 use bevy::prelude::*;
 
 /// System responsible for writing updated mass properties back into the [`ReadMassProperties`] component.
 pub fn writeback_mass_properties(
     link: Query<&RapierContextEntityLink>,
-    context: RapierContextAccess,
+    rigidbody_set: Query<&RapierRigidBodySet>,
     config: Query<&RapierConfiguration>,
 
     mut mass_props: Query<&mut ReadMassProperties>,
@@ -23,10 +22,12 @@ pub fn writeback_mass_properties(
             .get(link.0)
             .expect("Could not find `RapierConfiguration`");
         if config.physics_pipeline_active {
-            let context = context.context(link);
+            let Ok(rigidbody_set) = rigidbody_set.get(link.0) else {
+                continue;
+            };
 
-            if let Some(handle) = context.entity2body.get(entity).copied() {
-                if let Some(rb) = context.bodies.get(handle) {
+            if let Some(handle) = rigidbody_set.entity2body.get(entity).copied() {
+                if let Some(rb) = rigidbody_set.bodies.get(handle) {
                     if let Ok(mut mass_props) = mass_props.get_mut(**entity) {
                         let new_mass_props =
                             MassProperties::from_rapier(rb.mass_properties().local_mprops);

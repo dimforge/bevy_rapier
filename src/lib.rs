@@ -77,6 +77,8 @@ pub mod prelude {
     #[cfg(feature = "picking-backend")]
     pub use crate::picking_backend::*;
     pub use crate::pipeline::*;
+    pub use crate::plugin::context::systemparams::*;
+    pub use crate::plugin::context::*;
     pub use crate::plugin::*;
     #[cfg(any(feature = "debug-render-3d", feature = "debug-render-2d"))]
     pub use crate::render::*;

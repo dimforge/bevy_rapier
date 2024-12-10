@@ -62,7 +62,7 @@ pub(crate) struct EventQueue<'a> {
     pub contact_force_events: RwLock<Vec<ContactForceEvent>>,
 }
 
-impl<'a> EventQueue<'a> {
+impl EventQueue<'_> {
     fn collider2entity(&self, colliders: &ColliderSet, handle: ColliderHandle) -> Entity {
         colliders
             .get(handle)
@@ -72,7 +72,7 @@ impl<'a> EventQueue<'a> {
     }
 }
 
-impl<'a> EventHandler for EventQueue<'a> {
+impl EventHandler for EventQueue<'_> {
     fn handle_collision_event(
         &self,
         _bodies: &RigidBodySet,

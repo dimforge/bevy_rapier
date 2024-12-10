@@ -1,7 +1,10 @@
 use crate::dynamics::RapierRigidBodyHandle;
-use crate::plugin::context::RapierContextEntityLink;
-use crate::plugin::{configuration::TimestepMode, RapierConfiguration, RapierContext};
-use crate::{dynamics::RigidBody, plugin::configuration::SimulationToRenderTime};
+use crate::plugin::context::systemparams::RAPIER_CONTEXT_EXPECT_ERROR;
+use crate::plugin::context::{
+    DefaultRapierContext, RapierContextColliders, RapierContextEntityLink, RapierRigidBodySet,
+};
+use crate::plugin::{configuration::TimestepMode, RapierConfiguration};
+use crate::{dynamics::RigidBody, plugin::context::SimulationToRenderTime};
 use crate::{prelude::*, utils};
 use bevy::prelude::*;
 use rapier::dynamics::{RigidBodyBuilder, RigidBodyHandle, RigidBodyType};
@@ -39,7 +42,7 @@ pub type RigidBodyComponents<'a> = (
 
 /// System responsible for applying changes the user made to a rigid-body-related component.
 pub fn apply_rigid_body_user_changes(
-    mut context: WriteRapierContext,
+    mut rigid_body_sets: Query<&mut RapierRigidBodySet>,
     config: Query<&RapierConfiguration>,
     changed_rb_types: Query<
         (&RapierRigidBodyHandle, &RapierContextEntityLink, &RigidBody),
@@ -138,9 +141,12 @@ pub fn apply_rigid_body_user_changes(
     // Deal with sleeping first, because other changes may then wake-up the
     // rigid-body again.
     for (handle, link, sleeping) in changed_sleeping.iter() {
-        let context = context.context(link).into_inner();
+        let rigidbody_set = rigid_body_sets
+            .get_mut(link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR)
+            .into_inner();
 
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+        if let Some(rb) = rigidbody_set.bodies.get_mut(handle.0) {
             let activation = rb.activation_mut();
             activation.normalized_linear_threshold = sleeping.normalized_linear_threshold;
             activation.angular_threshold = sleeping.angular_threshold;
@@ -160,7 +166,10 @@ pub fn apply_rigid_body_user_changes(
     //       changed to anything else, a transform change would modify the next
     //       position instead of the current one.
     for (handle, link, rb_type) in changed_rb_types.iter() {
-        let context = context.context(link).into_inner();
+        let context = rigid_body_sets
+            .get_mut(link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR)
+            .into_inner();
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_body_type((*rb_type).into(), true);
         }
@@ -185,7 +194,10 @@ pub fn apply_rigid_body_user_changes(
         };
 
     for (handle, link, global_transform, mut interpolation) in changed_transforms.iter_mut() {
-        let context = context.context(link).into_inner();
+        let rigidbody_set = rigid_body_sets
+            .get_mut(link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR)
+            .into_inner();
         let config = config
             .get(link.0)
             .expect("Could not get `RapierConfiguration`");
@@ -198,7 +210,7 @@ pub fn apply_rigid_body_user_changes(
                     &handle.0,
                     config,
                     global_transform,
-                    &context.last_body_transform_set,
+                    &rigidbody_set.last_body_transform_set,
                 ))
             });
 
@@ -210,13 +222,13 @@ pub fn apply_rigid_body_user_changes(
             }
         }
         // TODO: avoid to run multiple times the mutable deref ?
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+        if let Some(rb) = rigidbody_set.bodies.get_mut(handle.0) {
             transform_changed = transform_changed.or_else(|| {
                 Some(transform_changed_fn(
                     &handle.0,
                     config,
                     global_transform,
-                    &context.last_body_transform_set,
+                    &rigidbody_set.last_body_transform_set,
                 ))
             });
 
@@ -226,7 +238,7 @@ pub fn apply_rigid_body_user_changes(
                         rb.set_next_kinematic_position(utils::transform_to_iso(
                             &global_transform.compute_transform(),
                         ));
-                        context
+                        rigidbody_set
                             .last_body_transform_set
                             .insert(handle.0, *global_transform);
                     }
@@ -237,7 +249,7 @@ pub fn apply_rigid_body_user_changes(
                             utils::transform_to_iso(&global_transform.compute_transform()),
                             true,
                         );
-                        context
+                        rigidbody_set
                             .last_body_transform_set
                             .insert(handle.0, *global_transform);
                     }
@@ -247,8 +259,11 @@ pub fn apply_rigid_body_user_changes(
     }
 
     for (handle, link, velocity) in changed_velocities.iter() {
-        let context = context.context(link).into_inner();
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+        let rigidbody_set = rigid_body_sets
+            .get_mut(link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR)
+            .into_inner();
+        if let Some(rb) = rigidbody_set.bodies.get_mut(handle.0) {
             rb.set_linvel(velocity.linvel.into(), true);
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             rb.set_angvel(velocity.angvel.into(), true);
@@ -256,8 +271,11 @@ pub fn apply_rigid_body_user_changes(
     }
 
     for (entity, link, handle, mprops) in changed_additional_mass_props.iter() {
-        let context = context.context(link).into_inner();
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+        let rigidbody_set = rigid_body_sets
+            .get_mut(link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR)
+            .into_inner();
+        if let Some(rb) = rigidbody_set.bodies.get_mut(handle.0) {
             match mprops {
                 AdditionalMassProperties::MassProperties(mprops) => {
                     rb.set_additional_mass_properties(mprops.into_rapier(), true);
@@ -272,22 +290,31 @@ pub fn apply_rigid_body_user_changes(
     }
 
     for (handle, link, additional_solver_iters) in changed_additional_solver_iterations.iter() {
-        let context = context.context(link).into_inner();
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+        let rigidbody_set = rigid_body_sets
+            .get_mut(link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR)
+            .into_inner();
+        if let Some(rb) = rigidbody_set.bodies.get_mut(handle.0) {
             rb.set_additional_solver_iterations(additional_solver_iters.0);
         }
     }
 
     for (handle, link, locked_axes) in changed_locked_axes.iter() {
-        let context = context.context(link).into_inner();
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+        let rigidbody_set = rigid_body_sets
+            .get_mut(link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR)
+            .into_inner();
+        if let Some(rb) = rigidbody_set.bodies.get_mut(handle.0) {
             rb.set_locked_axes((*locked_axes).into(), true);
         }
     }
 
     for (handle, link, forces) in changed_forces.iter() {
-        let context = context.context(link).into_inner();
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+        let rigidbody_set = rigid_body_sets
+            .get_mut(link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR)
+            .into_inner();
+        if let Some(rb) = rigidbody_set.bodies.get_mut(handle.0) {
             rb.reset_forces(true);
             rb.reset_torques(true);
             rb.add_force(forces.force.into(), true);
@@ -297,8 +324,11 @@ pub fn apply_rigid_body_user_changes(
     }
 
     for (handle, link, mut impulses) in changed_impulses.iter_mut() {
-        let context = context.context(link).into_inner();
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+        let rigidbody_set = rigid_body_sets
+            .get_mut(link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR)
+            .into_inner();
+        if let Some(rb) = rigidbody_set.bodies.get_mut(handle.0) {
             rb.apply_impulse(impulses.impulse.into(), true);
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             rb.apply_torque_impulse(impulses.torque_impulse.into(), true);
@@ -307,44 +337,62 @@ pub fn apply_rigid_body_user_changes(
     }
 
     for (handle, link, gravity_scale) in changed_gravity_scale.iter() {
-        let context = context.context(link).into_inner();
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+        let rigidbody_set = rigid_body_sets
+            .get_mut(link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR)
+            .into_inner();
+        if let Some(rb) = rigidbody_set.bodies.get_mut(handle.0) {
             rb.set_gravity_scale(gravity_scale.0, true);
         }
     }
 
     for (handle, link, ccd) in changed_ccd.iter() {
-        let context = context.context(link).into_inner();
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+        let rigidbody_set = rigid_body_sets
+            .get_mut(link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR)
+            .into_inner();
+        if let Some(rb) = rigidbody_set.bodies.get_mut(handle.0) {
             rb.enable_ccd(ccd.enabled);
         }
     }
 
     for (handle, link, soft_ccd) in changed_soft_ccd.iter() {
-        let context = context.context(link).into_inner();
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+        let rigidbody_set = rigid_body_sets
+            .get_mut(link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR)
+            .into_inner();
+        if let Some(rb) = rigidbody_set.bodies.get_mut(handle.0) {
             rb.set_soft_ccd_prediction(soft_ccd.prediction);
         }
     }
 
     for (handle, link, dominance) in changed_dominance.iter() {
-        let context = context.context(link).into_inner();
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+        let rigidbody_set = rigid_body_sets
+            .get_mut(link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR)
+            .into_inner();
+        if let Some(rb) = rigidbody_set.bodies.get_mut(handle.0) {
             rb.set_dominance_group(dominance.groups);
         }
     }
 
     for (handle, link, damping) in changed_damping.iter() {
-        let context = context.context(link).into_inner();
-        if let Some(rb) = context.bodies.get_mut(handle.0) {
+        let rigidbody_set = rigid_body_sets
+            .get_mut(link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR)
+            .into_inner();
+        if let Some(rb) = rigidbody_set.bodies.get_mut(handle.0) {
             rb.set_linear_damping(damping.linear_damping);
             rb.set_angular_damping(damping.angular_damping);
         }
     }
 
     for (handle, link, _) in changed_disabled.iter() {
-        let context = context.context(link).into_inner();
-        if let Some(co) = context.bodies.get_mut(handle.0) {
+        let rigidbody_set = rigid_body_sets
+            .get_mut(link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR)
+            .into_inner();
+        if let Some(co) = rigidbody_set.bodies.get_mut(handle.0) {
             co.set_enabled(false);
         }
     }
@@ -353,7 +401,7 @@ pub fn apply_rigid_body_user_changes(
 /// System responsible for writing the result of the last simulation step into our `bevy_rapier`
 /// components and the [`GlobalTransform`] component.
 pub fn writeback_rigid_bodies(
-    mut context: WriteRapierContext,
+    mut rigid_body_sets: Query<&mut RapierRigidBodySet>,
     timestep_mode: Res<TimestepMode>,
     config: Query<&RapierConfiguration>,
     sim_to_render_time: Query<&SimulationToRenderTime>,
@@ -374,14 +422,17 @@ pub fn writeback_rigid_bodies(
         }
         let handle = handle.0;
 
-        let context = context.context(link).into_inner();
+        let rigid_body_set = rigid_body_sets
+            .get_mut(link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR)
+            .into_inner();
         let sim_to_render_time = sim_to_render_time
             .get(link.0)
             .expect("Could not get `SimulationToRenderTime`");
         // TODO: do this the other way round: iterate through Rapier’s RigidBodySet on the active bodies,
         // and update the components accordingly. That way, we don’t have to iterate through the entities that weren’t changed
         // by physics (for example because they are sleeping).
-        if let Some(rb) = context.bodies.get(handle) {
+        if let Some(rb) = rigid_body_set.bodies.get(handle) {
             let mut interpolated_pos = utils::iso_to_transform(rb.position());
 
             if let TimestepMode::Interpolated { dt, .. } = *timestep_mode {
@@ -452,7 +503,7 @@ pub fn writeback_rigid_bodies(
                     //       despite rounding errors.
                     let new_global_transform = parent_global_transform.mul_transform(*transform);
 
-                    context
+                    rigid_body_set
                         .last_body_transform_set
                         .insert(handle, new_global_transform);
                 } else {
@@ -472,7 +523,7 @@ pub fn writeback_rigid_bodies(
                         transform.translation = interpolated_pos.translation;
                     }
 
-                    context
+                    rigid_body_set
                         .last_body_transform_set
                         .insert(handle, GlobalTransform::from(interpolated_pos));
                 }
@@ -511,7 +562,7 @@ pub fn writeback_rigid_bodies(
 pub fn init_rigid_bodies(
     mut commands: Commands,
     default_context_access: Query<Entity, With<DefaultRapierContext>>,
-    mut context: Query<(Entity, &mut RapierContext)>,
+    mut rigidbody_sets: Query<(Entity, &mut RapierRigidBodySet)>,
     rigid_bodies: Query<RigidBodyComponents, Without<RapierRigidBodyHandle>>,
 ) {
     for (
@@ -621,18 +672,20 @@ pub fn init_rigid_bodies(
             continue;
         };
 
-        let Ok((_, mut context)) = context.get_mut(context_entity) else {
+        let Ok((_, mut rigidbody_set)) = rigidbody_sets.get_mut(context_entity) else {
             log::error!("Could not find entity {context_entity} with rapier context while initializing {entity}");
             continue;
         };
-        let handle = context.bodies.insert(rb);
+        let handle = rigidbody_set.bodies.insert(rb);
         commands
             .entity(entity)
             .insert(RapierRigidBodyHandle(handle));
-        context.entity2body.insert(entity, handle);
+        rigidbody_set.entity2body.insert(entity, handle);
 
         if let Some(transform) = transform {
-            context.last_body_transform_set.insert(handle, *transform);
+            rigidbody_set
+                .last_body_transform_set
+                .insert(handle, *transform);
         }
     }
 }
@@ -643,7 +696,7 @@ pub fn init_rigid_bodies(
 /// mass to be available, which it was not because colliders were not created yet. As a
 /// result, we run this system after the collider creation.
 pub fn apply_initial_rigid_body_impulses(
-    mut context: WriteRapierContext,
+    mut context: Query<(&mut RapierRigidBodySet, &RapierContextColliders)>,
     // We can’t use RapierRigidBodyHandle yet because its creation command hasn’t been
     // executed yet.
     mut init_impulses: Query<
@@ -652,15 +705,18 @@ pub fn apply_initial_rigid_body_impulses(
     >,
 ) {
     for (entity, link, mut impulse) in init_impulses.iter_mut() {
-        let context = context.context(link).into_inner();
-        let bodies = &mut context.bodies;
-        if let Some(rb) = context
+        let (mut rigidbody_set, context_colliders) =
+            context.get_mut(link.0).expect(RAPIER_CONTEXT_EXPECT_ERROR);
+        let rigidbody_set = &mut *rigidbody_set;
+
+        let bodies = &mut rigidbody_set.bodies;
+        if let Some(rb) = rigidbody_set
             .entity2body
             .get(&entity)
             .and_then(|h| bodies.get_mut(*h))
         {
             // Make sure the mass-properties are computed.
-            rb.recompute_mass_properties_from_colliders(&context.colliders);
+            rb.recompute_mass_properties_from_colliders(&context_colliders.colliders);
             // Apply the impulse.
             rb.apply_impulse(impulse.impulse.into(), false);
 
