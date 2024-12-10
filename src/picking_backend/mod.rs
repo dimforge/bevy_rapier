@@ -15,8 +15,6 @@ use bevy::picking::{
 use bevy::reflect::prelude::*;
 use bevy::render::{prelude::*, view::RenderLayers};
 
-use crate::prelude::RapierContext;
-
 /// How a ray cast should handle [`Visibility`].
 #[derive(Clone, Copy, Reflect)]
 pub enum RapierCastVisibility {
@@ -80,7 +78,11 @@ pub fn update_hits(
     marked_targets: Query<&RapierPickable>,
     culling_query: Query<(Option<&InheritedVisibility>, Option<&ViewVisibility>)>,
     layers: Query<&RenderLayers>,
-    rapier_context: Query<&RapierContext>,
+    rapier_context: Query<(
+        &crate::prelude::RapierContextColliders,
+        &crate::prelude::RapierRigidBodySet,
+        &crate::prelude::RapierQueryPipeline,
+    )>,
     mut output: EventWriter<PointerHits>,
 ) {
     for (&ray_id, &ray) in ray_map.map().iter() {
@@ -91,7 +93,7 @@ pub fn update_hits(
             continue;
         }
         let order = camera.order as f32;
-        for rapier_context in rapier_context.iter() {
+        for (colliders, bodies, query_pipeline) in rapier_context.iter() {
             let predicate = |entity| {
                 let marker_requirement =
                     !backend_settings.require_markers || marked_targets.get(entity).is_ok();
@@ -127,7 +129,9 @@ pub fn update_hits(
 
             let mut picks = Vec::new();
             #[cfg(feature = "dim2")]
-            rapier_context.intersections_with_point(
+            query_pipeline.intersections_with_point(
+                colliders,
+                bodies,
                 bevy::math::Vec2::new(ray.origin.x, ray.origin.y),
                 crate::prelude::QueryFilter::default().predicate(&predicate),
                 |entity| {
@@ -142,7 +146,9 @@ pub fn update_hits(
                 },
             );
             #[cfg(feature = "dim3")]
-            rapier_context.intersections_with_ray(
+            query_pipeline.intersections_with_ray(
+                colliders,
+                bodies,
                 ray.origin,
                 ray.direction.into(),
                 f32::MAX,
