@@ -2,8 +2,6 @@
 
 ## Unreleased
 
-## v0.28.0 (09 December 2024)
-
 ### Modified
 
 - `RapierContext` has been split in multiple `Component`s:
