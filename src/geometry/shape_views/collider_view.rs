@@ -2,8 +2,7 @@ use std::fmt;
 
 use super::*;
 use crate::math::Vect;
-use rapier::geometry::{RoundShape, SharedShape};
-use rapier::parry::either::Either;
+use rapier::geometry::{Shape, SharedShape};
 use rapier::parry::shape::TypedShape;
 
 #[cfg(doc)]
@@ -64,6 +63,8 @@ pub enum ColliderView<'a> {
     /// A convex polygon with rounded corners.
     #[cfg(feature = "dim2")]
     RoundConvexPolygon(RoundConvexPolygonView<'a>),
+    /// A custom user-defined shape with a type identified by a number.
+    Custom(&'a dyn Shape),
 }
 impl fmt::Debug for ColliderView<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -96,6 +97,7 @@ impl fmt::Debug for ColliderView<'_> {
             ColliderView::RoundConvexPolyhedron(view) => write!(f, "{:?}", view.raw),
             #[cfg(feature = "dim2")]
             ColliderView::RoundConvexPolygon(view) => write!(f, "{:?}", view.raw),
+            ColliderView::Custom(_) => write!(f, "Custom"),
         }
     }
 }
@@ -145,7 +147,7 @@ impl<'a> From<TypedShape<'a>> for ColliderView<'a> {
             TypedShape::RoundConvexPolyhedron(s) => {
                 ColliderView::RoundConvexPolyhedron(RoundConvexPolyhedronView { raw: s })
             }
-            TypedShape::Custom(_) => todo!(),
+            TypedShape::Custom(i) => ColliderView::Custom(i),
         }
     }
 }
@@ -208,6 +210,7 @@ impl<'a> ColliderView<'a> {
             ColliderView::RoundConvexPolyhedron(RoundConvexPolyhedronView { raw: s }) => {
                 TypedShape::RoundConvexPolyhedron(s)
             }
+            ColliderView::Custom(s) => TypedShape::Custom(s),
         }
     }
 
@@ -248,166 +251,48 @@ impl<'a> ColliderView<'a> {
             ColliderView::RoundConvexPolyhedron(RoundConvexPolyhedronView { raw }) => {
                 SharedShape::new(raw.clone())
             }
+            ColliderView::Custom(i) => SharedShape(i.clone_dyn().into()),
         }
     }
 
-    /// Compute the scaled version of `self.raw`.
+    /// Convert to &dyn [`Shape`].
+    pub fn to_shape(&self) -> &dyn Shape {
+        match self {
+            ColliderView::Ball(BallView { raw }) => *raw,
+            ColliderView::Cuboid(CuboidView { raw }) => *raw,
+            ColliderView::Capsule(CapsuleView { raw }) => *raw,
+            ColliderView::Segment(SegmentView { raw }) => *raw,
+            ColliderView::Triangle(TriangleView { raw }) => *raw,
+            ColliderView::TriMesh(TriMeshView { raw }) => *raw,
+            ColliderView::Polyline(PolylineView { raw }) => *raw,
+            ColliderView::HalfSpace(HalfSpaceView { raw }) => *raw,
+            ColliderView::HeightField(HeightFieldView { raw }) => *raw,
+            ColliderView::Compound(CompoundView { raw }) => *raw,
+            #[cfg(feature = "dim2")]
+            ColliderView::ConvexPolygon(ConvexPolygonView { raw }) => *raw,
+            #[cfg(feature = "dim3")]
+            ColliderView::ConvexPolyhedron(ConvexPolyhedronView { raw }) => *raw,
+            #[cfg(feature = "dim3")]
+            ColliderView::Cylinder(CylinderView { raw }) => *raw,
+            #[cfg(feature = "dim3")]
+            ColliderView::Cone(ConeView { raw }) => *raw,
+            ColliderView::RoundCuboid(RoundCuboidView { raw }) => *raw,
+            ColliderView::RoundTriangle(RoundTriangleView { raw }) => *raw,
+            #[cfg(feature = "dim2")]
+            ColliderView::RoundConvexPolygon(RoundConvexPolygonView { raw }) => *raw,
+            #[cfg(feature = "dim3")]
+            ColliderView::RoundCylinder(RoundCylinderView { raw }) => *raw,
+            #[cfg(feature = "dim3")]
+            ColliderView::RoundCone(RoundConeView { raw }) => *raw,
+            #[cfg(feature = "dim3")]
+            ColliderView::RoundConvexPolyhedron(RoundConvexPolyhedronView { raw }) => *raw,
+            ColliderView::Custom(raw) => *raw,
+        }
+    }
+
+    /// Compute the scaled version of its inner [`Shape`].
     pub fn raw_scale_by(&self, scale: Vect, num_subdivisions: u32) -> Option<SharedShape> {
-        let result = match self {
-            ColliderView::Cuboid(s) => SharedShape::new(s.raw.scaled(&scale.into())),
-            ColliderView::RoundCuboid(s) => SharedShape::new(RoundShape {
-                border_radius: s.raw.border_radius,
-                inner_shape: s.raw.inner_shape.scaled(&scale.into()),
-            }),
-            ColliderView::Capsule(c) => match c.raw.scaled(&scale.into(), num_subdivisions) {
-                None => {
-                    log::error!("Failed to apply scale {} to Capsule shape.", scale);
-                    SharedShape::ball(0.0)
-                }
-                Some(Either::Left(b)) => SharedShape::new(b),
-                Some(Either::Right(b)) => SharedShape::new(b),
-            },
-            ColliderView::Ball(b) => match b.raw.scaled(&scale.into(), num_subdivisions) {
-                None => {
-                    log::error!("Failed to apply scale {} to Ball shape.", scale);
-                    SharedShape::ball(0.0)
-                }
-                Some(Either::Left(b)) => SharedShape::new(b),
-                Some(Either::Right(b)) => SharedShape::new(b),
-            },
-            ColliderView::Segment(s) => SharedShape::new(s.raw.scaled(&scale.into())),
-            // ColliderView::RoundSegment(s) => SharedShape::new(RoundShape {
-            //     border_radius: s.raw.border_radius,
-            //     inner_shape: s.raw.inner_shape.scaled(&scale.into()),
-            // }),
-            ColliderView::Triangle(t) => SharedShape::new(t.raw.scaled(&scale.into())),
-            ColliderView::RoundTriangle(t) => SharedShape::new(RoundShape {
-                border_radius: t.raw.border_radius,
-                inner_shape: t.raw.inner_shape.scaled(&scale.into()),
-            }),
-            ColliderView::TriMesh(t) => SharedShape::new(t.raw.clone().scaled(&scale.into())),
-            ColliderView::Polyline(p) => SharedShape::new(p.raw.clone().scaled(&scale.into())),
-            ColliderView::HalfSpace(h) => match h.raw.scaled(&scale.into()) {
-                None => {
-                    log::error!("Failed to apply scale {} to HalfSpace shape.", scale);
-                    SharedShape::ball(0.0)
-                }
-                Some(scaled) => SharedShape::new(scaled),
-            },
-            ColliderView::HeightField(h) => SharedShape::new(h.raw.clone().scaled(&scale.into())),
-            #[cfg(feature = "dim2")]
-            ColliderView::ConvexPolygon(cp) => match cp.raw.clone().scaled(&scale.into()) {
-                None => {
-                    log::error!("Failed to apply scale {} to ConvexPolygon shape.", scale);
-                    SharedShape::ball(0.0)
-                }
-                Some(scaled) => SharedShape::new(scaled),
-            },
-            #[cfg(feature = "dim2")]
-            ColliderView::RoundConvexPolygon(cp) => {
-                match cp.raw.inner_shape.clone().scaled(&scale.into()) {
-                    None => {
-                        log::error!(
-                            "Failed to apply scale {} to RoundConvexPolygon shape.",
-                            scale
-                        );
-                        SharedShape::ball(0.0)
-                    }
-                    Some(scaled) => SharedShape::new(RoundShape {
-                        border_radius: cp.raw.border_radius,
-                        inner_shape: scaled,
-                    }),
-                }
-            }
-            #[cfg(feature = "dim3")]
-            ColliderView::ConvexPolyhedron(cp) => match cp.raw.clone().scaled(&scale.into()) {
-                None => {
-                    log::error!("Failed to apply scale {} to ConvexPolyhedron shape.", scale);
-                    SharedShape::ball(0.0)
-                }
-                Some(scaled) => SharedShape::new(scaled),
-            },
-            #[cfg(feature = "dim3")]
-            ColliderView::RoundConvexPolyhedron(cp) => {
-                match cp.raw.clone().inner_shape.scaled(&scale.into()) {
-                    None => {
-                        log::error!(
-                            "Failed to apply scale {} to RoundConvexPolyhedron shape.",
-                            scale
-                        );
-                        SharedShape::ball(0.0)
-                    }
-                    Some(scaled) => SharedShape::new(RoundShape {
-                        border_radius: cp.raw.border_radius,
-                        inner_shape: scaled,
-                    }),
-                }
-            }
-            #[cfg(feature = "dim3")]
-            ColliderView::Cylinder(c) => match c.raw.scaled(&scale.into(), num_subdivisions) {
-                None => {
-                    log::error!("Failed to apply scale {} to Cylinder shape.", scale);
-                    SharedShape::ball(0.0)
-                }
-                Some(Either::Left(b)) => SharedShape::new(b),
-                Some(Either::Right(b)) => SharedShape::new(b),
-            },
-            #[cfg(feature = "dim3")]
-            ColliderView::RoundCylinder(c) => {
-                match c.raw.inner_shape.scaled(&scale.into(), num_subdivisions) {
-                    None => {
-                        log::error!("Failed to apply scale {} to RoundCylinder shape.", scale);
-                        SharedShape::ball(0.0)
-                    }
-                    Some(Either::Left(scaled)) => SharedShape::new(RoundShape {
-                        border_radius: c.raw.border_radius,
-                        inner_shape: scaled,
-                    }),
-                    Some(Either::Right(scaled)) => SharedShape::new(RoundShape {
-                        border_radius: c.raw.border_radius,
-                        inner_shape: scaled,
-                    }),
-                }
-            }
-            #[cfg(feature = "dim3")]
-            ColliderView::Cone(c) => match c.raw.scaled(&scale.into(), num_subdivisions) {
-                None => {
-                    log::error!("Failed to apply scale {} to Cone shape.", scale);
-                    SharedShape::ball(0.0)
-                }
-                Some(Either::Left(b)) => SharedShape::new(b),
-                Some(Either::Right(b)) => SharedShape::new(b),
-            },
-            #[cfg(feature = "dim3")]
-            ColliderView::RoundCone(c) => {
-                match c.raw.inner_shape.scaled(&scale.into(), num_subdivisions) {
-                    None => {
-                        log::error!("Failed to apply scale {} to RoundCone shape.", scale);
-                        SharedShape::ball(0.0)
-                    }
-                    Some(Either::Left(scaled)) => SharedShape::new(RoundShape {
-                        border_radius: c.raw.border_radius,
-                        inner_shape: scaled,
-                    }),
-                    Some(Either::Right(scaled)) => SharedShape::new(RoundShape {
-                        border_radius: c.raw.border_radius,
-                        inner_shape: scaled,
-                    }),
-                }
-            }
-            ColliderView::Compound(c) => {
-                let mut scaled = Vec::with_capacity(c.shapes().len());
-
-                for (tra, rot, shape) in c.shapes() {
-                    scaled.push((
-                        (tra * scale, rot).into(),
-                        shape.raw_scale_by(scale, num_subdivisions)?,
-                    ));
-                }
-                SharedShape::compound(scaled)
-            }
-        };
-
-        Some(result)
+        let shape = self.to_shape().scale_dyn(&scale.into(), num_subdivisions)?;
+        Some(SharedShape(shape.into()))
     }
 }
