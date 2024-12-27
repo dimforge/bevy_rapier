@@ -10,18 +10,27 @@ use bevy::{
     prelude::*,
     utils::HashMap,
 };
-use bevy_rapier2d::plugin::NoUserData;
-use bevy_rapier3d::plugin::RapierPhysicsPlugin;
 
 fn main() {
-    check_ambiguities(RapierPhysicsPlugin::<NoUserData>::default(), true);
     check_ambiguities(
-        RapierPhysicsPlugin::<NoUserData>::default().in_fixed_schedule(),
+        bevy_rapier3d::plugin::RapierPhysicsPlugin::<()>::default(),
+        true,
+    );
+    check_ambiguities(
+        bevy_rapier3d::plugin::RapierPhysicsPlugin::<()>::default().in_fixed_schedule(),
+        false,
+    );
+    check_ambiguities(
+        bevy_rapier2d::plugin::RapierPhysicsPlugin::<()>::default(),
+        false,
+    );
+    check_ambiguities(
+        bevy_rapier2d::plugin::RapierPhysicsPlugin::<()>::default().in_fixed_schedule(),
         false,
     );
 }
 
-fn check_ambiguities(plugin: RapierPhysicsPlugin, set_logger: bool) {
+fn check_ambiguities(plugin: impl Plugin, set_logger: bool) {
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, TransformPlugin, AssetPlugin::default()));
     if set_logger {
