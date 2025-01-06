@@ -4,7 +4,7 @@
 //! Rapier is a set of two Rust crates `rapier2d` and `rapier3d` for efficient cross-platform
 //! physics simulation. Its target application include video games, animation, robotics, etc.
 //!
-//! The `bevy_rapier` projects implements two other crates `bevy_rapier2d` and `bevy_rapier3d` which
+//! The `bevy_rapier` project implements two crates `bevy_rapier2d` and `bevy_rapier3d` which
 //! define physics plugins for the Bevy game engine.
 //!
 //! User documentation for `bevy_rapier` is on [the official Rapier site](https://rapier.rs/docs/).
@@ -57,6 +57,9 @@ pub mod pipeline;
 /// The physics plugin and systems.
 pub mod plugin;
 
+#[cfg(feature = "picking-backend")]
+pub mod picking_backend;
+
 /// Components related to character control.
 pub mod control;
 /// The debug-renderer.
@@ -71,6 +74,8 @@ pub mod prelude {
     pub use crate::dynamics::*;
     pub use crate::geometry::*;
     pub use crate::math::*;
+    #[cfg(feature = "picking-backend")]
+    pub use crate::picking_backend::*;
     pub use crate::pipeline::*;
     pub use crate::plugin::context::systemparams::*;
     pub use crate::plugin::context::*;

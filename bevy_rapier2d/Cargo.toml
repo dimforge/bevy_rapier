@@ -24,7 +24,7 @@ rust.unexpected_cfgs = { level = "warn", check-cfg = [
 clippy = { needless_lifetimes = "allow" }
 
 [features]
-default = ["dim2", "async-collider", "debug-render-2d"]
+default = ["dim2", "async-collider", "debug-render-2d", "picking-backend"]
 dim2 = []
 debug-render-2d = [
     "bevy/bevy_core_pipeline",
@@ -50,6 +50,7 @@ serde-serialize = ["rapier2d/serde-serialize", "bevy/serialize", "serde"]
 enhanced-determinism = ["rapier2d/enhanced-determinism"]
 headless = []
 async-collider = ["bevy/bevy_asset", "bevy/bevy_scene", "bevy/bevy_render"]
+picking-backend = ["bevy/bevy_picking"]
 
 [dependencies]
 bevy = { version = "0.15", default-features = false }

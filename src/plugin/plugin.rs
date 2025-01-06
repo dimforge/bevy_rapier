@@ -374,7 +374,6 @@ mod test {
         time::{TimePlugin, TimeUpdateStrategy},
     };
     use rapier::{data::Index, dynamics::RigidBodyHandle};
-    use systems::tests::HeadlessRenderPlugin;
 
     use crate::{plugin::context::*, plugin::*, prelude::*};
 
@@ -478,7 +477,6 @@ mod test {
         fn main() {
             let mut app = App::new();
             app.add_plugins((
-                HeadlessRenderPlugin,
                 TransformPlugin,
                 TimePlugin,
                 RapierPhysicsPlugin::<NoUserData>::default(),
@@ -559,7 +557,6 @@ mod test {
         fn main() {
             let mut app = App::new();
             app.add_plugins((
-                HeadlessRenderPlugin,
                 TransformPlugin,
                 TimePlugin,
                 RapierPhysicsPlugin::<NoUserData>::default().in_fixed_schedule(),

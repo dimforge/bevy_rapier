@@ -132,7 +132,6 @@ mod test {
         transform::{components::Transform, TransformPlugin},
         MinimalPlugins,
     };
-    use systems::tests::HeadlessRenderPlugin;
 
     use crate::{plugin::*, prelude::*};
 
@@ -201,7 +200,6 @@ mod test {
         fn main() {
             let mut app = App::new();
             app.add_plugins((
-                HeadlessRenderPlugin,
                 TransformPlugin,
                 TimePlugin,
                 RapierPhysicsPlugin::<NoUserData>::default(),
@@ -236,7 +234,6 @@ mod test {
     pub fn spam_remove_rapier_entity_interpolated() {
         let mut app = App::new();
         app.add_plugins((
-            HeadlessRenderPlugin,
             MinimalPlugins,
             TransformPlugin,
             RapierPhysicsPlugin::<NoUserData>::default(),
