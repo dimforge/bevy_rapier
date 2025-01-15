@@ -55,6 +55,7 @@ async-collider = [
     "bevy/bevy_render",
     "bevy/bevy_image",
 ]
+collider-to-bevy-mesh = ["bevy/bevy_render"]
 
 [dependencies]
 bevy = { version = "0.15", default-features = false }
