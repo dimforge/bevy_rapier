@@ -93,16 +93,7 @@ pub fn step_simulation<Hooks>(
 #[cfg(test)]
 #[allow(missing_docs)]
 pub mod tests {
-    use bevy::{
-        asset::AssetPlugin,
-        ecs::event::Events,
-        render::{
-            settings::{RenderCreation, WgpuSettings},
-            RenderPlugin,
-        },
-        scene::ScenePlugin,
-        time::TimePlugin,
-    };
+    use bevy::{ecs::event::Events, time::TimePlugin};
     use rapier::geometry::CollisionEventFlags;
     use std::f32::consts::PI;
 
@@ -347,19 +338,13 @@ pub mod tests {
     pub struct HeadlessRenderPlugin;
 
     impl Plugin for HeadlessRenderPlugin {
-        fn build(&self, app: &mut App) {
-            app.add_plugins((
-                AssetPlugin::default(),
-                ScenePlugin,
-                RenderPlugin {
-                    render_creation: RenderCreation::Automatic(WgpuSettings {
-                        backends: None,
-                        ..Default::default()
-                    }),
-                    ..Default::default()
-                },
-                ImagePlugin::default(),
-            ));
+        fn build(&self, _app: &mut App) {
+            #[cfg(feature = "async-collider")]
+            {
+                use bevy::{asset::AssetPlugin, render::mesh::MeshPlugin, scene::ScenePlugin};
+
+                _app.add_plugins((AssetPlugin::default(), MeshPlugin, ScenePlugin));
+            }
         }
     }
 }

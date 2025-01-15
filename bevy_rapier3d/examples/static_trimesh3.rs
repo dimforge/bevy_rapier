@@ -55,7 +55,7 @@ pub fn setup_physics(mut commands: Commands, mut ball_state: ResMut<BallState>) 
         indices.push([2 * i + 2, 2 * i + 1, 2 * i + 3]);
     }
 
-    commands.spawn(Collider::trimesh(vertices, indices));
+    commands.spawn(Collider::trimesh(vertices, indices).unwrap());
 
     // Create a bowl with a cosine cross-section,
     // so that we can join the end of the ramp smoothly
@@ -97,7 +97,7 @@ pub fn setup_physics(mut commands: Commands, mut ball_state: ResMut<BallState>) 
             -bowl_size.y / 2.0,
             bowl_size.z / 2.0 - ramp_size.z / 2.0,
         ),
-        Collider::trimesh(vertices, indices),
+        Collider::trimesh(vertices, indices).unwrap(),
     ));
 }
 
