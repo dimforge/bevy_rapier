@@ -58,6 +58,10 @@ jobs:
         run: cargo test --verbose -p bevy_rapier2d
       - name: Test for bevy_rapier3d
         run: cargo test --verbose -p bevy_rapier3d
+      - name: Unit Tests for bevy_rapier3d without default features
+        run: cargo test -p bevy_rapier3d --no-default-features --features dim3 --lib
+      - name: Unit Tests for bevy_rapier3d without default features
+        run: cargo test -p bevy_rapier3d --no-default-features --features dim3 --lib
   test-wasm:
     runs-on: ubuntu-latest
     env:
