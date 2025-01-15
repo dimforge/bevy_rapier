@@ -76,6 +76,8 @@ approx = "0.5.1"
 glam = { version = "0.29", features = ["approx"] }
 bevy-inspector-egui = "0.28"
 bevy_egui = "0.31"
+# Used for example issue_rapier_748
+fastrand = "2.3"
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
