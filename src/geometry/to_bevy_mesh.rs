@@ -6,13 +6,13 @@ use bevy::{
 };
 use rapier::prelude::{Shape, TriMesh, TypedShape};
 
-pub fn typed_shape_to_mesh(typed_shape: TypedShape) -> Mesh {
+pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Mesh {
     match typed_shape {
         rapier::prelude::TypedShape::Ball(ball) => {
             let radius = ball.radius;
             let mesh = bevy::render::mesh::SphereMeshBuilder::new(
                 radius,
-                bevy::render::mesh::SphereKind::Ico { subdivisions: 10 },
+                bevy::render::mesh::SphereKind::Ico { subdivisions: 1 },
             );
             mesh.build()
         }
@@ -32,9 +32,10 @@ pub fn typed_shape_to_mesh(typed_shape: TypedShape) -> Mesh {
             let radius = capsule.radius;
             let half_height = capsule.half_height();
             #[cfg(feature = "dim2")]
-            let mesh = bevy::render::mesh::Capsule2dMeshBuilder::new(radius, half_height, 10);
+            let mesh = bevy::render::mesh::Capsule2dMeshBuilder::new(radius, half_height * 2.0, 10);
             #[cfg(feature = "dim3")]
-            let mesh = bevy::render::mesh::Capsule3dMeshBuilder::new(radius, half_height, 10, 10);
+            let mesh =
+                bevy::render::mesh::Capsule3dMeshBuilder::new(radius, half_height * 2.0, 10, 10);
             mesh.build()
         }
         rapier::prelude::TypedShape::Segment(segment) => {
@@ -53,7 +54,10 @@ pub fn typed_shape_to_mesh(typed_shape: TypedShape) -> Mesh {
         }
         rapier::prelude::TypedShape::TriMesh(tri_mesh) => {
             let vertices = tri_mesh.vertices();
+            #[cfg(feature = "dim2")]
             let vertices: Vec<_> = vertices.iter().map(|pos| [pos.x, pos.y, 0.0]).collect();
+            #[cfg(feature = "dim3")]
+            let vertices: Vec<_> = vertices.iter().map(|pos| [pos.x, pos.y, pos.z]).collect();
             let indices = tri_mesh.indices();
             let mesh = Mesh::new(
                 bevy::render::mesh::PrimitiveTopology::TriangleList,
@@ -77,7 +81,7 @@ pub fn typed_shape_to_mesh(typed_shape: TypedShape) -> Mesh {
             {
                 // FIXME: we could use TriMesh::From(height_field), but that would clone, we should fix that in parry.
                 let (vtx, idx) = height_field.to_trimesh();
-                let tri_mesh = TriMesh::new(vtx, idx);
+                let tri_mesh = TriMesh::new(vtx, idx).unwrap();
 
                 // From Trimesh:
                 let vertices = tri_mesh.vertices();
@@ -98,7 +102,7 @@ pub fn typed_shape_to_mesh(typed_shape: TypedShape) -> Mesh {
             let mut indices = Vec::new();
             for shape in compound.shapes() {
                 let typed_shape = shape.1.as_typed_shape();
-                let mesh = typed_shape_to_mesh(typed_shape);
+                let mesh = typed_shape_to_mesh(&typed_shape);
 
                 assert!(mesh.primitive_topology() == bevy::render::mesh::PrimitiveTopology::TriangleList,
                 "Compound shape mesh conversion does not support shapes not converting to PrimitiveTopology::TriangleList.");
@@ -163,14 +167,14 @@ pub fn typed_shape_to_mesh(typed_shape: TypedShape) -> Mesh {
             let radius = cone.radius;
             let half_height = cone.half_height;
             // TODO: implement Meshable for all TypedShape variants, that probably will have to be wrapped in a new type.
-            let mesh = bevy::render::mesh::ConeMeshBuilder::new(radius, half_height, 10);
+            let mesh = bevy::render::mesh::ConeMeshBuilder::new(radius, half_height * 2.0, 10);
             mesh.build()
         }
         #[cfg(feature = "dim3")]
         rapier::prelude::TypedShape::Cylinder(cylinder) => {
             let radius = cylinder.radius;
             let half_height = cylinder.half_height;
-            let mesh = bevy::render::mesh::CylinderMeshBuilder::new(radius, half_height, 10);
+            let mesh = bevy::render::mesh::CylinderMeshBuilder::new(radius, half_height * 2.0, 10);
             mesh.build()
         }
         #[cfg(feature = "dim3")]
@@ -201,9 +205,9 @@ pub fn typed_shape_to_mesh(typed_shape: TypedShape) -> Mesh {
     }
 }
 
-impl From<Collider> for Mesh {
-    fn from(shape: Collider) -> Self {
+impl From<&Collider> for Mesh {
+    fn from(shape: &Collider) -> Self {
         let typed_shape = shape.raw.as_typed_shape();
-        typed_shape_to_mesh(typed_shape)
+        typed_shape_to_mesh(&typed_shape)
     }
 }
