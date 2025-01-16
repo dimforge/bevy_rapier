@@ -194,11 +194,11 @@ pub mod tests {
     fn transform_propagation() {
         let mut app = App::new();
         app.add_plugins((
-            HeadlessRenderPlugin,
             TransformPlugin,
             TimePlugin,
             RapierPhysicsPlugin::<NoUserData>::default(),
         ));
+        app.finish();
 
         let zero = (Transform::default(), Transform::default());
 
@@ -251,11 +251,11 @@ pub mod tests {
     fn transform_propagation2() {
         let mut app = App::new();
         app.add_plugins((
-            HeadlessRenderPlugin,
             TransformPlugin,
             TimePlugin,
             RapierPhysicsPlugin::<NoUserData>::default(),
         ));
+        app.finish();
 
         let zero = (Transform::default(), Transform::default());
 
@@ -331,20 +331,6 @@ pub mod tests {
                 epsilon = 1.0e-5
             );
             approx::assert_relative_eq!(body_transform.scale, child_transform.scale,);
-        }
-    }
-
-    // Allows run tests for systems containing rendering related things without GPU
-    pub struct HeadlessRenderPlugin;
-
-    impl Plugin for HeadlessRenderPlugin {
-        fn build(&self, _app: &mut App) {
-            #[cfg(feature = "async-collider")]
-            {
-                use bevy::{asset::AssetPlugin, render::mesh::MeshPlugin, scene::ScenePlugin};
-
-                _app.add_plugins((AssetPlugin::default(), MeshPlugin, ScenePlugin));
-            }
         }
     }
 }

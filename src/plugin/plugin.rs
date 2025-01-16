@@ -304,6 +304,22 @@ where
             }
         }
     }
+
+    fn finish(&self, _app: &mut App) {
+        #[cfg(feature = "async-collider")]
+        {
+            use bevy::{asset::AssetPlugin, render::mesh::MeshPlugin, scene::ScenePlugin};
+            if !_app.is_plugin_added::<AssetPlugin>() {
+                _app.add_plugins(AssetPlugin::default());
+            }
+            if !_app.is_plugin_added::<MeshPlugin>() {
+                _app.add_plugins(MeshPlugin);
+            }
+            if !_app.is_plugin_added::<ScenePlugin>() {
+                _app.add_plugins(ScenePlugin);
+            }
+        }
+    }
 }
 
 /// Specifies a default configuration for the default [`RapierContext`]
@@ -374,7 +390,6 @@ mod test {
         time::{TimePlugin, TimeUpdateStrategy},
     };
     use rapier::{data::Index, dynamics::RigidBodyHandle};
-    use systems::tests::HeadlessRenderPlugin;
 
     use crate::{plugin::context::*, plugin::*, prelude::*};
 
@@ -402,6 +417,8 @@ mod test {
             ));
 
             app.add_systems(Update, setup_physics);
+
+            app.finish();
 
             let mut stepping = Stepping::new();
 
@@ -478,7 +495,6 @@ mod test {
         fn main() {
             let mut app = App::new();
             app.add_plugins((
-                HeadlessRenderPlugin,
                 TransformPlugin,
                 TimePlugin,
                 RapierPhysicsPlugin::<NoUserData>::default(),
@@ -526,6 +542,7 @@ mod test {
             app.add_systems(Update, remove_rapier_entity);
             app.add_systems(FixedUpdate, || println!("Fixed Update"));
             app.add_systems(Update, || println!("Update"));
+            app.finish();
             // startup
             app.update();
             // normal updates starting
@@ -559,7 +576,6 @@ mod test {
         fn main() {
             let mut app = App::new();
             app.add_plugins((
-                HeadlessRenderPlugin,
                 TransformPlugin,
                 TimePlugin,
                 RapierPhysicsPlugin::<NoUserData>::default().in_fixed_schedule(),
