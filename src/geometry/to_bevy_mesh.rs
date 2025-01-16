@@ -6,8 +6,12 @@ use bevy::{
 };
 use rapier::prelude::{Shape, TriMesh, TypedShape};
 
-pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Mesh {
-    match typed_shape {
+/// Converts a [`TypedShape`] to a [`Mesh`].
+///
+/// This expects a [`TypedShape`] to be a convertible to a bavy builtin [`bevy::prelude::Meshable`],
+/// Or builds a new Mesh with [`PrimitiveTopology::TriangleList`](bevy::render::mesh::PrimitiveTopology::TriangleList).
+pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
+    Some(match typed_shape {
         rapier::prelude::TypedShape::Ball(ball) => {
             let radius = ball.radius;
             let mesh = bevy::render::mesh::SphereMeshBuilder::new(
@@ -39,7 +43,8 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Mesh {
             mesh.build()
         }
         rapier::prelude::TypedShape::Segment(segment) => {
-            todo!("Segment shape not implemented yet, how to represent it ? A LineStrip?");
+            // FIXME: Segment shape not implemented yet, how to represent it? A LineStrip?
+            return None;
         }
         rapier::prelude::TypedShape::Triangle(triangle) => {
             let a = triangle.a.coords;
@@ -69,14 +74,17 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Mesh {
             mesh.into()
         }
         rapier::prelude::TypedShape::Polyline(polyline) => {
-            todo!("Polyline shape not implemented yet, how to represent it ? BoxedPolyline3d is only a primitive.");
+            // FIXME: Polyline shape not implemented yet, how to represent it ? BoxedPolyline3d is only a primitive.
+            return None;
         }
         rapier::prelude::TypedShape::HalfSpace(half_space) => {
-            todo!("HalfSpace shape not implemented yet, how to represent it ? its infinite property makes it difficult.");
+            // FIXME: HalfSpace shape not implemented yet, how to represent it ? its infinite property makes it difficult.
+            return None;
         }
         rapier::prelude::TypedShape::HeightField(height_field) => {
             #[cfg(feature = "dim2")]
-            todo!("HeightField for 2d not implemented yet, how to represent it ? its effectively a line.");
+            // FIXME: "HeightField for 2d not implemented yet, how to represent it ? its effectively a line.
+            return None;
             #[cfg(feature = "dim3")]
             {
                 // FIXME: we could use TriMesh::From(height_field), but that would clone, we should fix that in parry.
@@ -102,7 +110,7 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Mesh {
             let mut indices = Vec::new();
             for shape in compound.shapes() {
                 let typed_shape = shape.1.as_typed_shape();
-                let mesh = typed_shape_to_mesh(&typed_shape);
+                let mesh = typed_shape_to_mesh(&typed_shape)?;
 
                 assert!(mesh.primitive_topology() == bevy::render::mesh::PrimitiveTopology::TriangleList,
                 "Compound shape mesh conversion does not support shapes not converting to PrimitiveTopology::TriangleList.");
@@ -179,35 +187,44 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Mesh {
         }
         #[cfg(feature = "dim3")]
         rapier::prelude::TypedShape::RoundCone(round_cone) => {
-            todo!("parry doesn't have easy to use functions to convert RoundShapes to a mesh.");
+            // FIXME: parry doesn't have easy to use functions to convert RoundShapes to a mesh.
+            return None;
         }
         #[cfg(feature = "dim3")]
         rapier::prelude::TypedShape::RoundCylinder(round_cylinder) => {
-            todo!("parry doesn't have easy to use functions to convert RoundShapes to a mesh.");
+            // FIXME: parry doesn't have easy to use functions to convert RoundShapes to a mesh.
+            return None;
         }
         #[cfg(feature = "dim2")]
         rapier::prelude::TypedShape::RoundConvexPolygon(round_shape) => {
-            todo!("parry doesn't have easy to use functions to convert RoundShapes to a mesh.");
+            // FIXME: parry doesn't have easy to use functions to convert RoundShapes to a mesh.
+            return None;
         }
         #[cfg(feature = "dim3")]
         rapier::prelude::TypedShape::RoundConvexPolyhedron(round_shape) => {
-            todo!("parry doesn't have easy to use functions to convert RoundShapes to a mesh.");
+            // FIXME: parry doesn't have easy to use functions to convert RoundShapes to a mesh.
+            return None;
         }
         rapier::prelude::TypedShape::RoundCuboid(round_shape) => {
-            todo!("parry doesn't have easy to use functions to convert RoundShapes to a mesh.");
+            // FIXME: parry doesn't have easy to use functions to convert RoundShapes to a mesh.
+            return None;
         }
         rapier::prelude::TypedShape::RoundTriangle(round_shape) => {
-            todo!("parry doesn't have easy to use functions to convert RoundShapes to a mesh.");
+            // FIXME: parry doesn't have easy to use functions to convert RoundShapes to a mesh.
+            return None;
         }
         rapier::prelude::TypedShape::Custom(shape) => {
-            todo!("I'm not sure how to convert a custom shape to a mesh.");
+            // FIXME: I'm not sure how to convert a custom shape to a mesh.
+            return None;
         }
-    }
+    })
 }
 
-impl From<&Collider> for Mesh {
-    fn from(shape: &Collider) -> Self {
-        let typed_shape = shape.raw.as_typed_shape();
-        typed_shape_to_mesh(&typed_shape)
+impl TryFrom<&Collider> for Mesh {
+    type Error = ();
+
+    fn try_from(collider: &Collider) -> Result<Self, Self::Error> {
+        let typed_shape = collider.raw.as_typed_shape();
+        typed_shape_to_mesh(&typed_shape).ok_or(())
     }
 }

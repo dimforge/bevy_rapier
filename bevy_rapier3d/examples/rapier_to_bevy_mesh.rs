@@ -14,7 +14,7 @@ fn main() {
             WireframePlugin,
         ))
         .add_systems(Startup, (setup_graphics, setup_physics))
-        .add_systems(Update, (toggle_wireframe, rotate))
+        .add_systems(Update, (toggle_wireframe, toggle_dynamic, rotate))
         .run();
 }
 
@@ -30,6 +30,16 @@ pub fn setup_physics(
     mut assets_meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    /*
+     * Ground
+     */
+    let ground_size = 200.1;
+    let ground_height = 0.1;
+
+    commands.spawn((
+        Transform::from_xyz(0.0, -ground_height, 0.0),
+        Collider::cuboid(ground_size, ground_height, ground_size),
+    ));
     /*
      * Create the shapes
      */
@@ -80,7 +90,6 @@ pub fn setup_physics(
             ],
         )
         .unwrap(),
-        /*
         // Unsupported shapes
         Collider::round_cylinder(rad, rad, rad / 10.0),
         Collider::segment(Vec3::new(-rad, 0.0, 0.0), Vec3::new(rad, 0.0, 0.0)),
@@ -95,7 +104,6 @@ pub fn setup_physics(
             3,
             Vec3::new(rad, rad, rad),
         ),
-        */
     ];
     let material = MeshMaterial3d(materials.add(Color::WHITE));
     let colliders_count = colliders.len();
@@ -116,22 +124,23 @@ pub fn setup_physics(
         let coordinates = coordinates * (1.0 + rad);
         // Shift up
         let coordinates = coordinates + Vec3::new(0.0, rad + 5.0, 0.0);
-        let mut mesh = Mesh::from(&collider);
-        mesh.compute_normals();
+        let mesh = Mesh::try_from(&collider);
         commands
             .spawn((
                 Visibility::default(),
                 Transform::from_rotation(Quat::from_rotation_x(0.3)),
             ))
             .with_children(|child| {
-                child.spawn((
+                let mut child = child.spawn((
                     Transform::from_translation(coordinates),
                     RigidBody::Fixed,
-                    Mesh3d(assets_meshes.add(mesh)),
-                    material.clone(),
                     collider,
                     ColliderDebugColor(colors[i % 3]),
                 ));
+                if let Ok(mut mesh) = mesh {
+                    mesh.compute_normals();
+                    child.insert((Mesh3d(assets_meshes.add(mesh)), material.clone()));
+                }
             });
         // light
         commands.spawn((
@@ -152,7 +161,20 @@ fn toggle_wireframe(
         wireframe_config.global = !wireframe_config.global;
     }
 }
-fn rotate(mut query: Query<&mut Transform, With<Collider>>, time: Res<Time>) {
+
+fn toggle_dynamic(mut bodies: Query<&mut RigidBody>, keyboard: Res<ButtonInput<KeyCode>>) {
+    if keyboard.just_pressed(KeyCode::KeyD) {
+        for mut body in &mut bodies.iter_mut() {
+            if body.is_dynamic() {
+                *body = RigidBody::Fixed;
+            } else {
+                *body = RigidBody::Dynamic;
+            }
+        }
+    }
+}
+
+fn rotate(mut query: Query<&mut Transform, With<RigidBody>>, time: Res<Time>) {
     for mut transform in &mut query {
         transform.rotate_y(time.delta_secs() / 2.);
         transform.rotate_x(time.delta_secs() / 2.6);
