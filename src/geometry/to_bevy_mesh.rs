@@ -1,26 +1,25 @@
+//! Module for utilities to convert from a [`rapier::prelude::Shape`] to a [`bevy::prelude::Mesh`].
+
 use super::Collider;
+use crate::rapier::prelude::{Ball, Cuboid};
 use bevy::{
     asset::RenderAssetUsages,
     prelude::{Mesh, MeshBuilder, Segment3d},
-    render::mesh::Indices,
+    render::{
+        mesh::{Indices, SphereMeshBuilder},
+        prelude::*,
+    },
 };
 use rapier::prelude::{Shape, TriMesh, TypedShape};
-
 /// Converts a [`TypedShape`] to a [`Mesh`].
 ///
 /// This expects a [`TypedShape`] to be a convertible to a bavy builtin [`bevy::prelude::Meshable`],
 /// Or builds a new Mesh with [`PrimitiveTopology::TriangleList`](bevy::render::mesh::PrimitiveTopology::TriangleList).
 pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
     Some(match typed_shape {
-        rapier::prelude::TypedShape::Ball(ball) => {
-            let radius = ball.radius;
-            let mesh = bevy::render::mesh::SphereMeshBuilder::new(
-                radius,
-                bevy::render::mesh::SphereKind::Ico { subdivisions: 1 },
-            );
-            mesh.build()
-        }
+        rapier::prelude::TypedShape::Ball(ball) => ball.mesh_builder().build(),
         rapier::prelude::TypedShape::Cuboid(cuboid) => {
+            // FIXME: bevy 0.16 will expose a builder for cuboids: https://github.com/bevyengine/bevy/pull/17454
             let half_extents = cuboid.half_extents;
             #[cfg(feature = "dim2")]
             let mesh = bevy::prelude::Rectangle::new(half_extents.x * 2.0, half_extents.y * 2.0);
@@ -32,21 +31,13 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
             );
             Mesh::from(mesh)
         }
-        rapier::prelude::TypedShape::Capsule(capsule) => {
-            let radius = capsule.radius;
-            let half_height = capsule.half_height();
-            #[cfg(feature = "dim2")]
-            let mesh = bevy::render::mesh::Capsule2dMeshBuilder::new(radius, half_height * 2.0, 10);
-            #[cfg(feature = "dim3")]
-            let mesh =
-                bevy::render::mesh::Capsule3dMeshBuilder::new(radius, half_height * 2.0, 10, 10);
-            mesh.build()
-        }
+        rapier::prelude::TypedShape::Capsule(capsule) => capsule.mesh_builder().build(),
         rapier::prelude::TypedShape::Segment(segment) => {
             // FIXME: Segment shape not implemented yet, how to represent it? A LineStrip?
             return None;
         }
         rapier::prelude::TypedShape::Triangle(triangle) => {
+            // FIXME: bevy 0.16 will expose a builder for triangles: https://github.com/bevyengine/bevy/pull/17454
             let a = triangle.a.coords;
             let b = triangle.b.coords;
             let c = triangle.c.coords;
@@ -171,20 +162,9 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
             mesh.into()
         }
         #[cfg(feature = "dim3")]
-        rapier::prelude::TypedShape::Cone(cone) => {
-            let radius = cone.radius;
-            let half_height = cone.half_height;
-            // TODO: implement Meshable for all TypedShape variants, that probably will have to be wrapped in a new type.
-            let mesh = bevy::render::mesh::ConeMeshBuilder::new(radius, half_height * 2.0, 10);
-            mesh.build()
-        }
+        rapier::prelude::TypedShape::Cone(cone) => mesh.mesh_builder().build(),
         #[cfg(feature = "dim3")]
-        rapier::prelude::TypedShape::Cylinder(cylinder) => {
-            let radius = cylinder.radius;
-            let half_height = cylinder.half_height;
-            let mesh = bevy::render::mesh::CylinderMeshBuilder::new(radius, half_height * 2.0, 10);
-            mesh.build()
-        }
+        rapier::prelude::TypedShape::Cylinder(cylinder) => mesh.mesh_builder().build(),
         #[cfg(feature = "dim3")]
         rapier::prelude::TypedShape::RoundCone(round_cone) => {
             // FIXME: parry doesn't have easy to use functions to convert RoundShapes to a mesh.
@@ -226,5 +206,66 @@ impl TryFrom<&Collider> for Mesh {
     fn try_from(collider: &Collider) -> Result<Self, Self::Error> {
         let typed_shape = collider.raw.as_typed_shape();
         typed_shape_to_mesh(&typed_shape).ok_or(())
+    }
+}
+
+pub trait ToMeshBuilder {
+    type MeshBuilder: MeshBuilder;
+    fn mesh_builder(&self) -> Self::MeshBuilder;
+}
+
+#[cfg(feature = "dim2")]
+impl ToMeshBuilder for Ball {
+    type MeshBuilder = CircleMeshBuilder;
+
+    fn mesh_builder(&self) -> Self::MeshBuilder {
+        CircleMeshBuilder::new(self.radius, 16)
+    }
+}
+
+#[cfg(feature = "dim3")]
+impl ToMeshBuilder for Ball {
+    type MeshBuilder = SphereMeshBuilder;
+
+    fn mesh_builder(&self) -> Self::MeshBuilder {
+        SphereMeshBuilder::new(
+            self.radius,
+            bevy::render::mesh::SphereKind::Ico { subdivisions: 1 },
+        )
+    }
+}
+
+#[cfg(feature = "dim2")]
+impl ToMeshBuilder for Capsule {
+    type MeshBuilder = Capsule2dMeshBuilder;
+
+    fn mesh_builder(&self) -> Self::MeshBuilder {
+        bevy::render::mesh::Capsule2dMeshBuilder::new(radius, half_height * 2.0, 10)
+    }
+}
+
+#[cfg(feature = "dim3")]
+impl ToMeshBuilder for Capsule {
+    type MeshBuilder = Capsule3dMeshBuilder;
+
+    fn mesh_builder(&self) -> Self::MeshBuilder {
+        bevy::render::mesh::Capsule3dMeshBuilder::new(self.radius, self.half_height * 2.0, 10, 10)
+    }
+}
+#[cfg(feature = "dim3")]
+impl ToMeshBuilder for Cone {
+    type MeshBuilder = ConeMeshBuilder;
+
+    fn mesh_builder(&self) -> Self::MeshBuilder {
+        bevy::render::mesh::ConeMeshBuilder::new(self.radius, self.half_height * 2.0, 16)
+    }
+}
+
+#[cfg(feature = "dim3")]
+impl ToMeshBuilder for Cylinder {
+    type MeshBuilder = CylinderMeshBuilder;
+
+    fn mesh_builder(&self) -> Self::MeshBuilder {
+        bevy::render::mesh::CylinderMeshBuilder::new(self.radius, self.half_height * 2.0, 16)
     }
 }
