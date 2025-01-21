@@ -1,16 +1,22 @@
 //! Module for utilities to convert from a [`rapier::prelude::Shape`] to a [`bevy::prelude::Mesh`].
 
 use super::Collider;
-use crate::rapier::prelude::{Ball, Cuboid};
+use crate::rapier::prelude::Ball;
+#[cfg(feature = "dim3")]
+use crate::rapier::prelude::{Cone, Cylinder, TriMesh};
+#[cfg(feature = "dim2")]
+use bevy::render::mesh::{Capsule2dMeshBuilder, CircleMeshBuilder};
+#[cfg(feature = "dim3")]
+use bevy::render::mesh::{
+    Capsule3dMeshBuilder, ConeMeshBuilder, CylinderMeshBuilder, SphereMeshBuilder,
+};
 use bevy::{
     asset::RenderAssetUsages,
-    prelude::{Mesh, MeshBuilder, Segment3d},
-    render::{
-        mesh::{Indices, SphereMeshBuilder},
-        prelude::*,
-    },
+    prelude::{Mesh, MeshBuilder},
+    render::mesh::Indices,
 };
-use rapier::prelude::{Shape, TriMesh, TypedShape};
+
+use rapier::prelude::{Capsule, TypedShape};
 /// Converts a [`TypedShape`] to a [`Mesh`].
 ///
 /// This expects a [`TypedShape`] to be a convertible to a bavy builtin [`bevy::prelude::Meshable`],
@@ -32,7 +38,7 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
             Mesh::from(mesh)
         }
         rapier::prelude::TypedShape::Capsule(capsule) => capsule.mesh_builder().build(),
-        rapier::prelude::TypedShape::Segment(segment) => {
+        rapier::prelude::TypedShape::Segment(_segment) => {
             // FIXME: Segment shape not implemented yet, how to represent it? A LineStrip?
             return None;
         }
@@ -64,22 +70,22 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
 
             mesh.into()
         }
-        rapier::prelude::TypedShape::Polyline(polyline) => {
+        rapier::prelude::TypedShape::Polyline(_polyline) => {
             // FIXME: Polyline shape not implemented yet, how to represent it ? BoxedPolyline3d is only a primitive.
             return None;
         }
-        rapier::prelude::TypedShape::HalfSpace(half_space) => {
+        rapier::prelude::TypedShape::HalfSpace(_half_space) => {
             // FIXME: HalfSpace shape not implemented yet, how to represent it ? its infinite property makes it difficult.
             return None;
         }
-        rapier::prelude::TypedShape::HeightField(height_field) => {
+        rapier::prelude::TypedShape::HeightField(_height_field) => {
             #[cfg(feature = "dim2")]
             // FIXME: "HeightField for 2d not implemented yet, how to represent it ? its effectively a line.
             return None;
             #[cfg(feature = "dim3")]
             {
                 // FIXME: we could use TriMesh::From(height_field), but that would clone, we should fix that in parry.
-                let (vtx, idx) = height_field.to_trimesh();
+                let (vtx, idx) = _height_field.to_trimesh();
                 let tri_mesh = TriMesh::new(vtx, idx).unwrap();
 
                 // From Trimesh:
@@ -97,17 +103,17 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
             }
         }
         rapier::prelude::TypedShape::Compound(compound) => {
-            let mut final_mesh = Option::None;
+            let mut final_mesh: Option<Mesh> = Option::None;
             for shape in compound.shapes() {
                 let typed_shape = shape.1.as_typed_shape();
                 let mesh = typed_shape_to_mesh(&typed_shape)?;
-                if let Some(mesh) = final_mesh {
-                    final_mesh = Some(mesh.combine(&mesh));
+                if let Some(ref mut final_mesh) = final_mesh {
+                    final_mesh.merge(&mesh);
                 } else {
                     final_mesh = Some(mesh);
                 }
             }
-            final_mesh
+            final_mesh?
         }
         #[cfg(feature = "dim2")]
         rapier::prelude::TypedShape::ConvexPolygon(convex_polygon) => {
@@ -144,38 +150,38 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
             mesh.into()
         }
         #[cfg(feature = "dim3")]
-        rapier::prelude::TypedShape::Cone(cone) => mesh.mesh_builder().build(),
+        rapier::prelude::TypedShape::Cone(cone) => cone.mesh_builder().build(),
         #[cfg(feature = "dim3")]
-        rapier::prelude::TypedShape::Cylinder(cylinder) => mesh.mesh_builder().build(),
+        rapier::prelude::TypedShape::Cylinder(cylinder) => cylinder.mesh_builder().build(),
         #[cfg(feature = "dim3")]
-        rapier::prelude::TypedShape::RoundCone(round_cone) => {
+        rapier::prelude::TypedShape::RoundCone(_round_cone) => {
             // FIXME: parry doesn't have easy to use functions to convert RoundShapes to a mesh.
             return None;
         }
         #[cfg(feature = "dim3")]
-        rapier::prelude::TypedShape::RoundCylinder(round_cylinder) => {
+        rapier::prelude::TypedShape::RoundCylinder(_round_cylinder) => {
             // FIXME: parry doesn't have easy to use functions to convert RoundShapes to a mesh.
             return None;
         }
         #[cfg(feature = "dim2")]
-        rapier::prelude::TypedShape::RoundConvexPolygon(round_shape) => {
+        rapier::prelude::TypedShape::RoundConvexPolygon(_round_shape) => {
             // FIXME: parry doesn't have easy to use functions to convert RoundShapes to a mesh.
             return None;
         }
         #[cfg(feature = "dim3")]
-        rapier::prelude::TypedShape::RoundConvexPolyhedron(round_shape) => {
+        rapier::prelude::TypedShape::RoundConvexPolyhedron(_round_shape) => {
             // FIXME: parry doesn't have easy to use functions to convert RoundShapes to a mesh.
             return None;
         }
-        rapier::prelude::TypedShape::RoundCuboid(round_shape) => {
+        rapier::prelude::TypedShape::RoundCuboid(_round_shape) => {
             // FIXME: parry doesn't have easy to use functions to convert RoundShapes to a mesh.
             return None;
         }
-        rapier::prelude::TypedShape::RoundTriangle(round_shape) => {
+        rapier::prelude::TypedShape::RoundTriangle(_round_shape) => {
             // FIXME: parry doesn't have easy to use functions to convert RoundShapes to a mesh.
             return None;
         }
-        rapier::prelude::TypedShape::Custom(shape) => {
+        rapier::prelude::TypedShape::Custom(_shape) => {
             // FIXME: I'm not sure how to convert a custom shape to a mesh.
             return None;
         }
@@ -191,8 +197,11 @@ impl TryFrom<&Collider> for Mesh {
     }
 }
 
+/// Trait to convert a parry shape to a [`MeshBuilder`].
 pub trait ToMeshBuilder {
-    type MeshBuilder: MeshBuilder;
+    /// Specific [`MeshBuilder`] being returned.
+    type MeshBuilder: bevy::render::prelude::MeshBuilder;
+    /// Returns a dedicated [`MeshBuilder`].
     fn mesh_builder(&self) -> Self::MeshBuilder;
 }
 
@@ -222,7 +231,7 @@ impl ToMeshBuilder for Capsule {
     type MeshBuilder = Capsule2dMeshBuilder;
 
     fn mesh_builder(&self) -> Self::MeshBuilder {
-        bevy::render::mesh::Capsule2dMeshBuilder::new(radius, half_height * 2.0, 10)
+        bevy::render::mesh::Capsule2dMeshBuilder::new(self.radius, self.height(), 10)
     }
 }
 
@@ -231,7 +240,7 @@ impl ToMeshBuilder for Capsule {
     type MeshBuilder = Capsule3dMeshBuilder;
 
     fn mesh_builder(&self) -> Self::MeshBuilder {
-        bevy::render::mesh::Capsule3dMeshBuilder::new(self.radius, self.half_height * 2.0, 10, 10)
+        bevy::render::mesh::Capsule3dMeshBuilder::new(self.radius, self.height(), 10, 10)
     }
 }
 #[cfg(feature = "dim3")]
