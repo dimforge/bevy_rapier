@@ -151,9 +151,12 @@ impl Collider {
     }
 
     /// Initializes a collider with a triangle mesh shape defined by its vertex and index buffers.
-    pub fn trimesh(vertices: Vec<Vect>, indices: Vec<[u32; 3]>) -> Self {
+    pub fn trimesh(
+        vertices: Vec<Vect>,
+        indices: Vec<[u32; 3]>,
+    ) -> Result<Self, crate::rapier::prelude::TriMeshBuilderError> {
         let vertices = vertices.into_iter().map(|v| v.into()).collect();
-        SharedShape::trimesh(vertices, indices).into()
+        Ok(SharedShape::trimesh(vertices, indices)?.into())
     }
 
     /// Initializes a collider with a triangle mesh shape defined by its vertex and index buffers, and flags
@@ -162,9 +165,9 @@ impl Collider {
         vertices: Vec<Vect>,
         indices: Vec<[u32; 3]>,
         flags: TriMeshFlags,
-    ) -> Self {
+    ) -> Result<Self, crate::rapier::prelude::TriMeshBuilderError> {
         let vertices = vertices.into_iter().map(|v| v.into()).collect();
-        SharedShape::trimesh_with_flags(vertices, indices, flags).into()
+        Ok(SharedShape::trimesh_with_flags(vertices, indices, flags)?.into())
     }
 
     /// Initializes a collider with a Bevy Mesh.
@@ -175,9 +178,11 @@ impl Collider {
         let (vtx, idx) = extract_mesh_vertices_indices(mesh)?;
 
         match collider_shape {
-            ComputedColliderShape::TriMesh(flags) => {
-                Some(SharedShape::trimesh_with_flags(vtx, idx, *flags).into())
-            }
+            ComputedColliderShape::TriMesh(flags) => Some(
+                SharedShape::trimesh_with_flags(vtx, idx, *flags)
+                    .ok()?
+                    .into(),
+            ),
             ComputedColliderShape::ConvexHull => {
                 SharedShape::convex_hull(&vtx).map(|shape| shape.into())
             }
