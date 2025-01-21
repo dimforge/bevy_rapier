@@ -97,35 +97,17 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
             }
         }
         rapier::prelude::TypedShape::Compound(compound) => {
-            let mut vertices = Vec::new();
-            let mut indices = Vec::new();
+            let mut final_mesh = Option::None;
             for shape in compound.shapes() {
                 let typed_shape = shape.1.as_typed_shape();
                 let mesh = typed_shape_to_mesh(&typed_shape)?;
-
-                assert!(mesh.primitive_topology() == bevy::render::mesh::PrimitiveTopology::TriangleList,
-                "Compound shape mesh conversion does not support shapes not converting to PrimitiveTopology::TriangleList.");
-
-                vertices.append(
-                    &mut mesh
-                        .attribute(Mesh::ATTRIBUTE_POSITION.id)
-                        .unwrap()
-                        .as_float3()
-                        .unwrap()
-                        .iter()
-                        .cloned()
-                        .flatten()
-                        .collect::<Vec<_>>(),
-                );
-                indices.append(&mut mesh.indices().unwrap().iter().collect::<Vec<_>>());
+                if let Some(mesh) = final_mesh {
+                    final_mesh = Some(mesh.combine(&mesh));
+                } else {
+                    final_mesh = Some(mesh);
+                }
             }
-            let mesh = Mesh::new(
-                bevy::render::mesh::PrimitiveTopology::TriangleList,
-                RenderAssetUsages::default(),
-            )
-            .with_inserted_indices(Indices::U32(indices.iter().map(|i| *i as u32).collect()));
-            let mesh = mesh.with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
-            mesh.into()
+            final_mesh
         }
         #[cfg(feature = "dim2")]
         rapier::prelude::TypedShape::ConvexPolygon(convex_polygon) => {
