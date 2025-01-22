@@ -25,21 +25,25 @@ pub fn custom_bencher(steps: usize, setup: impl Fn(&mut App)) {
         timer_full_update.start();
         app.update();
         timer_full_update.pause();
-        let elapsed_time = timer_full_update.time() as f32;
+        let elapsed_time = timer_full_update.time().as_millis();
         let rc = app
             .world_mut()
             .query::<&RapierContextSimulation>()
             .single(app.world());
-        rapier_step_times.push(rc.pipeline.counters.step_time.time() as f32);
+        rapier_step_times.push(rc.pipeline.counters.step_time.time().as_millis() as f32);
         total_update_times.push(elapsed_time);
     }
     timer_total.pause();
-    let average_total = total_update_times.iter().sum::<f32>() / total_update_times.len() as f32;
+    let average_total = total_update_times
+        .iter()
+        .map(|time| *time as f32)
+        .sum::<f32>()
+        / total_update_times.len() as f32;
     println!("average total time: {} ms", average_total);
     let average_rapier_step =
         rapier_step_times.iter().sum::<f32>() / rapier_step_times.len() as f32;
     println!("average rapier step time: {} ms", average_rapier_step);
     let average_rapier_overhead = average_total - average_rapier_step;
     println!("average bevy overhead: {} ms", average_rapier_overhead);
-    println!("total time: {} ms", timer_total.time());
+    println!("total time: {} ms", timer_total.time().as_millis());
 }

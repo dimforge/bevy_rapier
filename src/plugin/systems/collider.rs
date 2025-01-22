@@ -589,11 +589,13 @@ pub mod test {
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_collider_initializes() {
         use super::*;
-        use crate::plugin::systems::tests::HeadlessRenderPlugin;
+        use bevy::{render::mesh::MeshPlugin, scene::ScenePlugin};
 
         let mut app = App::new();
-        app.add_plugins(HeadlessRenderPlugin)
-            .add_systems(Update, init_async_colliders);
+        app.add_plugins((AssetPlugin::default(), MeshPlugin, ScenePlugin));
+        app.add_systems(Update, init_async_colliders);
+
+        app.finish();
 
         let mut meshes = app.world_mut().resource_mut::<Assets<Mesh>>();
         let cube = meshes.add(Cuboid::default());
@@ -620,11 +622,11 @@ pub mod test {
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_scene_collider_initializes() {
         use super::*;
-        use crate::plugin::systems::tests::HeadlessRenderPlugin;
+        use bevy::{render::mesh::MeshPlugin, scene::ScenePlugin};
 
         let mut app = App::new();
-        app.add_plugins(HeadlessRenderPlugin)
-            .add_systems(PostUpdate, init_async_scene_colliders);
+        app.add_plugins((AssetPlugin::default(), MeshPlugin, ScenePlugin));
+        app.add_systems(PostUpdate, init_async_scene_colliders);
 
         let mut meshes = app.world_mut().resource_mut::<Assets<Mesh>>();
         let cube_handle = meshes.add(Cuboid::default());
