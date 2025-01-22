@@ -93,16 +93,7 @@ pub fn step_simulation<Hooks>(
 #[cfg(test)]
 #[allow(missing_docs)]
 pub mod tests {
-    use bevy::{
-        asset::AssetPlugin,
-        ecs::event::Events,
-        render::{
-            settings::{RenderCreation, WgpuSettings},
-            RenderPlugin,
-        },
-        scene::ScenePlugin,
-        time::TimePlugin,
-    };
+    use bevy::{ecs::event::Events, time::TimePlugin};
     use rapier::geometry::CollisionEventFlags;
     use std::f32::consts::PI;
 
@@ -203,11 +194,11 @@ pub mod tests {
     fn transform_propagation() {
         let mut app = App::new();
         app.add_plugins((
-            HeadlessRenderPlugin,
             TransformPlugin,
             TimePlugin,
             RapierPhysicsPlugin::<NoUserData>::default(),
         ));
+        app.finish();
 
         let zero = (Transform::default(), Transform::default());
 
@@ -260,11 +251,11 @@ pub mod tests {
     fn transform_propagation2() {
         let mut app = App::new();
         app.add_plugins((
-            HeadlessRenderPlugin,
             TransformPlugin,
             TimePlugin,
             RapierPhysicsPlugin::<NoUserData>::default(),
         ));
+        app.finish();
 
         let zero = (Transform::default(), Transform::default());
 
@@ -340,26 +331,6 @@ pub mod tests {
                 epsilon = 1.0e-5
             );
             approx::assert_relative_eq!(body_transform.scale, child_transform.scale,);
-        }
-    }
-
-    // Allows run tests for systems containing rendering related things without GPU
-    pub struct HeadlessRenderPlugin;
-
-    impl Plugin for HeadlessRenderPlugin {
-        fn build(&self, app: &mut App) {
-            app.add_plugins((
-                AssetPlugin::default(),
-                ScenePlugin,
-                RenderPlugin {
-                    render_creation: RenderCreation::Automatic(WgpuSettings {
-                        backends: None,
-                        ..Default::default()
-                    }),
-                    ..Default::default()
-                },
-                ImagePlugin::default(),
-            ));
         }
     }
 }

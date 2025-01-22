@@ -130,7 +130,6 @@ fn bubble_down_context_change(
 
 #[cfg(test)]
 mod test {
-    use crate::plugin::systems::tests::HeadlessRenderPlugin;
     use crate::plugin::{
         context::{RapierContextEntityLink, RapierContextSimulation},
         NoUserData, PhysicsSet, RapierPhysicsPlugin,
@@ -144,7 +143,6 @@ mod test {
     pub fn multi_context_hierarchy_update() {
         let mut app = App::new();
         app.add_plugins((
-            HeadlessRenderPlugin,
             TransformPlugin,
             TimePlugin,
             RapierPhysicsPlugin::<NoUserData>::default(),
@@ -159,6 +157,7 @@ mod test {
         app.insert_resource(TimeUpdateStrategy::ManualDuration(
             std::time::Duration::from_secs_f32(1f32 / 60f32),
         ));
+        app.finish();
         app.update();
         // Verify all rapier entities have a `RapierContextEntityLink`.
         let world = app.world_mut();
