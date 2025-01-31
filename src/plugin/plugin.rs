@@ -29,6 +29,13 @@ pub struct RapierPhysicsPlugin<PhysicsHooks = ()> {
     /// to help initializing [`RapierContextInitialization`] resource.
     /// This will be ignored if that resource already exists.
     default_world_setup: RapierContextInitialization,
+    /// Controls whether given `PhysicsSets` systems are injected into the scheduler.
+    ///
+    /// This is useful to opt out of default plugin behaviour, for example if you need to reorganize
+    /// the systems in different schedules.
+    ///
+    /// If passing an empty set, the plugin will still add the Physics Sets to the plugin schedule,
+    /// but no systems will be added automatically.
     enabled_physics_schedules: HashSet<PhysicsSet>,
     _phantom: PhantomData<PhysicsHooks>,
 }
@@ -91,7 +98,7 @@ where
     ///
     /// If passing an empty set, the plugin will still add the Physics Sets to the plugin schedule,
     /// but no systems will be added automatically.
-    pub fn set_physics_sets_to_initialize(
+    pub fn with_physics_sets_systems(
         mut self,
         enabled_physics_schedules: HashSet<PhysicsSet>,
     ) -> Self {
