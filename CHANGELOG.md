@@ -4,6 +4,12 @@
 
 ### Modified
 
+- Update from rapier `0.22` to rapier `0.23`,
+  see [rapier's changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md).
+- `Collider::trimesh` and `Collider::trimesh_with_flags` now return a `Result`.
+- Under the feature `async-collider`, The `RapierPhysicsPlugin` now adds
+  `AssetPlugin`, `MeshPlugin` and `ScenePlugin` if these were not added, to circumvent a runtime crash
+  over missing required resources.
 - `RapierContext` has been split in multiple `Component`s:
     - `RapierContextColliders`
     - `RapierContextJoints`
