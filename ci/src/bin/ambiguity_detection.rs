@@ -5,6 +5,7 @@
 //! You can run this test using `cargo run --bin ambiguity_detection`.
 
 use bevy::{
+    app::Plugins,
     ecs::schedule::{InternedScheduleLabel, LogLevel, ScheduleBuildSettings},
     log::LogPlugin,
     prelude::*,
@@ -13,24 +14,36 @@ use bevy::{
 
 fn main() {
     check_ambiguities(
-        bevy_rapier3d::plugin::RapierPhysicsPlugin::<()>::default(),
+        (
+            bevy_rapier3d::plugin::RapierPhysicsPlugin::<()>::default(),
+            bevy_rapier3d::prelude::RapierPickingPlugin::default(),
+        ),
         true,
     );
     check_ambiguities(
-        bevy_rapier3d::plugin::RapierPhysicsPlugin::<()>::default().in_fixed_schedule(),
+        (
+            bevy_rapier3d::plugin::RapierPhysicsPlugin::<()>::default().in_fixed_schedule(),
+            bevy_rapier3d::prelude::RapierPickingPlugin::default(),
+        ),
         false,
     );
     check_ambiguities(
-        bevy_rapier2d::plugin::RapierPhysicsPlugin::<()>::default(),
+        (
+            bevy_rapier2d::plugin::RapierPhysicsPlugin::<()>::default(),
+            bevy_rapier3d::prelude::RapierPickingPlugin::default(),
+        ),
         false,
     );
     check_ambiguities(
-        bevy_rapier2d::plugin::RapierPhysicsPlugin::<()>::default().in_fixed_schedule(),
+        (
+            bevy_rapier2d::plugin::RapierPhysicsPlugin::<()>::default().in_fixed_schedule(),
+            bevy_rapier3d::prelude::RapierPickingPlugin::default(),
+        ),
         false,
     );
 }
 
-fn check_ambiguities(plugin: impl Plugin, set_logger: bool) {
+fn check_ambiguities<M>(plugin: impl Plugins<M>, set_logger: bool) {
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, TransformPlugin, AssetPlugin::default()));
     if set_logger {
