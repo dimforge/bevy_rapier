@@ -66,7 +66,7 @@ fn main() {
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
             WorldInspectorPlugin::new(),
-            RapierPickingPlugin::default(),
+            RapierPickingPlugin,
         ))
         .register_type::<Examples>()
         .register_type::<ExamplesRes>()

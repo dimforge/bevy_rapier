@@ -9,7 +9,7 @@ fn main() {
             DefaultPlugins,
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
-            RapierPickingPlugin::default(),
+            RapierPickingPlugin,
         ))
         .insert_resource(RapierPickingSettings {
             // Optional: only needed when you want fine-grained control
