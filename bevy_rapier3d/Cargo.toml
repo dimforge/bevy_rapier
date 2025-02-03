@@ -49,7 +49,7 @@ simd-nightly = ["rapier3d/simd-nightly"]
 serde-serialize = ["rapier3d/serde-serialize", "bevy/serialize", "serde"]
 enhanced-determinism = ["rapier3d/enhanced-determinism"]
 headless = []
-picking-backend = ["bevy/bevy_picking"]
+picking-backend = ["bevy/bevy_picking", "bevy/bevy_render"]
 async-collider = [
     "bevy/bevy_asset",
     "bevy/bevy_scene",
