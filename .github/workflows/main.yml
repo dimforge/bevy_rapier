@@ -31,6 +31,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           prefix-key: ${{ env.RUST_CACHE_KEY }}
+      - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
       - name: Cargo doc
         run: cargo doc --no-deps
   test:
@@ -51,13 +52,15 @@ jobs:
       - name: Clippy for bevy_rapier3d
         run: cargo clippy --verbose -p bevy_rapier3d
       - name: Clippy for bevy_rapier2d (debug-render, simd, serde)
-        run: cargo clippy --verbose -p bevy_rapier2d --features debug-render-2d,simd-stable,serde-serialize
+        run: cargo clippy --verbose -p bevy_rapier2d --features debug-render-2d,simd-stable,serde-serialize,picking-backend
       - name: Clippy for bevy_rapier3d (debug-render, simd, serde)
-        run: cargo clippy --verbose -p bevy_rapier3d --features debug-render-3d,simd-stable,serde-serialize
+        run: cargo clippy --verbose -p bevy_rapier3d --features debug-render-3d,simd-stable,serde-serialize,picking-backend
       - name: Test for bevy_rapier2d
         run: cargo test --verbose -p bevy_rapier2d
       - name: Test for bevy_rapier3d
         run: cargo test --verbose -p bevy_rapier3d
+      - name: Test for no conflicting system order ambiguity
+        run: cargo run --bin ambiguity_detection
   test-wasm:
     runs-on: ubuntu-latest
     env:
