@@ -24,7 +24,13 @@ rust.unexpected_cfgs = { level = "warn", check-cfg = [
 clippy = { needless_lifetimes = "allow" }
 
 [features]
-default = ["dim3", "async-collider", "debug-render-3d", "picking-backend"]
+default = [
+    "dim3",
+    "async-collider",
+    "debug-render-3d",
+    "picking-backend",
+    "to-bevy-mesh",
+]
 dim3 = []
 debug-render = ["debug-render-3d"]
 debug-render-2d = [
