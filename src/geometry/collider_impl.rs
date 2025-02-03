@@ -50,14 +50,14 @@ impl Collider {
     }
 
     /// Initialize a new collider with a cylindrical shape defined by its half-height
-    /// (along along the y axis) and its radius.
+    /// (along the y axis) and its radius.
     #[cfg(feature = "dim3")]
     pub fn cylinder(half_height: Real, radius: Real) -> Self {
         SharedShape::cylinder(half_height, radius).into()
     }
 
     /// Initialize a new collider with a rounded cylindrical shape defined by its half-height
-    /// (along along the y axis), its radius, and its roundedness (the
+    /// (along the y axis), its radius, and its roundedness (the
     /// radius of the sphere used for dilating the cylinder).
     #[cfg(feature = "dim3")]
     pub fn round_cylinder(half_height: Real, radius: Real, border_radius: Real) -> Self {
@@ -65,14 +65,14 @@ impl Collider {
     }
 
     /// Initialize a new collider with a cone shape defined by its half-height
-    /// (along along the y axis) and its basis radius.
+    /// (along the y axis) and its basis radius.
     #[cfg(feature = "dim3")]
     pub fn cone(half_height: Real, radius: Real) -> Self {
         SharedShape::cone(half_height, radius).into()
     }
 
     /// Initialize a new collider with a rounded cone shape defined by its half-height
-    /// (along along the y axis), its radius, and its roundedness (the
+    /// (along the y axis), its radius, and its roundedness (the
     /// radius of the sphere used for dilating the cylinder).
     #[cfg(feature = "dim3")]
     pub fn round_cone(half_height: Real, radius: Real, border_radius: Real) -> Self {
@@ -151,9 +151,12 @@ impl Collider {
     }
 
     /// Initializes a collider with a triangle mesh shape defined by its vertex and index buffers.
-    pub fn trimesh(vertices: Vec<Vect>, indices: Vec<[u32; 3]>) -> Self {
+    pub fn trimesh(
+        vertices: Vec<Vect>,
+        indices: Vec<[u32; 3]>,
+    ) -> Result<Self, crate::rapier::prelude::TriMeshBuilderError> {
         let vertices = vertices.into_iter().map(|v| v.into()).collect();
-        SharedShape::trimesh(vertices, indices).into()
+        Ok(SharedShape::trimesh(vertices, indices)?.into())
     }
 
     /// Initializes a collider with a triangle mesh shape defined by its vertex and index buffers, and flags
@@ -162,9 +165,9 @@ impl Collider {
         vertices: Vec<Vect>,
         indices: Vec<[u32; 3]>,
         flags: TriMeshFlags,
-    ) -> Self {
+    ) -> Result<Self, crate::rapier::prelude::TriMeshBuilderError> {
         let vertices = vertices.into_iter().map(|v| v.into()).collect();
-        SharedShape::trimesh_with_flags(vertices, indices, flags).into()
+        Ok(SharedShape::trimesh_with_flags(vertices, indices, flags)?.into())
     }
 
     /// Initializes a collider with a Bevy Mesh.
@@ -175,9 +178,11 @@ impl Collider {
         let (vtx, idx) = extract_mesh_vertices_indices(mesh)?;
 
         match collider_shape {
-            ComputedColliderShape::TriMesh(flags) => {
-                Some(SharedShape::trimesh_with_flags(vtx, idx, *flags).into())
-            }
+            ComputedColliderShape::TriMesh(flags) => Some(
+                SharedShape::trimesh_with_flags(vtx, idx, *flags)
+                    .ok()?
+                    .into(),
+            ),
             ComputedColliderShape::ConvexHull => {
                 SharedShape::convex_hull(&vtx).map(|shape| shape.into())
             }

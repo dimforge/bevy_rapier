@@ -45,16 +45,20 @@ rapier-debug-render = ["rapier2d/debug-render"]
 parallel = ["rapier2d/parallel"]
 simd-stable = ["rapier2d/simd-stable"]
 simd-nightly = ["rapier2d/simd-nightly"]
-wasm-bindgen = ["rapier2d/wasm-bindgen"]
 serde-serialize = ["rapier2d/serde-serialize", "bevy/serialize", "serde"]
 enhanced-determinism = ["rapier2d/enhanced-determinism"]
 headless = []
-async-collider = ["bevy/bevy_asset", "bevy/bevy_scene", "bevy/bevy_render"]
+async-collider = [
+    "bevy/bevy_asset",
+    "bevy/bevy_scene",
+    "bevy/bevy_render",
+    "bevy/bevy_image",
+]
 
 [dependencies]
 bevy = { version = "0.15", default-features = false }
 nalgebra = { version = "0.33", features = ["convert-glam029"] }
-rapier2d = "0.22"
+rapier2d = "0.23"
 bitflags = "2.4"
 log = "0.4"
 serde = { version = "1", features = ["derive"], optional = true }
