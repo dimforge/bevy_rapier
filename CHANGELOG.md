@@ -11,12 +11,12 @@
   `AssetPlugin`, `MeshPlugin` and `ScenePlugin` if these were not added, to circumvent a runtime crash
   over missing required resources.
 - `RapierContext` has been split in multiple `Component`s:
-    - `RapierContextColliders`
-    - `RapierContextJoints`
-    - `RapierContextSimulation`
-    - `RapierRigidBodySet`
-- Renamed `DefaultReadRapierContext` and `DefaultWriteRapierContext`.
-  - Use `ReadRapierContext` and its associated `single()` method.
+  - `RapierContextColliders`
+  - `RapierContextJoints`
+  - `RapierContextSimulation`
+  - `RapierRigidBodySet`
+- Renamed `DefaultReadRapierContext` to `ReadRapierContext` and `DefaultWriteRapierContext` to `WriteRapierContext`.
+  They have a new `bevy::QueryFilter` type parameter, defaulting to `With<DefaultRapierContext>`.
 
 ## v0.28.0 (09 December 2024)
 
