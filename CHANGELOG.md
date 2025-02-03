@@ -15,6 +15,7 @@
 - Under the feature `async-collider`, The `RapierPhysicsPlugin` now adds
   `AssetPlugin`, `MeshPlugin` and `ScenePlugin` if these were not added, to circumvent a runtime crash
   over missing required resources.
+- `RapierPhysicsPlugin` can be customized through `with_physics_sets_systems` to opt out of default systems from `PhysicsSet`.
 - `RapierContext` has been split in multiple `Component`s:
   - `RapierContextColliders`
   - `RapierContextJoints`
