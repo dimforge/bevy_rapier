@@ -12,6 +12,7 @@ use bevy::picking::{
     backend::{ray::RayMap, HitData, PointerHits},
     PickSet,
 };
+use bevy::prelude::PickingPlugin;
 use bevy::reflect::prelude::*;
 use bevy::render::{prelude::*, view::RenderLayers};
 
@@ -66,6 +67,9 @@ impl Plugin for RapierPickingPlugin {
         app.register_type::<(RapierPickable, RapierPickingSettings)>()
             .init_resource::<RapierPickingSettings>()
             .add_systems(PreUpdate, update_hits.in_set(PickSet::Backend));
+        if !app.is_plugin_added::<PickingPlugin>() {
+            app.add_plugins(PickingPlugin::default());
+        }
     }
 }
 
