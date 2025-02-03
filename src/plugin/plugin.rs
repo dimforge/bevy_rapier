@@ -5,6 +5,7 @@ use bevy::ecs::{
     schedule::{ScheduleLabel, SystemConfigs},
     system::SystemParamItem,
 };
+use bevy::utils::HashSet;
 use bevy::{prelude::*, transform::TransformSystem};
 use rapier::dynamics::IntegrationParameters;
 use std::marker::PhantomData;
@@ -28,6 +29,14 @@ pub struct RapierPhysicsPlugin<PhysicsHooks = ()> {
     /// to help initializing [`RapierContextInitialization`] resource.
     /// This will be ignored if that resource already exists.
     default_world_setup: RapierContextInitialization,
+    /// Controls whether given `PhysicsSets` systems are injected into the scheduler.
+    ///
+    /// This is useful to opt out of default plugin behaviour, for example if you need to reorganize
+    /// the systems in different schedules.
+    ///
+    /// If passing an empty set, the plugin will still add the Physics Sets to the plugin schedule,
+    /// but no systems will be added automatically.
+    enabled_physics_schedules: HashSet<PhysicsSet>,
     _phantom: PhantomData<PhysicsHooks>,
 }
 
@@ -82,6 +91,21 @@ where
         }
     }
 
+    /// Controls whether given `PhysicsSets` systems are injected into the scheduler.
+    ///
+    /// This is useful to opt out of default plugin behaviour, for example if you need to reorganize
+    /// the systems in different schedules.
+    ///
+    /// If passing an empty set, the plugin will still add the Physics Sets to the plugin schedule,
+    /// but no systems will be added automatically.
+    pub fn with_physics_sets_systems(
+        mut self,
+        enabled_physics_schedules: HashSet<PhysicsSet>,
+    ) -> Self {
+        self.enabled_physics_schedules = enabled_physics_schedules;
+        self
+    }
+
     /// Adds the physics systems to the `FixedUpdate` schedule rather than `PostUpdate`.
     pub fn in_fixed_schedule(self) -> Self {
         self.in_schedule(FixedUpdate)
@@ -99,8 +123,16 @@ where
     pub fn get_systems(set: PhysicsSet) -> SystemConfigs {
         match set {
             PhysicsSet::SyncBackend => (
-                // Run the character controller before the manual transform propagation.
-                systems::update_character_controls.in_set(PhysicsSet::SyncBackend),
+                (
+                    // Initialize the rapier configuration.
+                    // A good candidate for required component or hook components.
+                    // The configuration is needed for following systems, so it should be chained.
+                    setup_rapier_configuration,
+                    // Run the character controller before the manual transform propagation.
+                    systems::update_character_controls,
+                )
+                    .chain()
+                    .in_set(PhysicsSet::SyncBackend),
                 // Run Bevy transform propagation additionally to sync [`GlobalTransform`]
                 (
                     bevy::transform::systems::sync_simple_transforms,
@@ -170,6 +202,12 @@ impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystem
             schedule: PostUpdate.intern(),
             default_system_setup: true,
             default_world_setup: Default::default(),
+            enabled_physics_schedules: [
+                PhysicsSet::SyncBackend,
+                PhysicsSet::StepSimulation,
+                PhysicsSet::Writeback,
+            ]
+            .into(),
             _phantom: PhantomData,
         }
     }
@@ -243,11 +281,6 @@ where
         }
 
         app.add_systems(
-            self.schedule,
-            setup_rapier_configuration.before(PhysicsSet::SyncBackend),
-        );
-
-        app.add_systems(
             PreStartup,
             (insert_default_context, setup_rapier_configuration).chain(),
         );
@@ -281,15 +314,15 @@ where
                 self.schedule,
                 RapierBevyComponentApply.in_set(PhysicsSet::SyncBackend),
             );
+            let mut add_systems_if_enabled = |physics_set: PhysicsSet| {
+                if self.enabled_physics_schedules.contains(&physics_set) {
+                    app.add_systems(self.schedule, Self::get_systems(physics_set));
+                }
+            };
+            add_systems_if_enabled(PhysicsSet::SyncBackend);
+            add_systems_if_enabled(PhysicsSet::Writeback);
+            add_systems_if_enabled(PhysicsSet::StepSimulation);
 
-            app.add_systems(
-                self.schedule,
-                (
-                    Self::get_systems(PhysicsSet::SyncBackend),
-                    Self::get_systems(PhysicsSet::StepSimulation),
-                    Self::get_systems(PhysicsSet::Writeback),
-                ),
-            );
             app.init_resource::<TimestepMode>();
 
             // Warn user if the timestep mode isn't in Fixed
