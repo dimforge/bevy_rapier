@@ -52,9 +52,9 @@ jobs:
       - name: Clippy for bevy_rapier3d
         run: cargo clippy --verbose -p bevy_rapier3d
       - name: Clippy for bevy_rapier2d (debug-render, simd, serde)
-        run: cargo clippy --verbose -p bevy_rapier2d --features debug-render-2d,simd-stable,serde-serialize
+        run: cargo clippy --verbose -p bevy_rapier2d --features debug-render-2d,simd-stable,serde-serialize,picking-backend
       - name: Clippy for bevy_rapier3d (debug-render, simd, serde)
-        run: cargo clippy --verbose -p bevy_rapier3d --features debug-render-3d,simd-stable,serde-serialize
+        run: cargo clippy --verbose -p bevy_rapier3d --features debug-render-3d,simd-stable,serde-serialize,picking-backend
       - name: Test for bevy_rapier2d
         run: cargo test --verbose -p bevy_rapier2d
       - name: Test for bevy_rapier3d

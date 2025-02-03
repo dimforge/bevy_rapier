@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Added
+
+- Added optional feature `picking-backend` to support bevy_picking.
+  - See `picking_backend` module documentation for more details.
+
 ### Modified
 
 - Update from rapier `0.22` to rapier `0.23`,
