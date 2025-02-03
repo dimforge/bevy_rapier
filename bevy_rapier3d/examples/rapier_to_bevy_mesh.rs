@@ -2,6 +2,7 @@ use bevy::{
     pbr::wireframe::{WireframeConfig, WireframePlugin},
     prelude::*,
 };
+use bevy_rapier3d::geometry::to_bevy_mesh::ToMeshBuilder;
 use bevy_rapier3d::prelude::*;
 
 fn main() {
@@ -39,6 +40,14 @@ pub fn setup_physics(
     commands.spawn((
         Transform::from_xyz(0.0, -ground_height, 0.0),
         Collider::cuboid(ground_size, ground_height, ground_size),
+    ));
+    // light
+    commands.spawn((
+        PointLight {
+            shadows_enabled: true,
+            ..default()
+        },
+        Transform::from_xyz(4.0, 8.0, 8.0),
     ));
     /*
      * Create the shapes
@@ -107,7 +116,7 @@ pub fn setup_physics(
     ];
     let material = MeshMaterial3d(materials.add(Color::WHITE));
     let colliders_count = colliders.len();
-    for (i, collider) in colliders.into_iter().enumerate() {
+    for (i, collider) in colliders.iter().enumerate() {
         fn get_coordinates(id: usize, column_size: usize) -> Vec3 {
             let x = id / column_size;
             let y = id % column_size;
@@ -124,33 +133,31 @@ pub fn setup_physics(
         let coordinates = coordinates * (1.0 + rad);
         // Shift up
         let coordinates = coordinates + Vec3::new(0.0, rad + 5.0, 0.0);
-        let mesh = Mesh::try_from(&collider);
-        commands
-            .spawn((
-                Visibility::default(),
-                Transform::from_rotation(Quat::from_rotation_x(0.3)),
-            ))
-            .with_children(|child| {
-                let mut child = child.spawn((
-                    Transform::from_translation(coordinates),
-                    RigidBody::Fixed,
-                    collider,
-                    ColliderDebugColor(colors[i % 3]),
-                ));
-                if let Ok(mut mesh) = mesh {
-                    mesh.compute_normals();
-                    child.insert((Mesh3d(assets_meshes.add(mesh)), material.clone()));
-                }
-            });
-        // light
-        commands.spawn((
-            PointLight {
-                shadows_enabled: true,
-                ..default()
-            },
-            Transform::from_xyz(4.0, 8.0, 8.0),
+
+        let mut entity = commands.spawn((
+            Transform::from_translation(coordinates),
+            RigidBody::Fixed,
+            collider.clone(),
+            ColliderDebugColor(colors[i % 3]),
         ));
+        // Transform the parry shape into a bevy mesh.
+        let mesh = Mesh::try_from(collider);
+        if let Ok(mut mesh) = mesh {
+            mesh.compute_normals();
+            entity.insert((Mesh3d(assets_meshes.add(mesh)), material.clone()));
+        }
     }
+    // Alternatively, you can call [`Collider::as_typed_shape`] of `Collider::as_[specificShape]`
+    // to retrieve a specialized builder through [`ToMeshBuilder::mesh_builder`]
+    let mut mesh = colliders[1].as_ball().unwrap().raw.mesh_builder().build();
+    let mut entity = commands.spawn((
+        Transform::from_translation(Vec3::new(0.0, 1.0 + rad, 0.0)),
+        RigidBody::Fixed,
+        colliders[1].clone(),
+        ColliderDebugColor(colors[42 % 3]),
+    ));
+    mesh.compute_normals();
+    entity.insert((Mesh3d(assets_meshes.add(mesh)), material.clone()));
 }
 
 fn toggle_wireframe(

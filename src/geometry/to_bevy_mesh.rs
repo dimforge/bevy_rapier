@@ -8,7 +8,7 @@ use crate::rapier::prelude::{Cone, Cylinder};
 use bevy::render::mesh::{Capsule2dMeshBuilder, CircleMeshBuilder};
 #[cfg(feature = "dim3")]
 use bevy::render::mesh::{
-    Capsule3dMeshBuilder, ConeMeshBuilder, CylinderMeshBuilder, SphereMeshBuilder,
+    Capsule3dMeshBuilder, ConeMeshBuilder, CylinderMeshBuilder, PlaneMeshBuilder, SphereMeshBuilder,
 };
 use bevy::{
     asset::RenderAssetUsages,
@@ -56,6 +56,7 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
             );
             #[cfg(feature = "dim3")]
             let mesh = bevy::prelude::Triangle3d::new(a.into(), b.into(), c.into());
+
             mesh.into()
         }
         rapier::prelude::TypedShape::TriMesh(tri_mesh) => {
@@ -70,9 +71,7 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
                 RenderAssetUsages::default(),
             )
             .with_inserted_indices(Indices::U32(indices.iter().cloned().flatten().collect()));
-            let mesh = mesh.with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
-
-            mesh.into()
+            mesh.with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vertices)
         }
         rapier::prelude::TypedShape::Polyline(_polyline) => {
             // FIXME: use a LineStrip
@@ -81,7 +80,9 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
         }
         rapier::prelude::TypedShape::HalfSpace(_half_space) => {
             // FIXME: We can't really implement halfspace to mesh, but we can provide a builder where user provides a size.
-            log::warn!("HalfSpace not implemented yet");
+            log::warn!(
+                "HalfSpace cannot be converted automatically to a mesh, use [`ToMeshBuilder`] instead"
+            );
             return None;
         }
         rapier::prelude::TypedShape::HeightField(_height_field) => {
@@ -102,14 +103,12 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
                     RenderAssetUsages::default(),
                 )
                 .with_inserted_indices(Indices::U32(idx.into_iter().flatten().collect()));
-                let mesh = mesh.with_inserted_attribute(
+                mesh.with_inserted_attribute(
                     Mesh::ATTRIBUTE_POSITION,
                     vtx.iter()
                         .map(|pos| [pos.x, pos.y, pos.z])
                         .collect::<Vec<_>>(),
-                );
-
-                mesh.into()
+                )
             }
         }
         rapier::prelude::TypedShape::Compound(compound) => {
@@ -139,9 +138,7 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
                 RenderAssetUsages::default(),
             )
             .with_inserted_indices(Indices::U32(indices));
-            let mesh = mesh.with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
-
-            mesh.into()
+            mesh.with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vertices)
         }
         #[cfg(feature = "dim3")]
         rapier::prelude::TypedShape::ConvexPolyhedron(convex_polyhedron) => {
@@ -156,9 +153,7 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
                 RenderAssetUsages::default(),
             )
             .with_inserted_indices(Indices::U32(indices));
-            let mesh = mesh.with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
-
-            mesh.into()
+            mesh.with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vertices)
         }
         #[cfg(feature = "dim3")]
         rapier::prelude::TypedShape::Cone(cone) => cone.mesh_builder().build(),
@@ -224,7 +219,7 @@ pub trait ToMeshBuilder {
 }
 
 #[cfg(feature = "dim2")]
-impl ToMeshBuilder for Ball {
+impl ToMeshBuilder for &Ball {
     type MeshBuilder = CircleMeshBuilder;
 
     fn mesh_builder(&self) -> Self::MeshBuilder {
@@ -233,7 +228,7 @@ impl ToMeshBuilder for Ball {
 }
 
 #[cfg(feature = "dim3")]
-impl ToMeshBuilder for Ball {
+impl ToMeshBuilder for &Ball {
     type MeshBuilder = SphereMeshBuilder;
 
     fn mesh_builder(&self) -> Self::MeshBuilder {
@@ -244,8 +239,20 @@ impl ToMeshBuilder for Ball {
     }
 }
 
+#[cfg(feature = "dim3")]
+impl ToMeshBuilder for &rapier3d::prelude::HalfSpace {
+    type MeshBuilder = PlaneMeshBuilder;
+
+    fn mesh_builder(&self) -> Self::MeshBuilder {
+        PlaneMeshBuilder::new(
+            bevy::prelude::Dir3::new(self.normal.into()).unwrap_or(bevy::prelude::Dir3::Y),
+            bevy::prelude::Vec2::ONE,
+        )
+    }
+}
+
 #[cfg(feature = "dim2")]
-impl ToMeshBuilder for Capsule {
+impl ToMeshBuilder for &Capsule {
     type MeshBuilder = Capsule2dMeshBuilder;
 
     fn mesh_builder(&self) -> Self::MeshBuilder {
@@ -254,7 +261,7 @@ impl ToMeshBuilder for Capsule {
 }
 
 #[cfg(feature = "dim3")]
-impl ToMeshBuilder for Capsule {
+impl ToMeshBuilder for &Capsule {
     type MeshBuilder = Capsule3dMeshBuilder;
 
     fn mesh_builder(&self) -> Self::MeshBuilder {
@@ -262,7 +269,7 @@ impl ToMeshBuilder for Capsule {
     }
 }
 #[cfg(feature = "dim3")]
-impl ToMeshBuilder for Cone {
+impl ToMeshBuilder for &Cone {
     type MeshBuilder = ConeMeshBuilder;
 
     fn mesh_builder(&self) -> Self::MeshBuilder {
@@ -271,7 +278,7 @@ impl ToMeshBuilder for Cone {
 }
 
 #[cfg(feature = "dim3")]
-impl ToMeshBuilder for Cylinder {
+impl ToMeshBuilder for &Cylinder {
     type MeshBuilder = CylinderMeshBuilder;
 
     fn mesh_builder(&self) -> Self::MeshBuilder {

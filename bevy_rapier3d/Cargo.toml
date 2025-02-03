@@ -79,9 +79,4 @@ bevy_egui = "0.31"
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
-features = [
-    "debug-render-3d",
-    "serde-serialize",
-    "collider-to-bevy-mesh",
-    "async-collider",
-]
+features = ["debug-render-3d", "serde-serialize", "async-collider"]
