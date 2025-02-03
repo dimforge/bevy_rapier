@@ -6,6 +6,7 @@
 
 - Added optional feature `picking-backend` to support bevy_picking.
   - See `picking_backend` module documentation for more details.
+- Added `geometry::to_bevy_mesh` module behind the feature `to-bevy-mesh` to help with converting parry shapes into bevy meshes.
 
 ### Modified
 

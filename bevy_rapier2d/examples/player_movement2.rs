@@ -28,7 +28,7 @@ pub fn spawn_player(mut commands: Commands, mut rapier_config: Query<&mut Rapier
     let mut rapier_config = rapier_config.single_mut();
     // Set gravity to 0.0 and spawn camera.
     rapier_config.gravity = Vec2::ZERO;
-    commands.spawn(Camera2d::default());
+    commands.spawn(Camera2d);
 
     let sprite_size = 100.0;
 

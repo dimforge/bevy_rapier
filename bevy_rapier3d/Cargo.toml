@@ -24,7 +24,13 @@ rust.unexpected_cfgs = { level = "warn", check-cfg = [
 clippy = { needless_lifetimes = "allow" }
 
 [features]
-default = ["dim3", "async-collider", "debug-render-3d", "picking-backend"]
+default = [
+    "dim3",
+    "async-collider",
+    "debug-render-3d",
+    "picking-backend",
+    "to-bevy-mesh",
+]
 dim3 = []
 debug-render = ["debug-render-3d"]
 debug-render-2d = [
@@ -56,6 +62,7 @@ async-collider = [
     "bevy/bevy_render",
     "bevy/bevy_image",
 ]
+to-bevy-mesh = ["bevy/bevy_render", "bevy/bevy_asset"]
 
 [dependencies]
 bevy = { version = "0.15", default-features = false }
@@ -83,7 +90,7 @@ bevy_egui = "0.31"
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
-features = ["debug-render-3d", "serde-serialize"]
+features = ["debug-render-3d", "serde-serialize", "async-collider"]
 
 [package.metadata.cargo-all-features]
 
@@ -97,8 +104,8 @@ always_include_features = ["dim3"]
 # The maximum number of features to try at once. Does not count features from `always_include_features`.
 # This is useful for reducing the number of combinations run for a crate with a large amount of features,
 # since in most cases a bug just needs a small set of 2-3 features to reproduce.
-max_combination_size = 1
 
+max_combination_size = 1
 [[example]]
 name = "picking3"
 required-features = ["picking-backend"]

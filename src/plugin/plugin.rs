@@ -339,7 +339,7 @@ where
     }
 
     fn finish(&self, _app: &mut App) {
-        #[cfg(feature = "async-collider")]
+        #[cfg(all(feature = "dim3", feature = "async-collider"))]
         {
             use bevy::{asset::AssetPlugin, render::mesh::MeshPlugin, scene::ScenePlugin};
             if !_app.is_plugin_added::<AssetPlugin>() {

@@ -45,7 +45,7 @@ fn main() {
 }
 
 fn setup_graphics(mut commands: Commands) {
-    commands.spawn((Camera2d::default(), Transform::from_xyz(0.0, 20.0, 0.0)));
+    commands.spawn((Camera2d, Transform::from_xyz(0.0, 20.0, 0.0)));
 }
 
 pub fn setup_physics(mut commands: Commands) {

@@ -92,7 +92,7 @@ pub fn setup_game(mut commands: Commands, mut game: ResMut<Game>) {
         byte_rgb(255, 0, 0),
     ];
 
-    commands.spawn(Camera2d::default());
+    commands.spawn(Camera2d);
 
     setup_board(&mut commands, &game);
 
