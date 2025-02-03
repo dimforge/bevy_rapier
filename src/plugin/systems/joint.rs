@@ -138,7 +138,7 @@ pub fn apply_joint_user_changes(
     //       Re-parenting the joint isn’t supported yet.
     for (link, handle, changed_joint) in changed_impulse_joints.iter() {
         let mut context = context.get_mut(link.0).expect(RAPIER_CONTEXT_EXPECT_ERROR);
-        if let Some(joint) = context.impulse_joints.get_mut(handle.0) {
+        if let Some(joint) = context.impulse_joints.get_mut(handle.0, false) {
             joint.data = changed_joint.data.as_ref().into_rapier();
         }
     }
