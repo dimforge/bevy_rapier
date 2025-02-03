@@ -49,7 +49,7 @@ simd-nightly = ["rapier3d/simd-nightly"]
 serde-serialize = ["rapier3d/serde-serialize", "bevy/serialize", "serde"]
 enhanced-determinism = ["rapier3d/enhanced-determinism"]
 headless = []
-picking-backend = ["bevy/bevy_picking"]
+picking-backend = ["bevy/bevy_picking", "bevy/bevy_render"]
 async-collider = [
     "bevy/bevy_asset",
     "bevy/bevy_scene",
@@ -83,6 +83,21 @@ bevy_egui = "0.31"
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
+features = ["debug-render-3d", "serde-serialize"]
+
+[package.metadata.cargo-all-features]
+
+denylist = ["simd-nightly"]
+
+# Features "dim2" and "dim3" are incompatible, so skip permutations including them
+skip_feature_sets = [["enhanced-determinism", "simd-stable"]]
+
+always_include_features = ["dim3"]
+
+# The maximum number of features to try at once. Does not count features from `always_include_features`.
+# This is useful for reducing the number of combinations run for a crate with a large amount of features,
+# since in most cases a bug just needs a small set of 2-3 features to reproduce.
+max_combination_size = 1
 
 [[example]]
 name = "picking3"
