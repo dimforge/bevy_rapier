@@ -52,9 +52,11 @@ pub fn setup_player(mut commands: Commands) {
                 // Automatically slide down on slopes smaller than 30 degrees.
                 min_slope_slide_angle: 30.0_f32.to_radians(),
                 apply_impulse_to_dynamic_bodies: true,
-                snap_to_ground: None,
+                snap_to_ground: Some(CharacterLength::Relative(0.5f32)),
                 ..default()
             },
+            GroundedTimer::default(),
+            VerticalMovement::default(),
         ))
         .with_children(|b| {
             // FPS Camera
@@ -69,6 +71,26 @@ fn setup_map(mut commands: Commands) {
     let ground_size = 50.0;
     let ground_height = 0.1;
 
+    /*
+     * Sliding platform
+     */
+    commands.spawn((
+        TransformBundle::from(
+            Transform::from_xyz(-10f32, -ground_height, 0.0)
+                .with_rotation(Quat::from_axis_angle(Vec3::X, 40f32.to_radians())),
+        ),
+        Collider::cuboid(5f32, ground_height, 5f32),
+    ));
+    /*
+     * Cannot climb platform
+     */
+    commands.spawn((
+        TransformBundle::from(
+            Transform::from_xyz(0.0, -ground_height, 0.0)
+                .with_rotation(Quat::from_axis_angle(Vec3::X, 50f32.to_radians())),
+        ),
+        Collider::cuboid(5f32, ground_height, 5f32),
+    ));
     commands.spawn((
         Transform::from_xyz(0.0, -ground_height, 0.0),
         Collider::cuboid(ground_size, ground_height, ground_size),
@@ -107,6 +129,11 @@ struct MovementInput(Vec3);
 /// Mouse input vector
 #[derive(Default, Resource, Deref, DerefMut)]
 struct LookInput(Vec2);
+
+#[derive(Component, Reflect, Debug, Default)]
+pub struct GroundedTimer(pub f32);
+#[derive(Component, Reflect, Debug, Default)]
+pub struct VerticalMovement(pub f32);
 
 fn handle_input(
     keyboard: Res<ButtonInput<KeyCode>>,
@@ -148,11 +175,13 @@ fn player_movement(
         &mut Transform,
         &mut KinematicCharacterController,
         Option<&KinematicCharacterControllerOutput>,
+        &mut VerticalMovement,
+        &mut GroundedTimer,
     )>,
-    mut vertical_movement: Local<f32>,
-    mut grounded_timer: Local<f32>,
 ) {
-    let Ok((transform, mut controller, output)) = player.get_single_mut() else {
+    let Ok((transform, mut controller, output, mut vertical_movement, mut grounded_timer)) =
+        player.get_single_mut()
+    else {
         return;
     };
     let delta_time = time.delta_secs();
@@ -161,22 +190,24 @@ fn player_movement(
     let jump_speed = input.y * JUMP_SPEED;
     // Clear input
     **input = Vec3::ZERO;
-    // Check physics ground check
-    if output.map(|o| o.grounded).unwrap_or(false) {
-        *grounded_timer = GROUND_TIMER;
-        *vertical_movement = 0.0;
-    }
-    // If we are grounded we can jump
-    if *grounded_timer > 0.0 {
-        *grounded_timer -= delta_time;
-        // If we jump we clear the grounded tolerance
-        if jump_speed > 0.0 {
-            *vertical_movement = jump_speed;
-            *grounded_timer = 0.0;
+    if let Some(output) = output {
+        // Check physics ground check
+        if output.grounded {
+            grounded_timer.0 = GROUND_TIMER;
+            vertical_movement.0 = 0.0;
         }
     }
-    movement.y = *vertical_movement;
-    *vertical_movement += GRAVITY * delta_time * controller.custom_mass.unwrap_or(1.0);
+    // If we are grounded we can jump
+    if grounded_timer.0 > 0.0 {
+        grounded_timer.0 -= delta_time;
+        // If we jump we clear the grounded tolerance
+        if jump_speed > 0.0 {
+            vertical_movement.0 = jump_speed;
+            grounded_timer.0 = 0.0;
+        }
+    }
+    movement.y = vertical_movement.0;
+    vertical_movement.0 += GRAVITY * delta_time * controller.custom_mass.unwrap_or(1.0);
     controller.translation = Some(transform.rotation * (movement * delta_time));
 }
 
