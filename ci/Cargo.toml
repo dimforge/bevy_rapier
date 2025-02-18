@@ -5,8 +5,8 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.15.0"
-bevy_rapier3d = { version = "0.28", path = "../bevy_rapier3d" }
-bevy_rapier2d = { version = "0.28", path = "../bevy_rapier2d" }
+bevy_rapier3d = { version = "0.29", path = "../bevy_rapier3d" }
+bevy_rapier2d = { version = "0.29", path = "../bevy_rapier2d" }
 
 [[bin]]
 name = "ambiguity_detection"
