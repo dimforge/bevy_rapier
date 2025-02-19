@@ -1,11 +1,50 @@
 # Changelog
 
-## Unreleased
+## v0.29.0 (18 February 2025)
+
+### Added
+
+- Added optional feature `picking-backend` to support bevy_picking.
+  - See `picking_backend` module documentation for more details.
+- Added `geometry::to_bevy_mesh` module behind the feature `to-bevy-mesh` to help with converting parry shapes into bevy meshes (#628).
+  - Lines, round and custom shapes are not implemented.
+
+### Modified
+
+- Update from rapier `0.22` to rapier `0.23`,
+  see [rapier's changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md).
+- `Collider::trimesh` and `Collider::trimesh_with_flags` now return a `Result`.
+- Under the feature `async-collider`, The `RapierPhysicsPlugin` now adds
+  `AssetPlugin`, `MeshPlugin` and `ScenePlugin` if these were not added, to circumvent a runtime crash
+  over missing required resources.
+- `RapierPhysicsPlugin` can be customized through `with_physics_sets_systems` to opt out of default systems from `PhysicsSet`.
+- `RapierContext` has been split in multiple `Component`s:
+  - `RapierContextColliders`
+  - `RapierContextJoints`
+  - `RapierContextSimulation`
+  - `RapierRigidBodySet`
+- Renamed `DefaultReadRapierContext` to `ReadRapierContext` and `DefaultWriteRapierContext` to `WriteRapierContext`.
+  They have a new `bevy::QueryFilter` type parameter, defaulting to `With<DefaultRapierContext>`.
+
+## v0.28.0 (09 December 2024)
 
 ### Modified
 
 - Update from rapier `0.21` to rapier `0.22`,
   see [rapier's changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md).
+- Update bevy to 0.15.
+- `RapierContext`, `RapierConfiguration` and `SimulationToRenderTime` are now a `Component` instead of resources.
+  - Rapier now supports multiple independent physics worlds, see example `multi_world3` for usage details.
+  - Migration guide:
+    - `ResMut<mut RapierContext>` -> `WriteDefaultRapierContext`
+    - `Res<RapierContext>` -> `ReadDefaultRapierContext`
+    - Access to `RapierConfiguration` and `SimulationToRenderTime` should query for it
+on the responsible entity owning the `RenderContext`.
+  - If you are building a library on top of `bevy_rapier` and would want to support multiple independent physics worlds too,
+you can check out the details of [#545](https://github.com/dimforge/bevy_rapier/pull/545)
+to get more context and information.
+- `colliders_with_aabb_intersecting_aabb` now takes `bevy::math::bounding::Aabb3d` (or `[..]::Aabb2d` in 2D) as parameter.
+  - it is now accessible with `headless` feature enabled.
 
 ### Fix
 
@@ -153,14 +192,14 @@ performance of the other parts of the simulation.
 
 - Add a joint for simulating ropes: the `RopeJoint`.
 - Add `Velocity::linear_velocity_at_point` to calculate the linear velocity at the given world-space point.
-- Add the `ComputedColliderShape::ConvexHull` variant to automatcially calculate the convex-hull of an imported mesh.
+- Add the `ComputedColliderShape::ConvexHull` variant to automatically calculate the convex-hull of an imported mesh.
 - Implement `Reflect` for the debug-renderer.
 
 ### Fix
 
 - Fix broken interpolation for rigid-bodies with the `TransformInterpolation` component.
 - Fix compilation when `bevy_rapier` is being used with headless bevy.
-- Improved performance of the writeback system by not iterting on non-rigid-body entities.
+- Improved performance of the writeback system by not iterating on non-rigid-body entities.
 - Fix typo by renaming `CuboidViewMut::sed_half_extents` to `set_half_extents`.
 - Properly scale parented collider’s offset based on changes on its `ColliderScale`.
 
@@ -170,7 +209,7 @@ performance of the other parts of the simulation.
 
 - Update to Bevy 0.10.
 - The `PhysicsHooksWithQuery` trait has been renamed to by the `BevyPhysicsHooks`.
-- Bevy resources and queries accessed by the physics hook are now specified by the implementor of `BevyPhysicsHooks`
+- Bevy resources and queries accessed by the physics hook are now specified by the implementer of `BevyPhysicsHooks`
   which must derive Bevy’s `SystemParam` trait. This implies that the physics hook’s `filter_contact_pair` (and
   all its other methods) no longer take the Bevy `Query` as argument. Queries and resources are accessed through
   `self`.
@@ -461,7 +500,7 @@ Finally, there is now a prelude: `use bevy_rapier2d::prelude::*`.
   is used. It will silently ignore the shape instead.
 - The crate has now a `render` feature that allows building it without any
   rendering support (avoiding some dependencies that may not compile when
-  targetting WASM).
+  targeting WASM).
 
 ## 0.7.0
 
@@ -491,7 +530,7 @@ Finally, there is now a prelude: `use bevy_rapier2d::prelude::*`.
 
 - It is now possible to attach multiple colliders to a single
   rigid-body by using Bevy hierarchy: an entity contains
-  the `RigidBodyBuider` whereas its children contain the `ColliderBuilder`.
+  the `RigidBodyBuilder` whereas its children contain the `ColliderBuilder`.
 
 ### Changed
 

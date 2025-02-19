@@ -108,6 +108,7 @@ fn main() {
             )
                 .run_if(in_state(Examples::DebugToggle2)),
         )
+        .add_systems(OnExit(Examples::DebugToggle2), cleanup)
         //
         // rope joint
         .add_systems(
@@ -204,9 +205,12 @@ fn main() {
             OnExit(Examples::PlayerMovement2),
             (
                 cleanup,
-                |mut rapier_config: ResMut<RapierConfiguration>, ctxt: Res<RapierContext>| {
-                    rapier_config.gravity =
-                        RapierConfiguration::new(ctxt.integration_parameters.length_unit).gravity;
+                |mut rapier_config: Query<&mut RapierConfiguration>, ctxt: ReadRapierContext| {
+                    let mut rapier_config = rapier_config.single_mut();
+                    rapier_config.gravity = RapierConfiguration::new(
+                        ctxt.single().simulation.integration_parameters.length_unit,
+                    )
+                    .gravity;
                 },
             ),
         )

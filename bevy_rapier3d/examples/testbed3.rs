@@ -8,6 +8,7 @@ mod joints3;
 mod joints_despawn3;
 mod locked_rotations3;
 mod multiple_colliders3;
+mod picking3;
 mod ray_casting3;
 mod static_trimesh3;
 
@@ -28,6 +29,7 @@ pub enum Examples {
     JointsDespawn3,
     LockedRotations3,
     MultipleColliders3,
+    Picking3,
     Raycasting3,
     StaticTrimesh3,
 }
@@ -64,6 +66,7 @@ fn main() {
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
             WorldInspectorPlugin::new(),
+            RapierPickingPlugin,
         ))
         .register_type::<Examples>()
         .register_type::<ExamplesRes>()
@@ -78,6 +81,7 @@ fn main() {
             (Examples::JointsDespawn3, "JointsDespawn3").into(),
             (Examples::LockedRotations3, "LockedRotations3").into(),
             (Examples::MultipleColliders3, "MultipleColliders3").into(),
+            (Examples::Picking3, "Picking3").into(),
             (Examples::Raycasting3, "Raycasting3").into(),
             (Examples::StaticTrimesh3, "StaticTrimesh3").into(),
         ]))
@@ -106,6 +110,7 @@ fn main() {
             )
                 .run_if(in_state(Examples::DebugToggle3)),
         )
+        .add_systems(OnExit(Examples::DebugToggle3), cleanup)
         //
         // despawn
         .init_resource::<despawn3::DespawnResource>()
@@ -171,6 +176,13 @@ fn main() {
             ),
         )
         .add_systems(OnExit(Examples::MultipleColliders3), cleanup)
+        //
+        // picking
+        .add_systems(
+            OnEnter(Examples::Picking3),
+            (picking3::setup_graphics, picking3::setup_physics),
+        )
+        .add_systems(OnExit(Examples::Picking3), cleanup)
         //
         // raycasting
         .add_systems(

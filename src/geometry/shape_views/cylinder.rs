@@ -34,7 +34,7 @@ pub struct CylinderViewMut<'a> {
 
 impl_ref_methods!(CylinderViewMut);
 
-impl<'a> CylinderViewMut<'a> {
+impl CylinderViewMut<'_> {
     /// Set the half-height of the cylinder.
     pub fn set_half_height(&mut self, half_height: Real) {
         self.raw.half_height = half_height;

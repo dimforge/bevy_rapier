@@ -43,10 +43,7 @@ pub fn setup_graphics(
     resize.timer = Timer::from_seconds(6.0, TimerMode::Once);
     despawn.timer = Timer::from_seconds(5.0, TimerMode::Once);
 
-    commands.spawn(Camera2dBundle {
-        transform: Transform::from_xyz(0.0, 20.0, 0.0),
-        ..default()
-    });
+    commands.spawn((Camera2d, Transform::from_xyz(0.0, 20.0, 0.0)));
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -58,12 +55,12 @@ pub fn setup_physics(mut commands: Commands) {
     commands.spawn((Collider::cuboid(ground_size, 12.0), Despawn));
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(ground_size, ground_size * 2.0, 0.0)),
+        Transform::from_xyz(ground_size, ground_size * 2.0, 0.0),
         Collider::cuboid(12.0, ground_size * 2.0),
     ));
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(-ground_size, ground_size * 2.0, 0.0)),
+        Transform::from_xyz(-ground_size, ground_size * 2.0, 0.0),
         Collider::cuboid(12.0, ground_size * 2.0),
     ));
 
@@ -83,7 +80,7 @@ pub fn setup_physics(mut commands: Commands) {
             let y = j as f32 * shift + centery + 2.0;
 
             let mut entity = commands.spawn((
-                TransformBundle::from(Transform::from_xyz(x, y, 0.0)),
+                Transform::from_xyz(x, y, 0.0),
                 RigidBody::Dynamic,
                 Collider::cuboid(rad, rad),
             ));

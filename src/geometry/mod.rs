@@ -12,6 +12,8 @@ mod collider;
 mod collider_impl;
 /// Wrappers around Rapier shapes to access their properties.
 pub mod shape_views;
+#[cfg(feature = "to-bevy-mesh")]
+pub mod to_bevy_mesh;
 
 /// Result of the projection of a point on a shape.
 #[derive(Copy, Clone, Debug, PartialEq)]

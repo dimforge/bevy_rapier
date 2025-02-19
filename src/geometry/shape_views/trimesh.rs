@@ -57,7 +57,7 @@ pub struct TriMeshViewMut<'a> {
 
 impl_ref_methods!(TriMeshViewMut);
 
-impl<'a> TriMeshViewMut<'a> {
+impl TriMeshViewMut<'_> {
     /// Sets the flags of this triangle mesh, controlling its optional associated data.
     pub fn set_flags(&mut self, flags: TriMeshFlags) -> Result<(), TopologyError> {
         self.raw.set_flags(flags)

@@ -29,7 +29,7 @@ pub struct CuboidViewMut<'a> {
 
 impl_ref_methods!(CuboidViewMut);
 
-impl<'a> CuboidViewMut<'a> {
+impl CuboidViewMut<'_> {
     /// Set the half-extents of the cuboid.
     pub fn set_half_extents(&mut self, half_extents: Vect) {
         self.raw.half_extents = half_extents.into();

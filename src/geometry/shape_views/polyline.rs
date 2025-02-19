@@ -50,7 +50,7 @@ pub struct PolylineViewMut<'a> {
 
 impl_ref_methods!(PolylineViewMut);
 
-impl<'a> PolylineViewMut<'a> {
+impl PolylineViewMut<'_> {
     /// Reverse the orientation of this polyline by swapping the indices of all
     /// its segments and reverting its index buffer.
     pub fn reverse(&mut self) {

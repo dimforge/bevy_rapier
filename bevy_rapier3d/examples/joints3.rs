@@ -25,11 +25,10 @@ fn main() {
 }
 
 pub fn setup_graphics(mut commands: Commands) {
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(15.0, 5.0, 42.0)
-            .looking_at(Vec3::new(13.0, 1.0, 1.0), Vec3::Y),
-        ..Default::default()
-    });
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(15.0, 5.0, 42.0).looking_at(Vec3::new(13.0, 1.0, 1.0), Vec3::Y),
+    ));
 }
 
 fn create_prismatic_joints(commands: &mut Commands, origin: Vect, num: usize) {
@@ -38,7 +37,7 @@ fn create_prismatic_joints(commands: &mut Commands, origin: Vect, num: usize) {
 
     let mut curr_parent = commands
         .spawn((
-            TransformBundle::from(Transform::from_xyz(origin.x, origin.y, origin.z)),
+            Transform::from_xyz(origin.x, origin.y, origin.z),
             RigidBody::Fixed,
             Collider::cuboid(rad, rad, rad),
         ))
@@ -60,7 +59,7 @@ fn create_prismatic_joints(commands: &mut Commands, origin: Vect, num: usize) {
 
         curr_parent = commands
             .spawn((
-                TransformBundle::from(Transform::from_xyz(origin.x, origin.y, origin.z + dz)),
+                Transform::from_xyz(origin.x, origin.y, origin.z + dz),
                 RigidBody::Dynamic,
                 Collider::cuboid(rad, rad, rad),
                 joint,
@@ -75,7 +74,7 @@ fn create_rope_joints(commands: &mut Commands, origin: Vect, num: usize) {
 
     let mut curr_parent = commands
         .spawn((
-            TransformBundle::from(Transform::from_xyz(origin.x, origin.y, origin.z)),
+            Transform::from_xyz(origin.x, origin.y, origin.z),
             RigidBody::Fixed,
             Collider::cuboid(rad, rad, rad),
         ))
@@ -89,7 +88,7 @@ fn create_rope_joints(commands: &mut Commands, origin: Vect, num: usize) {
 
         curr_parent = commands
             .spawn((
-                TransformBundle::from(Transform::from_xyz(origin.x, origin.y, origin.z + dz)),
+                Transform::from_xyz(origin.x, origin.y, origin.z + dz),
                 RigidBody::Dynamic,
                 Collider::cuboid(rad, rad, rad),
                 joint,
@@ -104,7 +103,7 @@ fn create_revolute_joints(commands: &mut Commands, origin: Vec3, num: usize) {
 
     let mut curr_parent = commands
         .spawn((
-            TransformBundle::from(Transform::from_xyz(origin.x, origin.y, 0.0)),
+            Transform::from_xyz(origin.x, origin.y, 0.0),
             RigidBody::Fixed,
             Collider::cuboid(rad, rad, rad),
         ))
@@ -124,7 +123,7 @@ fn create_revolute_joints(commands: &mut Commands, origin: Vec3, num: usize) {
         for k in 0..4 {
             handles[k] = commands
                 .spawn((
-                    TransformBundle::from(Transform::from_translation(positions[k])),
+                    Transform::from_translation(positions[k]),
                     RigidBody::Dynamic,
                     Collider::cuboid(rad, rad, rad),
                 ))
@@ -180,11 +179,7 @@ fn create_fixed_joints(commands: &mut Commands, origin: Vec3, num: usize) {
 
             let child_entity = commands
                 .spawn((
-                    TransformBundle::from(Transform::from_xyz(
-                        origin.x + fk * shift,
-                        origin.y,
-                        origin.z + fi * shift,
-                    )),
+                    Transform::from_xyz(origin.x + fk * shift, origin.y, origin.z + fi * shift),
                     rigid_body,
                     Collider::ball(rad),
                 ))
@@ -239,7 +234,7 @@ fn create_ball_joints(commands: &mut Commands, num: usize) {
 
             let child_entity = commands
                 .spawn((
-                    TransformBundle::from(Transform::from_xyz(fk * shift, 0.0, fi * shift)),
+                    Transform::from_xyz(fk * shift, 0.0, fi * shift),
                     rigid_body,
                     Collider::ball(rad),
                 ))
@@ -284,19 +279,16 @@ pub fn setup_physics(mut commands: Commands) {
 }
 
 pub fn print_impulse_revolute_joints(
-    context: Res<RapierContext>,
+    context: ReadRapierContext,
     joints: Query<(Entity, &ImpulseJoint)>,
 ) {
     for (entity, impulse_joint) in joints.iter() {
-        match &impulse_joint.data {
-            TypedJoint::RevoluteJoint(_revolute_joint) => {
-                println!(
-                    "angle for {}: {:?}",
-                    entity,
-                    context.impulse_revolute_joint_angle(entity),
-                );
-            }
-            _ => {}
+        if let TypedJoint::RevoluteJoint(_revolute_joint) = &impulse_joint.data {
+            println!(
+                "angle for {}: {:?}",
+                entity,
+                context.single().impulse_revolute_joint_angle(entity),
+            );
         }
     }
 }
