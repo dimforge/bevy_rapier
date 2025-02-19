@@ -1,5 +1,11 @@
 # Changelog
 
+# Unreleased
+
+## Added
+
+- Added a serialization `serialization2` example for `bevy_rapier2d`.
+
 ## v0.29.0 (18 February 2025)
 
 ### Added

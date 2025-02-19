@@ -57,6 +57,7 @@ impl<'w, 's, T: query::QueryFilter + 'static> ReadRapierContext<'w, 's, T> {
 /// This helps with reducing boilerplate, at the (small) price of maybe getting too much information from the ECS.
 ///
 /// Note: This is not a component, refer to [`ReadRapierContext`], [`WriteRapierContext`], or [`RapierContextSimulation`]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize))]
 #[derive(query::QueryData)]
 pub struct RapierContext<'a> {
     /// The Rapier context, containing all the state of the physics engine.
