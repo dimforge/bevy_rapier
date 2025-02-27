@@ -8,6 +8,7 @@ use bevy::ecs::{
 use bevy::utils::HashSet;
 use bevy::{prelude::*, transform::TransformSystem};
 use rapier::dynamics::IntegrationParameters;
+use reflect::IntegrationParametersWrapper;
 use std::marker::PhantomData;
 
 use super::context::DefaultRapierContext;
@@ -52,8 +53,12 @@ where
     /// likely always be 1.0 in 3D. In 2D, this is useful to specify a "pixels-per-meter"
     /// conversion ratio.
     pub fn with_length_unit(mut self, length_unit: f32) -> Self {
-        self.default_world_setup =
-            RapierContextInitialization::InitializeDefaultRapierContext { length_unit };
+        self.default_world_setup = RapierContextInitialization::InitializeDefaultRapierContext {
+            integration_parameters: IntegrationParameters {
+                length_unit,
+                ..default()
+            },
+        };
         self
     }
 
@@ -85,7 +90,10 @@ where
         Self {
             default_system_setup: true,
             default_world_setup: RapierContextInitialization::InitializeDefaultRapierContext {
-                length_unit: pixels_per_meter,
+                integration_parameters: IntegrationParameters {
+                    length_unit: pixels_per_meter,
+                    ..default()
+                },
             },
             ..default()
         }
@@ -370,14 +378,17 @@ pub enum RapierContextInitialization {
     /// [`RapierPhysicsPlugin`] will spawn an entity containing a [`RapierContextSimulation`]
     /// automatically during [`PreStartup`], with the [`DefaultRapierContext`] marker component.
     InitializeDefaultRapierContext {
-        /// See [`IntegrationParameters::length_unit`]
-        length_unit: f32,
+        /// Integration
+        #[reflect(remote = IntegrationParametersWrapper)]
+        integration_parameters: IntegrationParameters,
     },
 }
 
 impl Default for RapierContextInitialization {
     fn default() -> Self {
-        RapierContextInitialization::InitializeDefaultRapierContext { length_unit: 1f32 }
+        RapierContextInitialization::InitializeDefaultRapierContext {
+            integration_parameters: IntegrationParameters::default(),
+        }
     }
 }
 
@@ -387,14 +398,13 @@ pub fn insert_default_context(
 ) {
     match initialization_data.as_ref() {
         RapierContextInitialization::NoAutomaticRapierContext => {}
-        RapierContextInitialization::InitializeDefaultRapierContext { length_unit } => {
+        RapierContextInitialization::InitializeDefaultRapierContext {
+            integration_parameters,
+        } => {
             commands.spawn((
                 Name::new("Rapier Context"),
                 RapierContextSimulation {
-                    integration_parameters: IntegrationParameters {
-                        length_unit: *length_unit,
-                        ..default()
-                    },
+                    integration_parameters: *integration_parameters,
                     ..RapierContextSimulation::default()
                 },
                 DefaultRapierContext,

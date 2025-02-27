@@ -57,6 +57,9 @@ pub mod pipeline;
 /// The physics plugin and systems.
 pub mod plugin;
 
+/// Reflection utilities.
+pub mod reflect;
+
 #[cfg(feature = "picking-backend")]
 pub mod picking_backend;
 
