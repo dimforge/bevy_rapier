@@ -69,6 +69,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           prefix-key: ${{ env.RUST_CACHE_KEY }}
+      - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
       - name: Test for no conflicting system order ambiguity
         run: cargo run --bin ambiguity_detection
   test-all-features:
@@ -81,6 +82,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           prefix-key: ${{ env.RUST_CACHE_KEY }}
+      - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
       - run: cargo install cargo-all-features
       - name: Check all features individually
         run: cargo check-all-features
