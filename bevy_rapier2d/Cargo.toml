@@ -1,6 +1,6 @@
 [package]
 name = "bevy_rapier2d"
-version = "0.28.0"
+version = "0.29.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 description = "2-dimensional physics engine in Rust, official Bevy plugin."
 documentation = "http://docs.rs/bevy_rapier2d"
@@ -24,7 +24,13 @@ rust.unexpected_cfgs = { level = "warn", check-cfg = [
 clippy = { needless_lifetimes = "allow" }
 
 [features]
-default = ["dim2", "async-collider", "debug-render-2d"]
+default = [
+    "dim2",
+    "async-collider",
+    "debug-render-2d",
+    "picking-backend",
+    "to-bevy-mesh",
+]
 dim2 = []
 debug-render-2d = [
     "bevy/bevy_core_pipeline",
@@ -45,16 +51,22 @@ rapier-debug-render = ["rapier2d/debug-render"]
 parallel = ["rapier2d/parallel"]
 simd-stable = ["rapier2d/simd-stable"]
 simd-nightly = ["rapier2d/simd-nightly"]
-wasm-bindgen = ["rapier2d/wasm-bindgen"]
 serde-serialize = ["rapier2d/serde-serialize", "bevy/serialize", "serde"]
 enhanced-determinism = ["rapier2d/enhanced-determinism"]
 headless = []
-async-collider = ["bevy/bevy_asset", "bevy/bevy_scene", "bevy/bevy_render"]
+picking-backend = ["bevy/bevy_picking", "bevy/bevy_render"]
+async-collider = [
+    "bevy/bevy_asset",
+    "bevy/bevy_scene",
+    "bevy/bevy_render",
+    "bevy/bevy_image",
+]
+to-bevy-mesh = ["bevy/bevy_render", "bevy/bevy_asset"]
 
 [dependencies]
 bevy = { version = "0.15", default-features = false }
 nalgebra = { version = "0.33", features = ["convert-glam029"] }
-rapier2d = "0.22"
+rapier2d = "0.23"
 bitflags = "2.4"
 log = "0.4"
 serde = { version = "1", features = ["derive"], optional = true }
@@ -72,7 +84,22 @@ glam = { version = "0.29", features = ["approx"] }
 bevy-inspector-egui = "0.28.0"
 bevy_egui = "0.31"
 bevy_mod_debugdump = "0.12"
+serde_json = "1.0"
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
 features = ["debug-render-2d", "serde-serialize"]
+
+[package.metadata.cargo-all-features]
+
+denylist = ["simd-nightly"]
+
+# Features "dim2" and "dim3" are incompatible, so skip permutations including them
+skip_feature_sets = [["enhanced-determinism", "simd-stable"]]
+
+always_include_features = ["dim2"]
+
+# The maximum number of features to try at once. Does not count features from `always_include_features`.
+# This is useful for reducing the number of combinations run for a crate with a large amount of features,
+# since in most cases a bug just needs a small set of 2-3 features to reproduce.
+max_combination_size = 1

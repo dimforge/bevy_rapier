@@ -31,9 +31,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           prefix-key: ${{ env.RUST_CACHE_KEY }}
+      - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
       - name: Cargo doc
-        run: cargo doc
-  test:
+        run: cargo doc --no-deps
+  test-and-clippy:
     runs-on: ubuntu-latest
     env:
       RUSTFLAGS: -D warnings
@@ -58,6 +59,31 @@ jobs:
       - name: Unit Tests for bevy_rapier{{ matrix.dim }}d without default features
         # cargo test by default also tests examples, which most need the debug render feature, so we pass `--lib` to only test the library
         run: cargo test -p bevy_rapier{{ matrix.dim }}d --no-default-features --features dim{{ matrix.dim }} --lib
+  test-no-ambiguity:
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: ${{ env.RUST_CACHE_KEY }}
+      - name: Test for no conflicting system order ambiguity
+        run: cargo run --bin ambiguity_detection
+  test-all-features:
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: ${{ env.RUST_CACHE_KEY }}
+      - run: cargo install cargo-all-features
+      - name: Check all features individually
+        run: cargo check-all-features
   test-wasm:
     runs-on: ubuntu-latest
     env:
@@ -72,6 +98,6 @@ jobs:
         with:
           prefix-key: ${{ env.RUST_CACHE_KEY }}
       - name: Clippy bevy_rapier2d
-        run: cd bevy_rapier2d && cargo clippy --verbose --features wasm-bindgen,bevy/webgl2 --target wasm32-unknown-unknown
+        run: cd bevy_rapier2d && cargo clippy --verbose --features bevy/webgl2 --target wasm32-unknown-unknown
       - name: Clippy bevy_rapier3d
-        run: cd bevy_rapier3d && cargo clippy --verbose --features wasm-bindgen,bevy/webgl2 --target wasm32-unknown-unknown
+        run: cd bevy_rapier3d && cargo clippy --verbose --features bevy/webgl2 --target wasm32-unknown-unknown

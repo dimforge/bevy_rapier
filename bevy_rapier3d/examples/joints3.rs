@@ -283,15 +283,12 @@ pub fn print_impulse_revolute_joints(
     joints: Query<(Entity, &ImpulseJoint)>,
 ) {
     for (entity, impulse_joint) in joints.iter() {
-        match &impulse_joint.data {
-            TypedJoint::RevoluteJoint(_revolute_joint) => {
-                println!(
-                    "angle for {}: {:?}",
-                    entity,
-                    context.single().impulse_revolute_joint_angle(entity),
-                );
-            }
-            _ => {}
+        if let TypedJoint::RevoluteJoint(_revolute_joint) = &impulse_joint.data {
+            println!(
+                "angle for {}: {:?}",
+                entity,
+                context.single().impulse_revolute_joint_angle(entity),
+            );
         }
     }
 }

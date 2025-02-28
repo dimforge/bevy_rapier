@@ -19,7 +19,7 @@ fn main() {
 }
 
 pub fn setup_graphics(mut commands: Commands) {
-    commands.spawn(Camera2d::default());
+    commands.spawn(Camera2d);
 }
 
 pub fn display_events(

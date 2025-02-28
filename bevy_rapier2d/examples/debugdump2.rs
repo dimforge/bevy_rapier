@@ -14,10 +14,8 @@ fn main() {
         RapierDebugRenderPlugin::default(),
     ));
 
-    let mut debugdump_settings = schedule_graph::Settings::default();
-    // Filter out some less relevant systems.
-    debugdump_settings.include_system =
-        Some(Box::new(|system: &(dyn System<In = (), Out = ()>)| {
+    let debugdump_settings = schedule_graph::Settings {
+        include_system: Some(Box::new(|system: &(dyn System<In = (), Out = ()>)| {
             if system.name().starts_with("bevy_pbr")
                 || system.name().starts_with("bevy_render")
                 || system.name().starts_with("bevy_gizmos")
@@ -27,7 +25,9 @@ fn main() {
                 return false;
             }
             true
-        }));
+        })),
+        ..Default::default()
+    };
     let dot = schedule_graph_dot(&mut app, PostUpdate, &debugdump_settings);
     println!("{dot}");
 }
