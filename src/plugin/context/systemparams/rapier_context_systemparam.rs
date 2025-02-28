@@ -148,7 +148,6 @@ mod simulation {
     use crate::control::CharacterCollision;
     use crate::control::MoveShapeOptions;
     use crate::control::MoveShapeOutput;
-    use crate::plugin::context::SimulationToRenderTime;
     use crate::plugin::ContactPairView;
     use crate::plugin::TimestepMode;
     use crate::prelude::Collider;
@@ -210,8 +209,7 @@ mod simulation {
                 &EventWriter<ContactForceEvent>,
             )>,
             hooks: &dyn PhysicsHooks,
-            time: &Time,
-            sim_to_render_time: &mut SimulationToRenderTime,
+            time: &Time<Virtual>,
             interpolation_query: Option<
                 &mut Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
             >,
@@ -225,7 +223,6 @@ mod simulation {
                 events,
                 hooks,
                 time,
-                sim_to_render_time,
                 interpolation_query,
             )
         }
