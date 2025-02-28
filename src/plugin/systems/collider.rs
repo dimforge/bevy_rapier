@@ -159,10 +159,22 @@ pub fn apply_collider_user_changes(
             );
 
             if let Some(co) = context_colliders.colliders.get_mut(handle.0) {
-                co.set_position_wrt_parent(utils::transform_to_iso(&collider_position));
+                let new_pos = utils::transform_to_iso(&collider_position);
+
+                if co
+                    .position_wrt_parent()
+                    .map(|pos| *pos != new_pos)
+                    .unwrap_or(true)
+                {
+                    co.set_position_wrt_parent(new_pos);
+                }
             }
         } else if let Some(co) = context_colliders.colliders.get_mut(handle.0) {
-            co.set_position(utils::transform_to_iso(&transform.compute_transform()))
+            let new_pos = utils::transform_to_iso(&transform.compute_transform());
+
+            if *co.position() != new_pos {
+                co.set_position(utils::transform_to_iso(&transform.compute_transform()));
+            }
         }
     }
 
