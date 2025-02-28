@@ -56,9 +56,9 @@ jobs:
         run: cargo clippy --verbose -p bevy_rapier${{ matrix.dim }}d --features debug-render-${{ matrix.dim }}d,simd-stable,serde-serialize
       - name: Test for bevy_rapier${{ matrix.dim }}d
         run: cargo test --verbose -p bevy_rapier${{ matrix.dim }}d
-      - name: Unit Tests for bevy_rapier{{ matrix.dim }}d without default features
+      - name: Unit Tests for bevy_rapier${{ matrix.dim }}d without default features
         # cargo test by default also tests examples, which most need the debug render feature, so we pass `--lib` to only test the library
-        run: cargo test -p bevy_rapier{{ matrix.dim }}d --no-default-features --features dim{{ matrix.dim }} --lib
+        run: cargo test -p bevy_rapier${{ matrix.dim }}d --no-default-features --features dim${{ matrix.dim }} --lib
   test-no-ambiguity:
     runs-on: ubuntu-latest
     env:
