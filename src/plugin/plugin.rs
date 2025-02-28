@@ -298,14 +298,26 @@ where
         if self.default_system_setup {
             app.configure_sets(
                 self.schedule,
+                (PhysicsSet::SyncBackend, PhysicsSet::StepSimulation)
+                    .chain()
+                    .before(TransformSystem::TransformPropagate),
+            );
+            app.add_systems(
+                PostUpdate,
                 (
-                    PhysicsSet::SyncBackend,
-                    PhysicsSet::StepSimulation,
-                    PhysicsSet::Writeback,
+                    systems::update_colliding_entities,
+                    systems::writeback_rigid_bodies,
+                    systems::writeback_mass_properties
+                        .ambiguous_with(systems::writeback_rigid_bodies),
                 )
                     .chain()
                     .before(TransformSystem::TransformPropagate),
             );
+            // app.configure_sets(
+            //     PostUpdate,
+            //     (PhysicsSet::Writeback).before(TransformSystem::TransformPropagate),
+            // );
+            app.add_systems(FixedPreUpdate, systems::update_rigid_bodies);
             app.configure_sets(
                 self.schedule,
                 RapierTransformPropagateSet.in_set(PhysicsSet::SyncBackend),
@@ -320,7 +332,7 @@ where
                 }
             };
             add_systems_if_enabled(PhysicsSet::SyncBackend);
-            add_systems_if_enabled(PhysicsSet::Writeback);
+            // add_systems_if_enabled(PhysicsSet::Writeback);
             add_systems_if_enabled(PhysicsSet::StepSimulation);
 
             app.init_resource::<TimestepMode>();
@@ -329,7 +341,7 @@ where
             if self.schedule.as_dyn_eq().dyn_eq(FixedUpdate.as_dyn_eq()) {
                 let config = app.world_mut().resource::<TimestepMode>();
                 match config {
-                    TimestepMode::Fixed { .. } => {}
+                    TimestepMode::Fixed { .. } | TimestepMode::Interpolated { .. } => {}
                     mode => {
                         warn!("TimestepMode is set to `{:?}`, it is recommended to use `TimestepMode::Fixed` if you have the physics in `FixedUpdate`", mode);
                     }
