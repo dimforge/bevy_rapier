@@ -20,5 +20,5 @@ codegen-units = 1
 #parry3d = { git = "https://github.com/dimforge/parry", branch = "master" }
 #rapier2d = { git = "https://github.com/dimforge/rapier", branch = "character-controller" }
 #rapier3d = { git = "https://github.com/dimforge/rapier", branch = "character-controller" }
-rapier2d = { git = "https://github.com/Vrixyz/rapier", branch = "integration_param_partialeq" }
-rapier3d = { git = "https://github.com/Vrixyz/rapier", branch = "integration_param_partialeq" }
+rapier2d = { git = "https://github.com/Vrixyz/rapier", branch = "intergration_param_partialeq" }
+rapier3d = { git = "https://github.com/Vrixyz/rapier", branch = "intergration_param_partialeq" }

@@ -85,12 +85,9 @@ where
     pub fn pixels_per_meter(pixels_per_meter: f32) -> Self {
         Self {
             default_system_setup: true,
-            default_world_setup: RapierContextInitialization::InitializeDefaultRapierContext {
-                integration_parameters: IntegrationParameters {
-                    length_unit: pixels_per_meter,
-                    ..default()
-                },
-            },
+            default_world_setup: RapierContextInitialization::default_with_length_unit(
+                pixels_per_meter,
+            ),
             ..default()
         }
     }
@@ -374,9 +371,10 @@ pub enum RapierContextInitialization {
     /// [`RapierPhysicsPlugin`] will spawn an entity containing a [`RapierContextSimulation`]
     /// automatically during [`PreStartup`], with the [`DefaultRapierContext`] marker component.
     InitializeDefaultRapierContext {
-        /// Integration
+        /// Integration parameters component which will be added to the default rapier context.
         #[reflect(remote = IntegrationParametersWrapper)]
         integration_parameters: IntegrationParameters,
+        /// Rapier configuration component which will be added to the default rapier context.
         rapier_configuration: RapierConfiguration,
     },
 }
@@ -388,6 +386,12 @@ impl Default for RapierContextInitialization {
 }
 
 impl RapierContextInitialization {
+    /// Configures rapier with the specified length unit.
+    ///
+    /// See the documentation of [`IntegrationParameters::length_unit`] for additional details
+    /// on that argument.
+    ///
+    /// The default gravity is automatically scaled by that length unit.
     pub fn default_with_length_unit(length_unit: f32) -> Self {
         let integration_parameters = IntegrationParameters {
             length_unit,
@@ -417,7 +421,7 @@ pub fn insert_default_context(
                     integration_parameters: *integration_parameters,
                     ..RapierContextSimulation::default()
                 },
-                rapier_configuration,
+                *rapier_configuration,
                 DefaultRapierContext,
             ));
         }
