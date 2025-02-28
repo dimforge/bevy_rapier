@@ -1,5 +1,6 @@
 use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::prelude::*;
+use crate::reflect::IntegrationParametersWrapper;
 use bevy::ecs::{
     intern::Interned,
     schedule::{ScheduleLabel, SystemConfigs},
@@ -8,7 +9,6 @@ use bevy::ecs::{
 use bevy::utils::HashSet;
 use bevy::{prelude::*, transform::TransformSystem};
 use rapier::dynamics::IntegrationParameters;
-use reflect::IntegrationParametersWrapper;
 use std::marker::PhantomData;
 
 use super::context::DefaultRapierContext;
@@ -53,12 +53,8 @@ where
     /// likely always be 1.0 in 3D. In 2D, this is useful to specify a "pixels-per-meter"
     /// conversion ratio.
     pub fn with_length_unit(mut self, length_unit: f32) -> Self {
-        self.default_world_setup = RapierContextInitialization::InitializeDefaultRapierContext {
-            integration_parameters: IntegrationParameters {
-                length_unit,
-                ..default()
-            },
-        };
+        self.default_world_setup =
+            RapierContextInitialization::default_with_length_unit(length_unit);
         self
     }
 
@@ -381,13 +377,26 @@ pub enum RapierContextInitialization {
         /// Integration
         #[reflect(remote = IntegrationParametersWrapper)]
         integration_parameters: IntegrationParameters,
+        rapier_configuration: RapierConfiguration,
     },
 }
 
 impl Default for RapierContextInitialization {
     fn default() -> Self {
+        Self::default_with_length_unit(1f32)
+    }
+}
+
+impl RapierContextInitialization {
+    pub fn default_with_length_unit(length_unit: f32) -> Self {
+        let integration_parameters = IntegrationParameters {
+            length_unit,
+            ..default()
+        };
+
         RapierContextInitialization::InitializeDefaultRapierContext {
-            integration_parameters: IntegrationParameters::default(),
+            integration_parameters,
+            rapier_configuration: RapierConfiguration::new(length_unit),
         }
     }
 }
@@ -400,6 +409,7 @@ pub fn insert_default_context(
         RapierContextInitialization::NoAutomaticRapierContext => {}
         RapierContextInitialization::InitializeDefaultRapierContext {
             integration_parameters,
+            rapier_configuration,
         } => {
             commands.spawn((
                 Name::new("Rapier Context"),
@@ -407,6 +417,7 @@ pub fn insert_default_context(
                     integration_parameters: *integration_parameters,
                     ..RapierContextSimulation::default()
                 },
+                rapier_configuration,
                 DefaultRapierContext,
             ));
         }

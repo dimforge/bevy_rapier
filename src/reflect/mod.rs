@@ -1,11 +1,12 @@
 use crate::math::Real;
 use bevy::reflect::reflect_remote;
 use rapier::dynamics::IntegrationParameters;
+use std::num::NonZeroUsize;
 
-#[reflect_remote(IntegrationParameter)]
+#[reflect_remote(IntegrationParameters)]
 #[derive(Copy, Clone, Debug, PartialEq)]
 /// Parameters for a time-step of the physics engine.
-pub struct IntegrationParameterWrapper {
+pub struct IntegrationParametersWrapper {
     /// The timestep length (default: `1.0 / 60.0`).
     pub dt: Real,
     /// Minimum timestep size when using CCD with multiple substeps (default: `1.0 / 60.0 / 100.0`).
