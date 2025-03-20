@@ -16,28 +16,28 @@ fn main() {
     check_ambiguities(
         (
             bevy_rapier3d::plugin::RapierPhysicsPlugin::<()>::default(),
-            bevy_rapier3d::prelude::RapierPickingPlugin::default(),
+            bevy_rapier3d::prelude::RapierPickingPlugin,
         ),
         true,
     );
     check_ambiguities(
         (
             bevy_rapier3d::plugin::RapierPhysicsPlugin::<()>::default().in_fixed_schedule(),
-            bevy_rapier3d::prelude::RapierPickingPlugin::default(),
+            bevy_rapier3d::prelude::RapierPickingPlugin,
         ),
         false,
     );
     check_ambiguities(
         (
             bevy_rapier2d::plugin::RapierPhysicsPlugin::<()>::default(),
-            bevy_rapier3d::prelude::RapierPickingPlugin::default(),
+            bevy_rapier3d::prelude::RapierPickingPlugin,
         ),
         false,
     );
     check_ambiguities(
         (
             bevy_rapier2d::plugin::RapierPhysicsPlugin::<()>::default().in_fixed_schedule(),
-            bevy_rapier3d::prelude::RapierPickingPlugin::default(),
+            bevy_rapier3d::prelude::RapierPickingPlugin,
         ),
         false,
     );
