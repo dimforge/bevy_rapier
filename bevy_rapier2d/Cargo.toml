@@ -80,7 +80,7 @@ bevy = { version = "0.16.0-rc.1", default-features = false, features = [
 ] }
 oorandom = "11"
 approx = "0.5.1"
-glam = { version = "0.30", features = ["approx"] }
+glam = { version = "0.29", features = ["approx"] }
 bevy-inspector-egui = "0.30.0"
 bevy_egui = "0.33"
 bevy_mod_debugdump = "0.12"
