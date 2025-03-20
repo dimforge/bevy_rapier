@@ -174,12 +174,12 @@ mod test {
         app.update();
         let mut world = app.world_mut();
         let mut query = world.query_filtered::<&mut RapierContextEntityLink, With<Marker<'P'>>>();
-        let mut link_parent = query.get_single_mut(&mut world).unwrap();
+        let mut link_parent = query.single_mut(&mut world).unwrap();
         link_parent.0 = new_rapier_context;
         app.update();
         let mut world = app.world_mut();
         let mut query = world.query_filtered::<&RapierContextEntityLink, With<Marker<'C'>>>();
-        let link_child = query.get_single_mut(&mut world).unwrap();
+        let link_child = query.single_mut(&mut world).unwrap();
         assert_eq!(link_child.0, new_rapier_context);
         return;
 

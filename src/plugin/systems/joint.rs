@@ -28,7 +28,7 @@ pub fn init_joints(
         // Get rapier context from RapierContextEntityLink or insert its default value.
         let context_entity = entity_context_link.map_or_else(
             || {
-                let context_entity = default_context_access.get_single().ok()?;
+                let context_entity = default_context_access.single().ok()?;
                 commands
                     .entity(entity)
                     .insert(RapierContextEntityLink(context_entity));
@@ -76,7 +76,7 @@ pub fn init_joints(
         // Get rapier context from RapierContextEntityLink or insert its default value.
         let context_entity = entity_context_link.map_or_else(
             || {
-                let context_entity = default_context_access.get_single().ok()?;
+                let context_entity = default_context_access.single().ok()?;
                 commands
                     .entity(entity)
                     .insert(RapierContextEntityLink(context_entity));
