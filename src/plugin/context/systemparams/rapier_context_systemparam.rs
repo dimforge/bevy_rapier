@@ -35,21 +35,21 @@ pub struct ReadRapierContext<'w, 's, T: query::QueryFilter + 'static = With<Defa
 }
 
 impl<'w, 's, T: query::QueryFilter + 'static> ReadRapierContext<'w, 's, T> {
-    /// Use this method if you only have one [`RapierContext`].
+    /// Returns a single [`RapierContext`] corresponding to the filter (T) of [`ReadRapierContext`].
     ///
-    /// SAFETY: This method will panic if its underlying query fails.
+    /// If the number of query items is not exactly one, a [`bevy::ecs::query::QuerySingleError`] is returned instead.
     ///
-    /// Use the underlying query [`ReadRapierContext::rapier_context`] for safer alternatives.
-    pub fn single(&self) -> RapierContext {
+    /// You can also use the underlying query [`WriteRapierContext::rapier_context`] for finer grained queries.
+    pub fn single(&self) -> Result<RapierContext> {
         let (simulation, colliders, joints, query_pipeline, rigidbody_set) =
-            self.rapier_context.single();
-        RapierContext {
+            self.rapier_context.single()?;
+        Ok(RapierContext {
             simulation,
             colliders,
             joints,
             query_pipeline,
             rigidbody_set,
-        }
+        })
     }
 }
 
@@ -94,35 +94,38 @@ pub struct WriteRapierContext<'w, 's, T: query::QueryFilter + 'static = With<Def
 }
 
 impl<'w, 's, T: query::QueryFilter + 'static> WriteRapierContext<'w, 's, T> {
-    /// Use this method if you only have one [`RapierContext`] corresponding to the filter (T) of [`WriteRapierContext`].
+    /// Returns a single [`RapierContext`] corresponding to the filter (T) of [`WriteRapierContext`].
     ///
-    /// SAFETY: This method will panic if its underlying query fails.
-    /// Use the underlying query [`WriteRapierContext::rapier_context`] for safer alternatives.
-    pub fn single(&self) -> RapierContext {
+    /// If the number of query items is not exactly one, a [`bevy::ecs::query::QuerySingleError`] is returned instead.
+    ///
+    /// You can also use the underlying query [`WriteRapierContext::rapier_context`] for finer grained queries.
+    pub fn single(&self) -> Result<RapierContext> {
         let (simulation, colliders, joints, query_pipeline, rigidbody_set) =
-            self.rapier_context.single();
-        RapierContext {
+            self.rapier_context.single()?;
+        Ok(RapierContext {
             simulation,
             colliders,
             joints,
             query_pipeline,
             rigidbody_set,
-        }
+        })
     }
-    /// Use this method if you only have one [`RapierContext`].
+
+    /// Returns a single mutable [`RapierContextMut`] corresponding to the filter (T) of [`WriteRapierContext`].
     ///
-    /// SAFETY: This method will panic if its underlying query fails.
-    /// Use the underlying query [`WriteRapierContext::rapier_context`] for safer alternatives.
-    pub fn single_mut(&mut self) -> RapierContextMut {
+    /// If the number of query items is not exactly one, a [`bevy::ecs::query::QuerySingleError`] is returned instead.
+    ///
+    /// You can also use the underlying query [`WriteRapierContext::rapier_context`] for finer grained queries.
+    pub fn single_mut(&mut self) -> Result<RapierContextMut> {
         let (simulation, colliders, joints, query_pipeline, rigidbody_set) =
-            self.rapier_context.single_mut();
-        RapierContextMut {
+            self.rapier_context.single_mut()?;
+        Ok(RapierContextMut {
             simulation,
             colliders,
             joints,
             query_pipeline,
             rigidbody_set,
-        }
+        })
     }
 }
 
