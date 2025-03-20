@@ -171,7 +171,7 @@ pub fn update_hits(
             );
 
             if !picks.is_empty() {
-                output.send(PointerHits::new(ray_id.pointer, picks, order));
+                output.write(PointerHits::new(ray_id.pointer, picks, order));
             }
         }
     }

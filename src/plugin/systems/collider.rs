@@ -190,7 +190,7 @@ pub fn apply_collider_user_changes(
 
             if let Some(body) = co.parent() {
                 if let Some(body_entity) = rigidbody_set.rigid_body_entity(body) {
-                    mass_modified.send(body_entity.into());
+                    mass_modified.write(body_entity.into());
                 }
             }
         }
@@ -312,7 +312,7 @@ pub fn apply_collider_user_changes(
 
             if let Some(body) = co.parent() {
                 if let Some(body_entity) = rigidbody_set.rigid_body_entity(body) {
-                    mass_modified.send(body_entity.into());
+                    mass_modified.write(body_entity.into());
                 }
             }
         }

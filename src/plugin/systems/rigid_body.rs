@@ -285,7 +285,7 @@ pub fn apply_rigid_body_user_changes(
                 }
             }
 
-            mass_modified.send(entity.into());
+            mass_modified.write(entity.into());
         }
     }
 
