@@ -63,7 +63,7 @@ fn change_context(
     query_context: Query<Entity, With<DefaultRapierContext>>,
     mut query_links: Query<(Entity, &mut RapierContextEntityLink)>,
 ) {
-    let default_context = query_context.single();
+    let default_context = query_context.single().unwrap();
     for (e, mut link) in query_links.iter_mut() {
         if link.0 == default_context {
             continue;

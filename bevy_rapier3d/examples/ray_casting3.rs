@@ -78,7 +78,7 @@ pub fn cast_ray(
     rapier_context: ReadRapierContext,
     cameras: Query<(&Camera, &GlobalTransform)>,
 ) {
-    let window = windows.single();
+    let window = windows.single().unwrap();
 
     let Some(cursor_position) = window.cursor_position() else {
         return;
@@ -90,7 +90,7 @@ pub fn cast_ray(
         let Ok(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
             return;
         };
-        let context = rapier_context.single();
+        let context = rapier_context.single().unwrap();
         // Then cast the ray.
         let hit = context.cast_ray(
             ray.origin,

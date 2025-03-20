@@ -25,7 +25,7 @@ fn main() {
 pub struct Player(f32);
 
 pub fn spawn_player(mut commands: Commands, mut rapier_config: Query<&mut RapierConfiguration>) {
-    let mut rapier_config = rapier_config.single_mut();
+    let mut rapier_config = rapier_config.single_mut().unwrap();
     // Set gravity to 0.0 and spawn camera.
     rapier_config.gravity = Vec2::ZERO;
     commands.spawn(Camera2d);
