@@ -1,11 +1,12 @@
 use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::prelude::*;
+use bevy::ecs::system::ScheduleSystem;
 use bevy::ecs::{
     intern::Interned,
-    schedule::{ScheduleLabel, SystemConfigs},
+    schedule::{IntoScheduleConfigs, ScheduleConfigs, ScheduleLabel},
     system::SystemParamItem,
 };
-use bevy::utils::HashSet;
+use bevy::platform_support::collections::HashSet;
 use bevy::{prelude::*, transform::TransformSystem};
 use rapier::dynamics::IntegrationParameters;
 use std::marker::PhantomData;
@@ -120,7 +121,7 @@ where
     /// Provided for use when staging systems outside of this plugin using
     /// [`with_default_system_setup(false)`](Self::with_default_system_setup).
     /// See [`PhysicsSet`] for a description of these systems.
-    pub fn get_systems(set: PhysicsSet) -> SystemConfigs {
+    pub fn get_systems(set: PhysicsSet) -> ScheduleConfigs<ScheduleSystem> {
         match set {
             PhysicsSet::SyncBackend => (
                 (
@@ -136,7 +137,7 @@ where
                 // Run Bevy transform propagation additionally to sync [`GlobalTransform`]
                 (
                     bevy::transform::systems::sync_simple_transforms,
-                    bevy::transform::systems::propagate_transforms,
+                    bevy::transform::systems::propagate_parent_transforms,
                 )
                     .chain()
                     .in_set(RapierTransformPropagateSet),
@@ -202,12 +203,11 @@ impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystem
             schedule: PostUpdate.intern(),
             default_system_setup: true,
             default_world_setup: Default::default(),
-            enabled_physics_schedules: [
+            enabled_physics_schedules: HashSet::from_iter([
                 PhysicsSet::SyncBackend,
                 PhysicsSet::StepSimulation,
                 PhysicsSet::Writeback,
-            ]
-            .into(),
+            ]),
             _phantom: PhantomData,
         }
     }
@@ -272,7 +272,7 @@ where
             .insert_resource(Events::<MassModifiedEvent>::default());
         let default_world_init = app.world().get_resource::<RapierContextInitialization>();
         if let Some(world_init) = default_world_init {
-            warn!("RapierPhysicsPlugin added but a `RapierContextInitialization` resource was already existing.\
+            log::warn!("RapierPhysicsPlugin added but a `RapierContextInitialization` resource was already existing.\
             This might overwrite previous configuration made via `RapierPhysicsPlugin::with_custom_initialization`\
             or `RapierPhysicsPlugin::with_length_unit`.
             The following resource will be used: {:?}", world_init);
@@ -331,7 +331,7 @@ where
                 match config {
                     TimestepMode::Fixed { .. } => {}
                     mode => {
-                        warn!("TimestepMode is set to `{:?}`, it is recommended to use `TimestepMode::Fixed` if you have the physics in `FixedUpdate`", mode);
+                        log::warn!("TimestepMode is set to `{:?}`, it is recommended to use `TimestepMode::Fixed` if you have the physics in `FixedUpdate`", mode);
                     }
                 }
             }
