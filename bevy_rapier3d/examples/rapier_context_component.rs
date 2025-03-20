@@ -20,11 +20,13 @@ fn main() {
 fn display_nb_colliders(
     query_context: Query<&RapierContextColliders, With<DefaultRapierContext>>,
     mut exit: EventWriter<AppExit>,
-) {
-    let nb_colliders = query_context.single().unwrap().colliders.len();
+) -> Result<()> {
+    let nb_colliders = query_context.single()?.colliders.len();
     println!("There are {nb_colliders} colliders.");
     assert!(nb_colliders > 0);
     exit.write(AppExit::Success);
+
+    Ok(())
 }
 
 pub fn setup_physics(mut commands: Commands) {

@@ -62,8 +62,8 @@ fn move_platforms(time: Res<Time>, mut query: Query<(&mut Transform, &Platform)>
 fn change_context(
     query_context: Query<Entity, With<DefaultRapierContext>>,
     mut query_links: Query<(Entity, &mut RapierContextEntityLink)>,
-) {
-    let default_context = query_context.single().unwrap();
+) -> Result<()> {
+    let default_context = query_context.single()?;
     for (e, mut link) in query_links.iter_mut() {
         if link.0 == default_context {
             continue;
@@ -71,6 +71,8 @@ fn change_context(
         link.0 = default_context;
         println!("changing context of {} for context {}", e, link.0);
     }
+
+    Ok(())
 }
 
 pub fn setup_physics(

@@ -281,17 +281,16 @@ pub fn setup_physics(mut commands: Commands) {
 pub fn print_impulse_revolute_joints(
     context: ReadRapierContext,
     joints: Query<(Entity, &ImpulseJoint)>,
-) {
+) -> Result<()> {
     for (entity, impulse_joint) in joints.iter() {
         if let TypedJoint::RevoluteJoint(_revolute_joint) = &impulse_joint.data {
             println!(
                 "angle for {}: {:?}",
                 entity,
-                context
-                    .single()
-                    .unwrap()
-                    .impulse_revolute_joint_angle(entity),
+                context.single()?.impulse_revolute_joint_angle(entity),
             );
         }
     }
+
+    Ok(())
 }
