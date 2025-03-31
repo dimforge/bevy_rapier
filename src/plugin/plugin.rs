@@ -640,4 +640,60 @@ mod test {
             }
         }
     }
+
+    #[test]
+    fn parent_child() {
+        return main();
+
+        use bevy::prelude::*;
+
+        fn main() {
+            let mut app = App::new();
+            app.add_plugins((
+                TransformPlugin,
+                TimePlugin,
+                RapierPhysicsPlugin::<NoUserData>::default().in_fixed_schedule(),
+            ));
+            run_test(&mut app);
+        }
+
+        fn run_test(app: &mut App) {
+            app.insert_resource(TimeUpdateStrategy::ManualDuration(
+                std::time::Duration::from_secs_f32(1f32 / 60f32),
+            ));
+            app.add_systems(Startup, setup_physics);
+
+            app.finish();
+            for i in 0..100000 {
+                println!("{}", i);
+                app.update();
+            }
+            let context = app
+                .world_mut()
+                .query::<RapierContext>()
+                .get_single(&app.world())
+                .unwrap();
+
+            println!("{:#?}", &context.rigidbody_set.bodies);
+        }
+
+        pub fn setup_physics(mut commands: Commands) {
+            let parent = commands
+                .spawn(Transform::from_scale(Vec3::splat(2f32)))
+                .id();
+            let mut entity = commands.spawn((
+                Collider::cuboid(1f32, 1f32, 1f32),
+                Transform::from_translation(Vec3::splat(5f32)).with_scale(Vec3::splat(2f32)),
+                RigidBody::Dynamic,
+            ));
+            entity.set_parent(parent);
+            println!("spawned rapier entity");
+
+            let ground_size = 100f32;
+            commands.spawn((
+                Transform::from_xyz(0.0, -5.0, 0.0),
+                Collider::cuboid(ground_size, 1.0, ground_size),
+            ));
+        }
+    }
 }
