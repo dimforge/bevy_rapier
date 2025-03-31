@@ -1,7 +1,7 @@
 //! A picking backend for Rapier physics entities.
 //!
 //! By default, all colliders are pickable. Picking can be disabled for individual entities
-//! by adding [`PickingBehavior::IGNORE`](bevy::picking::PickingBehavior::IGNORE).
+//! by adding [`Pickable::IGNORE`](bevy::picking::Pickable::IGNORE).
 //!
 //! To make rapier picking entirely opt-in, set [`RapierPickingSettings::require_markers`]
 //! to `true` and add a [`RapierPickable`] component to the desired camera and target entities.
