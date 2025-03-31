@@ -259,7 +259,7 @@ fn clear_filled_rows(
             game.stats.cleared_blocks += game.n_lanes as i32;
 
             for block_entity in row_blocks {
-                commands.entity(block_entity).despawn_recursive();
+                commands.entity(block_entity).despawn();
             }
         }
     }
