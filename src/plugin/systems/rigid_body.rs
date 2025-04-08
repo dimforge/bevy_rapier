@@ -479,10 +479,7 @@ pub fn writeback_rigid_bodies(
 
                     #[allow(unused_mut)] // mut is needed in 2D but not in 3D.
                     let mut new_translation = inverse_parent_rotation
-                        // FIXME: should we multiply `inverse_parent_scale` ? 
-                        // This fixes https://github.com/ForesightMiningSoftwareCorporation/multiphysics_examples/pull/1,
-                        // but I'm not sure that's the root issue, as `parent_child` test is not failing without it.
-                        // * inverse_parent_scale
+                        * inverse_parent_scale
                         * interpolated_pos.translation
                         + inverse_parent_translation;
 
