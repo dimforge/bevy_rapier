@@ -661,11 +661,11 @@ mod test {
             app.insert_resource(TimeUpdateStrategy::ManualDuration(
                 std::time::Duration::from_secs_f32(1f32 / 60f32),
             ));
+            app.add_systems(Startup, init_rapier_configuration);
             app.add_systems(Startup, setup_physics);
 
             app.finish();
-            for i in 0..100000 {
-                println!("{}", i);
+            for _ in 0..100 {
                 app.update();
             }
             let context = app
@@ -677,23 +677,26 @@ mod test {
             println!("{:#?}", &context.rigidbody_set.bodies);
         }
 
+        pub fn init_rapier_configuration(
+            mut config: Query<&mut RapierConfiguration, With<DefaultRapierContext>>,
+        ) {
+            let mut config = config.single_mut();
+            *config = RapierConfiguration {
+                force_update_from_transform_changes: true,
+                ..RapierConfiguration::new(1f32)
+            };
+        }
+
         pub fn setup_physics(mut commands: Commands) {
             let parent = commands
-                .spawn(Transform::from_scale(Vec3::splat(2f32)))
+                .spawn(Transform::from_scale(Vec3::splat(5f32)))
                 .id();
             let mut entity = commands.spawn((
                 Collider::cuboid(1f32, 1f32, 1f32),
-                Transform::from_translation(Vec3::splat(5f32)).with_scale(Vec3::splat(2f32)),
-                RigidBody::Dynamic,
+                Transform::from_translation(Vec3::new(200f32, 100f32, 3f32)),
+                RigidBody::Fixed,
             ));
             entity.set_parent(parent);
-            println!("spawned rapier entity");
-
-            let ground_size = 100f32;
-            commands.spawn((
-                Transform::from_xyz(0.0, -5.0, 0.0),
-                Collider::cuboid(ground_size, 1.0, ground_size),
-            ));
         }
     }
 }
