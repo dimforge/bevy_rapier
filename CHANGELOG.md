@@ -6,6 +6,10 @@
 
 - Added a serialization `serialization2` example for `bevy_rapier2d`.
 
+## Fixed
+
+- Fix position being incorrect when a rigidbody bevy entity has a scaled parent. [#646](https://github.com/dimforge/bevy_rapier/pull/646)
+
 ## v0.29.0 (18 February 2025)
 
 ### Added
