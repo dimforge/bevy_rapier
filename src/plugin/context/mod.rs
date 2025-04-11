@@ -180,8 +180,8 @@ impl RapierQueryPipeline {
     /// * `max_toi`: the maximum time-of-impact that can be reported by this cast. This effectively
     ///   limits the length of the ray to `ray.dir.norm() * max_toi`. Use `Real::MAX` for an unbounded ray.
     /// * `solid`: if this is `true` an impact at time 0.0 (i.e. at the ray origin) is returned if
-    ///            it starts inside of a shape. If this `false` then the ray will hit the shape's boundary
-    ///            even if its starts inside of it.
+    ///   it starts inside of a shape. If this `false` then the ray will hit the shape's boundary
+    ///   even if its starts inside of it.
     /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     #[expect(clippy::too_many_arguments)]
     pub fn cast_ray(
@@ -219,8 +219,8 @@ impl RapierQueryPipeline {
     /// * `max_toi`: the maximum time-of-impact that can be reported by this cast. This effectively
     ///   limits the length of the ray to `ray.dir.norm() * max_toi`. Use `Real::MAX` for an unbounded ray.
     /// * `solid`: if this is `true` an impact at time 0.0 (i.e. at the ray origin) is returned if
-    ///            it starts inside of a shape. If this `false` then the ray will hit the shape's boundary
-    ///            even if its starts inside of it.
+    ///   it starts inside of a shape. If this `false` then the ray will hit the shape's boundary
+    ///   even if its starts inside of it.
     /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     #[expect(clippy::too_many_arguments)]
     pub fn cast_ray_and_get_normal(
@@ -260,12 +260,12 @@ impl RapierQueryPipeline {
     /// * `max_toi`: the maximum time-of-impact that can be reported by this cast. This effectively
     ///   limits the length of the ray to `ray.dir.norm() * max_toi`. Use `Real::MAX` for an unbounded ray.
     /// * `solid`: if this is `true` an impact at time 0.0 (i.e. at the ray origin) is returned if
-    ///            it starts inside of a shape. If this `false` then the ray will hit the shape's boundary
-    ///            even if its starts inside of it.
+    ///   it starts inside of a shape. If this `false` then the ray will hit the shape's boundary
+    ///   even if its starts inside of it.
     /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     /// * `callback`: function executed on each collider for which a ray intersection has been found.
-    ///               There is no guarantees on the order the results will be yielded. If this callback returns `false`,
-    ///               this method will exit early, ignore any further raycast.
+    ///   There is no guarantees on the order the results will be yielded. If this callback returns `false`,
+    ///   this method will exit early, ignore any further raycast.
     #[allow(clippy::too_many_arguments)]
     pub fn intersections_with_ray(
         &self,
@@ -373,8 +373,8 @@ impl RapierQueryPipeline {
     /// * `point` - The point used for the containment test.
     /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     /// * `callback` - A function called with each collider with a shape containing the `point`.
-    ///                If this callback returns `false`, this method will exit early, ignore any
-    ///                further point projection.
+    ///   If this callback returns `false`, this method will exit early, ignore any
+    ///   further point projection.
     pub fn intersections_with_point(
         &self,
         rapier_colliders: &RapierContextColliders,
@@ -475,12 +475,12 @@ impl RapierQueryPipeline {
     /// * `max_toi` - The maximum time-of-impact that can be reported by this cast. This effectively
     ///   limits the distance traveled by the shape to `shape_vel.norm() * maxToi`.
     /// * `stop_at_penetration` - If the casted shape starts in a penetration state with any
-    ///    collider, two results are possible. If `stop_at_penetration` is `true` then, the
-    ///    result will have a `toi` equal to `start_time`. If `stop_at_penetration` is `false`
-    ///    then the nonlinear shape-casting will see if further motion wrt. the penetration normal
-    ///    would result in tunnelling. If it does not (i.e. we have a separating velocity along
-    ///    that normal) then the nonlinear shape-casting will attempt to find another impact,
-    ///    at a time `> start_time` that could result in tunnelling.
+    ///   collider, two results are possible. If `stop_at_penetration` is `true` then, the
+    ///   result will have a `toi` equal to `start_time`. If `stop_at_penetration` is `false`
+    ///   then the nonlinear shape-casting will see if further motion wrt. the penetration normal
+    ///   would result in tunnelling. If it does not (i.e. we have a separating velocity along
+    ///   that normal) then the nonlinear shape-casting will attempt to find another impact,
+    ///   at a time `> start_time` that could result in tunnelling.
     /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     #[allow(clippy::too_many_arguments)]
     pub fn cast_shape(
@@ -974,7 +974,7 @@ impl RapierContextSimulation {
     /// * `shape_translation`: the initial position of the shape.
     /// * `shape_rotation`: the rotation of the shape.
     /// * `shape_mass`: the mass of the shape to be considered by the impulse calculation if
-    ///                 `MoveShapeOptions::apply_impulse_to_dynamic_bodies` is set to true.
+    ///   `MoveShapeOptions::apply_impulse_to_dynamic_bodies` is set to true.
     /// * `options`: configures the behavior of the automatic sliding and climbing.
     /// * `filter`: indicates what collider or rigid-body needs to be ignored by the obstacle detection.
     /// * `events`: callback run on each obstacle hit by the shape on its path.

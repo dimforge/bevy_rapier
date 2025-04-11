@@ -24,7 +24,7 @@ pub struct RapierRigidBodyHandle(pub RigidBodyHandle);
 /// - [`Damping`]
 /// - [`Dominance`]
 /// - [`Ccd`]: Helps prevent tunneling through thin objects or rigid bodies
-///            moving at high velocities.
+///   moving at high velocities.
 /// - [`LockedAxes`]
 /// - [`RigidBodyDisabled`]
 /// - [`GravityScale`]
