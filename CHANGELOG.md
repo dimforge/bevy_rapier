@@ -6,6 +6,12 @@
 
 - Added a serialization `serialization2` example for `bevy_rapier2d`.
 
+## Modified
+
+- Update from rapier `0.23` to rapier `0.24`,
+  see [rapier's changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md).
+- `RapierContextInitialization::InitializeDefaultRapierContext` now has more fields for better control over default physics context.
+
 ## v0.29.0 (18 February 2025)
 
 ### Added
