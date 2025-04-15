@@ -239,10 +239,23 @@ pub mod tests {
             let child_handle = rigidbody_set.entity2body[&child];
             let child_body = rigidbody_set.bodies.get(child_handle).unwrap();
             let body_transform = utils::iso_to_transform(child_body.position());
-            assert_eq!(
-                GlobalTransform::from(body_transform),
-                *child_transform,
-                "Collider transform should have have global rotation and translation"
+
+            fn transforms_approx_equal(
+                a: &GlobalTransform,
+                b: &GlobalTransform,
+                epsilon: f32,
+            ) -> bool {
+                a.translation().abs_diff_eq(b.translation(), epsilon)
+                    && a.scale().abs_diff_eq(b.scale(), epsilon)
+                    && a.rotation().abs_diff_eq(b.rotation(), epsilon)
+            }
+            assert!(
+                transforms_approx_equal(
+                    &GlobalTransform::from(body_transform),
+                    child_transform,
+                    1.0e-5,
+                ),
+                "Collider transforms should have have equal global rotation and translation"
             );
         }
     }

@@ -692,7 +692,7 @@ mod test {
                 .spawn(Transform::from_scale(Vec3::splat(5f32)))
                 .id();
             let mut entity = commands.spawn((
-                Collider::cuboid(1f32, 1f32, 1f32),
+                Collider::ball(1f32),
                 Transform::from_translation(Vec3::new(200f32, 100f32, 3f32)),
                 RigidBody::Fixed,
             ));
