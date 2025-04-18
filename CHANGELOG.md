@@ -12,6 +12,10 @@
   see [rapier's changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md).
 - `RapierContextInitialization::InitializeDefaultRapierContext` now has more fields for better control over default physics context.
 
+## Fixed
+
+- Fix position being incorrect when a rigidbody bevy entity has a scaled parent. [#646](https://github.com/dimforge/bevy_rapier/pull/646)
+
 ## v0.29.0 (18 February 2025)
 
 ### Added
