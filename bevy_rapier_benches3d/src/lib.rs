@@ -30,7 +30,7 @@ pub fn custom_bencher(steps: usize, setup: impl Fn(&mut App)) {
             .world_mut()
             .query::<&RapierContextSimulation>()
             .single(app.world());
-        rapier_step_times.push(rc.pipeline.counters.step_time.time().as_millis() as f32);
+        rapier_step_times.push(rc.unwrap().pipeline.counters.step_time.time().as_millis() as f32);
         total_update_times.push(elapsed_time);
     }
     timer_total.pause();

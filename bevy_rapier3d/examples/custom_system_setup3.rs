@@ -1,4 +1,4 @@
-use bevy::{core::FrameCount, prelude::*, transform::TransformSystem};
+use bevy::{diagnostic::FrameCount, prelude::*, transform::TransformSystem};
 use bevy_rapier3d::prelude::*;
 
 fn main() {

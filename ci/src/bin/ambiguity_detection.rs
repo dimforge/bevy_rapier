@@ -8,36 +8,36 @@ use bevy::{
     app::Plugins,
     ecs::schedule::{InternedScheduleLabel, LogLevel, ScheduleBuildSettings},
     log::LogPlugin,
+    platform_support::collections::HashMap,
     prelude::*,
-    utils::HashMap,
 };
 
 fn main() {
     check_ambiguities(
         (
             bevy_rapier3d::plugin::RapierPhysicsPlugin::<()>::default(),
-            bevy_rapier3d::prelude::RapierPickingPlugin::default(),
+            bevy_rapier3d::prelude::RapierPickingPlugin,
         ),
         true,
     );
     check_ambiguities(
         (
             bevy_rapier3d::plugin::RapierPhysicsPlugin::<()>::default().in_fixed_schedule(),
-            bevy_rapier3d::prelude::RapierPickingPlugin::default(),
+            bevy_rapier3d::prelude::RapierPickingPlugin,
         ),
         false,
     );
     check_ambiguities(
         (
             bevy_rapier2d::plugin::RapierPhysicsPlugin::<()>::default(),
-            bevy_rapier3d::prelude::RapierPickingPlugin::default(),
+            bevy_rapier3d::prelude::RapierPickingPlugin,
         ),
         false,
     );
     check_ambiguities(
         (
             bevy_rapier2d::plugin::RapierPhysicsPlugin::<()>::default().in_fixed_schedule(),
-            bevy_rapier3d::prelude::RapierPickingPlugin::default(),
+            bevy_rapier3d::prelude::RapierPickingPlugin,
         ),
         false,
     );
@@ -90,7 +90,7 @@ fn configure_ambiguity_detection(sub_app: &mut SubApp) {
 /// Returns the number of conflicting systems per schedule.
 fn count_ambiguities(sub_app: &SubApp) -> AmbiguitiesCount {
     let schedules = sub_app.world().resource::<Schedules>();
-    let mut ambiguities = HashMap::new();
+    let mut ambiguities = HashMap::default();
     for (_, schedule) in schedules.iter() {
         let ambiguities_in_schedule = schedule.graph().conflicting_systems().len();
         ambiguities.insert(schedule.label(), ambiguities_in_schedule);
