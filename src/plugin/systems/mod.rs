@@ -18,7 +18,6 @@ pub use writeback::*;
 
 use crate::dynamics::{RapierRigidBodyHandle, TransformInterpolation};
 use crate::pipeline::{CollisionEvent, ContactForceEvent};
-use crate::plugin::context::SimulationToRenderTime;
 use crate::plugin::{RapierConfiguration, TimestepMode};
 use crate::prelude::{BevyPhysicsHooks, BevyPhysicsHooksAdapter};
 use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
@@ -39,11 +38,10 @@ pub fn step_simulation<Hooks>(
         &mut RapierContextJoints,
         &mut RapierRigidBodySet,
         &RapierConfiguration,
-        &mut SimulationToRenderTime,
     )>,
     timestep_mode: Res<TimestepMode>,
     hooks: StaticSystemParam<Hooks>,
-    time: Res<Time>,
+    time: Res<Time<Virtual>>,
     mut collision_events: EventWriter<CollisionEvent>,
     mut contact_force_events: EventWriter<ContactForceEvent>,
     mut interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
@@ -60,7 +58,6 @@ pub fn step_simulation<Hooks>(
         mut joints,
         mut rigidbody_set,
         config,
-        mut sim_to_render_time,
     ) in context.iter_mut()
     {
         let context = &mut *context;
@@ -76,7 +73,6 @@ pub fn step_simulation<Hooks>(
                 Some((&collision_events, &contact_force_events)),
                 &hooks_adapter,
                 &time,
-                &mut sim_to_render_time,
                 Some(&mut interpolation_query),
             );
         } else {
