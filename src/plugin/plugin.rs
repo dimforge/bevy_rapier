@@ -1,5 +1,6 @@
 use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::prelude::*;
+use crate::reflect::IntegrationParametersWrapper;
 use bevy::ecs::{
     intern::Interned,
     schedule::{ScheduleLabel, SystemConfigs},
@@ -53,7 +54,7 @@ where
     /// conversion ratio.
     pub fn with_length_unit(mut self, length_unit: f32) -> Self {
         self.default_world_setup =
-            RapierContextInitialization::InitializeDefaultRapierContext { length_unit };
+            RapierContextInitialization::default_with_length_unit(length_unit);
         self
     }
 
@@ -84,9 +85,9 @@ where
     pub fn pixels_per_meter(pixels_per_meter: f32) -> Self {
         Self {
             default_system_setup: true,
-            default_world_setup: RapierContextInitialization::InitializeDefaultRapierContext {
-                length_unit: pixels_per_meter,
-            },
+            default_world_setup: RapierContextInitialization::default_with_length_unit(
+                pixels_per_meter,
+            ),
             ..default()
         }
     }
@@ -370,14 +371,37 @@ pub enum RapierContextInitialization {
     /// [`RapierPhysicsPlugin`] will spawn an entity containing a [`RapierContextSimulation`]
     /// automatically during [`PreStartup`], with the [`DefaultRapierContext`] marker component.
     InitializeDefaultRapierContext {
-        /// See [`IntegrationParameters::length_unit`]
-        length_unit: f32,
+        /// Integration parameters component which will be added to the default rapier context.
+        #[reflect(remote = IntegrationParametersWrapper)]
+        integration_parameters: IntegrationParameters,
+        /// Rapier configuration component which will be added to the default rapier context.
+        rapier_configuration: RapierConfiguration,
     },
 }
 
 impl Default for RapierContextInitialization {
     fn default() -> Self {
-        RapierContextInitialization::InitializeDefaultRapierContext { length_unit: 1f32 }
+        Self::default_with_length_unit(1f32)
+    }
+}
+
+impl RapierContextInitialization {
+    /// Configures rapier with the specified length unit.
+    ///
+    /// See the documentation of [`IntegrationParameters::length_unit`] for additional details
+    /// on that argument.
+    ///
+    /// The default gravity is automatically scaled by that length unit.
+    pub fn default_with_length_unit(length_unit: f32) -> Self {
+        let integration_parameters = IntegrationParameters {
+            length_unit,
+            ..default()
+        };
+
+        RapierContextInitialization::InitializeDefaultRapierContext {
+            integration_parameters,
+            rapier_configuration: RapierConfiguration::new(length_unit),
+        }
     }
 }
 
@@ -387,16 +411,17 @@ pub fn insert_default_context(
 ) {
     match initialization_data.as_ref() {
         RapierContextInitialization::NoAutomaticRapierContext => {}
-        RapierContextInitialization::InitializeDefaultRapierContext { length_unit } => {
+        RapierContextInitialization::InitializeDefaultRapierContext {
+            integration_parameters,
+            rapier_configuration,
+        } => {
             commands.spawn((
                 Name::new("Rapier Context"),
                 RapierContextSimulation {
-                    integration_parameters: IntegrationParameters {
-                        length_unit: *length_unit,
-                        ..default()
-                    },
+                    integration_parameters: *integration_parameters,
                     ..RapierContextSimulation::default()
                 },
+                *rapier_configuration,
                 DefaultRapierContext,
             ));
         }
