@@ -695,7 +695,7 @@ mod test {
             let context = app
                 .world_mut()
                 .query::<RapierContext>()
-                .get_single(&app.world())
+                .single(app.world())
                 .unwrap();
 
             println!("{:#?}", &context.rigidbody_set.bodies);
@@ -715,12 +715,12 @@ mod test {
             let parent = commands
                 .spawn(Transform::from_scale(Vec3::splat(5f32)))
                 .id();
-            let mut entity = commands.spawn((
+            let mut entity_commands = commands.spawn((
                 Collider::ball(1f32),
                 Transform::from_translation(Vec3::new(200f32, 100f32, 3f32)),
                 RigidBody::Fixed,
             ));
-            entity.set_parent(parent);
+            entity_commands.insert(ChildOf(parent));
         }
     }
 }
