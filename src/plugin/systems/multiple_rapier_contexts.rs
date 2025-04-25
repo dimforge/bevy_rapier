@@ -162,7 +162,7 @@ mod test {
         // Verify all rapier entities have a `RapierContextEntityLink`.
         let world = app.world_mut();
         let mut query = world.query_filtered::<Entity, With<Marker<'R'>>>();
-        for entity in query.iter(&world) {
+        for entity in query.iter(world) {
             world
                 .get::<RapierContextEntityLink>(entity)
                 .unwrap_or_else(|| panic!("no link to rapier context entity from {entity}."));
@@ -172,14 +172,14 @@ mod test {
         // FIXME: We need to wait 1 frame when creating a context.
         // Ideally we should be able to order the systems so that we don't have to wait.
         app.update();
-        let mut world = app.world_mut();
+        let world = app.world_mut();
         let mut query = world.query_filtered::<&mut RapierContextEntityLink, With<Marker<'P'>>>();
-        let mut link_parent = query.single_mut(&mut world).unwrap();
+        let mut link_parent = query.single_mut(world).unwrap();
         link_parent.0 = new_rapier_context;
         app.update();
-        let mut world = app.world_mut();
+        let world = app.world_mut();
         let mut query = world.query_filtered::<&RapierContextEntityLink, With<Marker<'C'>>>();
-        let link_child = query.single_mut(&mut world).unwrap();
+        let link_child = query.single_mut(world).unwrap();
         assert_eq!(link_child.0, new_rapier_context);
         return;
 

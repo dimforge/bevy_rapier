@@ -152,7 +152,7 @@ fn player_movement(
     mut vertical_movement: Local<f32>,
     mut grounded_timer: Local<f32>,
 ) {
-    let Ok((transform, mut controller, output)) = player.get_single_mut() else {
+    let Ok((transform, mut controller, output)) = player.single_mut() else {
         return;
     };
     let delta_time = time.delta_secs();
@@ -185,11 +185,11 @@ fn player_look(
     mut camera: Query<&mut Transform, With<Camera>>,
     input: Res<LookInput>,
 ) {
-    let Ok(mut transform) = player.get_single_mut() else {
+    let Ok(mut transform) = player.single_mut() else {
         return;
     };
     transform.rotation = Quat::from_axis_angle(Vec3::Y, input.x.to_radians());
-    let Ok(mut transform) = camera.get_single_mut() else {
+    let Ok(mut transform) = camera.single_mut() else {
         return;
     };
     transform.rotation = Quat::from_axis_angle(Vec3::X, input.y.to_radians());

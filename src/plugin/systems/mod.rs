@@ -232,7 +232,7 @@ pub mod tests {
             let world = app.world_mut();
             let rigidbody_set = world
                 .query::<&RapierRigidBodySet>()
-                .iter(&world)
+                .iter(world)
                 .next()
                 .unwrap();
             let child_transform = world.entity(child).get::<GlobalTransform>().unwrap();
@@ -300,7 +300,7 @@ pub mod tests {
             let world = app.world_mut();
             let (rigidbody_set, context_colliders) = world
                 .query::<(&RapierRigidBodySet, &RapierContextColliders)>()
-                .iter(&world)
+                .iter(world)
                 .next()
                 .unwrap();
             let parent_handle = rigidbody_set.entity2body[&parent];

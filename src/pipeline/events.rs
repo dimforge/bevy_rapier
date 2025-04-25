@@ -189,12 +189,12 @@ mod test {
                 .world()
                 .get_resource::<EventsSaver<CollisionEvent>>()
                 .unwrap();
-            assert!(saved_collisions.events.len() > 0);
+            assert!(!saved_collisions.events.is_empty());
             let saved_contact_forces = app
                 .world()
                 .get_resource::<EventsSaver<CollisionEvent>>()
                 .unwrap();
-            assert!(saved_contact_forces.events.len() > 0);
+            assert!(!saved_contact_forces.events.is_empty());
         }
 
         /// Adapted from events example
