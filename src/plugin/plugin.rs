@@ -6,7 +6,7 @@ use bevy::ecs::{
     schedule::{IntoScheduleConfigs, ScheduleConfigs, ScheduleLabel},
     system::SystemParamItem,
 };
-use bevy::platform_support::collections::HashSet;
+use bevy::platform::collections::HashSet;
 use bevy::{prelude::*, transform::TransformSystem};
 use rapier::dynamics::IntegrationParameters;
 use std::marker::PhantomData;

@@ -333,7 +333,7 @@ pub(crate) fn collider_offset(
             if let Ok(transform) = transform_query.get(body_entity) {
                 child_transform = *transform * child_transform;
             }
-            body_entity = child_of.parent;
+            body_entity = child_of.parent();
         } else {
             break;
         }
@@ -656,7 +656,7 @@ pub mod test {
         let mut scenes = app.world_mut().resource_mut::<Assets<Scene>>();
         let scene = scenes.add(Scene::new(World::new()));
 
-        let mut named_shapes = bevy::platform_support::collections::HashMap::default();
+        let mut named_shapes = bevy::platform::collections::HashMap::default();
         named_shapes.insert("Capsule".to_string(), None);
         let parent = app
             .world_mut()

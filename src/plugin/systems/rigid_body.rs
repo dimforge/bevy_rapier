@@ -465,7 +465,7 @@ pub fn writeback_rigid_bodies(
                 //       that we do to detect if the user’s transform has to be written
                 //       into the rigid-body.
                 if let Some(parent_global_transform) =
-                    child_of.and_then(|c| global_transforms.get(c.parent).ok())
+                    child_of.and_then(|c| global_transforms.get(c.parent()).ok())
                 {
                     // We need to compute the new local transform such that:
                     // curr_parent_global_transform * new_transform = interpolated_pos

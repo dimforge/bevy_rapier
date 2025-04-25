@@ -27,7 +27,7 @@ pub fn on_add_entity_with_parent(
     mut commands: Commands,
 ) {
     for (ent, child_of) in &q_add_entity_without_parent {
-        let mut parent = Some(child_of.parent);
+        let mut parent = Some(child_of.parent());
         while let Some(parent_entity) = parent {
             if let Ok(pw) = q_physics_world.get(parent_entity) {
                 // Change rapier context link only if the existing link isn't the correct one.
@@ -37,7 +37,7 @@ pub fn on_add_entity_with_parent(
                 }
                 break;
             }
-            parent = q_child_of.get(parent_entity).ok().map(|x| x.parent);
+            parent = q_child_of.get(parent_entity).ok().map(|x| x.parent());
         }
     }
 }

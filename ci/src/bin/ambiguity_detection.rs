@@ -8,7 +8,7 @@ use bevy::{
     app::Plugins,
     ecs::schedule::{InternedScheduleLabel, LogLevel, ScheduleBuildSettings},
     log::LogPlugin,
-    platform_support::collections::HashMap,
+    platform::collections::HashMap,
     prelude::*,
 };
 

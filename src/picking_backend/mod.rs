@@ -89,7 +89,7 @@ pub fn update_hits(
     )>,
     mut output: EventWriter<PointerHits>,
 ) {
-    for (&ray_id, &ray) in ray_map.map().iter() {
+    for (&ray_id, &ray) in ray_map.map.iter() {
         let Ok((camera, cam_pickable, cam_layers)) = picking_cameras.get(ray_id.camera) else {
             continue;
         };

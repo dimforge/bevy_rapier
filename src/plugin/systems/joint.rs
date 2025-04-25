@@ -50,7 +50,7 @@ pub fn init_joints(
         while target.is_none() {
             target = rigidbody_set.entity2body.get(&body_entity).copied();
             if let Ok(child_of) = child_of_query.get(body_entity) {
-                body_entity = child_of.parent;
+                body_entity = child_of.parent();
             } else {
                 break;
             }
