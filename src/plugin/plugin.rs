@@ -1,10 +1,10 @@
 use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::prelude::*;
-use bevy::ecs::system::ScheduleSystem;
+use crate::reflect::IntegrationParametersWrapper;
 use bevy::ecs::{
     intern::Interned,
     schedule::{IntoScheduleConfigs, ScheduleConfigs, ScheduleLabel},
-    system::SystemParamItem,
+    system::{ScheduleSystem, SystemParamItem},
 };
 use bevy::platform::collections::HashSet;
 use bevy::{prelude::*, transform::TransformSystem};
@@ -54,7 +54,7 @@ where
     /// conversion ratio.
     pub fn with_length_unit(mut self, length_unit: f32) -> Self {
         self.default_world_setup =
-            RapierContextInitialization::InitializeDefaultRapierContext { length_unit };
+            RapierContextInitialization::default_with_length_unit(length_unit);
         self
     }
 
@@ -85,9 +85,9 @@ where
     pub fn pixels_per_meter(pixels_per_meter: f32) -> Self {
         Self {
             default_system_setup: true,
-            default_world_setup: RapierContextInitialization::InitializeDefaultRapierContext {
-                length_unit: pixels_per_meter,
-            },
+            default_world_setup: RapierContextInitialization::default_with_length_unit(
+                pixels_per_meter,
+            ),
             ..default()
         }
     }
@@ -370,14 +370,37 @@ pub enum RapierContextInitialization {
     /// [`RapierPhysicsPlugin`] will spawn an entity containing a [`RapierContextSimulation`]
     /// automatically during [`PreStartup`], with the [`DefaultRapierContext`] marker component.
     InitializeDefaultRapierContext {
-        /// See [`IntegrationParameters::length_unit`]
-        length_unit: f32,
+        /// Integration parameters component which will be added to the default rapier context.
+        #[reflect(remote = IntegrationParametersWrapper)]
+        integration_parameters: IntegrationParameters,
+        /// Rapier configuration component which will be added to the default rapier context.
+        rapier_configuration: RapierConfiguration,
     },
 }
 
 impl Default for RapierContextInitialization {
     fn default() -> Self {
-        RapierContextInitialization::InitializeDefaultRapierContext { length_unit: 1f32 }
+        Self::default_with_length_unit(1f32)
+    }
+}
+
+impl RapierContextInitialization {
+    /// Configures rapier with the specified length unit.
+    ///
+    /// See the documentation of [`IntegrationParameters::length_unit`] for additional details
+    /// on that argument.
+    ///
+    /// The default gravity is automatically scaled by that length unit.
+    pub fn default_with_length_unit(length_unit: f32) -> Self {
+        let integration_parameters = IntegrationParameters {
+            length_unit,
+            ..default()
+        };
+
+        RapierContextInitialization::InitializeDefaultRapierContext {
+            integration_parameters,
+            rapier_configuration: RapierConfiguration::new(length_unit),
+        }
     }
 }
 
@@ -387,16 +410,17 @@ pub fn insert_default_context(
 ) {
     match initialization_data.as_ref() {
         RapierContextInitialization::NoAutomaticRapierContext => {}
-        RapierContextInitialization::InitializeDefaultRapierContext { length_unit } => {
+        RapierContextInitialization::InitializeDefaultRapierContext {
+            integration_parameters,
+            rapier_configuration,
+        } => {
             commands.spawn((
                 Name::new("Rapier Context"),
                 RapierContextSimulation {
-                    integration_parameters: IntegrationParameters {
-                        length_unit: *length_unit,
-                        ..default()
-                    },
+                    integration_parameters: *integration_parameters,
                     ..RapierContextSimulation::default()
                 },
+                *rapier_configuration,
                 DefaultRapierContext,
             ));
         }
@@ -638,6 +662,65 @@ mod test {
             for e in &to_remove {
                 commands.entity(e).despawn();
             }
+        }
+    }
+
+    #[test]
+    fn parent_child() {
+        return main();
+
+        use bevy::prelude::*;
+
+        fn main() {
+            let mut app = App::new();
+            app.add_plugins((
+                TransformPlugin,
+                TimePlugin,
+                RapierPhysicsPlugin::<NoUserData>::default().in_fixed_schedule(),
+            ));
+            run_test(&mut app);
+        }
+
+        fn run_test(app: &mut App) {
+            app.insert_resource(TimeUpdateStrategy::ManualDuration(
+                std::time::Duration::from_secs_f32(1f32 / 60f32),
+            ));
+            app.add_systems(Startup, init_rapier_configuration);
+            app.add_systems(Startup, setup_physics);
+
+            app.finish();
+            for _ in 0..100 {
+                app.update();
+            }
+            let context = app
+                .world_mut()
+                .query::<RapierContext>()
+                .get_single(&app.world())
+                .unwrap();
+
+            println!("{:#?}", &context.rigidbody_set.bodies);
+        }
+
+        pub fn init_rapier_configuration(
+            mut config: Query<&mut RapierConfiguration, With<DefaultRapierContext>>,
+        ) {
+            let mut config = config.single_mut();
+            *config = RapierConfiguration {
+                force_update_from_transform_changes: true,
+                ..RapierConfiguration::new(1f32)
+            };
+        }
+
+        pub fn setup_physics(mut commands: Commands) {
+            let parent = commands
+                .spawn(Transform::from_scale(Vec3::splat(5f32)))
+                .id();
+            let mut entity = commands.spawn((
+                Collider::ball(1f32),
+                Transform::from_translation(Vec3::new(200f32, 100f32, 3f32)),
+                RigidBody::Fixed,
+            ));
+            entity.set_parent(parent);
         }
     }
 }
