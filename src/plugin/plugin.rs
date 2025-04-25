@@ -704,7 +704,7 @@ mod test {
         pub fn init_rapier_configuration(
             mut config: Query<&mut RapierConfiguration, With<DefaultRapierContext>>,
         ) {
-            let mut config = config.single_mut();
+            let mut config = config.single_mut().unwrap();
             *config = RapierConfiguration {
                 force_update_from_transform_changes: true,
                 ..RapierConfiguration::new(1f32)
