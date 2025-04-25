@@ -7,7 +7,7 @@
 // use bevy_mod_debugdump::{schedule_graph, schedule_graph_dot};
 // use bevy_rapier2d::prelude::*;
 
-// fn main() {
+fn main() {
 //     let mut app = App::new();
 //     app.add_plugins((
 //         DefaultPlugins,
@@ -31,4 +31,4 @@
 //     };
 //     let dot = schedule_graph_dot(&mut app, PostUpdate, &debugdump_settings);
 //     println!("{dot}");
-// }
+}

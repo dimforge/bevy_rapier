@@ -58,7 +58,7 @@
 // #[derive(Resource, Debug, Reflect)]
 // struct ExampleSet(pub Vec<ExampleDefinition>);
 
-// fn main() {
+fn main() {
 //     let mut app = App::new();
 //     app.init_resource::<ExamplesRes>()
 //         .add_plugins((
@@ -281,4 +281,4 @@
 //             current_example.0 = (current_example.0 + 1) % examples_available.0.len();
 //         }
 //     });
-// }
+}
