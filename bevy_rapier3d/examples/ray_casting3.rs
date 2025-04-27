@@ -74,21 +74,21 @@ pub fn setup_physics(mut commands: Commands) {
 
 pub fn cast_ray(
     mut commands: Commands,
-    windows: Query<&Window, With<PrimaryWindow>>,
+    window: Single<&Window, With<PrimaryWindow>>,
     rapier_context: ReadRapierContext,
     cameras: Query<(&Camera, &GlobalTransform)>,
 ) -> Result<()> {
-    let window = windows.single()?;
-
     let Some(cursor_position) = window.cursor_position() else {
-        return Err(BevyError::from("Cursor is outside the window area"));
+        log::warn!("Cursor is outside the window area");
+        return Ok(());
     };
 
     // We will color in read the colliders hovered by the mouse.
     for (camera, camera_transform) in &cameras {
         // First, compute a ray from the mouse position.
         let Ok(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
-            return Err(BevyError::from("Unable to compute ray from mouse position"));
+            log::warn!("Unable to compute ray from mouse position");
+            return Ok(());
         };
         let context = rapier_context.single()?;
         // Then cast the ray.
