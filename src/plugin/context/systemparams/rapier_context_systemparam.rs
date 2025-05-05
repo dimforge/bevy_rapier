@@ -39,7 +39,7 @@ impl<'w, 's, T: query::QueryFilter + 'static> ReadRapierContext<'w, 's, T> {
     ///
     /// If the number of query items is not exactly one, a [`bevy::ecs::query::QuerySingleError`] is returned instead.
     ///
-    /// You can also use the underlying query [`WriteRapierContext::rapier_context`] for finer grained queries.
+    /// You can also use the underlying query [`ReadRapierContext::rapier_context`] for finer grained queries.
     pub fn single(&self) -> Result<RapierContext> {
         let (simulation, colliders, joints, query_pipeline, rigidbody_set) =
             self.rapier_context.single()?;
