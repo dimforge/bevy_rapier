@@ -62,7 +62,9 @@ fn main() {
     app.init_resource::<ExamplesRes>()
         .add_plugins((
             DefaultPlugins,
-            EguiPlugin,
+            EguiPlugin {
+                enable_multipass_for_primary_context: false,
+            },
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
             WorldInspectorPlugin::new(),

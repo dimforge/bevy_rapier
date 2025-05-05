@@ -12,7 +12,7 @@ fn main() {
             DefaultPlugins,
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
-            WireframePlugin,
+            WireframePlugin::default(),
         ))
         .add_systems(Startup, (setup_graphics, setup_physics))
         .add_systems(Update, (toggle_wireframe, toggle_dynamic, rotate))

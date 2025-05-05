@@ -22,13 +22,13 @@ pub fn init_joints(
         (Entity, Option<&RapierContextEntityLink>, &MultibodyJoint),
         Without<RapierMultibodyJointHandle>,
     >,
-    parent_query: Query<&Parent>,
+    child_of_query: Query<&ChildOf>,
 ) {
     for (entity, entity_context_link, joint) in impulse_joints.iter() {
         // Get rapier context from RapierContextEntityLink or insert its default value.
         let context_entity = entity_context_link.map_or_else(
             || {
-                let context_entity = default_context_access.get_single().ok()?;
+                let context_entity = default_context_access.single().ok()?;
                 commands
                     .entity(entity)
                     .insert(RapierContextEntityLink(context_entity));
@@ -49,8 +49,8 @@ pub fn init_joints(
         let mut body_entity = entity;
         while target.is_none() {
             target = rigidbody_set.entity2body.get(&body_entity).copied();
-            if let Ok(parent_entity) = parent_query.get(body_entity) {
-                body_entity = parent_entity.get();
+            if let Ok(child_of) = child_of_query.get(body_entity) {
+                body_entity = child_of.parent();
             } else {
                 break;
             }
@@ -76,7 +76,7 @@ pub fn init_joints(
         // Get rapier context from RapierContextEntityLink or insert its default value.
         let context_entity = entity_context_link.map_or_else(
             || {
-                let context_entity = default_context_access.get_single().ok()?;
+                let context_entity = default_context_access.single().ok()?;
                 commands
                     .entity(entity)
                     .insert(RapierContextEntityLink(context_entity));
@@ -108,7 +108,7 @@ pub fn init_joints(
                     .insert(RapierMultibodyJointHandle(handle));
                 joints.entity2multibody_joint.insert(entity, handle);
             } else {
-                error!("Failed to create multibody joint: loop detected.")
+                log::error!("Failed to create multibody joint: loop detected.")
             }
         }
     }

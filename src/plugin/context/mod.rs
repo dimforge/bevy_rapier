@@ -785,7 +785,7 @@ impl Default for RapierContextSimulation {
             pipeline: PhysicsPipeline::new(),
             integration_parameters: IntegrationParameters::default(),
             event_handler: None,
-            deleted_colliders: HashMap::new(),
+            deleted_colliders: HashMap::default(),
             collision_events_to_send: Vec::new(),
             contact_force_events_to_send: Vec::new(),
             character_collisions_collector: Vec::new(),
@@ -959,10 +959,10 @@ impl RapierContextSimulation {
         contact_force_event_writer: &mut EventWriter<ContactForceEvent>,
     ) {
         for collision_event in self.collision_events_to_send.drain(..) {
-            collision_event_writer.send(collision_event);
+            collision_event_writer.write(collision_event);
         }
         for contact_force_event in self.contact_force_events_to_send.drain(..) {
-            contact_force_event_writer.send(contact_force_event);
+            contact_force_event_writer.write(contact_force_event);
         }
     }
 

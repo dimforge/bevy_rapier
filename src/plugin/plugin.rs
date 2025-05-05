@@ -3,10 +3,10 @@ use crate::prelude::*;
 use crate::reflect::IntegrationParametersWrapper;
 use bevy::ecs::{
     intern::Interned,
-    schedule::{ScheduleLabel, SystemConfigs},
-    system::SystemParamItem,
+    schedule::{IntoScheduleConfigs, ScheduleConfigs, ScheduleLabel},
+    system::{ScheduleSystem, SystemParamItem},
 };
-use bevy::utils::HashSet;
+use bevy::platform::collections::HashSet;
 use bevy::{prelude::*, transform::TransformSystem};
 use rapier::dynamics::IntegrationParameters;
 use std::marker::PhantomData;
@@ -121,7 +121,7 @@ where
     /// Provided for use when staging systems outside of this plugin using
     /// [`with_default_system_setup(false)`](Self::with_default_system_setup).
     /// See [`PhysicsSet`] for a description of these systems.
-    pub fn get_systems(set: PhysicsSet) -> SystemConfigs {
+    pub fn get_systems(set: PhysicsSet) -> ScheduleConfigs<ScheduleSystem> {
         match set {
             PhysicsSet::SyncBackend => (
                 (
@@ -137,7 +137,7 @@ where
                 // Run Bevy transform propagation additionally to sync [`GlobalTransform`]
                 (
                     bevy::transform::systems::sync_simple_transforms,
-                    bevy::transform::systems::propagate_transforms,
+                    bevy::transform::systems::propagate_parent_transforms,
                 )
                     .chain()
                     .in_set(RapierTransformPropagateSet),
@@ -203,12 +203,11 @@ impl<PhysicsHooksSystemParam> Default for RapierPhysicsPlugin<PhysicsHooksSystem
             schedule: PostUpdate.intern(),
             default_system_setup: true,
             default_world_setup: Default::default(),
-            enabled_physics_schedules: [
+            enabled_physics_schedules: HashSet::from_iter([
                 PhysicsSet::SyncBackend,
                 PhysicsSet::StepSimulation,
                 PhysicsSet::Writeback,
-            ]
-            .into(),
+            ]),
             _phantom: PhantomData,
         }
     }
@@ -273,7 +272,7 @@ where
             .insert_resource(Events::<MassModifiedEvent>::default());
         let default_world_init = app.world().get_resource::<RapierContextInitialization>();
         if let Some(world_init) = default_world_init {
-            warn!("RapierPhysicsPlugin added but a `RapierContextInitialization` resource was already existing.\
+            log::warn!("RapierPhysicsPlugin added but a `RapierContextInitialization` resource was already existing.\
             This might overwrite previous configuration made via `RapierPhysicsPlugin::with_custom_initialization`\
             or `RapierPhysicsPlugin::with_length_unit`.
             The following resource will be used: {:?}", world_init);
@@ -332,7 +331,7 @@ where
                 match config {
                     TimestepMode::Fixed { .. } => {}
                     mode => {
-                        warn!("TimestepMode is set to `{:?}`, it is recommended to use `TimestepMode::Fixed` if you have the physics in `FixedUpdate`", mode);
+                        log::warn!("TimestepMode is set to `{:?}`, it is recommended to use `TimestepMode::Fixed` if you have the physics in `FixedUpdate`", mode);
                     }
                 }
             }
@@ -532,7 +531,7 @@ mod test {
                 let rigidbody_set = app
                     .world_mut()
                     .query::<&RapierRigidBodySet>()
-                    .get_single(&app.world())
+                    .single(app.world())
                     .unwrap();
 
                 println!("{:?}", &rigidbody_set.entity2body);
@@ -540,7 +539,7 @@ mod test {
             let rigidbody_set = app
                 .world_mut()
                 .query::<&RapierRigidBodySet>()
-                .get_single(&app.world())
+                .single(app.world())
                 .unwrap();
 
             assert_eq!(
@@ -613,7 +612,7 @@ mod test {
             let context = app
                 .world_mut()
                 .query::<RapierContext>()
-                .get_single(&app.world())
+                .single(app.world())
                 .unwrap();
             assert_eq!(context.rigidbody_set.entity2body.len(), 1);
 
@@ -624,7 +623,7 @@ mod test {
             let context = app
                 .world_mut()
                 .query::<RapierContext>()
-                .get_single(&app.world())
+                .single(app.world())
                 .unwrap();
 
             println!("{:?}", &context.rigidbody_set.entity2body);
@@ -696,7 +695,7 @@ mod test {
             let context = app
                 .world_mut()
                 .query::<RapierContext>()
-                .get_single(&app.world())
+                .single(app.world())
                 .unwrap();
 
             println!("{:#?}", &context.rigidbody_set.bodies);
@@ -705,7 +704,7 @@ mod test {
         pub fn init_rapier_configuration(
             mut config: Query<&mut RapierConfiguration, With<DefaultRapierContext>>,
         ) {
-            let mut config = config.single_mut();
+            let mut config = config.single_mut().unwrap();
             *config = RapierConfiguration {
                 force_update_from_transform_changes: true,
                 ..RapierConfiguration::new(1f32)
@@ -716,12 +715,12 @@ mod test {
             let parent = commands
                 .spawn(Transform::from_scale(Vec3::splat(5f32)))
                 .id();
-            let mut entity = commands.spawn((
+            let mut entity_commands = commands.spawn((
                 Collider::ball(1f32),
                 Transform::from_translation(Vec3::new(200f32, 100f32, 3f32)),
                 RigidBody::Fixed,
             ));
-            entity.set_parent(parent);
+            entity_commands.insert(ChildOf(parent));
         }
     }
 }

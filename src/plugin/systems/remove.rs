@@ -100,7 +100,7 @@ pub fn sync_removals(
         };
         let context = &mut *context;
         if let Some(parent) = context_colliders.collider_parent(&rigidbody_set, entity) {
-            mass_modified.send(parent.into());
+            mass_modified.write(parent.into());
         }
 
         context_colliders.colliders.remove(
@@ -121,7 +121,7 @@ pub fn sync_removals(
             let context = &mut *context;
             let context_colliders = &mut *context_colliders;
             if let Some(parent) = context_colliders.collider_parent(&rigidbody_set, entity) {
-                mass_modified.send(parent.into());
+                mass_modified.write(parent.into());
             }
 
             context_colliders.colliders.remove(

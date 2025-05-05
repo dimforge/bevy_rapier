@@ -118,7 +118,10 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
                 let mesh = typed_shape_to_mesh(&typed_shape)?;
                 if let Some(ref mut final_mesh) = final_mesh {
                     // FIXME: check the result when released upstream (https://github.com/bevyengine/bevy/pull/17475)
-                    final_mesh.merge(&mesh);
+                    // FIXME: Error is simply "peeked" and ignored. Handle it properly by returning a Result from this function.
+                    let _ = final_mesh.merge(&mesh).inspect_err(|e| {
+                        log::warn!("Error merging mesh data: {e}");
+                    });
                 } else {
                     final_mesh = Some(mesh);
                 }

@@ -15,7 +15,7 @@ fn main() {
     ));
 
     let debugdump_settings = schedule_graph::Settings {
-        include_system: Some(Box::new(|system: &(dyn System<In = (), Out = ()>)| {
+        include_system: Some(Box::new(|system| {
             if system.name().starts_with("bevy_pbr")
                 || system.name().starts_with("bevy_render")
                 || system.name().starts_with("bevy_gizmos")

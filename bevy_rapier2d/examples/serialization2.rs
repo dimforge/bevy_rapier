@@ -36,5 +36,5 @@ pub fn print_physics(_context: ReadRapierContext) {
 }
 
 fn quit(mut exit_event: EventWriter<AppExit>) {
-    exit_event.send(AppExit::Success);
+    exit_event.write(AppExit::Success);
 }

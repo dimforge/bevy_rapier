@@ -1,7 +1,7 @@
 //! A picking backend for Rapier physics entities.
 //!
 //! By default, all colliders are pickable. Picking can be disabled for individual entities
-//! by adding [`PickingBehavior::IGNORE`](bevy::picking::PickingBehavior::IGNORE).
+//! by adding [`Pickable::IGNORE`](bevy::picking::Pickable::IGNORE).
 //!
 //! To make rapier picking entirely opt-in, set [`RapierPickingSettings::require_markers`]
 //! to `true` and add a [`RapierPickable`] component to the desired camera and target entities.
@@ -89,7 +89,7 @@ pub fn update_hits(
     )>,
     mut output: EventWriter<PointerHits>,
 ) {
-    for (&ray_id, &ray) in ray_map.map().iter() {
+    for (&ray_id, &ray) in ray_map.map.iter() {
         let Ok((camera, cam_pickable, cam_layers)) = picking_cameras.get(ray_id.camera) else {
             continue;
         };
@@ -171,7 +171,7 @@ pub fn update_hits(
             );
 
             if !picks.is_empty() {
-                output.send(PointerHits::new(ray_id.pointer, picks, order));
+                output.write(PointerHits::new(ray_id.pointer, picks, order));
             }
         }
     }

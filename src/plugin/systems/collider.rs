@@ -88,12 +88,12 @@ pub fn apply_scale(
 pub fn apply_collider_user_changes(
     mut context: Query<(&RapierRigidBodySet, &mut RapierContextColliders)>,
     config: Query<&RapierConfiguration>,
-    (changed_collider_transforms, parent_query, transform_query): (
+    (changed_collider_transforms, child_of_query, transform_query): (
         Query<
             (RapierEntity, &RapierColliderHandle, &GlobalTransform),
             (Without<RapierRigidBodyHandle>, Changed<GlobalTransform>),
         >,
-        Query<&Parent>,
+        Query<&ChildOf>,
         Query<&Transform>,
     ),
 
@@ -154,7 +154,7 @@ pub fn apply_collider_user_changes(
             let (_, collider_position) = collider_offset(
                 rapier_entity.entity,
                 rigidbody_set,
-                &parent_query,
+                &child_of_query,
                 &transform_query,
             );
 
@@ -190,7 +190,7 @@ pub fn apply_collider_user_changes(
 
             if let Some(body) = co.parent() {
                 if let Some(body_entity) = rigidbody_set.rigid_body_entity(body) {
-                    mass_modified.send(body_entity.into());
+                    mass_modified.write(body_entity.into());
                 }
             }
         }
@@ -312,7 +312,7 @@ pub fn apply_collider_user_changes(
 
             if let Some(body) = co.parent() {
                 if let Some(body_entity) = rigidbody_set.rigid_body_entity(body) {
-                    mass_modified.send(body_entity.into());
+                    mass_modified.write(body_entity.into());
                 }
             }
         }
@@ -322,18 +322,18 @@ pub fn apply_collider_user_changes(
 pub(crate) fn collider_offset(
     entity: Entity,
     rigidbody_set: &RapierRigidBodySet,
-    parent_query: &Query<&Parent>,
+    child_of_query: &Query<&ChildOf>,
     transform_query: &Query<&Transform>,
 ) -> (Option<RigidBodyHandle>, Transform) {
     let mut body_entity = entity;
     let mut body_handle = rigidbody_set.entity2body.get(&body_entity).copied();
     let mut child_transform = Transform::default();
     while body_handle.is_none() {
-        if let Ok(parent_entity) = parent_query.get(body_entity) {
+        if let Ok(child_of) = child_of_query.get(body_entity) {
             if let Ok(transform) = transform_query.get(body_entity) {
                 child_transform = *transform * child_transform;
             }
-            body_entity = parent_entity.get();
+            body_entity = child_of.parent();
         } else {
             break;
         }
@@ -363,7 +363,7 @@ pub fn init_colliders(
     default_context_access: Query<Entity, With<DefaultRapierContext>>,
     colliders: Query<(ColliderComponents, Option<&GlobalTransform>), Without<RapierColliderHandle>>,
     mut rigid_body_mprops: Query<&mut ReadMassProperties>,
-    parent_query: Query<&Parent>,
+    child_of_query: Query<&ChildOf>,
     transform_query: Query<&Transform>,
 ) {
     for (
@@ -389,7 +389,7 @@ pub fn init_colliders(
         // Get rapier context from RapierContextEntityLink or insert its default value.
         let context_entity = entity_context_link.map_or_else(
             || {
-                let context_entity = default_context_access.get_single().ok()?;
+                let context_entity = default_context_access.single().ok()?;
                 commands
                     .entity(entity)
                     .insert(RapierContextEntityLink(context_entity));
@@ -470,7 +470,7 @@ pub fn init_colliders(
         }
         let body_entity = entity;
         let (body_handle, child_transform) =
-            collider_offset(entity, rigidbody_set, &parent_query, &transform_query);
+            collider_offset(entity, rigidbody_set, &child_of_query, &transform_query);
 
         builder = builder.user_data(entity.to_bits() as u128);
 
@@ -521,7 +521,7 @@ pub fn init_async_colliders(
                         .insert(collider)
                         .remove::<AsyncCollider>();
                 }
-                None => error!("Unable to generate collider from mesh {:?}", mesh),
+                None => log::error!("Unable to generate collider from mesh {:?}", mesh),
             }
         }
     }
@@ -552,9 +552,10 @@ pub fn init_async_scene_colliders(
                             Some(collider) => {
                                 commands.entity(child_entity).insert(collider);
                             }
-                            None => error!(
+                            None => log::error!(
                                 "Unable to generate collider from mesh {:?} with name {}",
-                                mesh, name
+                                mesh,
+                                name
                             ),
                         }
                     }
@@ -655,7 +656,7 @@ pub mod test {
         let mut scenes = app.world_mut().resource_mut::<Assets<Scene>>();
         let scene = scenes.add(Scene::new(World::new()));
 
-        let mut named_shapes = bevy::utils::HashMap::new();
+        let mut named_shapes = bevy::platform::collections::HashMap::default();
         named_shapes.insert("Capsule".to_string(), None);
         let parent = app
             .world_mut()

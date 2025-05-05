@@ -62,7 +62,9 @@ fn main() {
     app.init_resource::<ExamplesRes>()
         .add_plugins((
             DefaultPlugins,
-            EguiPlugin,
+            EguiPlugin {
+                enable_multipass_for_primary_context: false,
+            },
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(10.0),
             RapierDebugRenderPlugin::default(),
             WorldInspectorPlugin::new(),
@@ -205,12 +207,15 @@ fn main() {
             OnExit(Examples::PlayerMovement2),
             (
                 cleanup,
-                |mut rapier_config: Query<&mut RapierConfiguration>, ctxt: ReadRapierContext| {
-                    let mut rapier_config = rapier_config.single_mut();
+                |mut rapier_config: Query<&mut RapierConfiguration>,
+                 ctxt: ReadRapierContext|
+                 -> Result<()> {
+                    let mut rapier_config = rapier_config.single_mut()?;
                     rapier_config.gravity = RapierConfiguration::new(
-                        ctxt.single().simulation.integration_parameters.length_unit,
+                        ctxt.single()?.simulation.integration_parameters.length_unit,
                     )
                     .gravity;
+                    Ok(())
                 },
             ),
         )

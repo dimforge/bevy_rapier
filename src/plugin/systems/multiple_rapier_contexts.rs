@@ -16,18 +16,18 @@ use bevy::prelude::*;
 /// If this fails to happen, weirdness will ensue.
 pub fn on_add_entity_with_parent(
     q_add_entity_without_parent: Query<
-        (Entity, &Parent),
+        (Entity, &ChildOf),
         (
             With<RapierContextEntityLink>,
-            Or<(Changed<RapierContextEntityLink>, Changed<Parent>)>,
+            Or<(Changed<RapierContextEntityLink>, Changed<ChildOf>)>,
         ),
     >,
-    q_parent: Query<&Parent>,
+    q_child_of: Query<&ChildOf>,
     q_physics_world: Query<&RapierContextEntityLink>,
     mut commands: Commands,
 ) {
-    for (ent, parent) in &q_add_entity_without_parent {
-        let mut parent = Some(parent.get());
+    for (ent, child_of) in &q_add_entity_without_parent {
+        let mut parent = Some(child_of.parent());
         while let Some(parent_entity) = parent {
             if let Ok(pw) = q_physics_world.get(parent_entity) {
                 // Change rapier context link only if the existing link isn't the correct one.
@@ -37,7 +37,7 @@ pub fn on_add_entity_with_parent(
                 }
                 break;
             }
-            parent = q_parent.get(parent_entity).ok().map(|x| x.get());
+            parent = q_child_of.get(parent_entity).ok().map(|x| x.parent());
         }
     }
 }
@@ -106,7 +106,7 @@ fn bubble_down_context_change(
         return;
     };
 
-    children.iter().for_each(|&child| {
+    children.iter().for_each(|child| {
         if q_physics_context
             .get(child)
             .map(|x| *x == new_physics_context)
@@ -162,7 +162,7 @@ mod test {
         // Verify all rapier entities have a `RapierContextEntityLink`.
         let world = app.world_mut();
         let mut query = world.query_filtered::<Entity, With<Marker<'R'>>>();
-        for entity in query.iter(&world) {
+        for entity in query.iter(world) {
             world
                 .get::<RapierContextEntityLink>(entity)
                 .unwrap_or_else(|| panic!("no link to rapier context entity from {entity}."));
@@ -172,14 +172,14 @@ mod test {
         // FIXME: We need to wait 1 frame when creating a context.
         // Ideally we should be able to order the systems so that we don't have to wait.
         app.update();
-        let mut world = app.world_mut();
+        let world = app.world_mut();
         let mut query = world.query_filtered::<&mut RapierContextEntityLink, With<Marker<'P'>>>();
-        let mut link_parent = query.get_single_mut(&mut world).unwrap();
+        let mut link_parent = query.single_mut(world).unwrap();
         link_parent.0 = new_rapier_context;
         app.update();
-        let mut world = app.world_mut();
+        let world = app.world_mut();
         let mut query = world.query_filtered::<&RapierContextEntityLink, With<Marker<'C'>>>();
-        let link_child = query.get_single_mut(&mut world).unwrap();
+        let link_child = query.single_mut(world).unwrap();
         assert_eq!(link_child.0, new_rapier_context);
         return;
 
