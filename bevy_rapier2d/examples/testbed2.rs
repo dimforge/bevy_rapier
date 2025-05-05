@@ -97,7 +97,7 @@ fn main() {
         )
         .add_systems(OnExit(Examples::Boxes2), cleanup)
         //
-        //boxes2
+        //voxels2
         .add_systems(
             OnEnter(Examples::Voxels2),
             (voxels2::setup_graphics, voxels2::setup_physics),

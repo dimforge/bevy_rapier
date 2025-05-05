@@ -31,17 +31,10 @@ pub fn setup_physics(mut commands: Commands) {
     let nx = 50;
     for i in 0..nx {
         for j in 0..10 {
-            // if test_ccd {
-            //     rb = rb.linvel(vector![0.0, -1000.0] * scale).ccd_enabled(true);
-            // }
-            // let falling_objects = if falling_objects == 3 {
-            //     j % 3
-            // } else {
-            //     falling_objects
-            // };
+            let falling_objects = (j + i) % 3;
 
             let ball_radius = 0.5 * scale;
-            let co = match 0 {
+            let co = match falling_objects {
                 0 => Collider::ball(ball_radius),
                 1 => Collider::cuboid(ball_radius, ball_radius),
                 2 => Collider::capsule_y(ball_radius, ball_radius),
@@ -57,23 +50,6 @@ pub fn setup_physics(mut commands: Commands) {
                 co,
             ));
         }
-    }
-    let num = 8;
-    let rad = 10.0;
-
-    let shift = rad * 2.0 + rad;
-    let centerx = shift * (num / 2) as f32;
-    let centery = shift / 2.0;
-
-    let mut offset = -(num as f32) * (rad * 2.0 + rad) * 0.5;
-
-    for j in 0usize..20 {
-        for i in 0..num {
-            let x = i as f32 * shift - centerx + offset;
-            let y = j as f32 * shift + centery + 30.0;
-        }
-
-        offset -= 0.05 * rad * (num as f32 - 1.0);
     }
 
     /*

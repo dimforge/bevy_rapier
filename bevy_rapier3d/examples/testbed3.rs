@@ -11,6 +11,7 @@ mod multiple_colliders3;
 mod picking3;
 mod ray_casting3;
 mod static_trimesh3;
+mod voxels3;
 
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
@@ -22,6 +23,7 @@ pub enum Examples {
     #[default]
     None,
     Boxes3,
+    Voxels3,
     DebugToggle3,
     Despawn3,
     Events3,
@@ -76,6 +78,7 @@ fn main() {
         .init_state::<Examples>()
         .insert_resource(ExampleSet(vec![
             (Examples::Boxes3, "Boxes3").into(),
+            (Examples::Voxels3, "Voxels3").into(),
             (Examples::DebugToggle3, "DebugToggle3").into(),
             (Examples::Despawn3, "Despawn3").into(),
             (Examples::Events3, "Events3").into(),
@@ -89,12 +92,19 @@ fn main() {
         ]))
         .init_resource::<ExampleSelected>()
         //
-        //boxes2
+        // boxes3
         .add_systems(
             OnEnter(Examples::Boxes3),
             (boxes3::setup_graphics, boxes3::setup_physics),
         )
         .add_systems(OnExit(Examples::Boxes3), cleanup)
+        //
+        // voxels3
+        .add_systems(
+            OnEnter(Examples::Voxels3),
+            (voxels3::setup_graphics, voxels3::setup_physics),
+        )
+        .add_systems(OnExit(Examples::Voxels3), cleanup)
         //
         // Debug toggle
         .add_systems(
