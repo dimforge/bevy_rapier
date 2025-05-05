@@ -11,6 +11,7 @@ mod locked_rotations2;
 mod multiple_colliders2;
 mod player_movement2;
 mod rope_joint2;
+mod voxels2;
 
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
@@ -22,6 +23,7 @@ pub enum Examples {
     #[default]
     None,
     Boxes2,
+    Voxels2,
     DebugToggle2,
     RopeJoint2,
     DebugDespawn2,
@@ -75,6 +77,7 @@ fn main() {
         .init_state::<Examples>()
         .insert_resource(ExampleSet(vec![
             (Examples::Boxes2, "Boxes3").into(),
+            (Examples::Voxels2, "Voxels2").into(),
             (Examples::RopeJoint2, "RopeJoint2").into(),
             (Examples::DebugDespawn2, "DebugDespawn2").into(),
             (Examples::Despawn2, "Despawn3").into(),
@@ -93,6 +96,13 @@ fn main() {
             (boxes2::setup_graphics, boxes2::setup_physics),
         )
         .add_systems(OnExit(Examples::Boxes2), cleanup)
+        //
+        //boxes2
+        .add_systems(
+            OnEnter(Examples::Voxels2),
+            (voxels2::setup_graphics, voxels2::setup_physics),
+        )
+        .add_systems(OnExit(Examples::Voxels2), cleanup)
         //
         // Debug toggle
         .add_systems(

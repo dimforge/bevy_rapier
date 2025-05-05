@@ -10,6 +10,7 @@ pub use self::round_shape::*;
 pub use self::segment::*;
 pub use self::triangle::*;
 pub use self::trimesh::*;
+pub use self::voxels::*;
 
 #[cfg(feature = "dim2")]
 pub use self::convex_polygon::*;
@@ -29,6 +30,7 @@ mod round_shape;
 mod segment;
 mod triangle;
 mod trimesh;
+mod voxels;
 
 #[cfg(feature = "dim2")]
 mod convex_polygon;

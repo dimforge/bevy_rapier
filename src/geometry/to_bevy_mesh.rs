@@ -23,8 +23,8 @@ use rapier::prelude::{Capsule, TypedShape};
 /// Or builds a new Mesh with [`PrimitiveTopology::TriangleList`](bevy::render::mesh::PrimitiveTopology::TriangleList).
 pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
     Some(match typed_shape {
-        rapier::prelude::TypedShape::Ball(ball) => ball.mesh_builder().build(),
-        rapier::prelude::TypedShape::Cuboid(cuboid) => {
+        TypedShape::Ball(ball) => ball.mesh_builder().build(),
+        TypedShape::Cuboid(cuboid) => {
             // FIXME: bevy 0.16 will expose a builder for cuboids: https://github.com/bevyengine/bevy/pull/17454
             let half_extents = cuboid.half_extents;
             #[cfg(feature = "dim2")]
@@ -37,13 +37,13 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
             );
             Mesh::from(mesh)
         }
-        rapier::prelude::TypedShape::Capsule(capsule) => capsule.mesh_builder().build(),
-        rapier::prelude::TypedShape::Segment(_segment) => {
+        TypedShape::Capsule(capsule) => capsule.mesh_builder().build(),
+        TypedShape::Segment(_segment) => {
             // FIXME: use a LineStrip
             log::warn!("Segment not implemented yet");
             return None;
         }
-        rapier::prelude::TypedShape::Triangle(triangle) => {
+        TypedShape::Triangle(triangle) => {
             // FIXME: bevy 0.16 will expose a builder for triangles: https://github.com/bevyengine/bevy/pull/17454
             let a = triangle.a.coords;
             let b = triangle.b.coords;
@@ -59,7 +59,34 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
 
             mesh.into()
         }
-        rapier::prelude::TypedShape::TriMesh(tri_mesh) => {
+        TypedShape::Voxels(_voxels) => {
+            #[cfg(feature = "dim3")]
+            {
+                let (vtx, idx) = _voxels.to_outline();
+
+                let mesh = Mesh::new(
+                    bevy::render::mesh::PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::default(),
+                )
+                .with_inserted_indices(Indices::U32(idx.into_iter().flatten().collect()));
+                return Some(
+                    mesh.with_inserted_attribute(
+                        Mesh::ATTRIBUTE_POSITION,
+                        vtx.iter()
+                            .map(|pos| [pos.x, pos.y, pos.z])
+                            .collect::<Vec<_>>(),
+                    ),
+                );
+            }
+
+            #[cfg(feature = "dim2")]
+            {
+                log::warn!("Voxels not implemented in 2d yet");
+                // let (vtx, idx) = voxels.to_polyline();
+            }
+            return None;
+        }
+        TypedShape::TriMesh(tri_mesh) => {
             let vertices = tri_mesh.vertices();
             #[cfg(feature = "dim2")]
             let vertices: Vec<_> = vertices.iter().map(|pos| [pos.x, pos.y, 0.0]).collect();
@@ -73,19 +100,19 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
             .with_inserted_indices(Indices::U32(indices.iter().cloned().flatten().collect()));
             mesh.with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vertices)
         }
-        rapier::prelude::TypedShape::Polyline(_polyline) => {
+        TypedShape::Polyline(_polyline) => {
             // FIXME: use a LineStrip
             log::warn!("Polyline not implemented yet");
             return None;
         }
-        rapier::prelude::TypedShape::HalfSpace(_half_space) => {
+        TypedShape::HalfSpace(_half_space) => {
             // FIXME: We can't really implement halfspace to mesh, but we can provide a builder where user provides a size.
             log::warn!(
-                "HalfSpace cannot be converted automatically to a mesh, use [`ToMeshBuilder`] instead"
-            );
+                    "HalfSpace cannot be converted automatically to a mesh, use [`ToMeshBuilder`] instead"
+                );
             return None;
         }
-        rapier::prelude::TypedShape::HeightField(_height_field) => {
+        TypedShape::HeightField(_height_field) => {
             #[cfg(feature = "dim2")]
             {
                 // FIXME: use a LineStrip, or a triangle mesh with a height through a builder?
@@ -111,7 +138,7 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
                 )
             }
         }
-        rapier::prelude::TypedShape::Compound(compound) => {
+        TypedShape::Compound(compound) => {
             let mut final_mesh: Option<Mesh> = Option::None;
             for shape in compound.shapes() {
                 let typed_shape = shape.1.as_typed_shape();
@@ -129,7 +156,7 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
             final_mesh?
         }
         #[cfg(feature = "dim2")]
-        rapier::prelude::TypedShape::ConvexPolygon(convex_polygon) => {
+        TypedShape::ConvexPolygon(convex_polygon) => {
             let vertices = convex_polygon.points();
             let vertices: Vec<_> = vertices.iter().map(|pos| [pos.x, pos.y, 0.0]).collect();
 
@@ -144,7 +171,7 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
             mesh.with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vertices)
         }
         #[cfg(feature = "dim3")]
-        rapier::prelude::TypedShape::ConvexPolyhedron(convex_polyhedron) => {
+        TypedShape::ConvexPolyhedron(convex_polyhedron) => {
             let vertices = convex_polyhedron.points();
             let vertices: Vec<_> = vertices.iter().map(|pos| [pos.x, pos.y, pos.z]).collect();
 
@@ -159,44 +186,44 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
             mesh.with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vertices)
         }
         #[cfg(feature = "dim3")]
-        rapier::prelude::TypedShape::Cone(cone) => cone.mesh_builder().build(),
+        TypedShape::Cone(cone) => cone.mesh_builder().build(),
         #[cfg(feature = "dim3")]
-        rapier::prelude::TypedShape::Cylinder(cylinder) => cylinder.mesh_builder().build(),
+        TypedShape::Cylinder(cylinder) => cylinder.mesh_builder().build(),
         #[cfg(feature = "dim3")]
-        rapier::prelude::TypedShape::RoundCone(_round_cone) => {
+        TypedShape::RoundCone(_round_cone) => {
             // FIXME: parry doesn't have easy to use functions to convert RoundShapes to a mesh.
             log::warn!("RoundCone not implemented yet");
             return None;
         }
         #[cfg(feature = "dim3")]
-        rapier::prelude::TypedShape::RoundCylinder(_round_cylinder) => {
+        TypedShape::RoundCylinder(_round_cylinder) => {
             // FIXME: parry doesn't have easy to use functions to convert RoundShapes to a mesh.
             log::warn!("RoundCylinder not implemented yet");
             return None;
         }
         #[cfg(feature = "dim2")]
-        rapier::prelude::TypedShape::RoundConvexPolygon(_round_shape) => {
+        TypedShape::RoundConvexPolygon(_round_shape) => {
             // FIXME: parry doesn't have easy to use functions to convert RoundShapes to a mesh.
             log::warn!("RoundConvexPolygon not implemented yet");
             return None;
         }
         #[cfg(feature = "dim3")]
-        rapier::prelude::TypedShape::RoundConvexPolyhedron(_round_shape) => {
+        TypedShape::RoundConvexPolyhedron(_round_shape) => {
             // FIXME: parry doesn't have easy to use functions to convert RoundShapes to a mesh.
             log::warn!("RoundConvexPolyhedron not implemented yet");
             return None;
         }
-        rapier::prelude::TypedShape::RoundCuboid(_round_shape) => {
+        TypedShape::RoundCuboid(_round_shape) => {
             // FIXME: parry doesn't have easy to use functions to convert RoundShapes to a mesh.
             log::warn!("RoundCuboid not implemented yet");
             return None;
         }
-        rapier::prelude::TypedShape::RoundTriangle(_round_shape) => {
+        TypedShape::RoundTriangle(_round_shape) => {
             // FIXME: parry doesn't have easy to use functions to convert RoundShapes to a mesh.
             log::warn!("RoundTriangle not implemented yet");
             return None;
         }
-        rapier::prelude::TypedShape::Custom(_shape) => {
+        TypedShape::Custom(_shape) => {
             // FIXME: I'm not sure how to convert a custom shape to a mesh.
             log::warn!("Custom shape not implemented yet");
             return None;
