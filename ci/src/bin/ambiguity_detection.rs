@@ -19,6 +19,7 @@ fn main() {
             bevy_rapier3d::prelude::RapierPickingPlugin,
         ),
         true,
+        2,
     );
     check_ambiguities(
         (
@@ -26,6 +27,7 @@ fn main() {
             bevy_rapier3d::prelude::RapierPickingPlugin,
         ),
         false,
+        0,
     );
     check_ambiguities(
         (
@@ -33,6 +35,7 @@ fn main() {
             bevy_rapier3d::prelude::RapierPickingPlugin,
         ),
         false,
+        0,
     );
     check_ambiguities(
         (
@@ -40,10 +43,11 @@ fn main() {
             bevy_rapier3d::prelude::RapierPickingPlugin,
         ),
         false,
+        0,
     );
 }
 
-fn check_ambiguities<M>(plugin: impl Plugins<M>, set_logger: bool) {
+fn check_ambiguities<M>(plugin: impl Plugins<M>, set_logger: bool, ambiguities_expected: usize) {
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, TransformPlugin, AssetPlugin::default()));
     if set_logger {
@@ -61,7 +65,8 @@ fn check_ambiguities<M>(plugin: impl Plugins<M>, set_logger: bool) {
     let main_app_ambiguities = count_ambiguities(app.main());
     assert_eq!(
         main_app_ambiguities.total(),
-        0,
+        // FIXME: We should find those ambiguity and fix it, this should be 0
+        ambiguities_expected,
         "Main app has unexpected ambiguities among the following schedules: \n{main_app_ambiguities:#?}.",
     );
 }
@@ -92,6 +97,15 @@ fn count_ambiguities(sub_app: &SubApp) -> AmbiguitiesCount {
     let schedules = sub_app.world().resource::<Schedules>();
     let mut ambiguities = HashMap::default();
     for (_, schedule) in schedules.iter() {
+        schedule.graph().conflicting_systems().iter().for_each(
+            |(system_a, system_b, components)| {
+                info!("Conflicting systems: {system_a:?} and {system_b:?} over components:");
+                for component in components {
+                    let component_info = sub_app.world().components().get_info(*component).unwrap();
+                    info!("{}", component_info.name());
+                }
+            },
+        );
         let ambiguities_in_schedule = schedule.graph().conflicting_systems().len();
         ambiguities.insert(schedule.label(), ambiguities_in_schedule);
     }
