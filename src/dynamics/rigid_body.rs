@@ -30,7 +30,7 @@ pub struct RapierRigidBodyHandle(pub RigidBodyHandle);
 /// - [`GravityScale`]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Component, Reflect, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-#[reflect(Component, PartialEq)]
+#[reflect(Component, Default, PartialEq)]
 pub enum RigidBody {
     /// A `RigidBody::Dynamic` body can be affected by all external forces.
     #[default]
@@ -84,7 +84,7 @@ impl From<RigidBodyType> for RigidBody {
 /// This only affects entities with a [`RigidBody`] component.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-#[reflect(Component, PartialEq)]
+#[reflect(Component, Default, PartialEq)]
 pub struct Velocity {
     /// The linear velocity of the [`RigidBody`].
     pub linvel: Vect,
@@ -155,7 +155,7 @@ impl Velocity {
 ///
 /// This only affects entities with a [`RigidBody`] component.
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
-#[reflect(Component, PartialEq)]
+#[reflect(Component, Default, PartialEq)]
 pub enum AdditionalMassProperties {
     /// This mass will be added to the [`RigidBody`]. The rigid-body’s total
     /// angular inertia tensor (obtained from its attached colliders) will
@@ -180,7 +180,7 @@ impl Default for AdditionalMassProperties {
 ///
 /// This only reads the mass from entities with a [`RigidBody`] component.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
-#[reflect(Component, PartialEq)]
+#[reflect(Component, Default, PartialEq)]
 pub struct ReadMassProperties(MassProperties);
 
 impl ReadMassProperties {
@@ -216,7 +216,7 @@ impl From<Entity> for MassModifiedEvent {
 /// This cannot be used as a component. Use the components `ReadMassProperties` to read a [`RigidBody`]’s
 /// mass-properties or `AdditionalMassProperties` to set its additional mass-properties.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Reflect)]
-#[reflect(PartialEq)]
+#[reflect(Default, PartialEq)]
 pub struct MassProperties {
     /// The center of mass of a [`RigidBody`] expressed in its local-space.
     pub local_center_of_mass: Vect,
@@ -270,7 +270,7 @@ impl MassProperties {
 }
 
 #[derive(Default, Debug, Component, Reflect, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
-#[reflect(Component, PartialEq)]
+#[reflect(Component, Default, PartialEq)]
 /// Flags affecting the behavior of the constraints solver for a given contact manifold.
 pub struct LockedAxes(u8);
 
@@ -305,7 +305,7 @@ impl From<LockedAxes> for RapierLockedAxes {
 ///
 /// This force is applied at each timestep.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
-#[reflect(Component, PartialEq)]
+#[reflect(Component, Default, PartialEq)]
 pub struct ExternalForce {
     /// The linear force applied to the [`RigidBody`].
     pub force: Vect,
@@ -377,7 +377,7 @@ impl SubAssign for ExternalForce {
 /// The impulse is only applied once, and whenever it it modified (based
 /// on Bevy’s change detection).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
-#[reflect(Component, PartialEq)]
+#[reflect(Component, Default, PartialEq)]
 pub struct ExternalImpulse {
     /// The linear impulse applied to the [`RigidBody`].
     pub impulse: Vect,
@@ -452,7 +452,7 @@ impl SubAssign for ExternalImpulse {
 /// Gravity is multiplied by this scaling factor before it's
 /// applied to this [`RigidBody`].
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
-#[reflect(Component, PartialEq)]
+#[reflect(Component, Default, PartialEq)]
 pub struct GravityScale(pub f32);
 
 impl Default for GravityScale {
@@ -463,7 +463,7 @@ impl Default for GravityScale {
 
 /// Information used for Continuous-Collision-Detection.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Component, Reflect)]
-#[reflect(Component, PartialEq)]
+#[reflect(Component, Default, PartialEq)]
 pub struct Ccd {
     /// Is CCD enabled for this [`RigidBody`]?
     pub enabled: bool,
@@ -495,7 +495,7 @@ impl Ccd {
 /// [`rapier::dynamics::RigidBody::enable_ccd`] since it relies on predictive constraints instead of
 /// shape-cast and substeps.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
-#[reflect(Component, PartialEq)]
+#[reflect(Component, Default, PartialEq)]
 pub struct SoftCcd {
     /// The soft CCD prediction distance.
     pub prediction: f32,
@@ -503,7 +503,7 @@ pub struct SoftCcd {
 
 /// The dominance groups of a [`RigidBody`].
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Component, Reflect)]
-#[reflect(Component, PartialEq)]
+#[reflect(Component, Default, PartialEq)]
 pub struct Dominance {
     // FIXME: rename this to `group` (no `s`).
     /// The dominance groups of a [`RigidBody`].
@@ -522,7 +522,7 @@ impl Dominance {
 /// This controls whether a body is sleeping or not.
 /// If the threshold is negative, the body never sleeps.
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
-#[reflect(Component, PartialEq)]
+#[reflect(Component, Default, PartialEq)]
 pub struct Sleeping {
     /// The linear velocity below which the body can fall asleep.
     ///
@@ -558,7 +558,7 @@ impl Default for Sleeping {
 
 /// Damping factors to gradually slow down a [`RigidBody`].
 #[derive(Copy, Clone, Debug, PartialEq, Component, Reflect)]
-#[reflect(Component, PartialEq)]
+#[reflect(Component, Default, PartialEq)]
 pub struct Damping {
     // TODO: rename these to "linear" and "angular"?
     /// Damping factor for gradually slowing down the translational motion of the [`RigidBody`].
@@ -600,7 +600,7 @@ impl TransformInterpolation {
 
 /// Indicates whether or not the [`RigidBody`] is disabled explicitly by the user.
 #[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Component, Reflect)]
-#[reflect(Component, PartialEq)]
+#[reflect(Component, Default, PartialEq)]
 pub struct RigidBodyDisabled;
 
 /// Set the additional number of solver iterations run for a rigid-body and
@@ -613,5 +613,5 @@ pub struct RigidBodyDisabled;
 /// The default value is 0, meaning exactly [`IntegrationParameters::num_solver_iterations`] will
 /// be used as number of solver iterations for this body.
 #[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Component, Reflect)]
-#[reflect(Component, PartialEq)]
+#[reflect(Component, Default, PartialEq)]
 pub struct AdditionalSolverIterations(pub usize);
