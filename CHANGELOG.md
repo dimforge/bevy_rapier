@@ -5,6 +5,7 @@
 ## Added
 
 - Added a serialization `serialization2` example for `bevy_rapier2d`.
+- Added reflection for `Default` in addition to `Component` [#649](https://github.com/dimforge/bevy_rapier/pull/649)
 
 ## Modified
 
