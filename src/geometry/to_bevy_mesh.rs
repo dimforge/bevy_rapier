@@ -83,8 +83,8 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
             {
                 log::warn!("Voxels not implemented in 2d yet");
                 // let (vtx, idx) = voxels.to_polyline();
+                return None;
             }
-            return None;
         }
         TypedShape::TriMesh(tri_mesh) => {
             let vertices = tri_mesh.vertices();
