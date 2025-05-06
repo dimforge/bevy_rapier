@@ -6,3 +6,9 @@ pub struct VoxelsView<'a> {
     /// The raw shape from Rapier.
     pub raw: &'a Voxels,
 }
+
+/// Read-write access to the properties of a [`Voxels`].
+pub struct VoxelsViewMut<'a> {
+    /// The raw shape from Rapier.
+    pub raw: &'a mut Voxels,
+}

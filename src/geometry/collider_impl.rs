@@ -349,6 +349,11 @@ impl Collider {
         self.raw.as_triangle().map(|s| TriangleView { raw: s })
     }
 
+    /// Downcast this collider to a voxels, if it is one.
+    pub fn as_voxels(&self) -> Option<VoxelsView> {
+        self.raw.as_voxels().map(|s| VoxelsView { raw: s })
+    }
+
     /// Downcast this collider to a triangle mesh, if it is one.
     pub fn as_trimesh(&self) -> Option<TriMeshView> {
         self.raw.as_trimesh().map(|s| TriMeshView { raw: s })
@@ -442,6 +447,14 @@ impl Collider {
             .make_mut()
             .as_triangle_mut()
             .map(|s| TriangleViewMut { raw: s })
+    }
+
+    /// Downcast this collider to a mutable voxels, if it is one.
+    pub fn as_voxels_mut(&mut self) -> Option<VoxelsViewMut> {
+        self.raw
+            .make_mut()
+            .as_voxels_mut()
+            .map(|s| VoxelsViewMut { raw: s })
     }
 
     /// Downcast this collider to a mutable triangle mesh, if it is one.
