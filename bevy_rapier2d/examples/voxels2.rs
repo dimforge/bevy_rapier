@@ -55,7 +55,7 @@ pub fn setup_physics(mut commands: Commands) {
     /*
      * Voxelization.
      */
-    let polyline = vec![
+    let polyline = [
         point![0.0, 0.0],
         point![0.0, 10.0],
         point![7.0, 4.0],
