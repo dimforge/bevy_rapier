@@ -347,17 +347,13 @@ pub struct ContactPairView<'a> {
 
 impl ContactPairView<'_> {
     /// The first collider involved in this contact pair.
-    pub fn collider1(&self) -> Entity {
-        self.context_colliders
-            .collider_entity(self.raw.collider1)
-            .unwrap()
+    pub fn collider1(&self) -> Option<Entity> {
+        self.context_colliders.collider_entity(self.raw.collider1)
     }
 
     /// The second collider involved in this contact pair.
-    pub fn collider2(&self) -> Entity {
-        self.context_colliders
-            .collider_entity(self.raw.collider2)
-            .unwrap()
+    pub fn collider2(&self) -> Option<Entity> {
+        self.context_colliders.collider_entity(self.raw.collider2)
     }
 
     /// The number of contact manifolds detected for this contact pair.
