@@ -13,7 +13,7 @@ mod player_movement2;
 mod rope_joint2;
 mod voxels2;
 
-use bevy::prelude::*;
+use bevy::{ecs::world::error::EntityMutableFetchError, prelude::*};
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier2d::prelude::*;
