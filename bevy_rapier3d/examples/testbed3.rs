@@ -259,13 +259,11 @@ fn cleanup(world: &mut World) {
         .iter_entities()
         .filter_map(|e| (!keep_alive.contains(&e.id())).then_some(e.id()))
         .collect::<Vec<_>>();
-
     for r in remove {
-        match world.try_despawn(r) {
-            Err(error @ EntityDespawnError(EntityMutableFetchError::AliasedMutability(_))) => {
-                warn!("Cleanup error: {error:?}");
-            }
-            _ => {}
+        if let Err(error @ EntityDespawnError(EntityMutableFetchError::AliasedMutability(_))) =
+            world.try_despawn(r)
+        {
+            warn!("Cleanup error: {error:?}");
         }
     }
 }
