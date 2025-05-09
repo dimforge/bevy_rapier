@@ -77,6 +77,7 @@ bevy = { version = "0.16.0", default-features = false, features = [
     "bevy_state",
     "bevy_window",
     "bevy_debug_stepping",
+    "bevy_log",
 ] }
 oorandom = "11"
 approx = "0.5.1"
