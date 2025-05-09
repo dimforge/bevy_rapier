@@ -16,7 +16,7 @@ For short-lived benchmarks based on statistical analysis,
 benchmarks can be run through the [divan](https://github.com/nvzqz/divan) bench harness.
 
 ```sh
-cargo bench -p bevy_rapier3d
+cargo bench -p bevy_rapier_benches3d
 ```
 
 ## Other resources

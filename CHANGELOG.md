@@ -10,8 +10,9 @@
 ## Modified
 
 - Update Bevy to `0.16`.
-- Update from rapier `0.23` to rapier `0.24`,
+- Update from rapier `0.23` to rapier `0.25`,
   see [rapier's changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md).
+  - Notably, support and examples for parry's new `Voxels` shape have been added.
 - `RapierContextInitialization::InitializeDefaultRapierContext` now has more fields for better control over default physics context.
 - `ContactPairView::collider1` and `ContactPairView::collider2` now return an `Option`.
 

@@ -19,6 +19,7 @@ fn main() {
             bevy_rapier3d::prelude::RapierPickingPlugin,
         ),
         true,
+        // FIXME: See https://github.com/dimforge/bevy_rapier/issues/650
         2,
     );
     check_ambiguities(

@@ -11,8 +11,12 @@ mod multiple_colliders3;
 mod picking3;
 mod ray_casting3;
 mod static_trimesh3;
+mod voxels3;
 
-use bevy::prelude::*;
+use bevy::{
+    ecs::world::error::{EntityDespawnError, EntityMutableFetchError},
+    prelude::*,
+};
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier3d::prelude::*;
@@ -22,6 +26,7 @@ pub enum Examples {
     #[default]
     None,
     Boxes3,
+    Voxels3,
     DebugToggle3,
     Despawn3,
     Events3,
@@ -76,6 +81,7 @@ fn main() {
         .init_state::<Examples>()
         .insert_resource(ExampleSet(vec![
             (Examples::Boxes3, "Boxes3").into(),
+            (Examples::Voxels3, "Voxels3").into(),
             (Examples::DebugToggle3, "DebugToggle3").into(),
             (Examples::Despawn3, "Despawn3").into(),
             (Examples::Events3, "Events3").into(),
@@ -89,12 +95,19 @@ fn main() {
         ]))
         .init_resource::<ExampleSelected>()
         //
-        //boxes2
+        // boxes3
         .add_systems(
             OnEnter(Examples::Boxes3),
             (boxes3::setup_graphics, boxes3::setup_physics),
         )
         .add_systems(OnExit(Examples::Boxes3), cleanup)
+        //
+        // voxels3
+        .add_systems(
+            OnEnter(Examples::Voxels3),
+            (voxels3::setup_graphics, voxels3::setup_physics),
+        )
+        .add_systems(OnExit(Examples::Voxels3), cleanup)
         //
         // Debug toggle
         .add_systems(
@@ -246,9 +259,12 @@ fn cleanup(world: &mut World) {
         .iter_entities()
         .filter_map(|e| (!keep_alive.contains(&e.id())).then_some(e.id()))
         .collect::<Vec<_>>();
-
     for r in remove {
-        world.despawn(r);
+        if let Err(error @ EntityDespawnError(EntityMutableFetchError::AliasedMutability(_))) =
+            world.try_despawn(r)
+        {
+            warn!("Cleanup error: {error:?}");
+        }
     }
 }
 

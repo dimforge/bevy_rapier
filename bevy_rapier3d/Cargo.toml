@@ -67,7 +67,7 @@ to-bevy-mesh = ["bevy/bevy_render", "bevy/bevy_asset"]
 [dependencies]
 bevy = { version = "0.16.0", default-features = false, features = ["std"] }
 nalgebra = { version = "0.33", features = ["convert-glam029"] }
-rapier3d = "0.24"
+rapier3d = "0.25"
 bitflags = "2.4"
 log = "0.4"
 serde = { version = "1", features = ["derive"], optional = true }
@@ -82,11 +82,14 @@ bevy = { version = "0.16.0", default-features = false, features = [
     "bevy_text",
     "bevy_ui",
     "default_font",
+    "bevy_log",
 ] }
 approx = "0.5.1"
 glam = { version = "0.29", features = ["approx"] }
 bevy-inspector-egui = "0.31"
 bevy_egui = "0.34"
+# FIXME: target a proper release when support for bevy 0.16 is released.
+bevy_mod_debugdump = { git = "https://github.com/jakobhellermann/bevy_mod_debugdump.git", rev = "ad310179be78abb3c16c581324d7d83b26275028" }
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
