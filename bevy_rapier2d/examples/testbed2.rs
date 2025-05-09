@@ -266,7 +266,12 @@ fn cleanup(world: &mut World) {
         .collect::<Vec<_>>();
 
     for r in remove {
-        world.despawn(r);
+        match world.try_despawn(r) {
+            Err(error @ EntityDespawnError(EntityMutableFetchError::AliasedMutability(_))) => {
+                warn!("Cleanup error: {error:?}");
+            }
+            _ => {}
+        }
     }
 }
 

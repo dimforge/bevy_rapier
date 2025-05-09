@@ -13,7 +13,10 @@ mod ray_casting3;
 mod static_trimesh3;
 mod voxels3;
 
-use bevy::prelude::*;
+use bevy::{
+    ecs::world::error::{EntityDespawnError, EntityMutableFetchError},
+    prelude::*,
+};
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier3d::prelude::*;
@@ -258,7 +261,12 @@ fn cleanup(world: &mut World) {
         .collect::<Vec<_>>();
 
     for r in remove {
-        world.despawn(r);
+        match world.try_despawn(r) {
+            Err(error @ EntityDespawnError(EntityMutableFetchError::AliasedMutability(_))) => {
+                warn!("Cleanup error: {error:?}");
+            }
+            _ => {}
+        }
     }
 }
 
