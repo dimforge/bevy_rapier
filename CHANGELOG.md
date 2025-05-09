@@ -13,6 +13,7 @@
 - Update from rapier `0.23` to rapier `0.24`,
   see [rapier's changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md).
 - `RapierContextInitialization::InitializeDefaultRapierContext` now has more fields for better control over default physics context.
+- `ContactPairView::collider1` and `ContactPairView::collider2` now return an `Option`.
 
 ## Fixed
 
