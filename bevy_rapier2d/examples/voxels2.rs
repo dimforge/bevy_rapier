@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-use nalgebra::{point, Vector2};
-use rapier2d::prelude::{SharedShape, VoxelPrimitiveGeometry};
+use rapier2d::prelude::VoxelPrimitiveGeometry;
 
 fn main() {
     App::new()
@@ -56,14 +55,14 @@ pub fn setup_physics(mut commands: Commands) {
      * Voxelization.
      */
     let polyline = [
-        point![0.0, 0.0],
-        point![0.0, 10.0],
-        point![7.0, 4.0],
-        point![14.0, 10.0],
-        point![14.0, 0.0],
-        point![13.0, 7.0],
-        point![7.0, 2.0],
-        point![1.0, 7.0],
+        Vec2::new(0.0, 0.0),
+        Vec2::new(0.0, 10.0),
+        Vec2::new(7.0, 4.0),
+        Vec2::new(14.0, 10.0),
+        Vec2::new(14.0, 0.0),
+        Vec2::new(13.0, 7.0),
+        Vec2::new(7.0, 2.0),
+        Vec2::new(1.0, 7.0),
     ]
     .iter()
     .map(|p| p * scale)
@@ -72,34 +71,29 @@ pub fn setup_physics(mut commands: Commands) {
         .map(|i| [i, (i + 1) % polyline.len() as u32])
         .collect();
 
-    let shape = SharedShape::voxelized_mesh(
-        VoxelPrimitiveGeometry::PseudoCube,
-        &polyline,
-        &indices,
-        0.2 * scale,
-        FillMode::default(),
-    );
     commands.spawn((
         Transform::from_xyz(-20.0 * scale, -10.0 * scale, 0.0),
-        Collider::from(shape),
+        Collider::voxelized_mesh(
+            VoxelPrimitiveGeometry::PseudoCube,
+            &polyline,
+            &indices,
+            0.2 * scale,
+            FillMode::default(),
+        ),
     ));
 
     /*
      * A voxel wavy floor.
      */
-    let voxel_size = Vector2::new(scale, scale);
+    let voxel_size = Vec2::new(scale, scale);
     let voxels: Vec<_> = (0..300)
         .map(|i| {
             let y = (i as f32 / 20.0).sin().clamp(-0.5, 0.5) * 20.0;
-            point![(i as f32 - 125.0) * voxel_size.x / 2.0, y * voxel_size.y]
+            Vec2::new((i as f32 - 125.0) * voxel_size.x / 2.0, y * voxel_size.y)
         })
         .collect();
     commands.spawn((
         Transform::from_xyz(0.0, 0.0, 0.0),
-        Collider::from(rapier2d::prelude::SharedShape::voxels_from_points(
-            VoxelPrimitiveGeometry::PseudoCube,
-            voxel_size,
-            &voxels,
-        )),
+        Collider::voxels_from_points(VoxelPrimitiveGeometry::PseudoCube, voxel_size, &voxels),
     ));
 }

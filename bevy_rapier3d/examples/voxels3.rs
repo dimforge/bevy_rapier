@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
-use nalgebra::{point, Isometry, Vector3};
-use rapier3d::prelude::VoxelPrimitiveGeometry;
+use rapier3d::{math::Isometry, prelude::VoxelPrimitiveGeometry};
 
 fn main() {
     App::new()
@@ -30,7 +29,7 @@ pub fn setup_physics(mut commands: Commands) {
     /*
      * Create a voxelized wavy floor.
      */
-    let voxel_size = Vector3::new(1f32, 1f32, 1f32);
+    let voxel_size = Vec3::new(1f32, 1f32, 1f32);
     let mut samples = vec![];
     let n = 200;
     for i in 0..n {
@@ -39,35 +38,29 @@ pub fn setup_physics(mut commands: Commands) {
                 * (j as f32 / n as f32 * 10.0).cos().clamp(-0.8, 0.8)
                 * 16.0;
 
-            samples.push(point![
+            samples.push(Vec3::new(
                 i as f32 * voxel_size.x,
                 y * voxel_size.y,
-                j as f32 * voxel_size.z
-            ]);
+                j as f32 * voxel_size.z,
+            ));
 
             if i == 0 || i == n - 1 || j == 0 || j == n - 1 {
                 // Create walls so the object at the edge don’t fall into the infinite void.
                 for k in 0..4 {
-                    samples.push(point![
+                    samples.push(Vec3::new(
                         i as f32 * voxel_size.x,
                         (y + k as f32) * voxel_size.y,
-                        j as f32 * voxel_size.z
-                    ]);
+                        j as f32 * voxel_size.z,
+                    ));
                 }
             }
         }
     }
-    let collider = rapier3d::prelude::SharedShape::voxels_from_points(
-        VoxelPrimitiveGeometry::PseudoCube,
-        voxel_size,
-        &samples,
-    );
+    let collider =
+        Collider::voxels_from_points(VoxelPrimitiveGeometry::PseudoCube, voxel_size, &samples);
     let ground_position = Vec3::new(voxel_size.x / 2f32, 0.0, voxel_size.z / 2f32);
-    let floor_aabb = collider.compute_aabb(&Isometry::identity());
-    commands.spawn((
-        Transform::from_translation(ground_position),
-        Collider::from(collider),
-    ));
+    let floor_aabb = collider.raw.compute_aabb(&Isometry::identity());
+    commands.spawn((Transform::from_translation(ground_position), collider));
 
     /*
      * Create dynamic objects to fall on voxels.
