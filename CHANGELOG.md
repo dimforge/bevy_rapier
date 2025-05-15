@@ -1,13 +1,13 @@
 # Changelog
 
-# Unreleased
+## v0.30.0 (09 May 2025)
 
-## Added
+### Added
 
 - Added a serialization `serialization2` example for `bevy_rapier2d`.
 - Added reflection for `Default` in addition to `Component`. [#649](https://github.com/dimforge/bevy_rapier/pull/649)
 
-## Modified
+### Modified
 
 - Update Bevy to `0.16`.
 - Update from rapier `0.23` to rapier `0.25`,
@@ -16,7 +16,7 @@
 - `RapierContextInitialization::InitializeDefaultRapierContext` now has more fields for better control over default physics context.
 - `ContactPairView::collider1` and `ContactPairView::collider2` now return an `Option`.
 
-## Fixed
+### Fixed
 
 - Fix position being incorrect when a rigidbody bevy entity has a scaled parent. [#646](https://github.com/dimforge/bevy_rapier/pull/646)
 
