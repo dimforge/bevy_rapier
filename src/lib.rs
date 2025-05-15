@@ -31,6 +31,8 @@ pub mod math {
     pub type Real = rapier::math::Real;
     /// The vector type.
     pub type Vect = Vec2;
+    /// The integer vector type.
+    pub type IVect = bevy::math::IVec2;
     /// The rotation type (in 2D this is an angle in radians).
     pub type Rot = Real;
 }
@@ -44,6 +46,8 @@ pub mod math {
     pub type Real = rapier::math::Real;
     /// The vector type.
     pub type Vect = Vec3;
+    /// The integer vector type.
+    pub type IVect = bevy::math::IVec3;
     /// The rotation type.
     pub type Rot = Quat;
 }

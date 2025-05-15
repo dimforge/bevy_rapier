@@ -6,13 +6,19 @@ use {
     bevy::render::mesh::{Indices, VertexAttributeValues},
 };
 
-use rapier::prelude::{FeatureId, Point, Ray, SharedShape, Vector, DIM};
+use rapier::{
+    parry::transformation::voxelization::FillMode,
+    prelude::{FeatureId, Point, Ray, SharedShape, Vector, VoxelPrimitiveGeometry, Voxels, DIM},
+};
 
 use super::{get_snapped_scale, shape_views::*};
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 use crate::geometry::ComputedColliderShape;
-use crate::geometry::{Collider, PointProjection, RayIntersection, TriMeshFlags, VHACDParameters};
 use crate::math::{Real, Rot, Vect};
+use crate::{
+    geometry::{Collider, PointProjection, RayIntersection, TriMeshFlags, VHACDParameters},
+    math::IVect,
+};
 
 impl Collider {
     /// The scaling factor that was applied to this collider.
@@ -142,6 +148,123 @@ impl Collider {
     /// Initializes a collider with a triangle shape with round corners.
     pub fn round_triangle(a: Vect, b: Vect, c: Vect, border_radius: Real) -> Self {
         SharedShape::round_triangle(a.into(), b.into(), c.into(), border_radius).into()
+    }
+
+    fn ivec_array_from_point_int_array(points: &[IVect]) -> Vec<Point<i32>> {
+        points
+            .iter()
+            .map(|p| {
+                #[cfg(feature = "dim3")]
+                return Point::new(p.x, p.y, p.z);
+                #[cfg(feature = "dim2")]
+                return Point::new(p.x, p.y);
+            })
+            .collect::<Vec<_>>()
+    }
+
+    fn vec_array_from_point_float_array(points: &[Vect]) -> Vec<Point<Real>> {
+        points
+            .iter()
+            .map(|p| {
+                #[cfg(feature = "dim3")]
+                return Point::new(p.x, p.y, p.z);
+                #[cfg(feature = "dim2")]
+                return Point::new(p.x, p.y);
+            })
+            .collect::<Vec<_>>()
+    }
+
+    /// Initializes a shape made of voxels.
+    ///
+    /// Each voxel has the size `voxel_size` and grid coordinate given by `grid_coords`.
+    /// The `primitive_geometry` controls the behavior of collision detection at voxels boundaries.
+    ///
+    /// For initializing a voxels shape from points in space, see [`Self::voxels_from_points`].
+    /// For initializing a voxels shape from a mesh to voxelize, see [`Self::voxelized_mesh`].
+    /// For initializing multiple voxels shape from the convex decomposition of a mesh, see
+    /// [`Self::voxelized_convex_decomposition`].
+    pub fn voxels(
+        primitive_geometry: VoxelPrimitiveGeometry,
+        voxel_size: Vect,
+        grid_coords: &[IVect],
+    ) -> Self {
+        let shape = Voxels::new(
+            primitive_geometry,
+            voxel_size.into(),
+            &Self::ivec_array_from_point_int_array(grid_coords),
+        );
+        SharedShape::new(shape).into()
+    }
+
+    /// Initializes a shape made of voxels.
+    ///
+    /// Each voxel has the size `voxel_size` and contains at least one point from `centers`.
+    /// The `primitive_geometry` controls the behavior of collision detection at voxels boundaries.
+    pub fn voxels_from_points(
+        primitive_geometry: VoxelPrimitiveGeometry,
+        voxel_size: Vect,
+        points: &[Vect],
+    ) -> Self {
+        SharedShape::voxels_from_points(
+            primitive_geometry,
+            voxel_size.into(),
+            &Self::vec_array_from_point_float_array(points),
+        )
+        .into()
+    }
+
+    /// Initializes a voxels shape obtained from the decomposition of the given trimesh (in 3D)
+    /// or polyline (in 2D) into voxelized convex parts.
+    pub fn voxelized_mesh(
+        primitive_geometry: VoxelPrimitiveGeometry,
+        vertices: &[Vect],
+        indices: &[[u32; DIM]],
+        voxel_size: Real,
+        fill_mode: FillMode,
+    ) -> Self {
+        let vertices = Self::vec_array_from_point_float_array(vertices);
+        SharedShape::voxelized_mesh(
+            primitive_geometry,
+            &vertices,
+            indices,
+            voxel_size,
+            fill_mode,
+        )
+        .into()
+    }
+
+    /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D)
+    /// or polyline (in 2D) into voxelized convex parts.
+    pub fn voxelized_convex_decomposition(
+        primitive_geometry: VoxelPrimitiveGeometry,
+        vertices: &[Vect],
+        indices: &[[u32; DIM]],
+    ) -> Vec<Self> {
+        Self::voxelized_convex_decomposition_with_params(
+            primitive_geometry,
+            vertices,
+            indices,
+            &VHACDParameters::default(),
+        )
+    }
+
+    /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D)
+    /// or polyline (in 2D) into voxelized convex parts.
+    pub fn voxelized_convex_decomposition_with_params(
+        primitive_geometry: VoxelPrimitiveGeometry,
+        vertices: &[Vect],
+        indices: &[[u32; DIM]],
+        params: &VHACDParameters,
+    ) -> Vec<Self> {
+        SharedShape::voxelized_convex_decomposition_with_params(
+            primitive_geometry,
+            &Self::vec_array_from_point_float_array(vertices),
+            indices,
+            params,
+        )
+        .into_iter()
+        .map(|c| c.into())
+        .collect()
     }
 
     /// Initializes a collider with a polyline shape defined by its vertex and index buffers.
