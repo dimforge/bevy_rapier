@@ -4,8 +4,8 @@ pub use self::context::{
     DefaultRapierContext, RapierContextEntityLink, SimulationToRenderTime,
 };
 pub use self::plugin::{
-    NoUserData, PhysicsSet, RapierContextInitialization, RapierPhysicsPlugin,
-    RapierTransformPropagateSet,
+    NoUserData, PhysicsSet, RapierBevyComponentApply, RapierContextInitialization,
+    RapierPhysicsPlugin, RapierTransformPropagateSet,
 };
 pub use narrow_phase::{ContactManifoldView, ContactPairView, ContactView, SolverContactView};
 
