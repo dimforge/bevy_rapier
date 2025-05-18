@@ -158,8 +158,8 @@ where
                         .in_set(PhysicsSet::SyncBackend),
                     (
                         (
-                            systems::apply_collider_user_changes.in_set(RapierBevyComponentApply),
                             systems::apply_scale.in_set(RapierBevyComponentApply),
+                            systems::apply_collider_user_changes.in_set(RapierBevyComponentApply),
                         )
                             .chain(),
                         systems::apply_joint_user_changes.in_set(RapierBevyComponentApply),
