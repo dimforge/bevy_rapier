@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Expose `RapierBevyComponentApply`, to help with creating your own schedules when you set `default_system_setup` to `false`.
+
 ## v0.30.0 (15 May 2025)
 
 ### Added
