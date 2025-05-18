@@ -1,20 +1,17 @@
-use bevy::prelude::{FromWorld, Resource, World};
+//! Components used to configure a simulation run by rapier, these are not modified by bevy_rapier.
+
+use bevy::{
+    prelude::{Component, Resource},
+    reflect::Reflect,
+};
 
 use crate::math::{Real, Vect};
-use crate::plugin::RapierContext;
 
 #[cfg(doc)]
 use {crate::prelude::TransformInterpolation, rapier::dynamics::IntegrationParameters};
 
-/// Difference between simulation and rendering time
-#[derive(Resource, Default)]
-pub struct SimulationToRenderTime {
-    /// Difference between simulation and rendering time
-    pub diff: f32,
-}
-
-/// The different ways of adjusting the timestep length.
-#[derive(Copy, Clone, Debug, PartialEq)]
+/// The different ways of adjusting the timestep length each frame.
+#[derive(Copy, Clone, Debug, PartialEq, Resource)]
 pub enum TimestepMode {
     /// Use a fixed timestep: the physics simulation will be advanced by the fixed value
     /// `dt` seconds at each Bevy tick by performing `substeps` of length `dt / substeps`.
@@ -53,8 +50,18 @@ pub enum TimestepMode {
     },
 }
 
-#[derive(Resource, Copy, Clone, Debug)]
-/// A resource for specifying configuration information for the physics simulation
+impl Default for TimestepMode {
+    fn default() -> Self {
+        TimestepMode::Variable {
+            max_dt: 1.0 / 60.0,
+            time_scale: 1.0,
+            substeps: 1,
+        }
+    }
+}
+
+#[derive(Component, Copy, Clone, Debug, Reflect)]
+/// A component for specifying configuration information for the physics simulation
 pub struct RapierConfiguration {
     /// Specifying the gravity of the physics simulation.
     pub gravity: Vect,
@@ -62,8 +69,6 @@ pub struct RapierConfiguration {
     pub physics_pipeline_active: bool,
     /// Specifies if the query pipeline is active and update the query pipeline.
     pub query_pipeline_active: bool,
-    /// Specifies the way the timestep length should be adjusted at each frame.
-    pub timestep_mode: TimestepMode,
     /// Specifies the number of subdivisions along each axes a shape should be subdivided
     /// if its scaled representation cannot be represented with the same shape type.
     ///
@@ -74,16 +79,6 @@ pub struct RapierConfiguration {
     pub scaled_shape_subdivision: u32,
     /// Specifies if backend sync should always accept transform changes, which may be from the writeback stage.
     pub force_update_from_transform_changes: bool,
-}
-
-impl FromWorld for RapierConfiguration {
-    fn from_world(world: &mut World) -> Self {
-        let length_unit = world
-            .get_resource::<RapierContext>()
-            .map(|ctxt| ctxt.integration_parameters.length_unit)
-            .unwrap_or(1.0);
-        Self::new(length_unit)
-    }
 }
 
 impl RapierConfiguration {
@@ -98,11 +93,6 @@ impl RapierConfiguration {
             gravity: Vect::Y * -9.81 * length_unit,
             physics_pipeline_active: true,
             query_pipeline_active: true,
-            timestep_mode: TimestepMode::Variable {
-                max_dt: 1.0 / 60.0,
-                time_scale: 1.0,
-                substeps: 1,
-            },
             scaled_shape_subdivision: 10,
             force_update_from_transform_changes: false,
         }

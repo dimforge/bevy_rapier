@@ -1,6 +1,11 @@
 use crate::dynamics::ReadMassProperties;
 use crate::geometry::Collider;
-use crate::plugin::{RapierConfiguration, RapierContext};
+use crate::plugin::context::systemparams::{RapierEntity, RAPIER_CONTEXT_EXPECT_ERROR};
+use crate::plugin::context::RapierContextEntityLink;
+use crate::plugin::{
+    context::{DefaultRapierContext, RapierContextColliders, RapierRigidBodySet},
+    RapierConfiguration,
+};
 use crate::prelude::{
     ActiveCollisionTypes, ActiveEvents, ActiveHooks, ColliderDisabled, ColliderMassProperties,
     ColliderScale, CollidingEntities, CollisionEvent, CollisionGroups, ContactForceEventThreshold,
@@ -22,7 +27,7 @@ use bevy::math::Vec3Swizzles;
 
 /// Components related to colliders.
 pub type ColliderComponents<'a> = (
-    Entity,
+    (Entity, Option<&'a RapierContextEntityLink>),
     &'a Collider,
     Option<&'a Sensor>,
     Option<&'a ColliderMassProperties>,
@@ -41,9 +46,14 @@ pub type ColliderComponents<'a> = (
 /// System responsible for applying [`GlobalTransform`] scale and/or [`ColliderScale`] to
 /// colliders.
 pub fn apply_scale(
-    config: Res<RapierConfiguration>,
+    config: Query<&RapierConfiguration>,
     mut changed_collider_scales: Query<
-        (&mut Collider, &GlobalTransform, Option<&ColliderScale>),
+        (
+            &mut Collider,
+            &RapierContextEntityLink,
+            &GlobalTransform,
+            Option<&ColliderScale>,
+        ),
         Or<(
             Changed<Collider>,
             Changed<GlobalTransform>,
@@ -51,7 +61,8 @@ pub fn apply_scale(
         )>,
     >,
 ) {
-    for (mut shape, transform, custom_scale) in changed_collider_scales.iter_mut() {
+    for (mut shape, link, transform, custom_scale) in changed_collider_scales.iter_mut() {
+        let config = config.get(link.0).unwrap();
         #[cfg(feature = "dim2")]
         let effective_scale = match custom_scale {
             Some(ColliderScale::Absolute(scale)) => *scale,
@@ -75,144 +86,222 @@ pub fn apply_scale(
 
 /// System responsible for applying changes the user made to a collider-related component.
 pub fn apply_collider_user_changes(
-    mut context: ResMut<RapierContext>,
-    config: Res<RapierConfiguration>,
-    (changed_collider_transforms, parent_query, transform_query): (
+    mut context: Query<(&RapierRigidBodySet, &mut RapierContextColliders)>,
+    config: Query<&RapierConfiguration>,
+    (changed_collider_transforms, child_of_query, transform_query): (
         Query<
-            (Entity, &RapierColliderHandle, &GlobalTransform),
+            (RapierEntity, &RapierColliderHandle, &GlobalTransform),
             (Without<RapierRigidBodyHandle>, Changed<GlobalTransform>),
         >,
-        Query<&Parent>,
+        Query<&ChildOf>,
         Query<&Transform>,
     ),
 
-    changed_shapes: Query<(&RapierColliderHandle, &Collider), Changed<Collider>>,
-    changed_active_events: Query<(&RapierColliderHandle, &ActiveEvents), Changed<ActiveEvents>>,
-    changed_active_hooks: Query<(&RapierColliderHandle, &ActiveHooks), Changed<ActiveHooks>>,
+    changed_shapes: Query<(RapierEntity, &RapierColliderHandle, &Collider), Changed<Collider>>,
+    changed_active_events: Query<
+        (RapierEntity, &RapierColliderHandle, &ActiveEvents),
+        Changed<ActiveEvents>,
+    >,
+    changed_active_hooks: Query<
+        (RapierEntity, &RapierColliderHandle, &ActiveHooks),
+        Changed<ActiveHooks>,
+    >,
     changed_active_collision_types: Query<
-        (&RapierColliderHandle, &ActiveCollisionTypes),
+        (RapierEntity, &RapierColliderHandle, &ActiveCollisionTypes),
         Changed<ActiveCollisionTypes>,
     >,
     (changed_friction, changed_restitution, changed_contact_skin): (
-        Query<(&RapierColliderHandle, &Friction), Changed<Friction>>,
-        Query<(&RapierColliderHandle, &Restitution), Changed<Restitution>>,
-        Query<(&RapierColliderHandle, &ContactSkin), Changed<ContactSkin>>,
+        Query<(RapierEntity, &RapierColliderHandle, &Friction), Changed<Friction>>,
+        Query<(RapierEntity, &RapierColliderHandle, &Restitution), Changed<Restitution>>,
+        Query<(RapierEntity, &RapierColliderHandle, &ContactSkin), Changed<ContactSkin>>,
     ),
     changed_collision_groups: Query<
-        (&RapierColliderHandle, &CollisionGroups),
+        (RapierEntity, &RapierColliderHandle, &CollisionGroups),
         Changed<CollisionGroups>,
     >,
-    changed_solver_groups: Query<(&RapierColliderHandle, &SolverGroups), Changed<SolverGroups>>,
-    changed_sensors: Query<(&RapierColliderHandle, &Sensor), Changed<Sensor>>,
-    changed_disabled: Query<(&RapierColliderHandle, &ColliderDisabled), Changed<ColliderDisabled>>,
+    changed_solver_groups: Query<
+        (RapierEntity, &RapierColliderHandle, &SolverGroups),
+        Changed<SolverGroups>,
+    >,
+    changed_sensors: Query<(RapierEntity, &RapierColliderHandle, &Sensor), Changed<Sensor>>,
+    changed_disabled: Query<
+        (RapierEntity, &RapierColliderHandle, &ColliderDisabled),
+        Changed<ColliderDisabled>,
+    >,
     changed_contact_force_threshold: Query<
-        (&RapierColliderHandle, &ContactForceEventThreshold),
+        (
+            RapierEntity,
+            &RapierColliderHandle,
+            &ContactForceEventThreshold,
+        ),
         Changed<ContactForceEventThreshold>,
     >,
     changed_collider_mass_props: Query<
-        (&RapierColliderHandle, &ColliderMassProperties),
+        (RapierEntity, &RapierColliderHandle, &ColliderMassProperties),
         Changed<ColliderMassProperties>,
     >,
 
     mut mass_modified: EventWriter<MassModifiedEvent>,
 ) {
-    for (entity, handle, transform) in changed_collider_transforms.iter() {
-        if context.collider_parent(entity).is_some() {
-            let (_, collider_position) =
-                collider_offset(entity, &context, &parent_query, &transform_query);
+    for (rapier_entity, handle, transform) in changed_collider_transforms.iter() {
+        let (rigidbody_set, mut context_colliders) = context
+            .get_mut(rapier_entity.rapier_context_link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR);
+        if context_colliders
+            .collider_parent(rigidbody_set, rapier_entity.entity)
+            .is_some()
+        {
+            let (_, collider_position) = collider_offset(
+                rapier_entity.entity,
+                rigidbody_set,
+                &child_of_query,
+                &transform_query,
+            );
 
-            if let Some(co) = context.colliders.get_mut(handle.0) {
-                co.set_position_wrt_parent(utils::transform_to_iso(&collider_position));
+            if let Some(co) = context_colliders.colliders.get_mut(handle.0) {
+                let new_pos = utils::transform_to_iso(&collider_position);
+
+                if co
+                    .position_wrt_parent()
+                    .map(|pos| *pos != new_pos)
+                    .unwrap_or(true)
+                {
+                    co.set_position_wrt_parent(new_pos);
+                }
             }
-        } else if let Some(co) = context.colliders.get_mut(handle.0) {
-            co.set_position(utils::transform_to_iso(&transform.compute_transform()))
+        } else if let Some(co) = context_colliders.colliders.get_mut(handle.0) {
+            let new_pos = utils::transform_to_iso(&transform.compute_transform());
+
+            if *co.position() != new_pos {
+                co.set_position(utils::transform_to_iso(&transform.compute_transform()));
+            }
         }
     }
 
-    for (handle, shape) in changed_shapes.iter() {
-        if let Some(co) = context.colliders.get_mut(handle.0) {
+    for (rapier_entity, handle, shape) in changed_shapes.iter() {
+        let (rigidbody_set, mut context_colliders) = context
+            .get_mut(rapier_entity.rapier_context_link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR);
+        let config = config.get(rapier_entity.rapier_context_link.0).unwrap();
+        if let Some(co) = context_colliders.colliders.get_mut(handle.0) {
             let mut scaled_shape = shape.clone();
             scaled_shape.set_scale(shape.scale, config.scaled_shape_subdivision);
             co.set_shape(scaled_shape.raw.clone());
 
             if let Some(body) = co.parent() {
-                if let Some(body_entity) = context.rigid_body_entity(body) {
-                    mass_modified.send(body_entity.into());
+                if let Some(body_entity) = rigidbody_set.rigid_body_entity(body) {
+                    mass_modified.write(body_entity.into());
                 }
             }
         }
     }
 
-    for (handle, active_events) in changed_active_events.iter() {
-        if let Some(co) = context.colliders.get_mut(handle.0) {
+    for (rapier_entity, handle, active_events) in changed_active_events.iter() {
+        let (_, mut context_colliders) = context
+            .get_mut(rapier_entity.rapier_context_link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR);
+        if let Some(co) = context_colliders.colliders.get_mut(handle.0) {
             co.set_active_events((*active_events).into())
         }
     }
 
-    for (handle, active_hooks) in changed_active_hooks.iter() {
-        if let Some(co) = context.colliders.get_mut(handle.0) {
+    for (rapier_entity, handle, active_hooks) in changed_active_hooks.iter() {
+        let (_, mut context_colliders) = context
+            .get_mut(rapier_entity.rapier_context_link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR);
+        if let Some(co) = context_colliders.colliders.get_mut(handle.0) {
             co.set_active_hooks((*active_hooks).into())
         }
     }
 
-    for (handle, active_collision_types) in changed_active_collision_types.iter() {
-        if let Some(co) = context.colliders.get_mut(handle.0) {
+    for (rapier_entity, handle, active_collision_types) in changed_active_collision_types.iter() {
+        let (_, mut context_colliders) = context
+            .get_mut(rapier_entity.rapier_context_link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR);
+        if let Some(co) = context_colliders.colliders.get_mut(handle.0) {
             co.set_active_collision_types((*active_collision_types).into())
         }
     }
 
-    for (handle, friction) in changed_friction.iter() {
-        if let Some(co) = context.colliders.get_mut(handle.0) {
+    for (rapier_entity, handle, friction) in changed_friction.iter() {
+        let (_, mut context_colliders) = context
+            .get_mut(rapier_entity.rapier_context_link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR);
+        if let Some(co) = context_colliders.colliders.get_mut(handle.0) {
             co.set_friction(friction.coefficient);
             co.set_friction_combine_rule(friction.combine_rule.into());
         }
     }
 
-    for (handle, restitution) in changed_restitution.iter() {
-        if let Some(co) = context.colliders.get_mut(handle.0) {
+    for (rapier_entity, handle, restitution) in changed_restitution.iter() {
+        let (_, mut context_colliders) = context
+            .get_mut(rapier_entity.rapier_context_link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR);
+        if let Some(co) = context_colliders.colliders.get_mut(handle.0) {
             co.set_restitution(restitution.coefficient);
             co.set_restitution_combine_rule(restitution.combine_rule.into());
         }
     }
 
-    for (handle, contact_skin) in changed_contact_skin.iter() {
-        if let Some(co) = context.colliders.get_mut(handle.0) {
+    for (rapier_entity, handle, contact_skin) in changed_contact_skin.iter() {
+        let (_, mut context_colliders) = context
+            .get_mut(rapier_entity.rapier_context_link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR);
+        if let Some(co) = context_colliders.colliders.get_mut(handle.0) {
             co.set_contact_skin(contact_skin.0);
         }
     }
 
-    for (handle, collision_groups) in changed_collision_groups.iter() {
-        if let Some(co) = context.colliders.get_mut(handle.0) {
+    for (rapier_entity, handle, collision_groups) in changed_collision_groups.iter() {
+        let (_, mut context_colliders) = context
+            .get_mut(rapier_entity.rapier_context_link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR);
+        if let Some(co) = context_colliders.colliders.get_mut(handle.0) {
             co.set_collision_groups((*collision_groups).into());
         }
     }
 
-    for (handle, solver_groups) in changed_solver_groups.iter() {
-        if let Some(co) = context.colliders.get_mut(handle.0) {
+    for (rapier_entity, handle, solver_groups) in changed_solver_groups.iter() {
+        let (_, mut context_colliders) = context
+            .get_mut(rapier_entity.rapier_context_link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR);
+        if let Some(co) = context_colliders.colliders.get_mut(handle.0) {
             co.set_solver_groups((*solver_groups).into());
         }
     }
 
-    for (handle, _) in changed_sensors.iter() {
-        if let Some(co) = context.colliders.get_mut(handle.0) {
+    for (rapier_entity, handle, _) in changed_sensors.iter() {
+        let (_, mut context_colliders) = context
+            .get_mut(rapier_entity.rapier_context_link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR);
+        if let Some(co) = context_colliders.colliders.get_mut(handle.0) {
             co.set_sensor(true);
         }
     }
 
-    for (handle, _) in changed_disabled.iter() {
-        if let Some(co) = context.colliders.get_mut(handle.0) {
+    for (rapier_entity, handle, _) in changed_disabled.iter() {
+        let (_, mut context_colliders) = context
+            .get_mut(rapier_entity.rapier_context_link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR);
+        if let Some(co) = context_colliders.colliders.get_mut(handle.0) {
             co.set_enabled(false);
         }
     }
 
-    for (handle, threshold) in changed_contact_force_threshold.iter() {
-        if let Some(co) = context.colliders.get_mut(handle.0) {
+    for (rapier_entity, handle, threshold) in changed_contact_force_threshold.iter() {
+        let (_, mut context_colliders) = context
+            .get_mut(rapier_entity.rapier_context_link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR);
+        if let Some(co) = context_colliders.colliders.get_mut(handle.0) {
             co.set_contact_force_event_threshold(threshold.0);
         }
     }
 
-    for (handle, mprops) in changed_collider_mass_props.iter() {
-        if let Some(co) = context.colliders.get_mut(handle.0) {
+    for (rapier_entity, handle, mprops) in changed_collider_mass_props.iter() {
+        let (rigidbody_set, mut context_colliders) = context
+            .get_mut(rapier_entity.rapier_context_link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR);
+        if let Some(co) = context_colliders.colliders.get_mut(handle.0) {
             match mprops {
                 ColliderMassProperties::Density(density) => co.set_density(*density),
                 ColliderMassProperties::Mass(mass) => co.set_mass(*mass),
@@ -222,8 +311,8 @@ pub fn apply_collider_user_changes(
             }
 
             if let Some(body) = co.parent() {
-                if let Some(body_entity) = context.rigid_body_entity(body) {
-                    mass_modified.send(body_entity.into());
+                if let Some(body_entity) = rigidbody_set.rigid_body_entity(body) {
+                    mass_modified.write(body_entity.into());
                 }
             }
         }
@@ -232,24 +321,24 @@ pub fn apply_collider_user_changes(
 
 pub(crate) fn collider_offset(
     entity: Entity,
-    context: &RapierContext,
-    parent_query: &Query<&Parent>,
+    rigidbody_set: &RapierRigidBodySet,
+    child_of_query: &Query<&ChildOf>,
     transform_query: &Query<&Transform>,
 ) -> (Option<RigidBodyHandle>, Transform) {
     let mut body_entity = entity;
-    let mut body_handle = context.entity2body.get(&body_entity).copied();
+    let mut body_handle = rigidbody_set.entity2body.get(&body_entity).copied();
     let mut child_transform = Transform::default();
     while body_handle.is_none() {
-        if let Ok(parent_entity) = parent_query.get(body_entity) {
+        if let Ok(child_of) = child_of_query.get(body_entity) {
             if let Ok(transform) = transform_query.get(body_entity) {
                 child_transform = *transform * child_transform;
             }
-            body_entity = parent_entity.get();
+            body_entity = child_of.parent();
         } else {
             break;
         }
 
-        body_handle = context.entity2body.get(&body_entity).copied();
+        body_handle = rigidbody_set.entity2body.get(&body_entity).copied();
     }
 
     if body_handle.is_some() {
@@ -269,18 +358,17 @@ pub(crate) fn collider_offset(
 /// System responsible for creating new Rapier colliders from the related `bevy_rapier` components.
 pub fn init_colliders(
     mut commands: Commands,
-    config: Res<RapierConfiguration>,
-    mut context: ResMut<RapierContext>,
+    config: Query<&RapierConfiguration>,
+    mut context_access: Query<(&mut RapierRigidBodySet, &mut RapierContextColliders)>,
+    default_context_access: Query<Entity, With<DefaultRapierContext>>,
     colliders: Query<(ColliderComponents, Option<&GlobalTransform>), Without<RapierColliderHandle>>,
     mut rigid_body_mprops: Query<&mut ReadMassProperties>,
-    parent_query: Query<&Parent>,
+    child_of_query: Query<&ChildOf>,
     transform_query: Query<&Transform>,
 ) {
-    let context = &mut *context;
-
     for (
         (
-            entity,
+            (entity, entity_context_link),
             shape,
             sensor,
             mprops,
@@ -298,6 +386,32 @@ pub fn init_colliders(
         global_transform,
     ) in colliders.iter()
     {
+        // Get rapier context from RapierContextEntityLink or insert its default value.
+        let context_entity = entity_context_link.map_or_else(
+            || {
+                let context_entity = default_context_access.single().ok()?;
+                commands
+                    .entity(entity)
+                    .insert(RapierContextEntityLink(context_entity));
+                Some(context_entity)
+            },
+            |link| Some(link.0),
+        );
+        let Some(context_entity) = context_entity else {
+            continue;
+        };
+
+        let config = config.get(context_entity).unwrap_or_else(|_| {
+            panic!("Failed to retrieve `RapierConfiguration` on entity {context_entity}.")
+        });
+
+        let Some(mut rigidbody_set_collider_set) = context_access.get_mut(context_entity).ok()
+        else {
+            log::error!("Could not find entity {context_entity} with rapier context while initializing {entity}");
+            continue;
+        };
+        let context_colliders = &mut *rigidbody_set_collider_set.1;
+        let rigidbody_set = &mut *rigidbody_set_collider_set.0;
         let mut scaled_shape = shape.clone();
         scaled_shape.set_scale(shape.scale, config.scaled_shape_subdivision);
         let mut builder = ColliderBuilder::new(scaled_shape.raw.clone());
@@ -354,23 +468,23 @@ pub fn init_colliders(
         if let Some(threshold) = contact_force_event_threshold {
             builder = builder.contact_force_event_threshold(threshold.0);
         }
-
         let body_entity = entity;
         let (body_handle, child_transform) =
-            collider_offset(entity, context, &parent_query, &transform_query);
+            collider_offset(entity, rigidbody_set, &child_of_query, &transform_query);
 
         builder = builder.user_data(entity.to_bits() as u128);
 
         let handle = if let Some(body_handle) = body_handle {
             builder = builder.position(utils::transform_to_iso(&child_transform));
-            let handle =
-                context
-                    .colliders
-                    .insert_with_parent(builder, body_handle, &mut context.bodies);
+            let handle = context_colliders.colliders.insert_with_parent(
+                builder,
+                body_handle,
+                &mut rigidbody_set.bodies,
+            );
             if let Ok(mut mprops) = rigid_body_mprops.get_mut(body_entity) {
                 // Inserting the collider changed the rigid-body’s mass properties.
                 // Read them back from the engine.
-                if let Some(parent_body) = context.bodies.get(body_handle) {
+                if let Some(parent_body) = rigidbody_set.bodies.get(body_handle) {
                     mprops.set(MassProperties::from_rapier(
                         parent_body.mass_properties().local_mprops,
                     ));
@@ -382,11 +496,11 @@ pub fn init_colliders(
             builder = builder.position(utils::transform_to_iso(
                 &global_transform.compute_transform(),
             ));
-            context.colliders.insert(builder)
+            context_colliders.colliders.insert(builder)
         };
 
         commands.entity(entity).insert(RapierColliderHandle(handle));
-        context.entity2collider.insert(entity, handle);
+        context_colliders.entity2collider.insert(entity, handle);
     }
 }
 
@@ -396,7 +510,7 @@ pub fn init_colliders(
 pub fn init_async_colliders(
     mut commands: Commands,
     meshes: Res<Assets<Mesh>>,
-    async_colliders: Query<(Entity, &Handle<Mesh>, &AsyncCollider)>,
+    async_colliders: Query<(Entity, &Mesh3d, &AsyncCollider)>,
 ) {
     for (entity, mesh_handle, async_collider) in async_colliders.iter() {
         if let Some(mesh) = meshes.get(mesh_handle) {
@@ -407,7 +521,7 @@ pub fn init_async_colliders(
                         .insert(collider)
                         .remove::<AsyncCollider>();
                 }
-                None => error!("Unable to generate collider from mesh {:?}", mesh),
+                None => log::error!("Unable to generate collider from mesh {:?}", mesh),
             }
         }
     }
@@ -422,7 +536,7 @@ pub fn init_async_scene_colliders(
     scene_spawner: Res<SceneSpawner>,
     async_colliders: Query<(Entity, &SceneInstance, &AsyncSceneCollider)>,
     children: Query<&Children>,
-    mesh_handles: Query<(&Name, &Handle<Mesh>)>,
+    mesh_handles: Query<(&Name, &Mesh3d)>,
 ) {
     for (scene_entity, scene_instance, async_collider) in async_colliders.iter() {
         if scene_spawner.instance_is_ready(**scene_instance) {
@@ -438,9 +552,10 @@ pub fn init_async_scene_colliders(
                             Some(collider) => {
                                 commands.entity(child_entity).insert(collider);
                             }
-                            None => error!(
+                            None => log::error!(
                                 "Unable to generate collider from mesh {:?} with name {}",
-                                mesh, name
+                                mesh,
+                                name
                             ),
                         }
                     }
@@ -481,21 +596,27 @@ pub fn update_colliding_entities(
 }
 
 #[cfg(test)]
+#[allow(missing_docs)]
 pub mod test {
     #[test]
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_collider_initializes() {
         use super::*;
-        use crate::plugin::systems::tests::HeadlessRenderPlugin;
+        use bevy::{render::mesh::MeshPlugin, scene::ScenePlugin};
 
         let mut app = App::new();
-        app.add_plugins(HeadlessRenderPlugin)
-            .add_systems(Update, init_async_colliders);
+        app.add_plugins((AssetPlugin::default(), MeshPlugin, ScenePlugin));
+        app.add_systems(Update, init_async_colliders);
+
+        app.finish();
 
         let mut meshes = app.world_mut().resource_mut::<Assets<Mesh>>();
         let cube = meshes.add(Cuboid::default());
 
-        let entity = app.world_mut().spawn((cube, AsyncCollider::default())).id();
+        let entity = app
+            .world_mut()
+            .spawn((Mesh3d(cube), AsyncCollider::default()))
+            .id();
 
         app.update();
 
@@ -514,36 +635,39 @@ pub mod test {
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_scene_collider_initializes() {
         use super::*;
-        use crate::plugin::systems::tests::HeadlessRenderPlugin;
+        use bevy::{render::mesh::MeshPlugin, scene::ScenePlugin};
 
         let mut app = App::new();
-        app.add_plugins(HeadlessRenderPlugin)
-            .add_systems(PostUpdate, init_async_scene_colliders);
+        app.add_plugins((AssetPlugin::default(), MeshPlugin, ScenePlugin));
+        app.add_systems(PostUpdate, init_async_scene_colliders);
 
         let mut meshes = app.world_mut().resource_mut::<Assets<Mesh>>();
         let cube_handle = meshes.add(Cuboid::default());
         let capsule_handle = meshes.add(Capsule3d::default());
-        let cube = app.world_mut().spawn((Name::new("Cube"), cube_handle)).id();
+        let cube = app
+            .world_mut()
+            .spawn((Name::new("Cube"), Mesh3d(cube_handle)))
+            .id();
         let capsule = app
             .world_mut()
-            .spawn((Name::new("Capsule"), capsule_handle))
+            .spawn((Name::new("Capsule"), Mesh3d(capsule_handle)))
             .id();
 
         let mut scenes = app.world_mut().resource_mut::<Assets<Scene>>();
         let scene = scenes.add(Scene::new(World::new()));
 
-        let mut named_shapes = bevy::utils::HashMap::new();
+        let mut named_shapes = bevy::platform::collections::HashMap::default();
         named_shapes.insert("Capsule".to_string(), None);
         let parent = app
             .world_mut()
             .spawn((
-                scene,
+                SceneRoot(scene),
                 AsyncSceneCollider {
                     named_shapes,
                     ..Default::default()
                 },
             ))
-            .push_children(&[cube, capsule])
+            .add_children(&[cube, capsule])
             .id();
 
         app.update();

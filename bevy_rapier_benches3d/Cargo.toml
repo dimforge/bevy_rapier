@@ -16,14 +16,24 @@ visual = [
     "bevy/bevy_pbr",
     "bevy/bevy_gizmos",
     "rapier3d/debug-render",
-    #"bevy/bevy_asset",
     "bevy_rapier3d/debug-render-3d",
 ]
 
 [dependencies]
-bevy = { version = "0.14", default-features = false }
-rapier3d = { features = ["profiler"], version = "0.22" }
-bevy_rapier3d = { version = "0.27", path = "../bevy_rapier3d", default-features = false, features = [
+rapier3d = { features = ["profiler"], version = "0.25" }
+bevy_rapier3d = { version = "0.30", path = "../bevy_rapier3d", default-features = false, features = [
     "dim3",
     "headless",
 ] }
+bevy = { version = "0.16.0", default-features = false }
+
+[dev-dependencies]
+divan = "0.1"
+
+[[bench]]
+name = "cubes"
+harness = false
+
+[[bench]]
+name = "many_pyramids3"
+harness = false

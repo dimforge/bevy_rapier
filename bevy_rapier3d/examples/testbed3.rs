@@ -8,10 +8,15 @@ mod joints3;
 mod joints_despawn3;
 mod locked_rotations3;
 mod multiple_colliders3;
+mod picking3;
 mod ray_casting3;
 mod static_trimesh3;
+mod voxels3;
 
-use bevy::prelude::*;
+use bevy::{
+    ecs::world::error::{EntityDespawnError, EntityMutableFetchError},
+    prelude::*,
+};
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier3d::prelude::*;
@@ -21,6 +26,7 @@ pub enum Examples {
     #[default]
     None,
     Boxes3,
+    Voxels3,
     DebugToggle3,
     Despawn3,
     Events3,
@@ -28,6 +34,7 @@ pub enum Examples {
     JointsDespawn3,
     LockedRotations3,
     MultipleColliders3,
+    Picking3,
     Raycasting3,
     StaticTrimesh3,
 }
@@ -60,10 +67,13 @@ fn main() {
     app.init_resource::<ExamplesRes>()
         .add_plugins((
             DefaultPlugins,
-            EguiPlugin,
+            EguiPlugin {
+                enable_multipass_for_primary_context: false,
+            },
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
             WorldInspectorPlugin::new(),
+            RapierPickingPlugin,
         ))
         .register_type::<Examples>()
         .register_type::<ExamplesRes>()
@@ -71,6 +81,7 @@ fn main() {
         .init_state::<Examples>()
         .insert_resource(ExampleSet(vec![
             (Examples::Boxes3, "Boxes3").into(),
+            (Examples::Voxels3, "Voxels3").into(),
             (Examples::DebugToggle3, "DebugToggle3").into(),
             (Examples::Despawn3, "Despawn3").into(),
             (Examples::Events3, "Events3").into(),
@@ -78,17 +89,25 @@ fn main() {
             (Examples::JointsDespawn3, "JointsDespawn3").into(),
             (Examples::LockedRotations3, "LockedRotations3").into(),
             (Examples::MultipleColliders3, "MultipleColliders3").into(),
+            (Examples::Picking3, "Picking3").into(),
             (Examples::Raycasting3, "Raycasting3").into(),
             (Examples::StaticTrimesh3, "StaticTrimesh3").into(),
         ]))
         .init_resource::<ExampleSelected>()
         //
-        //boxes2
+        // boxes3
         .add_systems(
             OnEnter(Examples::Boxes3),
             (boxes3::setup_graphics, boxes3::setup_physics),
         )
         .add_systems(OnExit(Examples::Boxes3), cleanup)
+        //
+        // voxels3
+        .add_systems(
+            OnEnter(Examples::Voxels3),
+            (voxels3::setup_graphics, voxels3::setup_physics),
+        )
+        .add_systems(OnExit(Examples::Voxels3), cleanup)
         //
         // Debug toggle
         .add_systems(
@@ -106,6 +125,7 @@ fn main() {
             )
                 .run_if(in_state(Examples::DebugToggle3)),
         )
+        .add_systems(OnExit(Examples::DebugToggle3), cleanup)
         //
         // despawn
         .init_resource::<despawn3::DespawnResource>()
@@ -172,6 +192,13 @@ fn main() {
         )
         .add_systems(OnExit(Examples::MultipleColliders3), cleanup)
         //
+        // picking
+        .add_systems(
+            OnEnter(Examples::Picking3),
+            (picking3::setup_graphics, picking3::setup_physics),
+        )
+        .add_systems(OnExit(Examples::Picking3), cleanup)
+        //
         // raycasting
         .add_systems(
             OnEnter(Examples::Raycasting3),
@@ -232,9 +259,12 @@ fn cleanup(world: &mut World) {
         .iter_entities()
         .filter_map(|e| (!keep_alive.contains(&e.id())).then_some(e.id()))
         .collect::<Vec<_>>();
-
     for r in remove {
-        world.despawn(r);
+        if let Err(error @ EntityDespawnError(EntityMutableFetchError::AliasedMutability(_))) =
+            world.try_despawn(r)
+        {
+            warn!("Cleanup error: {error:?}");
+        }
     }
 }
 

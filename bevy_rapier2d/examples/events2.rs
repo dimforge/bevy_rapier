@@ -19,7 +19,7 @@ fn main() {
 }
 
 pub fn setup_graphics(mut commands: Commands) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d);
 }
 
 pub fn display_events(
@@ -40,18 +40,18 @@ pub fn setup_physics(mut commands: Commands) {
      * Ground
      */
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, -24.0, 0.0)),
+        Transform::from_xyz(0.0, -24.0, 0.0),
         Collider::cuboid(80.0, 20.0),
     ));
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, 100.0, 0.0)),
+        Transform::from_xyz(0.0, 100.0, 0.0),
         Collider::cuboid(80.0, 30.0),
         Sensor,
     ));
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, 260.0, 0.0)),
+        Transform::from_xyz(0.0, 260.0, 0.0),
         RigidBody::Dynamic,
         Collider::cuboid(10.0, 10.0),
         ActiveEvents::COLLISION_EVENTS,

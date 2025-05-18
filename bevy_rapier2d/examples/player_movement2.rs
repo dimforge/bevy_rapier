@@ -24,21 +24,22 @@ fn main() {
 #[derive(Component)]
 pub struct Player(f32);
 
-pub fn spawn_player(mut commands: Commands, mut rapier_config: ResMut<RapierConfiguration>) {
+pub fn spawn_player(
+    mut commands: Commands,
+    mut rapier_config: Query<&mut RapierConfiguration>,
+) -> Result<()> {
+    let mut rapier_config = rapier_config.single_mut()?;
     // Set gravity to 0.0 and spawn camera.
     rapier_config.gravity = Vec2::ZERO;
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d);
 
     let sprite_size = 100.0;
 
     // Spawn entity with `Player` struct as a component for access in movement query.
     commands.spawn((
-        SpriteBundle {
-            sprite: Sprite {
-                color: Color::srgb(0.0, 0.0, 0.0),
-                custom_size: Some(Vec2::new(sprite_size, sprite_size)),
-                ..Default::default()
-            },
+        Sprite {
+            color: Color::srgb(0.0, 0.0, 0.0),
+            custom_size: Some(Vec2::new(sprite_size, sprite_size)),
             ..Default::default()
         },
         RigidBody::Dynamic,
@@ -46,6 +47,8 @@ pub fn spawn_player(mut commands: Commands, mut rapier_config: ResMut<RapierConf
         Collider::ball(sprite_size / 2.0),
         Player(100.0),
     ));
+
+    Ok(())
 }
 
 pub fn player_movement(

@@ -1,8 +1,13 @@
 use crate::control::CharacterCollision;
 use crate::dynamics::RapierRigidBodyHandle;
 use crate::geometry::RapierColliderHandle;
+use crate::plugin::context::systemparams::RAPIER_CONTEXT_EXPECT_ERROR;
+use crate::plugin::context::RapierContextEntityLink;
+use crate::plugin::context::RapierQueryPipeline;
 use crate::plugin::RapierConfiguration;
-use crate::plugin::RapierContext;
+use crate::prelude::context::RapierContextColliders;
+use crate::prelude::context::RapierContextSimulation;
+use crate::prelude::context::RapierRigidBodySet;
 use crate::prelude::KinematicCharacterController;
 use crate::prelude::KinematicCharacterControllerOutput;
 use crate::utils;
@@ -15,10 +20,16 @@ use rapier::pipeline::QueryFilter;
 /// collider.
 pub fn update_character_controls(
     mut commands: Commands,
-    config: Res<RapierConfiguration>,
-    mut context: ResMut<RapierContext>,
+    config: Query<&RapierConfiguration>,
+    mut context_access: Query<(
+        &mut RapierContextSimulation,
+        &RapierContextColliders,
+        &RapierQueryPipeline,
+        &mut RapierRigidBodySet,
+    )>,
     mut character_controllers: Query<(
         Entity,
+        &RapierContextEntityLink,
         &mut KinematicCharacterController,
         Option<&mut KinematicCharacterControllerOutput>,
         Option<&RapierColliderHandle>,
@@ -27,13 +38,29 @@ pub fn update_character_controls(
     )>,
     mut transforms: Query<&mut Transform>,
 ) {
-    let context = &mut *context;
-    for (entity, mut controller, output, collider_handle, body_handle, glob_transform) in
-        character_controllers.iter_mut()
+    for (
+        entity,
+        rapier_context_link,
+        mut controller,
+        output,
+        collider_handle,
+        body_handle,
+        glob_transform,
+    ) in character_controllers.iter_mut()
     {
         if let (Some(raw_controller), Some(translation)) =
             (controller.to_raw(), controller.translation)
         {
+            let config = config
+                .get(rapier_context_link.0)
+                .expect("Could not get [`RapierConfiguration`]");
+            let (mut context, context_colliders, query_pipeline, mut rigidbody_set) =
+                context_access
+                    .get_mut(rapier_context_link.0)
+                    .expect(RAPIER_CONTEXT_EXPECT_ERROR);
+
+            let context = &mut *context;
+            let rigidbody_set = &mut *rigidbody_set;
             let scaled_custom_shape =
                 controller
                     .custom_shape
@@ -48,11 +75,11 @@ pub fn update_character_controls(
 
             let parent_rigid_body = body_handle.map(|h| h.0).or_else(|| {
                 collider_handle
-                    .and_then(|h| context.colliders.get(h.0))
+                    .and_then(|h| context_colliders.colliders.get(h.0))
                     .and_then(|c| c.parent())
             });
             let entity_to_move = parent_rigid_body
-                .and_then(|rb| context.rigid_body_entity(rb))
+                .and_then(|rb| rigidbody_set.rigid_body_entity(rb))
                 .unwrap_or(entity);
 
             let (character_shape, character_pos) = if let Some((scaled_shape, tra, rot)) =
@@ -60,14 +87,15 @@ pub fn update_character_controls(
             {
                 let mut shape_pos: Isometry<Real> = (*tra, *rot).into();
 
-                if let Some(body) = body_handle.and_then(|h| context.bodies.get(h.0)) {
+                if let Some(body) = body_handle.and_then(|h| rigidbody_set.bodies.get(h.0)) {
                     shape_pos = body.position() * shape_pos
                 } else if let Some(gtransform) = glob_transform {
                     shape_pos = utils::transform_to_iso(&gtransform.compute_transform()) * shape_pos
                 }
 
                 (&*scaled_shape.raw, shape_pos)
-            } else if let Some(collider) = collider_handle.and_then(|h| context.colliders.get(h.0))
+            } else if let Some(collider) =
+                collider_handle.and_then(|h| context_colliders.colliders.get(h.0))
             {
                 (collider.shape(), *collider.position())
             } else {
@@ -80,7 +108,7 @@ pub fn update_character_controls(
                 .custom_mass
                 .or_else(|| {
                     parent_rigid_body
-                        .and_then(|h| context.bodies.get(h))
+                        .and_then(|h| rigidbody_set.bodies.get(h))
                         .map(|rb| rb.mass())
                 })
                 .unwrap_or(0.0);
@@ -104,9 +132,9 @@ pub fn update_character_controls(
 
             let movement = raw_controller.move_shape(
                 context.integration_parameters.dt,
-                &context.bodies,
-                &context.colliders,
-                &context.query_pipeline,
+                &rigidbody_set.bodies,
+                &context_colliders.colliders,
+                &query_pipeline.query_pipeline,
                 character_shape,
                 &character_pos,
                 translation.into(),
@@ -117,9 +145,9 @@ pub fn update_character_controls(
             if controller.apply_impulse_to_dynamic_bodies {
                 raw_controller.solve_character_collision_impulses(
                     context.integration_parameters.dt,
-                    &mut context.bodies,
-                    &context.colliders,
-                    &context.query_pipeline,
+                    &mut rigidbody_set.bodies,
+                    &context_colliders.colliders,
+                    &query_pipeline.query_pipeline,
                     character_shape,
                     character_mass,
                     collisions.iter(),
@@ -140,7 +168,7 @@ pub fn update_character_controls(
             let converted_collisions = context
                 .character_collisions_collector
                 .iter()
-                .filter_map(|c| CharacterCollision::from_raw(context, c));
+                .filter_map(|c| CharacterCollision::from_raw(context_colliders, c));
 
             if let Some(mut output) = output {
                 output.desired_translation = controller.translation.unwrap();

@@ -2,7 +2,7 @@ use crate::geometry::{Collider, CollisionGroups, ShapeCastHit};
 use crate::math::{Real, Rot, Vect};
 use bevy::prelude::*;
 
-use crate::plugin::RapierContext;
+use crate::plugin::context::RapierContextColliders;
 pub use rapier::control::CharacterAutostep;
 pub use rapier::control::CharacterLength;
 use rapier::prelude::{ColliderSet, QueryFilterFlags};
@@ -26,7 +26,7 @@ pub struct CharacterCollision {
 
 impl CharacterCollision {
     pub(crate) fn from_raw(
-        ctxt: &RapierContext,
+        ctxt: &RapierContextColliders,
         c: &rapier::control::CharacterCollision,
     ) -> Option<Self> {
         Self::from_raw_with_set(&ctxt.colliders, c, true)
@@ -37,7 +37,7 @@ impl CharacterCollision {
         c: &rapier::control::CharacterCollision,
         details_always_computed: bool,
     ) -> Option<Self> {
-        RapierContext::collider_entity_with_set(colliders, c.handle).map(|entity| {
+        RapierContextColliders::collider_entity_with_set(colliders, c.handle).map(|entity| {
             CharacterCollision {
                 entity,
                 character_translation: c.character_pos.translation.vector.into(),
@@ -81,7 +81,7 @@ pub struct MoveShapeOptions {
     /// Increase this number if your character appears to get stuck when sliding against surfaces.
     ///
     /// This is a small distance applied to the movement toward the contact normals of shapes hit
-    /// by the character controller. This helps shape-casting not getting stuck in an alway-penetrating
+    /// by the character controller. This helps shape-casting not getting stuck in an always-penetrating
     /// state during the sliding calculation.
     ///
     /// This value should remain fairly small since it can introduce artificial "bumps" when sliding
@@ -151,7 +151,7 @@ pub struct KinematicCharacterController {
     /// Increase this number if your character appears to get stuck when sliding against surfaces.
     ///
     /// This is a small distance applied to the movement toward the contact normals of shapes hit
-    /// by the character controller. This helps shape-casting not getting stuck in an alway-penetrating
+    /// by the character controller. This helps shape-casting not getting stuck in an always-penetrating
     /// state during the sliding calculation.
     ///
     /// This value should remain fairly small since it can introduce artificial "bumps" when sliding

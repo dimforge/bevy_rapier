@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
+#[allow(unused)]
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::srgb(
@@ -18,10 +19,7 @@ fn main() {
 }
 
 pub fn setup_graphics(mut commands: Commands) {
-    commands.spawn(Camera2dBundle {
-        transform: Transform::from_xyz(0.0, -200.0, 0.0),
-        ..default()
-    });
+    commands.spawn((Camera2d, Transform::from_xyz(0.0, -200.0, 0.0)));
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -46,7 +44,7 @@ pub fn setup_physics(mut commands: Commands) {
 
             let child_entity = commands
                 .spawn((
-                    TransformBundle::from(Transform::from_xyz(fk * shift, -fi * shift, 0.0)),
+                    Transform::from_xyz(fk * shift, -fi * shift, 0.0),
                     rigid_body,
                     Collider::cuboid(rad, rad),
                 ))

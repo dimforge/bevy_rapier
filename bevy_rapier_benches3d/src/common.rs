@@ -3,13 +3,11 @@ use bevy_rapier3d::prelude::*;
 
 #[cfg(not(feature = "visual"))]
 pub fn default_app() -> App {
-    use bevy::{log::LogPlugin, time::TimeUpdateStrategy};
+    use bevy::time::TimeUpdateStrategy;
     let mut app = App::new();
 
     app.add_plugins((
         MinimalPlugins,
-        LogPlugin::default(),
-        HierarchyPlugin,
         TransformPlugin,
         RapierPhysicsPlugin::<()>::default(),
     ));
@@ -40,11 +38,10 @@ pub fn default_app() -> App {
         LogDiagnosticsPlugin::default(),
     ));
     app.add_systems(Startup, |mut commands: Commands| {
-        commands.spawn(Camera3dBundle {
-            transform: Transform::from_xyz(-30.0, 30.0, 100.0)
-                .looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
-            ..Default::default()
-        });
+        commands.spawn((
+            Camera3d::default(),
+            Transform::from_xyz(-30.0, 30.0, 100.0).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
+        ));
     });
     app
 }

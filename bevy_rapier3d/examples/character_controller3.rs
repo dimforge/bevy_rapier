@@ -34,10 +34,8 @@ fn main() {
 pub fn setup_player(mut commands: Commands) {
     commands
         .spawn((
-            SpatialBundle {
-                transform: Transform::from_xyz(0.0, 5.0, 0.0),
-                ..default()
-            },
+            Transform::from_xyz(0.0, 5.0, 0.0),
+            Visibility::default(),
             Collider::round_cylinder(0.9, 0.3, 0.2),
             KinematicCharacterController {
                 custom_mass: Some(5.0),
@@ -60,10 +58,7 @@ pub fn setup_player(mut commands: Commands) {
         ))
         .with_children(|b| {
             // FPS Camera
-            b.spawn(Camera3dBundle {
-                transform: Transform::from_xyz(0.0, 0.2, -0.1),
-                ..Default::default()
-            });
+            b.spawn((Camera3d::default(), Transform::from_xyz(0.0, 0.2, -0.1)));
         });
 }
 
@@ -75,7 +70,7 @@ fn setup_map(mut commands: Commands) {
     let ground_height = 0.1;
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
+        Transform::from_xyz(0.0, -ground_height, 0.0),
         Collider::cuboid(ground_size, ground_height, ground_size),
     ));
     /*
@@ -87,35 +82,19 @@ fn setup_map(mut commands: Commands) {
         let step = i as f32;
         let collider = Collider::cuboid(1.0, step * stair_step, 1.0);
         commands.spawn((
-            TransformBundle::from(Transform::from_xyz(
-                40.0,
-                step * stair_step,
-                step * 2.0 - 20.0,
-            )),
+            Transform::from_xyz(40.0, step * stair_step, step * 2.0 - 20.0),
             collider.clone(),
         ));
         commands.spawn((
-            TransformBundle::from(Transform::from_xyz(
-                -40.0,
-                step * stair_step,
-                step * -2.0 + 20.0,
-            )),
+            Transform::from_xyz(-40.0, step * stair_step, step * -2.0 + 20.0),
             collider.clone(),
         ));
         commands.spawn((
-            TransformBundle::from(Transform::from_xyz(
-                step * 2.0 - 20.0,
-                step * stair_step,
-                40.0,
-            )),
+            Transform::from_xyz(step * 2.0 - 20.0, step * stair_step, 40.0),
             collider.clone(),
         ));
         commands.spawn((
-            TransformBundle::from(Transform::from_xyz(
-                step * -2.0 + 20.0,
-                step * stair_step,
-                -40.0,
-            )),
+            Transform::from_xyz(step * -2.0 + 20.0, step * stair_step, -40.0),
             collider.clone(),
         ));
     }
@@ -173,10 +152,10 @@ fn player_movement(
     mut vertical_movement: Local<f32>,
     mut grounded_timer: Local<f32>,
 ) {
-    let Ok((transform, mut controller, output)) = player.get_single_mut() else {
+    let Ok((transform, mut controller, output)) = player.single_mut() else {
         return;
     };
-    let delta_time = time.delta_seconds();
+    let delta_time = time.delta_secs();
     // Retrieve input
     let mut movement = Vec3::new(input.x, 0.0, input.z) * MOVEMENT_SPEED;
     let jump_speed = input.y * JUMP_SPEED;
@@ -206,11 +185,11 @@ fn player_look(
     mut camera: Query<&mut Transform, With<Camera>>,
     input: Res<LookInput>,
 ) {
-    let Ok(mut transform) = player.get_single_mut() else {
+    let Ok(mut transform) = player.single_mut() else {
         return;
     };
     transform.rotation = Quat::from_axis_angle(Vec3::Y, input.x.to_radians());
-    let Ok(mut transform) = camera.get_single_mut() else {
+    let Ok(mut transform) = camera.single_mut() else {
         return;
     };
     transform.rotation = Quat::from_axis_angle(Vec3::X, input.y.to_radians());

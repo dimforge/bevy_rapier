@@ -11,8 +11,12 @@ mod locked_rotations2;
 mod multiple_colliders2;
 mod player_movement2;
 mod rope_joint2;
+mod voxels2;
 
-use bevy::prelude::*;
+use bevy::{
+    ecs::world::error::{EntityDespawnError, EntityMutableFetchError},
+    prelude::*,
+};
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier2d::prelude::*;
@@ -22,6 +26,7 @@ pub enum Examples {
     #[default]
     None,
     Boxes2,
+    Voxels2,
     DebugToggle2,
     RopeJoint2,
     DebugDespawn2,
@@ -62,7 +67,9 @@ fn main() {
     app.init_resource::<ExamplesRes>()
         .add_plugins((
             DefaultPlugins,
-            EguiPlugin,
+            EguiPlugin {
+                enable_multipass_for_primary_context: false,
+            },
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(10.0),
             RapierDebugRenderPlugin::default(),
             WorldInspectorPlugin::new(),
@@ -73,6 +80,7 @@ fn main() {
         .init_state::<Examples>()
         .insert_resource(ExampleSet(vec![
             (Examples::Boxes2, "Boxes3").into(),
+            (Examples::Voxels2, "Voxels2").into(),
             (Examples::RopeJoint2, "RopeJoint2").into(),
             (Examples::DebugDespawn2, "DebugDespawn2").into(),
             (Examples::Despawn2, "Despawn3").into(),
@@ -92,6 +100,13 @@ fn main() {
         )
         .add_systems(OnExit(Examples::Boxes2), cleanup)
         //
+        //voxels2
+        .add_systems(
+            OnEnter(Examples::Voxels2),
+            (voxels2::setup_graphics, voxels2::setup_physics),
+        )
+        .add_systems(OnExit(Examples::Voxels2), cleanup)
+        //
         // Debug toggle
         .add_systems(
             OnEnter(Examples::DebugToggle2),
@@ -108,6 +123,7 @@ fn main() {
             )
                 .run_if(in_state(Examples::DebugToggle2)),
         )
+        .add_systems(OnExit(Examples::DebugToggle2), cleanup)
         //
         // rope joint
         .add_systems(
@@ -204,9 +220,15 @@ fn main() {
             OnExit(Examples::PlayerMovement2),
             (
                 cleanup,
-                |mut rapier_config: ResMut<RapierConfiguration>, ctxt: Res<RapierContext>| {
-                    rapier_config.gravity =
-                        RapierConfiguration::new(ctxt.integration_parameters.length_unit).gravity;
+                |mut rapier_config: Query<&mut RapierConfiguration>,
+                 ctxt: ReadRapierContext|
+                 -> Result<()> {
+                    let mut rapier_config = rapier_config.single_mut()?;
+                    rapier_config.gravity = RapierConfiguration::new(
+                        ctxt.single()?.simulation.integration_parameters.length_unit,
+                    )
+                    .gravity;
+                    Ok(())
                 },
             ),
         )
@@ -247,7 +269,11 @@ fn cleanup(world: &mut World) {
         .collect::<Vec<_>>();
 
     for r in remove {
-        world.despawn(r);
+        if let Err(error @ EntityDespawnError(EntityMutableFetchError::AliasedMutability(_))) =
+            world.try_despawn(r)
+        {
+            warn!("Cleanup error: {error:?}");
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "bevy_rapier3d"
-version = "0.27.0"
+version = "0.30.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 description = "3-dimensional physics engine in Rust, official Bevy plugin."
 documentation = "http://docs.rs/bevy_rapier3d"
@@ -18,10 +18,19 @@ path = "../src/lib.rs"
 required-features = ["dim3"]
 
 [lints]
-workspace = true
+rust.unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(feature, values("dim2"))',
+] }
+clippy = { needless_lifetimes = "allow" }
 
 [features]
-default = ["dim3", "async-collider", "debug-render-3d"]
+default = [
+    "dim3",
+    "async-collider",
+    "debug-render-3d",
+    "picking-backend",
+    "to-bevy-mesh",
+]
 dim3 = []
 debug-render = ["debug-render-3d"]
 debug-render-2d = [
@@ -38,47 +47,71 @@ debug-render-3d = [
     "rapier3d/debug-render",
     "bevy/bevy_asset",
 ]
+rapier-debug-render = ["rapier3d/debug-render"]
+
 parallel = ["rapier3d/parallel"]
 simd-stable = ["rapier3d/simd-stable"]
 simd-nightly = ["rapier3d/simd-nightly"]
-wasm-bindgen = ["rapier3d/wasm-bindgen"]
 serde-serialize = ["rapier3d/serde-serialize", "bevy/serialize", "serde"]
 enhanced-determinism = ["rapier3d/enhanced-determinism"]
 headless = []
-async-collider = ["bevy/bevy_asset", "bevy/bevy_scene"]
+picking-backend = ["bevy/bevy_picking", "bevy/bevy_render"]
+async-collider = [
+    "bevy/bevy_asset",
+    "bevy/bevy_scene",
+    "bevy/bevy_render",
+    "bevy/bevy_image",
+]
+to-bevy-mesh = ["bevy/bevy_render", "bevy/bevy_asset"]
 
 [dependencies]
-bevy = { version = "0.14", default-features = false, features = [
-    # This has to be enabled for non headless as of bevy 0.14 because we use AAbb
-    # "bevy_render",
-] }
-nalgebra = { version = "0.33", features = ["convert-glam027"] }
-rapier3d = "0.22"
+bevy = { version = "0.16.0", default-features = false, features = ["std"] }
+nalgebra = { version = "0.33", features = ["convert-glam029"] }
+rapier3d = "0.25"
 bitflags = "2.4"
 log = "0.4"
 serde = { version = "1", features = ["derive"], optional = true }
 
 [dev-dependencies]
-bevy = { version = "0.14", default-features = false, features = [
+bevy = { version = "0.16.0", default-features = false, features = [
+    "bevy_window",
     "x11",
     "tonemapping_luts",
     "bevy_state",
+    "bevy_debug_stepping",
+    "bevy_text",
+    "bevy_ui",
+    "default_font",
+    "bevy_log",
 ] }
 approx = "0.5.1"
-glam = { version = "0.27", features = ["approx"] }
-bevy-inspector-egui = "0.25.1"
-bevy_egui = "0.28.0"
-divan = "0.1"
-bevy_rapier_benches3d = { version = "0.1", path = "../bevy_rapier_benches3d" }
+glam = { version = "0.29", features = ["approx"] }
+bevy-inspector-egui = "0.31"
+bevy_egui = "0.34"
+bevy_mod_debugdump = "0.13"
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
-features = ["debug-render-3d", "serde-serialize"]
+features = ["debug-render-3d", "serde-serialize", "async-collider"]
 
-[[bench]]
-name = "cubes"
-harness = false
+[package.metadata.cargo-all-features]
 
-[[bench]]
-name = "many_pyramids3"
-harness = false
+denylist = ["simd-nightly"]
+
+# Features "dim2" and "dim3" are incompatible, so skip permutations including them
+skip_feature_sets = [["enhanced-determinism", "simd-stable"]]
+
+always_include_features = ["dim3"]
+
+# The maximum number of features to try at once. Does not count features from `always_include_features`.
+# This is useful for reducing the number of combinations run for a crate with a large amount of features,
+# since in most cases a bug just needs a small set of 2-3 features to reproduce.
+
+max_combination_size = 1
+[[example]]
+name = "picking3"
+required-features = ["picking-backend"]
+
+[[example]]
+name = "testbed3"
+required-features = ["picking-backend"]

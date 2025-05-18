@@ -4,8 +4,8 @@
 //! Rapier is a set of two Rust crates `rapier2d` and `rapier3d` for efficient cross-platform
 //! physics simulation. Its target application include video games, animation, robotics, etc.
 //!
-//! The `bevy_rapier` projects implements two other crates `bevy_rapier2d` and `bevy_rapier3d` which
-//! defines physics plugins for the Bevy game engine.
+//! The `bevy_rapier` project implements two crates `bevy_rapier2d` and `bevy_rapier3d` which
+//! define physics plugins for the Bevy game engine.
 //!
 //! User documentation for `bevy_rapier` is on [the official Rapier site](https://rapier.rs/docs/).
 //!
@@ -31,6 +31,8 @@ pub mod math {
     pub type Real = rapier::math::Real;
     /// The vector type.
     pub type Vect = Vec2;
+    /// The integer vector type.
+    pub type IVect = bevy::math::IVec2;
     /// The rotation type (in 2D this is an angle in radians).
     pub type Rot = Real;
 }
@@ -44,6 +46,8 @@ pub mod math {
     pub type Real = rapier::math::Real;
     /// The vector type.
     pub type Vect = Vec3;
+    /// The integer vector type.
+    pub type IVect = bevy::math::IVec3;
     /// The rotation type.
     pub type Rot = Quat;
 }
@@ -56,6 +60,12 @@ pub mod geometry;
 pub mod pipeline;
 /// The physics plugin and systems.
 pub mod plugin;
+
+/// Reflection utilities.
+pub mod reflect;
+
+#[cfg(feature = "picking-backend")]
+pub mod picking_backend;
 
 /// Components related to character control.
 pub mod control;
@@ -71,7 +81,11 @@ pub mod prelude {
     pub use crate::dynamics::*;
     pub use crate::geometry::*;
     pub use crate::math::*;
+    #[cfg(feature = "picking-backend")]
+    pub use crate::picking_backend::*;
     pub use crate::pipeline::*;
+    pub use crate::plugin::context::systemparams::*;
+    pub use crate::plugin::context::*;
     pub use crate::plugin::*;
     #[cfg(any(feature = "debug-render-3d", feature = "debug-render-2d"))]
     pub use crate::render::*;

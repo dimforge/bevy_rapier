@@ -22,6 +22,8 @@ pub enum ColliderView<'a> {
     Segment(SegmentView<'a>),
     /// A triangle shape.
     Triangle(TriangleView<'a>),
+    /// A Voxels shape.
+    Voxels(VoxelsView<'a>),
     /// A triangle mesh shape.
     TriMesh(TriMeshView<'a>),
     /// A set of segments.
@@ -65,7 +67,7 @@ pub enum ColliderView<'a> {
     #[cfg(feature = "dim2")]
     RoundConvexPolygon(RoundConvexPolygonView<'a>),
 }
-impl<'a> fmt::Debug for ColliderView<'a> {
+impl fmt::Debug for ColliderView<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ColliderView::Ball(view) => write!(f, "{:?}", view.raw),
@@ -73,6 +75,7 @@ impl<'a> fmt::Debug for ColliderView<'a> {
             ColliderView::Capsule(view) => write!(f, "{:?}", view.raw),
             ColliderView::Segment(view) => write!(f, "{:?}", view.raw),
             ColliderView::Triangle(view) => write!(f, "{:?}", view.raw),
+            ColliderView::Voxels(view) => write!(f, "{:?}", view.raw),
             ColliderView::TriMesh(_) => write!(f, "Trimesh (not representable)"),
             ColliderView::Polyline(_) => write!(f, "Polyline (not representable)"),
             ColliderView::HalfSpace(view) => write!(f, "{:?}", view.raw),
@@ -108,6 +111,7 @@ impl<'a> From<TypedShape<'a>> for ColliderView<'a> {
             TypedShape::Capsule(s) => ColliderView::Capsule(CapsuleView { raw: s }),
             TypedShape::Segment(s) => ColliderView::Segment(SegmentView { raw: s }),
             TypedShape::Triangle(s) => ColliderView::Triangle(TriangleView { raw: s }),
+            TypedShape::Voxels(s) => ColliderView::Voxels(VoxelsView { raw: s }),
             TypedShape::TriMesh(s) => ColliderView::TriMesh(TriMeshView { raw: s }),
             TypedShape::Polyline(s) => ColliderView::Polyline(PolylineView { raw: s }),
             TypedShape::HalfSpace(s) => ColliderView::HalfSpace(HalfSpaceView { raw: s }),
@@ -129,8 +133,6 @@ impl<'a> From<TypedShape<'a>> for ColliderView<'a> {
             TypedShape::RoundTriangle(s) => {
                 ColliderView::RoundTriangle(RoundTriangleView { raw: s })
             }
-            // RoundedTriMesh,
-            // RoundedHeightField,
             #[cfg(feature = "dim2")]
             TypedShape::RoundConvexPolygon(s) => {
                 ColliderView::RoundConvexPolygon(RoundConvexPolygonView { raw: s })
@@ -171,6 +173,7 @@ impl<'a> ColliderView<'a> {
             ColliderView::Capsule(CapsuleView { raw: s }) => TypedShape::Capsule(s),
             ColliderView::Segment(SegmentView { raw: s }) => TypedShape::Segment(s),
             ColliderView::Triangle(TriangleView { raw: s }) => TypedShape::Triangle(s),
+            ColliderView::Voxels(VoxelsView { raw: s }) => TypedShape::Voxels(s),
             ColliderView::TriMesh(TriMeshView { raw: s }) => TypedShape::TriMesh(s),
             ColliderView::Polyline(PolylineView { raw: s }) => TypedShape::Polyline(s),
             ColliderView::HalfSpace(HalfSpaceView { raw: s }) => TypedShape::HalfSpace(s),
@@ -192,8 +195,6 @@ impl<'a> ColliderView<'a> {
             ColliderView::RoundTriangle(RoundTriangleView { raw: s }) => {
                 TypedShape::RoundTriangle(s)
             }
-            // RoundedTriMesh,
-            // RoundedHeightField,
             #[cfg(feature = "dim2")]
             ColliderView::RoundConvexPolygon(RoundConvexPolygonView { raw: s }) => {
                 TypedShape::RoundConvexPolygon(s)
@@ -219,6 +220,7 @@ impl<'a> ColliderView<'a> {
             ColliderView::Capsule(CapsuleView { raw }) => SharedShape::new(*raw),
             ColliderView::Segment(SegmentView { raw }) => SharedShape::new(*raw),
             ColliderView::Triangle(TriangleView { raw }) => SharedShape::new(*raw),
+            ColliderView::Voxels(VoxelsView { raw }) => SharedShape::new(raw.clone()),
             ColliderView::TriMesh(TriMeshView { raw }) => SharedShape::new(raw.clone()),
             ColliderView::Polyline(PolylineView { raw }) => SharedShape::new(raw.clone()),
             ColliderView::HalfSpace(HalfSpaceView { raw }) => SharedShape::new(*raw),
@@ -276,11 +278,14 @@ impl<'a> ColliderView<'a> {
                 Some(Either::Right(b)) => SharedShape::new(b),
             },
             ColliderView::Segment(s) => SharedShape::new(s.raw.scaled(&scale.into())),
-            // ColliderView::RoundSegment(s) => SharedShape::new(RoundShape {
-            //     border_radius: s.raw.border_radius,
-            //     inner_shape: s.raw.inner_shape.scaled(&scale.into()),
-            // }),
             ColliderView::Triangle(t) => SharedShape::new(t.raw.scaled(&scale.into())),
+            ColliderView::Voxels(cp) => match cp.raw.clone().scaled(&scale.into()) {
+                None => {
+                    log::error!("Failed to apply scale {} to Voxels shape.", scale);
+                    SharedShape::ball(0.0)
+                }
+                Some(scaled) => SharedShape::new(scaled),
+            },
             ColliderView::RoundTriangle(t) => SharedShape::new(RoundShape {
                 border_radius: t.raw.border_radius,
                 inner_shape: t.raw.inner_shape.scaled(&scale.into()),

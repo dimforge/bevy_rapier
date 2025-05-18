@@ -21,11 +21,10 @@ fn main() {
 }
 
 pub fn setup_graphics(mut commands: Commands) {
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(-30.0, 30.0, 100.0)
-            .looking_at(Vec3::new(0.0, 10.0, 0.0), Vec3::Y),
-        ..Default::default()
-    });
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(-30.0, 30.0, 100.0).looking_at(Vec3::new(0.0, 10.0, 0.0), Vec3::Y),
+    ));
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -36,7 +35,7 @@ pub fn setup_physics(mut commands: Commands) {
     let ground_height = 0.1;
 
     commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
+        Transform::from_xyz(0.0, -ground_height, 0.0),
         Collider::cuboid(ground_size, ground_height, ground_size),
     ));
 
@@ -62,7 +61,7 @@ pub fn setup_physics(mut commands: Commands) {
 
                 // Build the rigid body.
                 commands.spawn((
-                    TransformBundle::from(Transform::from_xyz(x, y, z)),
+                    Transform::from_xyz(x, y, z),
                     RigidBody::Dynamic,
                     Collider::cuboid(rad, rad, rad),
                 ));
@@ -75,25 +74,25 @@ pub fn setup_physics(mut commands: Commands) {
 
 pub fn cast_ray(
     mut commands: Commands,
-    windows: Query<&Window, With<PrimaryWindow>>,
-    rapier_context: Res<RapierContext>,
+    window: Single<&Window, With<PrimaryWindow>>,
+    rapier_context: ReadRapierContext,
     cameras: Query<(&Camera, &GlobalTransform)>,
-) {
-    let window = windows.single();
-
+) -> Result<()> {
     let Some(cursor_position) = window.cursor_position() else {
-        return;
+        log::warn!("Cursor is outside the window area");
+        return Ok(());
     };
 
     // We will color in read the colliders hovered by the mouse.
     for (camera, camera_transform) in &cameras {
         // First, compute a ray from the mouse position.
-        let Some(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
-            return;
+        let Ok(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
+            log::warn!("Unable to compute ray from mouse position");
+            return Ok(());
         };
-
+        let context = rapier_context.single()?;
         // Then cast the ray.
-        let hit = rapier_context.cast_ray(
+        let hit = context.cast_ray(
             ray.origin,
             ray.direction.into(),
             f32::MAX,
@@ -109,4 +108,6 @@ pub fn cast_ray(
             commands.entity(entity).insert(ColliderDebugColor(color));
         }
     }
+
+    Ok(())
 }
