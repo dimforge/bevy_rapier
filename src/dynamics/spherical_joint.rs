@@ -138,14 +138,8 @@ impl From<SphericalJoint> for GenericJoint {
 
 /// Create spherical joints using the builder pattern.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Default, Clone, Debug, PartialEq)]
 pub struct SphericalJointBuilder(SphericalJoint);
-
-impl Default for SphericalJointBuilder {
-    fn default() -> Self {
-        Self(SphericalJoint::new())
-    }
-}
 
 impl SphericalJointBuilder {
     /// Creates a new builder for spherical joints.
