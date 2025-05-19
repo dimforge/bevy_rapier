@@ -158,8 +158,8 @@ where
                         .in_set(PhysicsSet::SyncBackend),
                     (
                         (
-                            systems::apply_collider_user_changes.in_set(RapierBevyComponentApply),
                             systems::apply_scale.in_set(RapierBevyComponentApply),
+                            systems::apply_collider_user_changes.in_set(RapierBevyComponentApply),
                         )
                             .chain(),
                         systems::apply_joint_user_changes.in_set(RapierBevyComponentApply),
@@ -721,6 +721,69 @@ mod test {
                 RigidBody::Fixed,
             ));
             entity_commands.insert(ChildOf(parent));
+        }
+    }
+
+    #[test]
+    fn initial_scale() {
+        return main();
+
+        use bevy::prelude::*;
+
+        fn main() {
+            let mut app = App::new();
+            app.add_plugins((
+                TransformPlugin,
+                TimePlugin,
+                RapierPhysicsPlugin::<NoUserData>::default().in_fixed_schedule(),
+            ));
+            run_test(&mut app);
+        }
+
+        fn run_test(app: &mut App) {
+            app.insert_resource(TimeUpdateStrategy::ManualDuration(
+                std::time::Duration::from_secs_f32(1f32 / 60f32),
+            ));
+            app.add_systems(Update, setup_physics.run_if(run_once));
+
+            app.finish();
+
+            // Running startup
+            app.update();
+            // Running first physics setup, initializes colliders and scaling.
+            app.update();
+
+            let collider = app
+                .world_mut()
+                .query::<&Collider>()
+                .single(app.world())
+                .unwrap();
+            approx::assert_relative_eq!(collider.scale, Vect::splat(0.1), epsilon = 1.0e-5);
+
+            let context = app
+                .world_mut()
+                .query::<RapierContext>()
+                .single(app.world())
+                .unwrap();
+            let physics_ball_radius = context
+                .colliders
+                .colliders
+                .iter()
+                .next()
+                .unwrap()
+                .1
+                .shape()
+                .as_ball()
+                .unwrap()
+                .radius;
+            approx::assert_relative_eq!(physics_ball_radius, 0.1, epsilon = 0.1);
+        }
+
+        pub fn setup_physics(mut commands: Commands) {
+            commands.spawn((
+                Transform::from_translation(Vec3::new(-0.2, 0.0, 0.0)).with_scale(Vec3::splat(0.1)),
+                Collider::ball(1.0),
+            ));
         }
     }
 }
