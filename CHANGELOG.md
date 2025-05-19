@@ -2,7 +2,13 @@
 
 ## Unreleased
 
+### Added
+
 - Expose `RapierBevyComponentApply`, to help with creating your own schedules when you set `default_system_setup` to `false`.
+
+### Fix
+
+- Fix scale being applied with a frame delay. [#659](https://github.com/dimforge/bevy_rapier/pull/659)
 
 ## v0.30.0 (15 May 2025)
 
@@ -20,7 +26,7 @@
 - `RapierContextInitialization::InitializeDefaultRapierContext` now has more fields for better control over default physics context.
 - `ContactPairView::collider1` and `ContactPairView::collider2` now return an `Option`.
 
-### Fixed
+### Fix
 
 - Fix position being incorrect when a rigidbody bevy entity has a scaled parent. [#646](https://github.com/dimforge/bevy_rapier/pull/646)
 
