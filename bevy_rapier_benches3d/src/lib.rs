@@ -11,9 +11,14 @@ use common::wait_app_start;
 use bevy::prelude::*;
 use bevy_rapier3d::plugin::context::RapierContextSimulation;
 
-pub fn custom_bencher(steps: usize, setup: impl Fn(&mut App)) {
+pub fn custom_bencher(_steps: usize, setup: impl Fn(&mut App)) {
     let mut app = default_app();
     setup(&mut app);
+    #[cfg(feature = "visual")]
+    {
+        app.run();
+        return;
+    }
     wait_app_start(&mut app);
 
     let mut timer_total = rapier3d::counters::Timer::new();
@@ -21,7 +26,7 @@ pub fn custom_bencher(steps: usize, setup: impl Fn(&mut App)) {
     let mut rapier_step_times = vec![];
     let mut total_update_times = vec![];
     timer_total.start();
-    for _ in 0..steps {
+    for _ in 0.._steps {
         timer_full_update.start();
         app.update();
         timer_full_update.pause();
