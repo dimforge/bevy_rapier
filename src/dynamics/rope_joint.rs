@@ -83,6 +83,21 @@ impl RopeJoint {
         self
     }
 
+    /// Returns the locked axes that are set for the rope joint.
+    pub fn locked_axes(&self) -> JointAxesMask {
+        self.data.locked_axes()
+    }
+
+    /// Allows you to set the locked axes for the rope joint
+    /// If the inputed axes enable any of the axes that are included in
+    /// `JointAxesMask::LOCKED_FIXED_AXES`, then they won't have an effect.
+    pub fn set_locked_axes(mut self, axes: JointAxesMask) -> Self {
+        let mut filtered_axes = axes;
+        filtered_axes.set(JointAxesMask::LOCKED_FIXED_AXES, false);
+        self.data.lock_axes(filtered_axes);
+        self
+    }
+
     /// The motor affecting the joint’s translational degree of freedom.
     #[must_use]
     pub fn motor(&self, axis: JointAxis) -> Option<&JointMotor> {
@@ -200,6 +215,16 @@ impl RopeJointBuilder {
     #[must_use]
     pub fn local_axis2(mut self, axis2: Vect) -> Self {
         self.0.set_local_axis2(axis2);
+        self
+    }
+
+    /// Allows you to set the locked axes for the rope joint
+    /// If the inputed axes enable any of the axes that are included in
+    /// `JointAxesMask::LOCKED_FIXED_AXES`, then they won't have an effect.
+    pub fn lock_axes(mut self, axes: JointAxesMask) -> Self {
+        let mut filtered_axes = axes;
+        filtered_axes.set(JointAxesMask::LOCKED_FIXED_AXES, false);
+        self.0.data.lock_axes(filtered_axes);
         self
     }
 
