@@ -82,6 +82,18 @@ impl RevoluteJoint {
         self
     }
 
+    /// Sets the joint's rotation axis in the local-space of the first rigid-body
+    pub fn set_local_axis1(&mut self, axis1: Vect) -> &mut Self {
+        self.data.set_local_axis1(axis1);
+        self
+    }
+
+    /// Sets the joint's rotation axis in the local-space of the second rigid-body
+    pub fn set_local_axis2(&mut self, axis2: Vect) -> &mut Self {
+        self.data.set_local_axis2(axis2);
+        self
+    }
+
     /// The motor affecting the joint’s rotational degree of freedom.
     #[must_use]
     pub fn motor(&self) -> Option<&JointMotor> {
@@ -228,6 +240,18 @@ impl RevoluteJointBuilder {
         self.0.set_local_anchor2(anchor2);
         self
     }
+
+    /// Sets the joint's axis, expressed in the local-space of the first rigid-body
+    pub fn local_axis1(mut self, axis1: Vect) -> Self {
+        self.0.set_local_axis1(axis1);
+        self
+    } 
+
+    /// Sets the joint's axis, expressed in the local-space of the second rigid-body
+    pub fn local_axis2(mut self, axis2: Vect) -> Self {
+        self.0.set_local_axis2(axis2);
+        self
+    } 
 
     /// Set the spring-like model used by the motor to reach the desired target velocity and position.
     #[must_use]
