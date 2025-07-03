@@ -8,9 +8,23 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+visual = [
+    "bevy/x11",
+    "bevy/tonemapping_luts",
+    "bevy/bevy_core_pipeline",
+    "bevy/bevy_pbr",
+    "bevy/bevy_gizmos",
+    "rapier3d/debug-render",
+    "bevy_rapier3d/debug-render-3d",
+]
+
 [dependencies]
 rapier3d = { features = ["profiler"], version = "0.25" }
-bevy_rapier3d = { version = "0.30", path = "../bevy_rapier3d" }
+bevy_rapier3d = { version = "0.30", path = "../bevy_rapier3d", default-features = false, features = [
+    "dim3",
+    "headless",
+] }
 bevy = { version = "0.16.0", default-features = false }
 
 [dev-dependencies]

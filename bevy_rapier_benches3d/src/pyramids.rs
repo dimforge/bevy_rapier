@@ -17,7 +17,7 @@ pub fn create_pyramid(commands: &mut Commands, offset: Vect, stack_height: usize
             commands.spawn((
                 RigidBody::Dynamic,
                 Transform::from_translation(Vec3::new(x, y, 0.0) + offset),
-                Collider::cuboid(1.0, 1.0, 1.0),
+                Collider::cuboid(rad, rad, rad),
             ));
         }
     }
@@ -47,6 +47,7 @@ pub fn setup_pyramids(app: &mut App, pyramid_count: usize, stack_height: usize) 
         /*
          * Create the pyramids
          */
+
         for pyramid_index in 0..pyramid_count {
             let bottomy = rad;
             create_pyramid(
