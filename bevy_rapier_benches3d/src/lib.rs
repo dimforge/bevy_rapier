@@ -39,11 +39,11 @@ pub fn custom_bencher(steps: usize, setup: impl Fn(&mut App)) {
         .map(|time| *time as f32)
         .sum::<f32>()
         / total_update_times.len() as f32;
-    println!("average total time: {} ms", average_total);
+    println!("average total time: {average_total} ms");
     let average_rapier_step =
         rapier_step_times.iter().sum::<f32>() / rapier_step_times.len() as f32;
-    println!("average rapier step time: {} ms", average_rapier_step);
+    println!("average rapier step time: {average_rapier_step} ms");
     let average_rapier_overhead = average_total - average_rapier_step;
-    println!("average bevy overhead: {} ms", average_rapier_overhead);
+    println!("average bevy overhead: {average_rapier_overhead} ms");
     println!("total time: {} ms", timer_total.time().as_millis());
 }
