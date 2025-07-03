@@ -5,6 +5,7 @@
 ### Added
 
 - Expose `RapierBevyComponentApply`, to help with creating your own schedules when you set `default_system_setup` to `false`.
+- Add `set_local_axis1` and `set_local_axis2` to `RevoluteJoint` and `RevoluteJointBuilder`. [#666](https://github.com/dimforge/bevy_rapier/pull/666)
 
 ### Fix
 
