@@ -521,7 +521,7 @@ pub fn init_async_colliders(
                         .insert(collider)
                         .remove::<AsyncCollider>();
                 }
-                None => log::error!("Unable to generate collider from mesh {:?}", mesh),
+                None => log::error!("Unable to generate collider from mesh {mesh:?}"),
             }
         }
     }
@@ -553,9 +553,7 @@ pub fn init_async_scene_colliders(
                                 commands.entity(child_entity).insert(collider);
                             }
                             None => log::error!(
-                                "Unable to generate collider from mesh {:?} with name {}",
-                                mesh,
-                                name
+                                "Unable to generate collider from mesh {mesh:?} with name {name}"
                             ),
                         }
                     }

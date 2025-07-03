@@ -275,7 +275,7 @@ where
             log::warn!("RapierPhysicsPlugin added but a `RapierContextInitialization` resource was already existing.\
             This might overwrite previous configuration made via `RapierPhysicsPlugin::with_custom_initialization`\
             or `RapierPhysicsPlugin::with_length_unit`.
-            The following resource will be used: {:?}", world_init);
+            The following resource will be used: {world_init:?}");
         } else {
             app.insert_resource(self.default_world_setup.clone());
         }
@@ -331,7 +331,7 @@ where
                 match config {
                     TimestepMode::Fixed { .. } => {}
                     mode => {
-                        log::warn!("TimestepMode is set to `{:?}`, it is recommended to use `TimestepMode::Fixed` if you have the physics in `FixedUpdate`", mode);
+                        log::warn!("TimestepMode is set to `{mode:?}`, it is recommended to use `TimestepMode::Fixed` if you have the physics in `FixedUpdate`");
                     }
                 }
             }
