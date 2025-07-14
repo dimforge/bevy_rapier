@@ -1,10 +1,10 @@
 use crate::dynamics::RapierRigidBodyHandle;
+use crate::dynamics::RigidBody;
 use crate::plugin::context::systemparams::RAPIER_CONTEXT_EXPECT_ERROR;
 use crate::plugin::context::{
     DefaultRapierContext, RapierContextColliders, RapierContextEntityLink, RapierRigidBodySet,
 };
 use crate::plugin::{configuration::TimestepMode, RapierConfiguration};
-use crate::{dynamics::RigidBody, plugin::context::SimulationToRenderTime};
 use crate::{prelude::*, utils};
 use bevy::prelude::*;
 use rapier::dynamics::{RigidBodyBuilder, RigidBodyHandle, RigidBodyType};
@@ -204,7 +204,7 @@ pub fn apply_rigid_body_user_changes(
         // Use an Option<bool> to avoid running the check twice.
         let mut transform_changed = None;
 
-        if let Some(interpolation) = interpolation.as_deref_mut() {
+        if interpolation.as_deref_mut().is_some() {
             transform_changed = transform_changed.or_else(|| {
                 Some(transform_changed_fn(
                     &handle.0,
@@ -213,13 +213,6 @@ pub fn apply_rigid_body_user_changes(
                     &rigidbody_set.last_body_transform_set,
                 ))
             });
-
-            if transform_changed == Some(true) {
-                // Reset the interpolation so we don’t overwrite
-                // the user’s input.
-                interpolation.start = None;
-                interpolation.end = None;
-            }
         }
         // TODO: avoid to run multiple times the mutable deref ?
         if let Some(rb) = rigidbody_set.bodies.get_mut(handle.0) {
@@ -404,12 +397,12 @@ pub fn writeback_rigid_bodies(
     mut rigid_body_sets: Query<&mut RapierRigidBodySet>,
     timestep_mode: Res<TimestepMode>,
     config: Query<&RapierConfiguration>,
-    sim_to_render_time: Query<&SimulationToRenderTime>,
     global_transforms: Query<&GlobalTransform>,
     mut writeback: Query<
         RigidBodyWritebackComponents,
         (With<RigidBody>, Without<RigidBodyDisabled>),
     >,
+    fixed_time: Res<Time<Fixed>>,
 ) {
     for (handle, link, child_of, transform, mut interpolation, mut velocity, mut sleeping) in
         writeback.iter_mut()
@@ -426,23 +419,16 @@ pub fn writeback_rigid_bodies(
             .get_mut(link.0)
             .expect(RAPIER_CONTEXT_EXPECT_ERROR)
             .into_inner();
-        let sim_to_render_time = sim_to_render_time
-            .get(link.0)
-            .expect("Could not get `SimulationToRenderTime`");
         // TODO: do this the other way round: iterate through Rapier’s RigidBodySet on the active bodies,
         // and update the components accordingly. That way, we don’t have to iterate through the entities that weren’t changed
         // by physics (for example because they are sleeping).
         if let Some(rb) = rigid_body_set.bodies.get(handle) {
             let mut interpolated_pos = utils::iso_to_transform(rb.position());
 
-            if let TimestepMode::Interpolated { dt, .. } = *timestep_mode {
+            if let TimestepMode::Interpolated { .. } = *timestep_mode {
                 if let Some(interpolation) = interpolation.as_deref_mut() {
-                    if interpolation.end.is_none() {
-                        interpolation.end = Some(*rb.position());
-                    }
-
                     if let Some(interpolated) =
-                        interpolation.lerp_slerp((dt + sim_to_render_time.diff) / dt)
+                        interpolation.lerp_slerp(fixed_time.overstep_fraction())
                     {
                         interpolated_pos = utils::iso_to_transform(&interpolated);
                     }
@@ -495,7 +481,7 @@ pub fn writeback_rigid_bodies(
                         // NOTE: we write the new value only if there was an
                         //       actual change, in order to not trigger bevy’s
                         //       change tracking when the values didn’t change.
-                        transform.rotation = new_rotation;
+                        // transform.rotation = new_rotation;
                         transform.translation = new_translation;
                     }
 
@@ -520,7 +506,7 @@ pub fn writeback_rigid_bodies(
                         // NOTE: we write the new value only if there was an
                         //       actual change, in order to not trigger bevy’s
                         //       change tracking when the values didn’t change.
-                        transform.rotation = interpolated_pos.rotation;
+                        // transform.rotation = interpolated_pos.rotation;
                         transform.translation = interpolated_pos.translation;
                     }
 
@@ -588,6 +574,7 @@ pub fn init_rigid_bodies(
         builder = builder.enabled(disabled.is_none());
 
         if let Some(transform) = transform {
+            info!("{:?}", transform);
             builder = builder.position(utils::transform_to_iso(&transform.compute_transform()));
         }
 
@@ -725,6 +712,31 @@ pub fn apply_initial_rigid_body_impulses(
             rb.apply_torque_impulse(impulse.torque_impulse.into(), false);
 
             impulse.reset();
+        }
+    }
+}
+
+/// Make sure to set the position of the rigid body to the end of the interpolation
+/// at the start of the fixed update so that we don't translate on the interpolated
+/// position
+pub fn update_rigid_bodies(
+    mut rigid_body_sets: Query<&mut RapierRigidBodySet>,
+    mut rigid_bodies: Query<
+        (
+            &RapierRigidBodyHandle,
+            &RapierContextEntityLink,
+            &mut Transform,
+        ),
+        (With<RigidBody>, Without<RigidBodyDisabled>),
+    >,
+) {
+    for (handle, link, mut transform) in &mut rigid_bodies {
+        let rigid_body_set = rigid_body_sets
+            .get_mut(link.0)
+            .expect(RAPIER_CONTEXT_EXPECT_ERROR)
+            .into_inner();
+        if let Some(rb) = rigid_body_set.bodies.get(handle.0) {
+            transform.translation = rb.position().translation.into();
         }
     }
 }

@@ -808,8 +808,7 @@ impl RapierContextSimulation {
             &EventWriter<ContactForceEvent>,
         )>,
         hooks: &dyn PhysicsHooks,
-        time: &Time,
-        sim_to_render_time: &mut SimulationToRenderTime,
+        time: &Time<Virtual>,
         mut interpolation_query: Option<
             &mut Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
         >,
@@ -837,50 +836,36 @@ impl RapierContextSimulation {
                 time_scale,
                 substeps,
             } => {
-                self.integration_parameters.dt = dt;
+                let mut substep_integration_parameters = self.integration_parameters;
+                substep_integration_parameters.dt = dt / (substeps as Real) * time_scale;
 
-                sim_to_render_time.diff += time.delta_secs();
+                for _ in 0..substeps {
+                    self.pipeline.step(
+                        &gravity.into(),
+                        &substep_integration_parameters,
+                        &mut self.islands,
+                        &mut self.broad_phase,
+                        &mut self.narrow_phase,
+                        &mut rigidbody_set.bodies,
+                        &mut colliders.colliders,
+                        &mut joints.impulse_joints,
+                        &mut joints.multibody_joints,
+                        &mut self.ccd_solver,
+                        None,
+                        hooks,
+                        event_handler,
+                    );
+                    executed_steps += 1;
+                }
 
-                while sim_to_render_time.diff > 0.0 {
-                    // NOTE: in this comparison we do the same computations we
-                    // will do for the next `while` iteration test, to make sure we
-                    // don't get bit by potential float inaccuracy.
-                    if sim_to_render_time.diff - dt <= 0.0 {
-                        if let Some(interpolation_query) = interpolation_query.as_mut() {
-                            // This is the last simulation step to be executed in the loop
-                            // Update the previous state transforms
-                            for (handle, mut interpolation) in interpolation_query.iter_mut() {
-                                if let Some(body) = rigidbody_set.bodies.get(handle.0) {
-                                    interpolation.start = Some(*body.position());
-                                    interpolation.end = None;
-                                }
-                            }
+                if let Some(interpolation_query) = interpolation_query.as_mut() {
+                    // Update the previous state transforms
+                    for (handle, mut interpolation) in interpolation_query.iter_mut() {
+                        if let Some(body) = rigidbody_set.bodies.get(handle.0) {
+                            interpolation.start = interpolation.end;
+                            interpolation.end = Some(*body.position());
                         }
                     }
-
-                    let mut substep_integration_parameters = self.integration_parameters;
-                    substep_integration_parameters.dt = dt / (substeps as Real) * time_scale;
-
-                    for _ in 0..substeps {
-                        self.pipeline.step(
-                            &gravity.into(),
-                            &substep_integration_parameters,
-                            &mut self.islands,
-                            &mut self.broad_phase,
-                            &mut self.narrow_phase,
-                            &mut rigidbody_set.bodies,
-                            &mut colliders.colliders,
-                            &mut joints.impulse_joints,
-                            &mut joints.multibody_joints,
-                            &mut self.ccd_solver,
-                            None,
-                            hooks,
-                            event_handler,
-                        );
-                        executed_steps += 1;
-                    }
-
-                    sim_to_render_time.diff -= dt;
                 }
             }
             TimestepMode::Variable {
