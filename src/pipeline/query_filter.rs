@@ -8,8 +8,6 @@ use crate::geometry::CollisionGroups;
 use crate::prelude::RapierRigidBodySet;
 
 /// A filter that describes what collider should be included or excluded from a scene query.
-///
-/// For testing manually check [`RapierRigidBodySet::with_query_filter`].
 #[derive(Copy, Clone, Default)]
 pub struct QueryFilter<'a> {
     /// Flags indicating what particular type of colliders should be excluded.

@@ -279,13 +279,7 @@ impl<'a> ColliderView<'a> {
             },
             ColliderView::Segment(s) => SharedShape::new(s.raw.scaled(&scale.into())),
             ColliderView::Triangle(t) => SharedShape::new(t.raw.scaled(&scale.into())),
-            ColliderView::Voxels(cp) => match cp.raw.clone().scaled(&scale.into()) {
-                None => {
-                    log::error!("Failed to apply scale {scale} to Voxels shape.");
-                    SharedShape::ball(0.0)
-                }
-                Some(scaled) => SharedShape::new(scaled),
-            },
+            ColliderView::Voxels(cp) => SharedShape::new(cp.raw.clone().scaled(&scale.into())),
             ColliderView::RoundTriangle(t) => SharedShape::new(RoundShape {
                 border_radius: t.raw.border_radius,
                 inner_shape: t.raw.inner_shape.scaled(&scale.into()),

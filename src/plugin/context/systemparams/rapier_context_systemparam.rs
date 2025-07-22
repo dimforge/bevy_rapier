@@ -6,12 +6,9 @@ use rapier::prelude::Real;
 pub(crate) const RAPIER_CONTEXT_EXPECT_ERROR: &str =
     "RapierContextEntityLink.0 refers to an entity missing components from RapierContextSimulation.";
 
-use crate::{
-    plugin::context::{
-        DefaultRapierContext, RapierContextColliders, RapierContextJoints, RapierContextSimulation,
-        RapierQueryPipeline, RapierRigidBodySet,
-    },
-    prelude::QueryFilter,
+use crate::plugin::context::{
+    DefaultRapierContext, RapierContextColliders, RapierContextJoints, RapierContextSimulation,
+    RapierQueryPipeline, RapierRigidBodySet,
 };
 
 /// Utility [`SystemParam`] to easily access every required components of a [`RapierContext`] immutably.
@@ -27,7 +24,6 @@ pub struct ReadRapierContext<'w, 's, T: query::QueryFilter + 'static = With<Defa
             &'static RapierContextSimulation,
             &'static RapierContextColliders,
             &'static RapierContextJoints,
-            &'static RapierQueryPipeline,
             &'static RapierRigidBodySet,
         ),
         T,
@@ -41,13 +37,11 @@ impl<'w, 's, T: query::QueryFilter + 'static> ReadRapierContext<'w, 's, T> {
     ///
     /// You can also use the underlying query [`ReadRapierContext::rapier_context`] for finer grained queries.
     pub fn single(&self) -> Result<RapierContext> {
-        let (simulation, colliders, joints, query_pipeline, rigidbody_set) =
-            self.rapier_context.single()?;
+        let (simulation, colliders, joints, rigidbody_set) = self.rapier_context.single()?;
         Ok(RapierContext {
             simulation,
             colliders,
             joints,
-            query_pipeline,
             rigidbody_set,
         })
     }
@@ -66,8 +60,6 @@ pub struct RapierContext<'a> {
     pub colliders: &'a RapierContextColliders,
     /// The sets of joints part of the simulation.
     pub joints: &'a RapierContextJoints,
-    /// The query pipeline, which performs scene queries (ray-casting, point projection, etc.)
-    pub query_pipeline: &'a RapierQueryPipeline,
     /// The set of rigid-bodies part of the simulation.
     pub rigidbody_set: &'a RapierRigidBodySet,
 }
@@ -86,7 +78,6 @@ pub struct WriteRapierContext<'w, 's, T: query::QueryFilter + 'static = With<Def
             &'static mut RapierContextSimulation,
             &'static mut RapierContextColliders,
             &'static mut RapierContextJoints,
-            &'static mut RapierQueryPipeline,
             &'static mut RapierRigidBodySet,
         ),
         T,
@@ -100,13 +91,11 @@ impl<'w, 's, T: query::QueryFilter + 'static> WriteRapierContext<'w, 's, T> {
     ///
     /// You can also use the underlying query [`WriteRapierContext::rapier_context`] for finer grained queries.
     pub fn single(&self) -> Result<RapierContext> {
-        let (simulation, colliders, joints, query_pipeline, rigidbody_set) =
-            self.rapier_context.single()?;
+        let (simulation, colliders, joints, rigidbody_set) = self.rapier_context.single()?;
         Ok(RapierContext {
             simulation,
             colliders,
             joints,
-            query_pipeline,
             rigidbody_set,
         })
     }
@@ -117,13 +106,11 @@ impl<'w, 's, T: query::QueryFilter + 'static> WriteRapierContext<'w, 's, T> {
     ///
     /// You can also use the underlying query [`WriteRapierContext::rapier_context`] for finer grained queries.
     pub fn single_mut(&mut self) -> Result<RapierContextMut> {
-        let (simulation, colliders, joints, query_pipeline, rigidbody_set) =
-            self.rapier_context.single_mut()?;
+        let (simulation, colliders, joints, rigidbody_set) = self.rapier_context.single_mut()?;
         Ok(RapierContextMut {
             simulation,
             colliders,
             joints,
-            query_pipeline,
             rigidbody_set,
         })
     }
@@ -140,8 +127,6 @@ pub struct RapierContextMut<'a> {
     pub colliders: Mut<'a, RapierContextColliders>,
     /// The sets of joints part of the simulation.
     pub joints: Mut<'a, RapierContextJoints>,
-    /// The query pipeline, which performs scene queries (ray-casting, point projection, etc.)
-    pub query_pipeline: Mut<'a, RapierQueryPipeline>,
     /// The set of rigid-bodies part of the simulation.
     pub rigidbody_set: Mut<'a, RapierRigidBodySet>,
 }
@@ -154,12 +139,13 @@ mod simulation {
     use crate::plugin::context::SimulationToRenderTime;
     use crate::plugin::ContactPairView;
     use crate::plugin::TimestepMode;
-    use crate::prelude::Collider;
     use crate::prelude::CollisionEvent;
     use crate::prelude::ContactForceEvent;
     use crate::prelude::RapierRigidBodyHandle;
     use crate::prelude::TransformInterpolation;
     use rapier::prelude::PhysicsHooks;
+    use rapier::prelude::QueryPipelineMut;
+    use rapier::prelude::Shape;
 
     use super::*;
 
@@ -237,26 +223,24 @@ mod simulation {
         #[expect(clippy::too_many_arguments)]
         pub fn move_shape(
             &mut self,
+            mut query_pipeline_mut: &mut QueryPipelineMut<'_>,
             movement: Vect,
-            shape: &Collider,
+            shape: &dyn Shape,
             shape_translation: Vect,
             shape_rotation: Rot,
             shape_mass: Real,
             options: &MoveShapeOptions,
-            filter: QueryFilter,
             events: impl FnMut(CharacterCollision),
         ) -> MoveShapeOutput {
             self.simulation.move_shape(
                 &self.colliders,
-                &self.query_pipeline,
-                &mut self.rigidbody_set,
+                &mut query_pipeline_mut,
                 movement,
                 shape,
                 shape_translation,
                 shape_rotation,
                 shape_mass,
                 options,
-                filter,
                 events,
             )
         }
@@ -298,176 +282,157 @@ mod simulation {
 }
 
 mod query_pipeline {
-    use rapier::{parry::query::ShapeCastOptions, prelude::QueryFilter as RapierQueryFilter};
+    use rapier::{
+        parry::query::{DefaultQueryDispatcher, ShapeCastOptions},
+        prelude::{QueryFilter as RapierQueryFilter, Shape},
+    };
 
-    use crate::prelude::{Collider, PointProjection, RayIntersection, ShapeCastHit};
+    use crate::prelude::{PointProjection, RayIntersection, ShapeCastHit};
 
     use super::*;
 
     impl RapierContext<'_> {
+        /// Shortcut to [BroadPhaseBvh::as_query_pipeline][rapier::prelude::BroadPhaseBvh::as_query_pipeline].
+        pub fn query_pipeline<'a>(
+            &'a self,
+            filter: RapierQueryFilter<'a>,
+        ) -> RapierQueryPipeline<'a> {
+            let query_pipeline = RapierQueryPipeline {
+                query_pipeline: self.simulation.broad_phase.as_query_pipeline(
+                    &DefaultQueryDispatcher,
+                    &self.rigidbody_set.bodies,
+                    &self.colliders.colliders,
+                    filter,
+                ),
+            };
+            query_pipeline
+        }
+
         /// Shortcut to [`RapierQueryPipeline::cast_ray`].
         pub fn cast_ray(
             &self,
+            query_pipeline: RapierQueryPipeline<'_>,
             ray_origin: Vect,
             ray_dir: Vect,
             max_toi: Real,
             solid: bool,
-            filter: QueryFilter,
         ) -> Option<(Entity, Real)> {
-            self.query_pipeline.cast_ray(
-                self.colliders,
-                self.rigidbody_set,
-                ray_origin,
-                ray_dir,
-                max_toi,
-                solid,
-                filter,
-            )
+            query_pipeline.cast_ray(self.colliders, ray_origin, ray_dir, max_toi, solid)
         }
 
         /// Shortcut to [`RapierQueryPipeline::cast_ray_and_get_normal`].
         pub fn cast_ray_and_get_normal(
             &self,
+            query_pipeline: RapierQueryPipeline<'_>,
             ray_origin: Vect,
             ray_dir: Vect,
             max_toi: Real,
             solid: bool,
-            filter: QueryFilter,
         ) -> Option<(Entity, RayIntersection)> {
-            self.query_pipeline.cast_ray_and_get_normal(
+            query_pipeline.cast_ray_and_get_normal(
                 self.colliders,
-                self.rigidbody_set,
                 ray_origin,
                 ray_dir,
                 max_toi,
                 solid,
-                filter,
             )
         }
 
         /// Shortcut to [`RapierQueryPipeline::intersections_with_point`].
         pub fn intersections_with_point(
             &self,
+            query_pipeline: RapierQueryPipeline<'_>,
             point: Vect,
-            filter: QueryFilter,
-            callback: impl FnMut(Entity) -> bool,
+            // FIXME: find a way to return an iterator?
+            mut callback: impl FnMut(Entity) -> bool,
         ) {
-            self.query_pipeline.intersections_with_point(
-                self.colliders,
-                self.rigidbody_set,
-                point,
-                filter,
-                callback,
-            );
+            for e in query_pipeline.intersect_point(self.colliders, point) {
+                if !(callback)(e) {
+                    break;
+                }
+            }
         }
 
         /// Shortcut to [`RapierQueryPipeline::intersections_with_ray`].
         pub fn intersections_with_ray(
             &self,
+            query_pipeline: RapierQueryPipeline<'_>,
             ray_origin: Vect,
             ray_dir: Vect,
             max_toi: Real,
             solid: bool,
-            filter: QueryFilter,
-            callback: impl FnMut(Entity, RayIntersection) -> bool,
+            // FIXME: find a way to return an iterator?
+            mut callback: impl FnMut(Entity, RayIntersection) -> bool,
         ) {
-            self.query_pipeline.intersections_with_ray(
-                self.colliders,
-                self.rigidbody_set,
-                ray_origin,
-                ray_dir,
-                max_toi,
-                solid,
-                filter,
-                callback,
-            )
+            for (e, intersection) in
+                query_pipeline.intersect_ray(self.colliders, ray_origin, ray_dir, max_toi, solid)
+            {
+                if !(callback)(e, intersection) {
+                    break;
+                }
+            }
         }
 
         /// Shortcut to [`RapierQueryPipeline::intersections_with_shape`].
         pub fn intersections_with_shape(
             &self,
+            query_pipeline: RapierQueryPipeline<'_>,
             shape_pos: Vect,
             shape_rot: Rot,
-            shape: &Collider,
-            filter: QueryFilter,
-            callback: impl FnMut(Entity) -> bool,
+            shape: &dyn Shape,
+            mut callback: impl FnMut(Entity) -> bool,
         ) {
-            self.query_pipeline.intersections_with_shape(
-                self.colliders,
-                self.rigidbody_set,
-                shape_pos,
-                shape_rot,
-                shape,
-                filter,
-                callback,
-            )
+            for e in query_pipeline.intersect_shape(self.colliders, shape_pos, shape_rot, shape) {
+                if !(callback)(e) {
+                    break;
+                }
+            }
         }
 
         /// Shortcut to [`RapierQueryPipeline::colliders_with_aabb_intersecting_aabb`].
         pub fn colliders_with_aabb_intersecting_aabb(
             &self,
+            query_pipeline: RapierQueryPipeline<'_>,
             #[cfg(feature = "dim2")] aabb: bevy::math::bounding::Aabb2d,
             #[cfg(feature = "dim3")] aabb: bevy::math::bounding::Aabb3d,
-            callback: impl FnMut(Entity) -> bool,
+            mut callback: impl FnMut(Entity) -> bool,
         ) {
-            self.query_pipeline.colliders_with_aabb_intersecting_aabb(
-                self.colliders,
-                aabb,
-                callback,
-            )
+            for e in query_pipeline.intersect_aabb_conservative(self.colliders, aabb) {
+                if !(callback)(e) {
+                    break;
+                }
+            }
         }
 
         /// Shortcut to [`RapierQueryPipeline::cast_shape`].
         pub fn cast_shape(
             &self,
+            query_pipeline: RapierQueryPipeline<'_>,
             shape_pos: Vect,
             shape_rot: Rot,
             shape_vel: Vect,
-            shape: &Collider,
+            shape: &dyn Shape,
             options: ShapeCastOptions,
-            filter: QueryFilter,
         ) -> Option<(Entity, ShapeCastHit)> {
-            self.query_pipeline.cast_shape(
+            query_pipeline.cast_shape(
                 self.colliders,
-                self.rigidbody_set,
                 shape_pos,
                 shape_rot,
                 shape_vel,
                 shape,
                 options,
-                filter,
             )
         }
 
         /// Shortcut to [`RapierQueryPipeline::project_point`].
         pub fn project_point(
             &self,
+            query_pipeline: RapierQueryPipeline<'_>,
             point: Vect,
+            max_dist: Real,
             solid: bool,
-            filter: QueryFilter,
         ) -> Option<(Entity, PointProjection)> {
-            self.query_pipeline.project_point(
-                self.colliders,
-                self.rigidbody_set,
-                point,
-                solid,
-                filter,
-            )
-        }
-
-        /// Shortcut to [`RapierQueryPipeline::with_query_filter_elts`].
-        pub fn with_query_filter_elts<T>(
-            &self,
-            filter: crate::prelude::QueryFilter,
-            f: impl FnOnce(RapierQueryFilter) -> T,
-        ) -> T {
-            RapierQueryPipeline::with_query_filter_elts(
-                &self.colliders.entity2collider,
-                &self.rigidbody_set.entity2body,
-                &self.colliders.colliders,
-                filter,
-                f,
-            )
+            query_pipeline.project_point(self.colliders, point, max_dist, solid)
         }
     }
 
@@ -475,166 +440,126 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::cast_ray`].
         pub fn cast_ray(
             &self,
+            query_pipeline: RapierQueryPipeline<'_>,
             ray_origin: Vect,
             ray_dir: Vect,
             max_toi: Real,
             solid: bool,
-            filter: QueryFilter,
         ) -> Option<(Entity, Real)> {
-            self.query_pipeline.cast_ray(
-                &self.colliders,
-                &self.rigidbody_set,
-                ray_origin,
-                ray_dir,
-                max_toi,
-                solid,
-                filter,
-            )
+            query_pipeline.cast_ray(&self.colliders, ray_origin, ray_dir, max_toi, solid)
         }
 
         /// Shortcut to [`RapierQueryPipeline::cast_ray_and_get_normal`].
         pub fn cast_ray_and_get_normal(
             &self,
+            query_pipeline: RapierQueryPipeline<'_>,
             ray_origin: Vect,
             ray_dir: Vect,
             max_toi: Real,
             solid: bool,
-            filter: QueryFilter,
         ) -> Option<(Entity, RayIntersection)> {
-            self.query_pipeline.cast_ray_and_get_normal(
+            query_pipeline.cast_ray_and_get_normal(
                 &self.colliders,
-                &self.rigidbody_set,
                 ray_origin,
                 ray_dir,
                 max_toi,
                 solid,
-                filter,
             )
         }
 
         /// Shortcut to [`RapierQueryPipeline::intersections_with_point`].
         pub fn intersections_with_point(
             &self,
+            query_pipeline: RapierQueryPipeline<'_>,
             point: Vect,
-            filter: QueryFilter,
-            callback: impl FnMut(Entity) -> bool,
+            mut callback: impl FnMut(Entity) -> bool,
         ) {
-            self.query_pipeline.intersections_with_point(
-                &self.colliders,
-                &self.rigidbody_set,
-                point,
-                filter,
-                callback,
-            );
+            for e in query_pipeline.intersect_point(&self.colliders, point) {
+                if !(callback)(e) {
+                    break;
+                }
+            }
         }
 
         /// Shortcut to [`RapierQueryPipeline::intersections_with_ray`].
         pub fn intersections_with_ray(
             &self,
+            query_pipeline: RapierQueryPipeline<'_>,
             ray_origin: Vect,
             ray_dir: Vect,
             max_toi: Real,
             solid: bool,
-            filter: QueryFilter,
-            callback: impl FnMut(Entity, RayIntersection) -> bool,
+            mut callback: impl FnMut(Entity, RayIntersection) -> bool,
         ) {
-            self.query_pipeline.intersections_with_ray(
-                &self.colliders,
-                &self.rigidbody_set,
-                ray_origin,
-                ray_dir,
-                max_toi,
-                solid,
-                filter,
-                callback,
-            )
+            for (e, intersection) in
+                query_pipeline.intersect_ray(&self.colliders, ray_origin, ray_dir, max_toi, solid)
+            {
+                if !(callback)(e, intersection) {
+                    break;
+                }
+            }
         }
 
         /// Shortcut to [`RapierQueryPipeline::intersections_with_shape`].
         pub fn intersections_with_shape(
             &self,
+            query_pipeline: RapierQueryPipeline<'_>,
             shape_pos: Vect,
             shape_rot: Rot,
-            shape: &Collider,
-            filter: QueryFilter,
-            callback: impl FnMut(Entity) -> bool,
+            shape: &dyn Shape,
+            mut callback: impl FnMut(Entity) -> bool,
         ) {
-            self.query_pipeline.intersections_with_shape(
-                &self.colliders,
-                &self.rigidbody_set,
-                shape_pos,
-                shape_rot,
-                shape,
-                filter,
-                callback,
-            )
+            for e in query_pipeline.intersect_shape(&self.colliders, shape_pos, shape_rot, shape) {
+                if !(callback)(e) {
+                    break;
+                }
+            }
         }
 
         /// Shortcut to [`RapierQueryPipeline::colliders_with_aabb_intersecting_aabb`].
         pub fn colliders_with_aabb_intersecting_aabb(
             &self,
+            query_pipeline: RapierQueryPipeline<'_>,
             #[cfg(feature = "dim2")] aabb: bevy::math::bounding::Aabb2d,
             #[cfg(feature = "dim3")] aabb: bevy::math::bounding::Aabb3d,
-            callback: impl FnMut(Entity) -> bool,
+            mut callback: impl FnMut(Entity) -> bool,
         ) {
-            self.query_pipeline.colliders_with_aabb_intersecting_aabb(
-                &self.colliders,
-                aabb,
-                callback,
-            )
+            for e in query_pipeline.intersect_aabb_conservative(&self.colliders, aabb) {
+                if !(callback)(e) {
+                    break;
+                }
+            }
         }
 
         /// Shortcut to [`RapierQueryPipeline::cast_shape`].
         pub fn cast_shape(
             &self,
+            query_pipeline: RapierQueryPipeline<'_>,
             shape_pos: Vect,
             shape_rot: Rot,
             shape_vel: Vect,
-            shape: &Collider,
+            shape: &dyn Shape,
             options: ShapeCastOptions,
-            filter: QueryFilter,
         ) -> Option<(Entity, ShapeCastHit)> {
-            self.query_pipeline.cast_shape(
+            query_pipeline.cast_shape(
                 &self.colliders,
-                &self.rigidbody_set,
                 shape_pos,
                 shape_rot,
                 shape_vel,
                 shape,
                 options,
-                filter,
             )
         }
 
         /// Shortcut to [`RapierQueryPipeline::project_point`].
         pub fn project_point(
             &self,
+            query_pipeline: RapierQueryPipeline<'_>,
             point: Vect,
+            max_dist: Real,
             solid: bool,
-            filter: QueryFilter,
         ) -> Option<(Entity, PointProjection)> {
-            self.query_pipeline.project_point(
-                &self.colliders,
-                &self.rigidbody_set,
-                point,
-                solid,
-                filter,
-            )
-        }
-
-        /// Shortcut to [`RapierQueryPipeline::with_query_filter_elts`].
-        pub fn with_query_filter_elts<T>(
-            &self,
-            filter: crate::prelude::QueryFilter,
-            f: impl FnOnce(RapierQueryFilter) -> T,
-        ) -> T {
-            RapierQueryPipeline::with_query_filter_elts(
-                &self.colliders.entity2collider,
-                &self.rigidbody_set.entity2body,
-                &self.colliders.colliders,
-                filter,
-                f,
-            )
+            query_pipeline.project_point(&self.colliders, point, max_dist, solid)
         }
     }
 }

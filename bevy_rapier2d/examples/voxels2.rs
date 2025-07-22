@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-use rapier2d::prelude::VoxelPrimitiveGeometry;
 
 fn main() {
     App::new()
@@ -73,13 +72,7 @@ pub fn setup_physics(mut commands: Commands) {
 
     commands.spawn((
         Transform::from_xyz(-20.0 * scale, -10.0 * scale, 0.0),
-        Collider::voxelized_mesh(
-            VoxelPrimitiveGeometry::PseudoCube,
-            &polyline,
-            &indices,
-            0.2 * scale,
-            FillMode::default(),
-        ),
+        Collider::voxelized_mesh(&polyline, &indices, 0.2 * scale, FillMode::default()),
     ));
 
     /*
@@ -94,6 +87,6 @@ pub fn setup_physics(mut commands: Commands) {
         .collect();
     commands.spawn((
         Transform::from_xyz(0.0, 0.0, 0.0),
-        Collider::voxels_from_points(VoxelPrimitiveGeometry::PseudoCube, voxel_size, &voxels),
+        Collider::voxels_from_points(voxel_size, &voxels),
     ));
 }

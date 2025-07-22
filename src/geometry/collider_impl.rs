@@ -8,7 +8,7 @@ use {
 
 use rapier::{
     parry::transformation::voxelization::FillMode,
-    prelude::{FeatureId, Point, Ray, SharedShape, Vector, VoxelPrimitiveGeometry, Voxels, DIM},
+    prelude::{FeatureId, Point, Ray, SharedShape, Vector, Voxels, DIM},
 };
 
 use super::{get_snapped_scale, shape_views::*};
@@ -183,15 +183,10 @@ impl Collider {
     /// For initializing a voxels shape from a mesh to voxelize, see [`Self::voxelized_mesh`].
     /// For initializing multiple voxels shape from the convex decomposition of a mesh, see
     /// [`Self::voxelized_convex_decomposition`].
-    pub fn voxels(
-        primitive_geometry: VoxelPrimitiveGeometry,
-        voxel_size: Vect,
-        grid_coords: &[IVect],
-    ) -> Self {
+    pub fn voxels(voxel_size: Vect, grid_coordinates: &[IVect]) -> Self {
         let shape = Voxels::new(
-            primitive_geometry,
             voxel_size.into(),
-            &Self::ivec_array_from_point_int_array(grid_coords),
+            &Self::ivec_array_from_point_int_array(grid_coordinates),
         );
         SharedShape::new(shape).into()
     }
@@ -200,13 +195,8 @@ impl Collider {
     ///
     /// Each voxel has the size `voxel_size` and contains at least one point from `centers`.
     /// The `primitive_geometry` controls the behavior of collision detection at voxels boundaries.
-    pub fn voxels_from_points(
-        primitive_geometry: VoxelPrimitiveGeometry,
-        voxel_size: Vect,
-        points: &[Vect],
-    ) -> Self {
+    pub fn voxels_from_points(voxel_size: Vect, points: &[Vect]) -> Self {
         SharedShape::voxels_from_points(
-            primitive_geometry,
             voxel_size.into(),
             &Self::vec_array_from_point_float_array(points),
         )
@@ -216,32 +206,19 @@ impl Collider {
     /// Initializes a voxels shape obtained from the decomposition of the given trimesh (in 3D)
     /// or polyline (in 2D) into voxelized convex parts.
     pub fn voxelized_mesh(
-        primitive_geometry: VoxelPrimitiveGeometry,
         vertices: &[Vect],
         indices: &[[u32; DIM]],
         voxel_size: Real,
         fill_mode: FillMode,
     ) -> Self {
         let vertices = Self::vec_array_from_point_float_array(vertices);
-        SharedShape::voxelized_mesh(
-            primitive_geometry,
-            &vertices,
-            indices,
-            voxel_size,
-            fill_mode,
-        )
-        .into()
+        SharedShape::voxelized_mesh(&vertices, indices, voxel_size, fill_mode).into()
     }
 
     /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D)
     /// or polyline (in 2D) into voxelized convex parts.
-    pub fn voxelized_convex_decomposition(
-        primitive_geometry: VoxelPrimitiveGeometry,
-        vertices: &[Vect],
-        indices: &[[u32; DIM]],
-    ) -> Vec<Self> {
+    pub fn voxelized_convex_decomposition(vertices: &[Vect], indices: &[[u32; DIM]]) -> Vec<Self> {
         Self::voxelized_convex_decomposition_with_params(
-            primitive_geometry,
             vertices,
             indices,
             &VHACDParameters::default(),
@@ -251,13 +228,11 @@ impl Collider {
     /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D)
     /// or polyline (in 2D) into voxelized convex parts.
     pub fn voxelized_convex_decomposition_with_params(
-        primitive_geometry: VoxelPrimitiveGeometry,
         vertices: &[Vect],
         indices: &[[u32; DIM]],
         params: &VHACDParameters,
     ) -> Vec<Self> {
         SharedShape::voxelized_convex_decomposition_with_params(
-            primitive_geometry,
             &Self::vec_array_from_point_float_array(vertices),
             indices,
             params,

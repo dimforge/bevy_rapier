@@ -15,6 +15,7 @@ use bevy::picking::{
 use bevy::prelude::PickingPlugin;
 use bevy::reflect::prelude::*;
 use bevy::render::{prelude::*, view::RenderLayers};
+use rapier::parry::query::DefaultQueryDispatcher;
 
 /// How a ray cast should handle [`Visibility`].
 #[derive(Clone, Copy, Reflect)]
@@ -85,7 +86,7 @@ pub fn update_hits(
     rapier_context: Query<(
         &crate::prelude::RapierContextColliders,
         &crate::prelude::RapierRigidBodySet,
-        &crate::prelude::RapierQueryPipeline,
+        &crate::prelude::RapierContextSimulation,
     )>,
     mut output: EventWriter<PointerHits>,
 ) {
@@ -97,7 +98,7 @@ pub fn update_hits(
             continue;
         }
         let order = camera.order as f32;
-        for (colliders, bodies, query_pipeline) in rapier_context.iter() {
+        for (colliders, bodies, simulation) in rapier_context.iter() {
             let predicate = |entity| {
                 let marker_requirement =
                     !backend_settings.require_markers || marked_targets.get(entity).is_ok();
@@ -130,45 +131,56 @@ pub fn update_hits(
 
                 true
             };
+            // FIXME: Due to "limitations in the borrow checker",
+            //   it's challenging to make a function to help with creating a rapier filter.
+            let rapier_predicate =
+                |h: rapier::prelude::ColliderHandle, _: &rapier::prelude::Collider| {
+                    crate::prelude::RapierContextColliders::collider_entity_with_set(
+                        &colliders.colliders,
+                        h,
+                    )
+                    .map(&predicate)
+                    .unwrap_or(false)
+                };
+            let filter = rapier::prelude::QueryFilter::default().predicate(&rapier_predicate);
+            let query_pipeline = crate::prelude::RapierQueryPipeline {
+                query_pipeline: simulation.broad_phase.as_query_pipeline(
+                    &DefaultQueryDispatcher,
+                    &bodies.bodies,
+                    &colliders.colliders,
+                    filter.predicate(&rapier_predicate),
+                ),
+            };
 
             let mut picks = Vec::new();
             #[cfg(feature = "dim2")]
-            query_pipeline.intersections_with_point(
-                colliders,
-                bodies,
-                bevy::math::Vec2::new(ray.origin.x, ray.origin.y),
-                crate::prelude::QueryFilter::default().predicate(&predicate),
-                |entity| {
-                    let hit_data = HitData {
-                        camera: ray_id.camera,
-                        position: Some(bevy::math::Vec3::new(ray.origin.x, ray.origin.y, 0.0)),
-                        normal: None,
-                        depth: 0.0,
-                    };
-                    picks.push((entity, hit_data));
-                    true
-                },
-            );
+            for entity in query_pipeline
+                .intersect_point(colliders, bevy::math::Vec2::new(ray.origin.x, ray.origin.y))
+            {
+                let hit_data = HitData {
+                    camera: ray_id.camera,
+                    position: Some(bevy::math::Vec3::new(ray.origin.x, ray.origin.y, 0.0)),
+                    normal: None,
+                    depth: 0.0,
+                };
+                picks.push((entity, hit_data));
+            }
             #[cfg(feature = "dim3")]
-            query_pipeline.intersections_with_ray(
+            for (entity, intersection) in query_pipeline.intersect_ray(
                 colliders,
-                bodies,
                 ray.origin,
                 ray.direction.into(),
                 f32::MAX,
                 true,
-                crate::prelude::QueryFilter::default().predicate(&predicate),
-                |entity, intersection| {
-                    let hit_data = HitData {
-                        camera: ray_id.camera,
-                        position: Some(intersection.point),
-                        normal: Some(intersection.normal),
-                        depth: intersection.time_of_impact,
-                    };
-                    picks.push((entity, hit_data));
-                    true
-                },
-            );
+            ) {
+                let hit_data = HitData {
+                    camera: ray_id.camera,
+                    position: Some(intersection.point),
+                    normal: Some(intersection.normal),
+                    depth: intersection.time_of_impact,
+                };
+                picks.push((entity, hit_data));
+            }
 
             if !picks.is_empty() {
                 output.write(PointerHits::new(ray_id.pointer, picks, order));
