@@ -32,7 +32,7 @@ macro_rules!  round_shape_view(
             }
 
             /// The underlying not-rounded shape.
-            pub fn inner_shape(&self) -> $ShapeView {
+            pub fn inner_shape(&self) -> $ShapeView<'_> {
                 $ShapeView {
                     raw: &self.raw.inner_shape,
                 }
@@ -57,7 +57,7 @@ macro_rules!  round_shape_view(
             }
 
             /// The underlying not-rounded shape.
-            pub fn inner_shape(&mut self) -> $ShapeViewMut {
+            pub fn inner_shape(&mut self) -> $ShapeViewMut<'_> {
                 $ShapeViewMut {
                     raw: &mut self.raw.inner_shape,
                 }

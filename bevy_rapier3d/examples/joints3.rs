@@ -46,7 +46,7 @@ fn create_prismatic_joints(commands: &mut Commands, origin: Vect, num: usize) {
     for i in 0..num {
         let dz = (i + 1) as f32 * shift;
 
-        let axis = if i % 2 == 0 {
+        let axis = if i.is_multiple_of(2) {
             Vec3::new(1.0, 1.0, 0.0)
         } else {
             Vec3::new(-1.0, 1.0, 0.0)
@@ -171,7 +171,7 @@ fn create_fixed_joints(commands: &mut Commands, origin: Vec3, num: usize) {
             // NOTE: the num - 2 test is to avoid two consecutive
             // fixed bodies. Because physx will crash if we add
             // a joint between these.
-            let rigid_body = if i == 0 && (k % 4 == 0 && k != num - 2 || k == num - 1) {
+            let rigid_body = if i == 0 && (k.is_multiple_of(4) && k != num - 2 || k == num - 1) {
                 RigidBody::Fixed
             } else {
                 RigidBody::Dynamic
@@ -226,7 +226,7 @@ fn create_ball_joints(commands: &mut Commands, num: usize) {
             let fk = k as f32;
             let fi = i as f32;
 
-            let rigid_body = if i == 0 && (k % 4 == 0 || k == num - 1) {
+            let rigid_body = if i == 0 && (k.is_multiple_of(4) || k == num - 1) {
                 RigidBody::Fixed
             } else {
                 RigidBody::Dynamic

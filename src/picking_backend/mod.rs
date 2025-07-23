@@ -139,7 +139,7 @@ pub fn update_hits(
                         &colliders.colliders,
                         h,
                     )
-                    .map(&predicate)
+                    .map(predicate)
                     .unwrap_or(false)
                 };
             let filter = rapier::prelude::QueryFilter::default().predicate(&rapier_predicate);

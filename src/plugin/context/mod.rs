@@ -172,7 +172,7 @@ pub struct RapierQueryPipelineMut<'a> {
 
 impl RapierQueryPipelineMut<'_> {
     /// Downgrades the mutable reference to an immutable reference.
-    pub fn as_ref(&self) -> RapierQueryPipeline {
+    pub fn as_ref(&self) -> RapierQueryPipeline<'_> {
         RapierQueryPipeline {
             query_pipeline: self.query_pipeline.as_ref(),
         }
@@ -190,7 +190,6 @@ impl<'a> RapierQueryPipeline<'a> {
     /// * `solid`: if this is `true` an impact at time 0.0 (i.e. at the ray origin) is returned if
     ///   it starts inside of a shape. If this `false` then the ray will hit the shape's boundary
     ///   even if its starts inside of it.
-    #[expect(clippy::too_many_arguments)]
     pub fn cast_ray(
         &self,
         rapier_colliders: &RapierContextColliders,
@@ -216,7 +215,6 @@ impl<'a> RapierQueryPipeline<'a> {
     /// * `solid`: if this is `true` an impact at time 0.0 (i.e. at the ray origin) is returned if
     ///   it starts inside of a shape. If this `false` then the ray will hit the shape's boundary
     ///   even if its starts inside of it.
-    #[expect(clippy::too_many_arguments)]
     pub fn cast_ray_and_get_normal(
         &self,
         rapier_colliders: &RapierContextColliders,

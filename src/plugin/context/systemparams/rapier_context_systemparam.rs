@@ -36,7 +36,7 @@ impl<'w, 's, T: query::QueryFilter + 'static> ReadRapierContext<'w, 's, T> {
     /// If the number of query items is not exactly one, a [`bevy::ecs::query::QuerySingleError`] is returned instead.
     ///
     /// You can also use the underlying query [`ReadRapierContext::rapier_context`] for finer grained queries.
-    pub fn single(&self) -> Result<RapierContext> {
+    pub fn single(&self) -> Result<RapierContext<'_>> {
         let (simulation, colliders, joints, rigidbody_set) = self.rapier_context.single()?;
         Ok(RapierContext {
             simulation,
@@ -90,7 +90,7 @@ impl<'w, 's, T: query::QueryFilter + 'static> WriteRapierContext<'w, 's, T> {
     /// If the number of query items is not exactly one, a [`bevy::ecs::query::QuerySingleError`] is returned instead.
     ///
     /// You can also use the underlying query [`WriteRapierContext::rapier_context`] for finer grained queries.
-    pub fn single(&self) -> Result<RapierContext> {
+    pub fn single(&self) -> Result<RapierContext<'_>> {
         let (simulation, colliders, joints, rigidbody_set) = self.rapier_context.single()?;
         Ok(RapierContext {
             simulation,
@@ -105,7 +105,7 @@ impl<'w, 's, T: query::QueryFilter + 'static> WriteRapierContext<'w, 's, T> {
     /// If the number of query items is not exactly one, a [`bevy::ecs::query::QuerySingleError`] is returned instead.
     ///
     /// You can also use the underlying query [`WriteRapierContext::rapier_context`] for finer grained queries.
-    pub fn single_mut(&mut self) -> Result<RapierContextMut> {
+    pub fn single_mut(&mut self) -> Result<RapierContextMut<'_>> {
         let (simulation, colliders, joints, rigidbody_set) = self.rapier_context.single_mut()?;
         Ok(RapierContextMut {
             simulation,
@@ -156,7 +156,7 @@ mod simulation {
             &self,
             collider1: Entity,
             collider2: Entity,
-        ) -> Option<ContactPairView> {
+        ) -> Option<ContactPairView<'_>> {
             self.simulation
                 .contact_pair(self.colliders, self.rigidbody_set, collider1, collider2)
         }
@@ -165,7 +165,7 @@ mod simulation {
         pub fn contact_pairs_with(
             &self,
             collider: Entity,
-        ) -> impl Iterator<Item = ContactPairView> {
+        ) -> impl Iterator<Item = ContactPairView<'_>> {
             self.simulation
                 .contact_pairs_with(self.colliders, self.rigidbody_set, collider)
         }
@@ -223,7 +223,7 @@ mod simulation {
         #[expect(clippy::too_many_arguments)]
         pub fn move_shape(
             &mut self,
-            mut query_pipeline_mut: &mut QueryPipelineMut<'_>,
+            query_pipeline_mut: &mut QueryPipelineMut<'_>,
             movement: Vect,
             shape: &dyn Shape,
             shape_translation: Vect,
@@ -234,7 +234,7 @@ mod simulation {
         ) -> MoveShapeOutput {
             self.simulation.move_shape(
                 &self.colliders,
-                &mut query_pipeline_mut,
+                query_pipeline_mut,
                 movement,
                 shape,
                 shape_translation,
@@ -250,7 +250,7 @@ mod simulation {
             &self,
             collider1: Entity,
             collider2: Entity,
-        ) -> Option<ContactPairView> {
+        ) -> Option<ContactPairView<'_>> {
             self.simulation
                 .contact_pair(&self.colliders, &self.rigidbody_set, collider1, collider2)
         }
@@ -259,7 +259,7 @@ mod simulation {
         pub fn contact_pairs_with(
             &self,
             collider: Entity,
-        ) -> impl Iterator<Item = ContactPairView> {
+        ) -> impl Iterator<Item = ContactPairView<'_>> {
             self.simulation
                 .contact_pairs_with(&self.colliders, &self.rigidbody_set, collider)
         }
@@ -311,7 +311,7 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::cast_ray`].
         pub fn cast_ray(
             &self,
-            query_pipeline: RapierQueryPipeline<'_>,
+            query_pipeline: &RapierQueryPipeline<'_>,
             ray_origin: Vect,
             ray_dir: Vect,
             max_toi: Real,

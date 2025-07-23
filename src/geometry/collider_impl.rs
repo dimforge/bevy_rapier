@@ -413,75 +413,75 @@ impl Collider {
     }
 
     /// Takes a strongly typed reference of this collider.
-    pub fn as_typed_shape(&self) -> ColliderView {
+    pub fn as_typed_shape(&self) -> ColliderView<'_> {
         self.raw.as_typed_shape().into()
     }
 
     /// Takes a strongly typed reference of the unscaled version of this collider.
-    pub fn as_unscaled_typed_shape(&self) -> ColliderView {
+    pub fn as_unscaled_typed_shape(&self) -> ColliderView<'_> {
         self.unscaled.as_typed_shape().into()
     }
 
     /// Downcast this collider to a ball, if it is one.
-    pub fn as_ball(&self) -> Option<BallView> {
+    pub fn as_ball(&self) -> Option<BallView<'_>> {
         self.raw.as_ball().map(|s| BallView { raw: s })
     }
 
     /// Downcast this collider to a cuboid, if it is one.
-    pub fn as_cuboid(&self) -> Option<CuboidView> {
+    pub fn as_cuboid(&self) -> Option<CuboidView<'_>> {
         self.raw.as_cuboid().map(|s| CuboidView { raw: s })
     }
 
     /// Downcast this collider to a capsule, if it is one.
-    pub fn as_capsule(&self) -> Option<CapsuleView> {
+    pub fn as_capsule(&self) -> Option<CapsuleView<'_>> {
         self.raw.as_capsule().map(|s| CapsuleView { raw: s })
     }
 
     /// Downcast this collider to a segment, if it is one.
-    pub fn as_segment(&self) -> Option<SegmentView> {
+    pub fn as_segment(&self) -> Option<SegmentView<'_>> {
         self.raw.as_segment().map(|s| SegmentView { raw: s })
     }
 
     /// Downcast this collider to a triangle, if it is one.
-    pub fn as_triangle(&self) -> Option<TriangleView> {
+    pub fn as_triangle(&self) -> Option<TriangleView<'_>> {
         self.raw.as_triangle().map(|s| TriangleView { raw: s })
     }
 
     /// Downcast this collider to a voxels, if it is one.
-    pub fn as_voxels(&self) -> Option<VoxelsView> {
+    pub fn as_voxels(&self) -> Option<VoxelsView<'_>> {
         self.raw.as_voxels().map(|s| VoxelsView { raw: s })
     }
 
     /// Downcast this collider to a triangle mesh, if it is one.
-    pub fn as_trimesh(&self) -> Option<TriMeshView> {
+    pub fn as_trimesh(&self) -> Option<TriMeshView<'_>> {
         self.raw.as_trimesh().map(|s| TriMeshView { raw: s })
     }
 
     /// Downcast this collider to a polyline, if it is one.
-    pub fn as_polyline(&self) -> Option<PolylineView> {
+    pub fn as_polyline(&self) -> Option<PolylineView<'_>> {
         self.raw.as_polyline().map(|s| PolylineView { raw: s })
     }
 
     /// Downcast this collider to a half-space, if it is one.
-    pub fn as_halfspace(&self) -> Option<HalfSpaceView> {
+    pub fn as_halfspace(&self) -> Option<HalfSpaceView<'_>> {
         self.raw.as_halfspace().map(|s| HalfSpaceView { raw: s })
     }
 
     /// Downcast this collider to a heightfield, if it is one.
-    pub fn as_heightfield(&self) -> Option<HeightFieldView> {
+    pub fn as_heightfield(&self) -> Option<HeightFieldView<'_>> {
         self.raw
             .as_heightfield()
             .map(|s| HeightFieldView { raw: s })
     }
 
     /// Downcast this collider to a compound shape, if it is one.
-    pub fn as_compound(&self) -> Option<CompoundView> {
+    pub fn as_compound(&self) -> Option<CompoundView<'_>> {
         self.raw.as_compound().map(|s| CompoundView { raw: s })
     }
 
     /// Downcast this collider to a convex polygon, if it is one.
     #[cfg(feature = "dim2")]
-    pub fn as_convex_polygon(&self) -> Option<ConvexPolygonView> {
+    pub fn as_convex_polygon(&self) -> Option<ConvexPolygonView<'_>> {
         self.raw
             .as_convex_polygon()
             .map(|s| ConvexPolygonView { raw: s })
@@ -489,7 +489,7 @@ impl Collider {
 
     /// Downcast this collider to a convex polyhedron, if it is one.
     #[cfg(feature = "dim3")]
-    pub fn as_convex_polyhedron(&self) -> Option<ConvexPolyhedronView> {
+    pub fn as_convex_polyhedron(&self) -> Option<ConvexPolyhedronView<'_>> {
         self.raw
             .as_convex_polyhedron()
             .map(|s| ConvexPolyhedronView { raw: s })
@@ -497,18 +497,18 @@ impl Collider {
 
     /// Downcast this collider to a cylinder, if it is one.
     #[cfg(feature = "dim3")]
-    pub fn as_cylinder(&self) -> Option<CylinderView> {
+    pub fn as_cylinder(&self) -> Option<CylinderView<'_>> {
         self.raw.as_cylinder().map(|s| CylinderView { raw: s })
     }
 
     /// Downcast this collider to a cone, if it is one.
     #[cfg(feature = "dim3")]
-    pub fn as_cone(&self) -> Option<ConeView> {
+    pub fn as_cone(&self) -> Option<ConeView<'_>> {
         self.raw.as_cone().map(|s| ConeView { raw: s })
     }
 
     /// Downcast this collider to a mutable ball, if it is one.
-    pub fn as_ball_mut(&mut self) -> Option<BallViewMut> {
+    pub fn as_ball_mut(&mut self) -> Option<BallViewMut<'_>> {
         self.raw
             .make_mut()
             .as_ball_mut()
@@ -516,7 +516,7 @@ impl Collider {
     }
 
     /// Downcast this collider to a mutable cuboid, if it is one.
-    pub fn as_cuboid_mut(&mut self) -> Option<CuboidViewMut> {
+    pub fn as_cuboid_mut(&mut self) -> Option<CuboidViewMut<'_>> {
         self.raw
             .make_mut()
             .as_cuboid_mut()
@@ -524,7 +524,7 @@ impl Collider {
     }
 
     /// Downcast this collider to a mutable capsule, if it is one.
-    pub fn as_capsule_mut(&mut self) -> Option<CapsuleViewMut> {
+    pub fn as_capsule_mut(&mut self) -> Option<CapsuleViewMut<'_>> {
         self.raw
             .make_mut()
             .as_capsule_mut()
@@ -532,7 +532,7 @@ impl Collider {
     }
 
     /// Downcast this collider to a mutable segment, if it is one.
-    pub fn as_segment_mut(&mut self) -> Option<SegmentViewMut> {
+    pub fn as_segment_mut(&mut self) -> Option<SegmentViewMut<'_>> {
         self.raw
             .make_mut()
             .as_segment_mut()
@@ -540,7 +540,7 @@ impl Collider {
     }
 
     /// Downcast this collider to a mutable triangle, if it is one.
-    pub fn as_triangle_mut(&mut self) -> Option<TriangleViewMut> {
+    pub fn as_triangle_mut(&mut self) -> Option<TriangleViewMut<'_>> {
         self.raw
             .make_mut()
             .as_triangle_mut()
@@ -548,7 +548,7 @@ impl Collider {
     }
 
     /// Downcast this collider to a mutable voxels, if it is one.
-    pub fn as_voxels_mut(&mut self) -> Option<VoxelsViewMut> {
+    pub fn as_voxels_mut(&mut self) -> Option<VoxelsViewMut<'_>> {
         self.raw
             .make_mut()
             .as_voxels_mut()
@@ -556,7 +556,7 @@ impl Collider {
     }
 
     /// Downcast this collider to a mutable triangle mesh, if it is one.
-    pub fn as_trimesh_mut(&mut self) -> Option<TriMeshViewMut> {
+    pub fn as_trimesh_mut(&mut self) -> Option<TriMeshViewMut<'_>> {
         self.raw
             .make_mut()
             .as_trimesh_mut()
@@ -564,7 +564,7 @@ impl Collider {
     }
 
     /// Downcast this collider to a mutable polyline, if it is one.
-    pub fn as_polyline_mut(&mut self) -> Option<PolylineViewMut> {
+    pub fn as_polyline_mut(&mut self) -> Option<PolylineViewMut<'_>> {
         self.raw
             .make_mut()
             .as_polyline_mut()
@@ -572,7 +572,7 @@ impl Collider {
     }
 
     /// Downcast this collider to a mutable half-space, if it is one.
-    pub fn as_halfspace_mut(&mut self) -> Option<HalfSpaceViewMut> {
+    pub fn as_halfspace_mut(&mut self) -> Option<HalfSpaceViewMut<'_>> {
         self.raw
             .make_mut()
             .as_halfspace_mut()
@@ -580,7 +580,7 @@ impl Collider {
     }
 
     /// Downcast this collider to a mutable heightfield, if it is one.
-    pub fn as_heightfield_mut(&mut self) -> Option<HeightFieldViewMut> {
+    pub fn as_heightfield_mut(&mut self) -> Option<HeightFieldViewMut<'_>> {
         self.raw
             .make_mut()
             .as_heightfield_mut()
@@ -612,7 +612,7 @@ impl Collider {
 
     /// Downcast this collider to a mutable cylinder, if it is one.
     #[cfg(feature = "dim3")]
-    pub fn as_cylinder_mut(&mut self) -> Option<CylinderViewMut> {
+    pub fn as_cylinder_mut(&mut self) -> Option<CylinderViewMut<'_>> {
         self.raw
             .make_mut()
             .as_cylinder_mut()
@@ -621,7 +621,7 @@ impl Collider {
 
     /// Downcast this collider to a mutable cone, if it is one.
     #[cfg(feature = "dim3")]
-    pub fn as_cone_mut(&mut self) -> Option<ConeViewMut> {
+    pub fn as_cone_mut(&mut self) -> Option<ConeViewMut<'_>> {
         self.raw
             .make_mut()
             .as_cone_mut()
