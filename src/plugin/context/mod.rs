@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 use rapier::prelude::{
-    CCDSolver, ColliderHandle, ColliderSet, EventHandler, FeatureId, ImpulseJointHandle,
+    Aabb, CCDSolver, ColliderHandle, ColliderSet, EventHandler, FeatureId, ImpulseJointHandle,
     ImpulseJointSet, IntegrationParameters, IslandManager, MultibodyJointHandle, MultibodyJointSet,
     NarrowPhase, PhysicsHooks, PhysicsPipeline, QueryPipeline, QueryPipelineMut, Ray, Real,
     RigidBodyHandle, RigidBodySet, Shape,
@@ -364,7 +364,7 @@ impl<'a> RapierQueryPipeline<'a> {
         #[cfg(feature = "dim2")] aabb: bevy::math::bounding::Aabb2d,
         #[cfg(feature = "dim3")] aabb: bevy::math::bounding::Aabb3d,
     ) -> impl Iterator<Item = Entity> + 'a {
-        let scaled_aabb = rapier::prelude::Aabb {
+        let scaled_aabb = Aabb {
             mins: aabb.min.into(),
             maxs: aabb.max.into(),
         };

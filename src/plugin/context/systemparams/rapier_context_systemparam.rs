@@ -338,8 +338,8 @@ mod query_pipeline {
             )
         }
 
-        /// Shortcut to [`RapierQueryPipeline::intersections_with_point`].
-        pub fn intersections_with_point(
+        /// Shortcut to [`RapierQueryPipeline::intersect_point`].
+        pub fn intersect_point(
             &self,
             query_pipeline: RapierQueryPipeline<'_>,
             point: Vect,
@@ -353,8 +353,8 @@ mod query_pipeline {
             }
         }
 
-        /// Shortcut to [`RapierQueryPipeline::intersections_with_ray`].
-        pub fn intersections_with_ray(
+        /// Shortcut to [`RapierQueryPipeline::intersect_ray`].
+        pub fn intersect_ray(
             &self,
             query_pipeline: RapierQueryPipeline<'_>,
             ray_origin: Vect,
@@ -373,8 +373,8 @@ mod query_pipeline {
             }
         }
 
-        /// Shortcut to [`RapierQueryPipeline::intersections_with_shape`].
-        pub fn intersections_with_shape(
+        /// Shortcut to [`RapierQueryPipeline::intersect_shape`].
+        pub fn intersect_shape(
             &self,
             query_pipeline: RapierQueryPipeline<'_>,
             shape_pos: Vect,
@@ -389,8 +389,8 @@ mod query_pipeline {
             }
         }
 
-        /// Shortcut to [`RapierQueryPipeline::colliders_with_aabb_intersecting_aabb`].
-        pub fn colliders_with_aabb_intersecting_aabb(
+        /// Shortcut to [`RapierQueryPipeline::intersect_aabb_conservative`].
+        pub fn intersect_aabb_conservative(
             &self,
             query_pipeline: RapierQueryPipeline<'_>,
             #[cfg(feature = "dim2")] aabb: bevy::math::bounding::Aabb2d,
@@ -467,8 +467,8 @@ mod query_pipeline {
             )
         }
 
-        /// Shortcut to [`RapierQueryPipeline::intersections_with_point`].
-        pub fn intersections_with_point(
+        /// Shortcut to [`RapierQueryPipeline::intersect_point`].
+        pub fn intersect_point(
             &self,
             query_pipeline: RapierQueryPipeline<'_>,
             point: Vect,
@@ -481,8 +481,8 @@ mod query_pipeline {
             }
         }
 
-        /// Shortcut to [`RapierQueryPipeline::intersections_with_ray`].
-        pub fn intersections_with_ray(
+        /// Shortcut to [`RapierQueryPipeline::intersect_ray`].
+        pub fn intersect_ray(
             &self,
             query_pipeline: RapierQueryPipeline<'_>,
             ray_origin: Vect,
@@ -500,8 +500,8 @@ mod query_pipeline {
             }
         }
 
-        /// Shortcut to [`RapierQueryPipeline::intersections_with_shape`].
-        pub fn intersections_with_shape(
+        /// Shortcut to [`RapierQueryPipeline::intersect_shape`].
+        pub fn intersect_shape(
             &self,
             query_pipeline: RapierQueryPipeline<'_>,
             shape_pos: Vect,
@@ -516,8 +516,8 @@ mod query_pipeline {
             }
         }
 
-        /// Shortcut to [`RapierQueryPipeline::colliders_with_aabb_intersecting_aabb`].
-        pub fn colliders_with_aabb_intersecting_aabb(
+        /// Shortcut to [`RapierQueryPipeline::intersect_aabb_conservative`].
+        pub fn intersect_aabb_conservative(
             &self,
             query_pipeline: RapierQueryPipeline<'_>,
             #[cfg(feature = "dim2")] aabb: bevy::math::bounding::Aabb2d,
