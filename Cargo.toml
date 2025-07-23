@@ -13,10 +13,12 @@ codegen-units = 1
 #nalgebra = { path = "../nalgebra" }
 #parry2d = { path = "../parry/crates/parry2d" }
 #parry3d = { path = "../parry/crates/parry3d" }
-rapier2d = { path = "../rapier/crates/rapier2d" }
-rapier3d = { path = "../rapier/crates/rapier3d" }
+#rapier2d = { path = "../rapier/crates/rapier2d" }
+#rapier3d = { path = "../rapier/crates/rapier3d" }
 #nalgebra = { git = "https://github.com/dimforge/nalgebra", branch = "dev" }
 #parry2d = { git = "https://github.com/dimforge/parry", branch = "master" }
 #parry3d = { git = "https://github.com/dimforge/parry", branch = "master" }
 #rapier2d = { git = "https://github.com/dimforge/rapier", branch = "character-controller" }
 #rapier3d = { git = "https://github.com/dimforge/rapier", branch = "character-controller" }
+rapier2d = { git = "https://github.com/vrixyz/rapier", branch = "bevy_rapier_compatibility" }
+rapier3d = { git = "https://github.com/vrixyz/rapier", branch = "bevy_rapier_compatibility" }
