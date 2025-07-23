@@ -12,7 +12,7 @@ pub struct CompoundView<'a> {
 impl CompoundView<'_> {
     /// The shapes of this compound shape.
     #[inline]
-    pub fn shapes(&self) -> impl ExactSizeIterator<Item = (Vect, Rot, ColliderView)> {
+    pub fn shapes(&self) -> impl ExactSizeIterator<Item = (Vect, Rot, ColliderView<'_>)> {
         self.raw.shapes().iter().map(|(pos, shape)| {
             let (tra, rot) = (*pos).into();
             (tra, rot, shape.as_typed_shape().into())

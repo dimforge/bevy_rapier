@@ -13,7 +13,7 @@ macro_rules! impl_ref_methods(
     ($View: ident) => {
         impl<'a> $View<'a> {
             /// The axis and endpoint of the capsule.
-            pub fn segment(&self) -> SegmentView {
+            pub fn segment(&self) -> SegmentView<'_> {
                 SegmentView {
                     raw: &self.raw.segment,
                 }

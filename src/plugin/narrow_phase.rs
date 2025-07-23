@@ -144,12 +144,12 @@ impl ContactManifoldView<'_> {
     }
 
     /// Retrieves the i-th point of this contact manifold.
-    pub fn point(&self, i: usize) -> Option<ContactView> {
+    pub fn point(&self, i: usize) -> Option<ContactView<'_>> {
         self.raw.points.get(i).map(|raw| ContactView { raw })
     }
 
     /// The contacts points.
-    pub fn points(&self) -> impl ExactSizeIterator<Item = ContactView> {
+    pub fn points(&self) -> impl ExactSizeIterator<Item = ContactView<'_>> {
         self.raw.points.iter().map(|raw| ContactView { raw })
     }
 
@@ -209,7 +209,7 @@ impl ContactManifoldView<'_> {
     }
 
     /// Gets the i-th solver contact.
-    pub fn solver_contact(&self, i: usize) -> Option<SolverContactView> {
+    pub fn solver_contact(&self, i: usize) -> Option<SolverContactView<'_>> {
         self.raw
             .data
             .solver_contacts
@@ -218,7 +218,7 @@ impl ContactManifoldView<'_> {
     }
 
     /// The contacts that will be seen by the constraints solver for computing forces.
-    pub fn solver_contacts(&self) -> impl ExactSizeIterator<Item = SolverContactView> {
+    pub fn solver_contacts(&self) -> impl ExactSizeIterator<Item = SolverContactView<'_>> {
         self.raw
             .data
             .solver_contacts
@@ -239,7 +239,7 @@ impl ContactManifoldView<'_> {
 
 impl ContactManifoldView<'_> {
     /// Returns the contact with the smallest distance (i.e. the largest penetration depth).
-    pub fn find_deepest_contact(&self) -> Option<ContactView> {
+    pub fn find_deepest_contact(&self) -> Option<ContactView<'_>> {
         self.raw
             .find_deepest_contact()
             .map(|raw| ContactView { raw })
@@ -362,7 +362,7 @@ impl ContactPairView<'_> {
     }
 
     /// Gets the i-th contact manifold.
-    pub fn manifold(&self, i: usize) -> Option<ContactManifoldView> {
+    pub fn manifold(&self, i: usize) -> Option<ContactManifoldView<'_>> {
         self.raw.manifolds.get(i).map(|raw| ContactManifoldView {
             rigidbody_set: self.rigidbody_set,
             raw,
@@ -370,7 +370,7 @@ impl ContactPairView<'_> {
     }
 
     /// Iterate through all the contact manifolds of this contact pair.
-    pub fn manifolds(&self) -> impl ExactSizeIterator<Item = ContactManifoldView> {
+    pub fn manifolds(&self) -> impl ExactSizeIterator<Item = ContactManifoldView<'_>> {
         self.raw.manifolds.iter().map(|raw| ContactManifoldView {
             rigidbody_set: self.rigidbody_set,
             raw,
@@ -389,7 +389,7 @@ impl ContactPairView<'_> {
     ///
     /// Returns a reference to the contact, as well as the contact manifold
     /// it is part of.
-    pub fn find_deepest_contact(&self) -> Option<(ContactManifoldView, ContactView)> {
+    pub fn find_deepest_contact(&self) -> Option<(ContactManifoldView<'_>, ContactView<'_>)> {
         self.raw.find_deepest_contact().map(|(manifold, contact)| {
             (
                 ContactManifoldView {
