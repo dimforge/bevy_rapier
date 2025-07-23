@@ -156,7 +156,6 @@ impl RapierContextJoints {
 }
 
 /// Wrapper around [QueryPipeline] to provide bevy friendly methods.
-#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone)]
 pub struct RapierQueryPipeline<'a> {
     /// The query pipeline, which performs scene queries (ray-casting, point projection, etc.)
@@ -164,7 +163,6 @@ pub struct RapierQueryPipeline<'a> {
 }
 
 /// Wrapper around [QueryPipeline] to provide bevy friendly methods.
-#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct RapierQueryPipelineMut<'a> {
     /// The query pipeline, which performs scene queries (ray-casting, point projection, etc.)
     pub query_pipeline: QueryPipelineMut<'a>,
