@@ -323,7 +323,7 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::cast_ray_and_get_normal`].
         pub fn cast_ray_and_get_normal(
             &self,
-            query_pipeline: RapierQueryPipeline<'_>,
+            query_pipeline: &RapierQueryPipeline<'_>,
             ray_origin: Vect,
             ray_dir: Vect,
             max_toi: Real,
@@ -341,7 +341,7 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::intersect_point`].
         pub fn intersect_point(
             &self,
-            query_pipeline: RapierQueryPipeline<'_>,
+            query_pipeline: &RapierQueryPipeline<'_>,
             point: Vect,
             // FIXME: find a way to return an iterator?
             mut callback: impl FnMut(Entity) -> bool,
@@ -356,7 +356,7 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::intersect_ray`].
         pub fn intersect_ray(
             &self,
-            query_pipeline: RapierQueryPipeline<'_>,
+            query_pipeline: &RapierQueryPipeline<'_>,
             ray_origin: Vect,
             ray_dir: Vect,
             max_toi: Real,
@@ -376,7 +376,7 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::intersect_shape`].
         pub fn intersect_shape(
             &self,
-            query_pipeline: RapierQueryPipeline<'_>,
+            query_pipeline: &RapierQueryPipeline<'_>,
             shape_pos: Vect,
             shape_rot: Rot,
             shape: &dyn Shape,
@@ -392,7 +392,7 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::intersect_aabb_conservative`].
         pub fn intersect_aabb_conservative(
             &self,
-            query_pipeline: RapierQueryPipeline<'_>,
+            query_pipeline: &RapierQueryPipeline<'_>,
             #[cfg(feature = "dim2")] aabb: bevy::math::bounding::Aabb2d,
             #[cfg(feature = "dim3")] aabb: bevy::math::bounding::Aabb3d,
             mut callback: impl FnMut(Entity) -> bool,
@@ -407,7 +407,7 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::cast_shape`].
         pub fn cast_shape(
             &self,
-            query_pipeline: RapierQueryPipeline<'_>,
+            query_pipeline: &RapierQueryPipeline<'_>,
             shape_pos: Vect,
             shape_rot: Rot,
             shape_vel: Vect,
@@ -427,7 +427,7 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::project_point`].
         pub fn project_point(
             &self,
-            query_pipeline: RapierQueryPipeline<'_>,
+            query_pipeline: &RapierQueryPipeline<'_>,
             point: Vect,
             max_dist: Real,
             solid: bool,
@@ -440,7 +440,7 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::cast_ray`].
         pub fn cast_ray(
             &self,
-            query_pipeline: RapierQueryPipeline<'_>,
+            query_pipeline: &RapierQueryPipeline<'_>,
             ray_origin: Vect,
             ray_dir: Vect,
             max_toi: Real,
@@ -452,7 +452,7 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::cast_ray_and_get_normal`].
         pub fn cast_ray_and_get_normal(
             &self,
-            query_pipeline: RapierQueryPipeline<'_>,
+            query_pipeline: &RapierQueryPipeline<'_>,
             ray_origin: Vect,
             ray_dir: Vect,
             max_toi: Real,
@@ -470,7 +470,7 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::intersect_point`].
         pub fn intersect_point(
             &self,
-            query_pipeline: RapierQueryPipeline<'_>,
+            query_pipeline: &RapierQueryPipeline<'_>,
             point: Vect,
             mut callback: impl FnMut(Entity) -> bool,
         ) {
@@ -484,7 +484,7 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::intersect_ray`].
         pub fn intersect_ray(
             &self,
-            query_pipeline: RapierQueryPipeline<'_>,
+            query_pipeline: &RapierQueryPipeline<'_>,
             ray_origin: Vect,
             ray_dir: Vect,
             max_toi: Real,
@@ -503,7 +503,7 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::intersect_shape`].
         pub fn intersect_shape(
             &self,
-            query_pipeline: RapierQueryPipeline<'_>,
+            query_pipeline: &RapierQueryPipeline<'_>,
             shape_pos: Vect,
             shape_rot: Rot,
             shape: &dyn Shape,
@@ -519,7 +519,7 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::intersect_aabb_conservative`].
         pub fn intersect_aabb_conservative(
             &self,
-            query_pipeline: RapierQueryPipeline<'_>,
+            query_pipeline: &RapierQueryPipeline<'_>,
             #[cfg(feature = "dim2")] aabb: bevy::math::bounding::Aabb2d,
             #[cfg(feature = "dim3")] aabb: bevy::math::bounding::Aabb3d,
             mut callback: impl FnMut(Entity) -> bool,
@@ -534,7 +534,7 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::cast_shape`].
         pub fn cast_shape(
             &self,
-            query_pipeline: RapierQueryPipeline<'_>,
+            query_pipeline: &RapierQueryPipeline<'_>,
             shape_pos: Vect,
             shape_rot: Rot,
             shape_vel: Vect,
@@ -554,7 +554,7 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::project_point`].
         pub fn project_point(
             &self,
-            query_pipeline: RapierQueryPipeline<'_>,
+            query_pipeline: &RapierQueryPipeline<'_>,
             point: Vect,
             max_dist: Real,
             solid: bool,
