@@ -16,6 +16,7 @@ use bevy::prelude::PickingPlugin;
 use bevy::reflect::prelude::*;
 use bevy::render::{prelude::*, view::RenderLayers};
 use rapier::parry::query::DefaultQueryDispatcher;
+use rapier::prelude::QueryFilter;
 
 /// How a ray cast should handle [`Visibility`].
 #[derive(Clone, Copy, Reflect)]
@@ -151,6 +152,19 @@ pub fn update_hits(
                     filter.predicate(&rapier_predicate),
                 ),
             };
+            {
+                // Unused, to showcase an API if we can fix https://play.rust-lang.org/?version=stable&mode=debug&edition=2024&gist=81f5efbfd8f97cd5e4ca50447cbc29b7
+                let query_pipeline = crate::prelude::RapierQueryPipeline {
+                    query_pipeline: simulation.broad_phase.as_query_pipeline(
+                        &DefaultQueryDispatcher,
+                        &bodies.bodies,
+                        &colliders.colliders,
+                        // Ideally there would be a constructor using bevy_rapier's QueryFilter (crate::prelude::QueryFilter)
+                        QueryFilter::exclude_dynamic(),
+                    ),
+                }
+                .with_predicate(&predicate);
+            }
 
             let mut picks = Vec::new();
             #[cfg(feature = "dim2")]

@@ -7,10 +7,10 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 use rapier::prelude::{
-    Aabb, CCDSolver, ColliderHandle, ColliderSet, EventHandler, FeatureId, ImpulseJointHandle,
-    ImpulseJointSet, IntegrationParameters, IslandManager, MultibodyJointHandle, MultibodyJointSet,
-    NarrowPhase, PhysicsHooks, PhysicsPipeline, QueryPipeline, QueryPipelineMut, Ray, Real,
-    RigidBodyHandle, RigidBodySet, Shape,
+    Aabb, CCDSolver, Collider, ColliderHandle, ColliderSet, EventHandler, FeatureId,
+    ImpulseJointHandle, ImpulseJointSet, IntegrationParameters, IslandManager,
+    MultibodyJointHandle, MultibodyJointSet, NarrowPhase, PhysicsHooks, PhysicsPipeline,
+    QueryPipeline, QueryPipelineMut, Ray, Real, RigidBodyHandle, RigidBodySet, Shape,
 };
 
 use crate::geometry::{PointProjection, RayIntersection, ShapeCastHit};
@@ -178,6 +178,17 @@ impl RapierQueryPipelineMut<'_> {
 }
 
 impl<'a> RapierQueryPipeline<'a> {
+    pub fn with_predicate(&'a mut self, predicate: &'a dyn Fn(Entity) -> bool) {
+        let pred = |h: rapier::prelude::ColliderHandle, _: &rapier::prelude::Collider| -> bool {
+            crate::prelude::RapierContextColliders::collider_entity_with_set(
+                &self.query_pipeline.colliders,
+                h,
+            )
+            .map(predicate)
+            .unwrap_or(false)
+        };
+        self.query_pipeline.filter.predicate = Some(&pred);
+    }
     /// Find the closest intersection between a ray and a set of collider.
     ///
     /// # Parameters
