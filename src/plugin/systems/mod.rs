@@ -25,8 +25,7 @@ use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
 use bevy::prelude::*;
 
 use super::context::{
-    RapierContextColliders, RapierContextJoints, RapierContextSimulation, RapierQueryPipeline,
-    RapierRigidBodySet,
+    RapierContextColliders, RapierContextJoints, RapierContextSimulation, RapierRigidBodySet,
 };
 
 /// System responsible for advancing the physics simulation, and updating the internal state
@@ -35,7 +34,6 @@ pub fn step_simulation<Hooks>(
     mut context: Query<(
         &mut RapierContextSimulation,
         &mut RapierContextColliders,
-        &mut RapierQueryPipeline,
         &mut RapierContextJoints,
         &mut RapierRigidBodySet,
         &RapierConfiguration,
@@ -56,7 +54,6 @@ pub fn step_simulation<Hooks>(
     for (
         mut context,
         mut context_colliders,
-        mut query_pipeline,
         mut joints,
         mut rigidbody_set,
         config,
@@ -81,10 +78,6 @@ pub fn step_simulation<Hooks>(
             );
         } else {
             rigidbody_set.propagate_modified_body_positions_to_colliders(context_colliders);
-        }
-
-        if config.query_pipeline_active {
-            query_pipeline.update_query_pipeline(context_colliders);
         }
         context.send_bevy_events(&mut collision_events, &mut contact_force_events);
     }

@@ -67,8 +67,6 @@ pub struct RapierConfiguration {
     pub gravity: Vect,
     /// Specifies if the physics simulation is active and update the physics world.
     pub physics_pipeline_active: bool,
-    /// Specifies if the query pipeline is active and update the query pipeline.
-    pub query_pipeline_active: bool,
     /// Specifies the number of subdivisions along each axes a shape should be subdivided
     /// if its scaled representation cannot be represented with the same shape type.
     ///
@@ -92,7 +90,6 @@ impl RapierConfiguration {
         Self {
             gravity: Vect::Y * -9.81 * length_unit,
             physics_pipeline_active: true,
-            query_pipeline_active: true,
             scaled_shape_subdivision: 10,
             force_update_from_transform_changes: false,
         }

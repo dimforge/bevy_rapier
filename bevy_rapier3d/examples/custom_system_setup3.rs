@@ -51,7 +51,7 @@ fn despawn_one_box(
     query: Query<Entity, (With<Collider>, With<RigidBody>)>,
 ) {
     // Delete a box every 5 frames
-    if frame_count.0 % 5 == 0 && !query.is_empty() {
+    if frame_count.0.is_multiple_of(5) && !query.is_empty() {
         let len = query.iter().len();
         // Get a "random" box to make sim interesting
         if let Some(entity) = query.iter().nth(frame_count.0 as usize % len) {
