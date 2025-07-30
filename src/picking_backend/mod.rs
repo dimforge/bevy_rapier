@@ -133,7 +133,7 @@ pub fn update_hits(
             };
             let filter = crate::prelude::QueryFilter::default().predicate(&predicate);
             let mut picks = Vec::new();
-            crate::prelude::RapierQueryPipeline::with_query_filter_elts(
+            crate::prelude::RapierQueryPipeline::new_scoped(
                 &simulation.broad_phase,
                 colliders,
                 bodies,

@@ -163,7 +163,7 @@ impl RapierContextJoints {
 ///
 /// This wrapper is designed to be short lived, made whenever necessary.
 ///
-/// See [RapierQueryPipeline::with_query_filter_elts] to create one.
+/// See [RapierQueryPipeline::new_scoped] to create one.
 #[derive(Copy, Clone)]
 pub struct RapierQueryPipeline<'a> {
     /// The query pipeline, which performs scene queries (ray-casting, point projection, etc.)
@@ -182,7 +182,7 @@ pub fn to_rapier_query_filter_predicate(
 
 impl<'a> RapierQueryPipeline<'a> {
     /// Creates a temporary [RapierQueryPipeline] and passes it as a parameter to `scoped_fn`.
-    pub fn with_query_filter_elts<T>(
+    pub fn new_scoped<T>(
         broad_phase: &DefaultBroadPhase,
         colliders: &RapierContextColliders,
         rigid_bodies: &RapierRigidBodySet,

@@ -289,13 +289,13 @@ mod query_pipeline {
     use super::*;
 
     impl RapierContext<'_> {
-        /// Shortcut to [RapierQueryPipeline::with_query_filter_elts].
+        /// Shortcut to [RapierQueryPipeline::new_scoped].
         pub fn with_query_pipeline<'a, T>(
             &'a self,
             filter: QueryFilter<'a>,
             scoped_fn: impl FnOnce(RapierQueryPipeline<'_>) -> T,
         ) -> T {
-            crate::prelude::RapierQueryPipeline::with_query_filter_elts(
+            crate::prelude::RapierQueryPipeline::new_scoped(
                 &self.simulation.broad_phase,
                 self.colliders,
                 self.rigidbody_set,
@@ -307,13 +307,13 @@ mod query_pipeline {
     }
 
     impl RapierContextMut<'_> {
-        /// Shortcut to [RapierQueryPipeline::with_query_filter_elts].
+        /// Shortcut to [RapierQueryPipeline::new_scoped].
         pub fn with_query_pipeline<'a, T>(
             &'a self,
             filter: QueryFilter<'a>,
             scoped_fn: impl FnOnce(RapierQueryPipeline<'_>) -> T,
         ) -> T {
-            crate::prelude::RapierQueryPipeline::with_query_filter_elts(
+            crate::prelude::RapierQueryPipeline::new_scoped(
                 &self.simulation.broad_phase,
                 &self.colliders,
                 &self.rigidbody_set,
