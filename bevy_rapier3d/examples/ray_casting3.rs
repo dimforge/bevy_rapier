@@ -2,7 +2,6 @@ use bevy::color::palettes::basic;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_rapier3d::prelude::*;
-use rapier3d::prelude::QueryFilter;
 
 fn main() {
     App::new()
@@ -92,23 +91,18 @@ pub fn cast_ray(
             return Ok(());
         };
         let context = rapier_context.single()?;
-        let query_pipeline = context.query_pipeline(QueryFilter::only_dynamic());
-        // Then cast the ray.
-        let hit = context.cast_ray(
-            &query_pipeline,
-            ray.origin,
-            ray.direction.into(),
-            f32::MAX,
-            true,
-        );
+        context.with_query_pipeline(QueryFilter::only_dynamic(), |query_pipeline| {
+            // Then cast the ray.
+            let hit = query_pipeline.cast_ray(ray.origin, ray.direction.into(), f32::MAX, true);
 
-        if let Some((entity, _toi)) = hit {
-            // Color in blue the entity we just hit.
-            // Because of the query filter, only colliders attached to a dynamic body
-            // will get an event.
-            let color = basic::BLUE.into();
-            commands.entity(entity).insert(ColliderDebugColor(color));
-        }
+            if let Some((entity, _toi)) = hit {
+                // Color in blue the entity we just hit.
+                // Because of the query filter, only colliders attached to a dynamic body
+                // will get an event.
+                let color = basic::BLUE.into();
+                commands.entity(entity).insert(ColliderDebugColor(color));
+            }
+        });
     }
 
     Ok(())

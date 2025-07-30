@@ -3,14 +3,15 @@
 pub mod systemparams;
 
 use bevy::prelude::*;
+use rapier::parry::query::QueryDispatcher;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
 use rapier::prelude::{
     Aabb, CCDSolver, ColliderHandle, ColliderSet, EventHandler, FeatureId, ImpulseJointHandle,
     ImpulseJointSet, IntegrationParameters, IslandManager, MultibodyJointHandle, MultibodyJointSet,
-    NarrowPhase, PhysicsHooks, PhysicsPipeline, QueryPipeline, QueryPipelineMut, Ray, Real,
-    RigidBodyHandle, RigidBodySet, Shape,
+    NarrowPhase, PhysicsHooks, PhysicsPipeline, QueryFilter as RapierQueryFilter, QueryPipeline,
+    QueryPipelineMut, Ray, Real, RigidBodyHandle, RigidBodySet, Shape,
 };
 
 use crate::geometry::{PointProjection, RayIntersection, ShapeCastHit};
@@ -22,7 +23,7 @@ use crate::control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput};
 use crate::dynamics::TransformInterpolation;
 use crate::parry::query::details::ShapeCastOptions;
 use crate::plugin::configuration::TimestepMode;
-use crate::prelude::RapierRigidBodyHandle;
+use crate::prelude::{CollisionGroups, QueryFilter, RapierRigidBodyHandle};
 use rapier::control::CharacterAutostep;
 use rapier::geometry::DefaultBroadPhase;
 
@@ -105,9 +106,9 @@ impl RapierContextColliders {
             .flatten()
     }
 
-    /// Retrieve the Bevy entity the given Rapier collider (identified by its handle) is attached.
+    /// Retrieve the Bevy entity the given Rapier collider (identified by its handle) is attached to.
     pub fn collider_entity(&self, handle: ColliderHandle) -> Option<Entity> {
-        Self::collider_entity_with_set(&self.colliders, handle)
+        RapierContextColliders::collider_entity_with_set(&self.colliders, handle)
     }
 
     // Mostly used to avoid borrowing self completely.
@@ -115,9 +116,12 @@ impl RapierContextColliders {
         colliders: &ColliderSet,
         handle: ColliderHandle,
     ) -> Option<Entity> {
-        colliders
-            .get(handle)
-            .map(|c| Entity::from_bits(c.user_data as u64))
+        colliders.get(handle).map(Self::entity_from_collider)
+    }
+
+    /// Retrieve the Bevy entity the given Rapier collider is attached to.
+    pub fn entity_from_collider(collider: &rapier::prelude::Collider) -> Entity {
+        Entity::from_bits(collider.user_data as u64)
     }
 
     /// The map from entities to collider handles.
@@ -156,28 +160,78 @@ impl RapierContextJoints {
 }
 
 /// Wrapper around [QueryPipeline] to provide bevy friendly methods.
+///
+/// This wrapper is designed to be short lived, made whenever necessary.
+///
+/// See [RapierQueryPipeline::with_query_filter_elts] to create one.
 #[derive(Copy, Clone)]
 pub struct RapierQueryPipeline<'a> {
     /// The query pipeline, which performs scene queries (ray-casting, point projection, etc.)
     pub query_pipeline: QueryPipeline<'a>,
 }
 
-/// Wrapper around [QueryPipeline] to provide bevy friendly methods.
-pub struct RapierQueryPipelineMut<'a> {
-    /// The query pipeline, which performs scene queries (ray-casting, point projection, etc.)
-    pub query_pipeline: QueryPipelineMut<'a>,
-}
-
-impl RapierQueryPipelineMut<'_> {
-    /// Downgrades the mutable reference to an immutable reference.
-    pub fn as_ref(&self) -> RapierQueryPipeline<'_> {
-        RapierQueryPipeline {
-            query_pipeline: self.query_pipeline.as_ref(),
-        }
+/// Wraps a [bevy query filter predicate](QueryFilter::predicate) taking an Entity into a [rapier query filter predicate](RapierQueryFilter::predicate)
+pub fn to_rapier_query_filter_predicate(
+    predicate: &dyn Fn(Entity) -> bool,
+) -> impl Fn(ColliderHandle, &rapier::prelude::Collider) -> bool + use<'_> {
+    |_: ColliderHandle, collider: &'_ rapier::geometry::Collider| -> bool {
+        let entity = crate::prelude::RapierContextColliders::entity_from_collider(collider);
+        (predicate)(entity)
     }
 }
 
 impl<'a> RapierQueryPipeline<'a> {
+    /// Creates a temporary [RapierQueryPipeline] and passes it as a parameter to `scoped_fn`.
+    pub fn with_query_filter_elts<T>(
+        broad_phase: &DefaultBroadPhase,
+        colliders: &RapierContextColliders,
+        rigid_bodies: &RapierRigidBodySet,
+        filter: &QueryFilter<'_>,
+        dispatcher: &dyn QueryDispatcher,
+        scoped_fn: impl FnOnce(RapierQueryPipeline<'_>) -> T,
+    ) -> T {
+        let mut rapier_filter = RapierQueryFilter {
+            flags: filter.flags,
+            groups: filter.groups.map(CollisionGroups::into),
+            exclude_collider: filter
+                .exclude_collider
+                .and_then(|c| colliders.entity2collider.get(&c).copied()),
+            exclude_rigid_body: filter
+                .exclude_rigid_body
+                .and_then(|b| rigid_bodies.entity2body.get(&b).copied()),
+            predicate: None,
+        };
+
+        if let Some(predicate) = filter.predicate {
+            let wrapped_predicate = to_rapier_query_filter_predicate(predicate);
+            rapier_filter.predicate = Some(&wrapped_predicate);
+            let query_pipeline = broad_phase.as_query_pipeline(
+                dispatcher,
+                &rigid_bodies.bodies,
+                &colliders.colliders,
+                rapier_filter,
+            );
+            scoped_fn(RapierQueryPipeline { query_pipeline })
+        } else {
+            let query_pipeline = broad_phase.as_query_pipeline(
+                dispatcher,
+                &rigid_bodies.bodies,
+                &colliders.colliders,
+                rapier_filter,
+            );
+            scoped_fn(RapierQueryPipeline { query_pipeline })
+        }
+    }
+
+    /// Retrieves the Entity for a given collider handle.
+    pub fn collider_entity(&self, collider_handle: ColliderHandle) -> Entity {
+        RapierContextColliders::collider_entity_with_set(
+            self.query_pipeline.colliders,
+            collider_handle,
+        )
+        .unwrap()
+    }
+
     /// Find the closest intersection between a ray and a set of collider.
     ///
     /// # Parameters
@@ -190,7 +244,6 @@ impl<'a> RapierQueryPipeline<'a> {
     ///   even if its starts inside of it.
     pub fn cast_ray(
         &self,
-        rapier_colliders: &RapierContextColliders,
         ray_origin: Vect,
         ray_dir: Vect,
         max_toi: Real,
@@ -200,7 +253,7 @@ impl<'a> RapierQueryPipeline<'a> {
 
         let (h, toi) = self.query_pipeline.cast_ray(&ray, max_toi, solid)?;
 
-        rapier_colliders.collider_entity(h).map(|e| (e, toi))
+        Some((self.collider_entity(h), toi))
     }
 
     /// Find the closest intersection between a ray and a set of collider.
@@ -215,7 +268,6 @@ impl<'a> RapierQueryPipeline<'a> {
     ///   even if its starts inside of it.
     pub fn cast_ray_and_get_normal(
         &self,
-        rapier_colliders: &RapierContextColliders,
         ray_origin: Vect,
         ray_dir: Vect,
         max_toi: Real,
@@ -227,9 +279,10 @@ impl<'a> RapierQueryPipeline<'a> {
             .query_pipeline
             .cast_ray_and_get_normal(&ray, max_toi, solid)?;
 
-        rapier_colliders
-            .collider_entity(h)
-            .map(|e| (e, RayIntersection::from_rapier(result, ray_origin, ray_dir)))
+        Some((
+            self.collider_entity(h),
+            RayIntersection::from_rapier(result, ray_origin, ray_dir),
+        ))
     }
 
     /// Iterates through all the colliders intersecting a given ray.
@@ -245,7 +298,6 @@ impl<'a> RapierQueryPipeline<'a> {
     #[allow(clippy::too_many_arguments)]
     pub fn intersect_ray(
         &'a self,
-        rapier_colliders: &'a RapierContextColliders,
         ray_origin: Vect,
         ray_dir: Vect,
         max_toi: Real,
@@ -256,7 +308,7 @@ impl<'a> RapierQueryPipeline<'a> {
         self.query_pipeline.intersect_ray(ray, max_toi, solid).map(
             move |(collider_handle, _, intersection)| {
                 (
-                    rapier_colliders.collider_entity(collider_handle).unwrap(),
+                    self.collider_entity(collider_handle),
                     RayIntersection::from_rapier(intersection, ray_origin, ray_dir),
                 )
             },
@@ -270,7 +322,6 @@ impl<'a> RapierQueryPipeline<'a> {
     /// * `shape` - The shape used for the intersection test.
     pub fn intersect_shape(
         &'a self,
-        rapier_colliders: &'a RapierContextColliders,
         shape_pos: Vect,
         shape_rot: Rot,
         shape: &'a dyn Shape,
@@ -279,9 +330,7 @@ impl<'a> RapierQueryPipeline<'a> {
 
         self.query_pipeline
             .intersect_shape(scaled_transform, shape)
-            .map(move |(collider_handle, _)| {
-                rapier_colliders.collider_entity(collider_handle).unwrap()
-            })
+            .map(move |(collider_handle, _)| self.collider_entity(collider_handle))
     }
 
     /// Find the projection of a point on the closest collider.
@@ -295,7 +344,6 @@ impl<'a> RapierQueryPipeline<'a> {
     ///   boundary).
     pub fn project_point(
         &self,
-        rapier_colliders: &RapierContextColliders,
         point: Vect,
         max_dist: Real,
         solid: bool,
@@ -304,25 +352,20 @@ impl<'a> RapierQueryPipeline<'a> {
             .query_pipeline
             .project_point(&point.into(), max_dist, solid)?;
 
-        rapier_colliders
-            .collider_entity(h)
-            .map(|e| (e, PointProjection::from_rapier(result)))
+        Some((
+            self.collider_entity(h),
+            PointProjection::from_rapier(result),
+        ))
     }
 
     /// Find all the colliders containing the given point.
     ///
     /// # Parameters
     /// * `point` - The point used for the containment test.
-    pub fn intersect_point(
-        &'a self,
-        rapier_colliders: &'a RapierContextColliders,
-        point: Vect,
-    ) -> impl Iterator<Item = Entity> + 'a {
+    pub fn intersect_point(&'a self, point: Vect) -> impl Iterator<Item = Entity> + 'a {
         self.query_pipeline
             .intersect_point(point.into())
-            .map(move |(collider_handle, _)| {
-                rapier_colliders.collider_entity(collider_handle).unwrap()
-            })
+            .map(move |(collider_handle, _)| self.collider_entity(collider_handle))
     }
 
     /// Find the projection of a point on the closest collider.
@@ -338,16 +381,17 @@ impl<'a> RapierQueryPipeline<'a> {
     ///   boundary).
     pub fn project_point_and_get_feature(
         &self,
-        rapier_colliders: &RapierContextColliders,
         point: Vect,
     ) -> Option<(Entity, PointProjection, FeatureId)> {
         let (h, proj, fid) = self
             .query_pipeline
             .project_point_and_get_feature(&point.into())?;
 
-        rapier_colliders
-            .collider_entity(h)
-            .map(|e| (e, PointProjection::from_rapier(proj), fid))
+        Some((
+            self.collider_entity(h),
+            PointProjection::from_rapier(proj),
+            fid,
+        ))
     }
 
     /// Finds all handles of all the colliders with an [`Aabb`] intersecting the given [`Aabb`].
@@ -356,7 +400,6 @@ impl<'a> RapierQueryPipeline<'a> {
     /// pipeline’s BVH. It doesn’t recompute the latest collider AABB.
     pub fn intersect_aabb_conservative(
         &'a self,
-        rapier_colliders: &'a RapierContextColliders,
         #[cfg(feature = "dim2")] aabb: bevy::math::bounding::Aabb2d,
         #[cfg(feature = "dim3")] aabb: bevy::math::bounding::Aabb3d,
     ) -> impl Iterator<Item = Entity> + 'a {
@@ -366,9 +409,7 @@ impl<'a> RapierQueryPipeline<'a> {
         };
         self.query_pipeline
             .intersect_aabb_conservative(scaled_aabb)
-            .map(move |(collider_handle, _)| {
-                rapier_colliders.collider_entity(collider_handle).unwrap()
-            })
+            .map(move |(collider_handle, _)| self.collider_entity(collider_handle))
     }
 
     /// Casts a shape at a constant linear velocity and retrieve the first collider it hits.
@@ -394,7 +435,6 @@ impl<'a> RapierQueryPipeline<'a> {
     #[allow(clippy::too_many_arguments)]
     pub fn cast_shape(
         &'a self,
-        rapier_colliders: &'a RapierContextColliders,
         shape_pos: Vect,
         shape_rot: Rot,
         shape_vel: Vect,
@@ -407,12 +447,10 @@ impl<'a> RapierQueryPipeline<'a> {
             self.query_pipeline
                 .cast_shape(&scaled_transform, &shape_vel.into(), shape, options)?;
 
-        rapier_colliders.collider_entity(h).map(|e| {
-            (
-                e,
-                ShapeCastHit::from_rapier(result, options.compute_impact_geometry_on_penetration),
-            )
-        })
+        Some((
+            self.collider_entity(h),
+            ShapeCastHit::from_rapier(result, options.compute_impact_geometry_on_penetration),
+        ))
     }
 
     /* TODO: we need to wrap the NonlinearRigidMotion somehow.
@@ -776,7 +814,7 @@ impl RapierContextSimulation {
     pub fn move_shape(
         &mut self,
         rapier_colliders: &RapierContextColliders,
-        rapier_query_pipeline: &mut QueryPipelineMut,
+        rapier_query_pipeline: &mut QueryPipelineMut<'_>,
         movement: Vect,
         shape: &dyn Shape,
         shape_translation: Vect,
