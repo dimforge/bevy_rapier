@@ -20,7 +20,3 @@ codegen-units = 1
 #parry3d = { git = "https://github.com/dimforge/parry", branch = "master" }
 #rapier2d = { git = "https://github.com/dimforge/rapier", branch = "character-controller" }
 #rapier3d = { git = "https://github.com/dimforge/rapier", branch = "character-controller" }
-rapier2d = { git = "https://github.com/vrixyz/rapier", branch = "bevy_rapier_compatibility" }
-rapier3d = { git = "https://github.com/vrixyz/rapier", branch = "bevy_rapier_compatibility" }
-parry2d = { git = "https://github.com/dimforge/parry", branch = "bvh-remove-fix2" }
-parry3d = { git = "https://github.com/dimforge/parry", branch = "bvh-remove-fix2" }
