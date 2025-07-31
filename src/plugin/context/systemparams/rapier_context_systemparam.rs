@@ -282,9 +282,12 @@ mod simulation {
 }
 
 mod query_pipeline {
-    use rapier::parry::query::DefaultQueryDispatcher;
+    use rapier::{
+        parry::query::{DefaultQueryDispatcher, ShapeCastOptions},
+        prelude::Shape,
+    };
 
-    use crate::prelude::QueryFilter;
+    use crate::prelude::{PointProjection, QueryFilter, RayIntersection, ShapeCastHit};
 
     use super::*;
 
@@ -303,6 +306,272 @@ mod query_pipeline {
                 &DefaultQueryDispatcher,
                 scoped_fn,
             )
+        }
+        /// Shortcut to [`RapierQueryPipeline::cast_ray`].
+        pub fn cast_ray(
+            &self,
+            ray_origin: Vect,
+            ray_dir: Vect,
+            max_toi: Real,
+            solid: bool,
+            filter: QueryFilter,
+        ) -> Option<(Entity, Real)> {
+            self.with_query_pipeline(filter, |query_pipeline| {
+                query_pipeline.cast_ray(ray_origin, ray_dir, max_toi, solid)
+            })
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::cast_ray_and_get_normal`].
+        pub fn cast_ray_and_get_normal(
+            &self,
+            ray_origin: Vect,
+            ray_dir: Vect,
+            max_toi: Real,
+            solid: bool,
+            filter: QueryFilter,
+        ) -> Option<(Entity, RayIntersection)> {
+            self.with_query_pipeline(filter, |query_pipeline| {
+                query_pipeline.cast_ray_and_get_normal(ray_origin, ray_dir, max_toi, solid)
+            })
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::intersections_with_point`].
+        ///
+        /// Stops the query if `callback` returns false.
+        pub fn intersections_with_point(
+            &self,
+            point: Vect,
+            filter: QueryFilter,
+            mut callback: impl FnMut(Entity) -> bool,
+        ) {
+            self.with_query_pipeline(filter, |query_pipeline| {
+                for e in query_pipeline.intersect_point(point) {
+                    if !callback(e) {
+                        break;
+                    }
+                }
+            });
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::intersections_with_ray`].
+        ///
+        /// Stops the query if `callback` returns false.
+        pub fn intersections_with_ray(
+            &self,
+            ray_origin: Vect,
+            ray_dir: Vect,
+            max_toi: Real,
+            solid: bool,
+            filter: QueryFilter,
+            mut callback: impl FnMut(Entity, RayIntersection) -> bool,
+        ) {
+            self.with_query_pipeline(filter, |query_pipeline| {
+                for (e, intersection) in
+                    query_pipeline.intersect_ray(ray_origin, ray_dir, max_toi, solid)
+                {
+                    if !callback(e, intersection) {
+                        break;
+                    }
+                }
+            });
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::intersections_with_shape`].
+        pub fn intersections_with_shape(
+            &self,
+            shape_pos: Vect,
+            shape_rot: Rot,
+            shape: &dyn Shape,
+            filter: QueryFilter,
+            mut callback: impl FnMut(Entity) -> bool,
+        ) {
+            self.with_query_pipeline(filter, |query_pipeline| {
+                for e in query_pipeline.intersect_shape(shape_pos, shape_rot, shape) {
+                    if !callback(e) {
+                        break;
+                    }
+                }
+            });
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::colliders_with_aabb_intersecting_aabb`].
+        pub fn colliders_with_aabb_intersecting_aabb(
+            &self,
+            #[cfg(feature = "dim2")] aabb: bevy::math::bounding::Aabb2d,
+            #[cfg(feature = "dim3")] aabb: bevy::math::bounding::Aabb3d,
+            filter: QueryFilter,
+            mut callback: impl FnMut(Entity) -> bool,
+        ) {
+            self.with_query_pipeline(filter, |query_pipeline| {
+                for e in query_pipeline.intersect_aabb_conservative(aabb) {
+                    if !callback(e) {
+                        break;
+                    }
+                }
+            });
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::cast_shape`].
+        pub fn cast_shape(
+            &self,
+            shape_pos: Vect,
+            shape_rot: Rot,
+            shape_vel: Vect,
+            shape: &dyn Shape,
+            options: ShapeCastOptions,
+            filter: QueryFilter,
+        ) -> Option<(Entity, ShapeCastHit)> {
+            self.with_query_pipeline(filter, |query_pipeline| {
+                query_pipeline.cast_shape(shape_pos, shape_rot, shape_vel, shape, options)
+            })
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::project_point`].
+        pub fn project_point(
+            &self,
+            point: Vect,
+            max_dist: f32,
+            solid: bool,
+            filter: QueryFilter,
+        ) -> Option<(Entity, PointProjection)> {
+            self.with_query_pipeline(filter, |query_pipeline| {
+                query_pipeline.project_point(point, max_dist, solid)
+            })
+        }
+    }
+
+    // Copied from `RapierContext`.
+    impl RapierContextMut<'_> {
+        /// Shortcut to [`RapierQueryPipeline::cast_ray`].
+        pub fn cast_ray(
+            &self,
+            ray_origin: Vect,
+            ray_dir: Vect,
+            max_toi: Real,
+            solid: bool,
+            filter: QueryFilter,
+        ) -> Option<(Entity, Real)> {
+            self.with_query_pipeline(filter, |query_pipeline| {
+                query_pipeline.cast_ray(ray_origin, ray_dir, max_toi, solid)
+            })
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::cast_ray_and_get_normal`].
+        pub fn cast_ray_and_get_normal(
+            &self,
+            ray_origin: Vect,
+            ray_dir: Vect,
+            max_toi: Real,
+            solid: bool,
+            filter: QueryFilter,
+        ) -> Option<(Entity, RayIntersection)> {
+            self.with_query_pipeline(filter, |query_pipeline| {
+                query_pipeline.cast_ray_and_get_normal(ray_origin, ray_dir, max_toi, solid)
+            })
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::intersections_with_point`].
+        ///
+        /// Stops the query if `callback` returns false.
+        pub fn intersections_with_point(
+            &self,
+            point: Vect,
+            filter: QueryFilter,
+            mut callback: impl FnMut(Entity) -> bool,
+        ) {
+            self.with_query_pipeline(filter, |query_pipeline| {
+                for e in query_pipeline.intersect_point(point) {
+                    if !callback(e) {
+                        break;
+                    }
+                }
+            });
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::intersections_with_ray`].
+        ///
+        /// Stops the query if `callback` returns false.
+        pub fn intersections_with_ray(
+            &self,
+            ray_origin: Vect,
+            ray_dir: Vect,
+            max_toi: Real,
+            solid: bool,
+            filter: QueryFilter,
+            mut callback: impl FnMut(Entity, RayIntersection) -> bool,
+        ) {
+            self.with_query_pipeline(filter, |query_pipeline| {
+                for (e, intersection) in
+                    query_pipeline.intersect_ray(ray_origin, ray_dir, max_toi, solid)
+                {
+                    if !callback(e, intersection) {
+                        break;
+                    }
+                }
+            });
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::intersections_with_shape`].
+        pub fn intersections_with_shape(
+            &self,
+            shape_pos: Vect,
+            shape_rot: Rot,
+            shape: &dyn Shape,
+            filter: QueryFilter,
+            mut callback: impl FnMut(Entity) -> bool,
+        ) {
+            self.with_query_pipeline(filter, |query_pipeline| {
+                for e in query_pipeline.intersect_shape(shape_pos, shape_rot, shape) {
+                    if !callback(e) {
+                        break;
+                    }
+                }
+            });
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::colliders_with_aabb_intersecting_aabb`].
+        pub fn colliders_with_aabb_intersecting_aabb(
+            &self,
+            #[cfg(feature = "dim2")] aabb: bevy::math::bounding::Aabb2d,
+            #[cfg(feature = "dim3")] aabb: bevy::math::bounding::Aabb3d,
+            filter: QueryFilter,
+            mut callback: impl FnMut(Entity) -> bool,
+        ) {
+            self.with_query_pipeline(filter, |query_pipeline| {
+                for e in query_pipeline.intersect_aabb_conservative(aabb) {
+                    if !callback(e) {
+                        break;
+                    }
+                }
+            });
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::cast_shape`].
+        pub fn cast_shape(
+            &self,
+            shape_pos: Vect,
+            shape_rot: Rot,
+            shape_vel: Vect,
+            shape: &dyn Shape,
+            options: ShapeCastOptions,
+            filter: QueryFilter,
+        ) -> Option<(Entity, ShapeCastHit)> {
+            self.with_query_pipeline(filter, |query_pipeline| {
+                query_pipeline.cast_shape(shape_pos, shape_rot, shape_vel, shape, options)
+            })
+        }
+
+        /// Shortcut to [`RapierQueryPipeline::project_point`].
+        pub fn project_point(
+            &self,
+            point: Vect,
+            max_dist: f32,
+            solid: bool,
+            filter: QueryFilter,
+        ) -> Option<(Entity, PointProjection)> {
+            self.with_query_pipeline(filter, |query_pipeline| {
+                query_pipeline.project_point(point, max_dist, solid)
+            })
         }
     }
 
