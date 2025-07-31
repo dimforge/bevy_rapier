@@ -141,10 +141,10 @@ mod simulation {
     use crate::plugin::TimestepMode;
     use crate::prelude::CollisionEvent;
     use crate::prelude::ContactForceEvent;
+    use crate::prelude::RapierQueryPipelineMut;
     use crate::prelude::RapierRigidBodyHandle;
     use crate::prelude::TransformInterpolation;
     use rapier::prelude::PhysicsHooks;
-    use rapier::prelude::QueryPipelineMut;
     use rapier::prelude::Shape;
 
     use super::*;
@@ -223,7 +223,7 @@ mod simulation {
         #[expect(clippy::too_many_arguments)]
         pub fn move_shape(
             &mut self,
-            query_pipeline_mut: &mut QueryPipelineMut<'_>,
+            query_pipeline_mut: &mut RapierQueryPipelineMut<'_>,
             movement: Vect,
             shape: &dyn Shape,
             shape_translation: Vect,

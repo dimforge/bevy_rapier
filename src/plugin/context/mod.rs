@@ -170,6 +170,66 @@ pub struct RapierQueryPipeline<'a> {
     pub query_pipeline: QueryPipeline<'a>,
 }
 
+/// Wrapper around [QueryPipelineMut] to provide bevy friendly methods.
+///
+/// This wrapper is designed to be short lived, made whenever necessary.
+///
+/// See [RapierQueryPipelineMut::new_scoped] to create one.
+pub struct RapierQueryPipelineMut<'a> {
+    /// The query pipeline, which performs scene queries (ray-casting, point projection, etc.)
+    pub query_pipeline: QueryPipelineMut<'a>,
+}
+impl<'a> RapierQueryPipelineMut<'a> {
+    /// Creates a temporary [RapierQueryPipelineMut] and passes it as a parameter to `scoped_fn`.
+    pub fn new_scoped<T>(
+        broad_phase: &DefaultBroadPhase,
+        colliders: &mut RapierContextColliders,
+        rigid_bodies: &mut RapierRigidBodySet,
+        filter: &QueryFilter<'_>,
+        dispatcher: &dyn QueryDispatcher,
+        scoped_fn: impl FnOnce(RapierQueryPipelineMut<'_>) -> T,
+    ) -> T {
+        let mut rapier_filter = RapierQueryFilter {
+            flags: filter.flags,
+            groups: filter.groups.map(CollisionGroups::into),
+            exclude_collider: filter
+                .exclude_collider
+                .and_then(|c| colliders.entity2collider.get(&c).copied()),
+            exclude_rigid_body: filter
+                .exclude_rigid_body
+                .and_then(|b| rigid_bodies.entity2body.get(&b).copied()),
+            predicate: None,
+        };
+
+        if let Some(predicate) = filter.predicate {
+            let wrapped_predicate = to_rapier_query_filter_predicate(predicate);
+            rapier_filter.predicate = Some(&wrapped_predicate);
+            let query_pipeline = broad_phase.as_query_pipeline_mut(
+                dispatcher,
+                &mut rigid_bodies.bodies,
+                &mut colliders.colliders,
+                rapier_filter,
+            );
+            scoped_fn(RapierQueryPipelineMut { query_pipeline })
+        } else {
+            let query_pipeline = broad_phase.as_query_pipeline_mut(
+                dispatcher,
+                &mut rigid_bodies.bodies,
+                &mut colliders.colliders,
+                rapier_filter,
+            );
+            scoped_fn(RapierQueryPipelineMut { query_pipeline })
+        }
+    }
+
+    /// Downgrades the mutable reference to an immutable reference.
+    pub fn as_ref(&self) -> RapierQueryPipeline {
+        RapierQueryPipeline {
+            query_pipeline: self.query_pipeline.as_ref(),
+        }
+    }
+}
+
 /// Wraps a [bevy query filter predicate](QueryFilter::predicate) taking an Entity into a [rapier query filter predicate](RapierQueryFilter::predicate)
 pub fn to_rapier_query_filter_predicate(
     predicate: &dyn Fn(Entity) -> bool,
@@ -814,7 +874,7 @@ impl RapierContextSimulation {
     pub fn move_shape(
         &mut self,
         rapier_colliders: &RapierContextColliders,
-        rapier_query_pipeline: &mut QueryPipelineMut<'_>,
+        rapier_query_pipeline: &mut RapierQueryPipelineMut<'_>,
         movement: Vect,
         shape: &dyn Shape,
         shape_translation: Vect,
@@ -854,7 +914,7 @@ impl RapierContextSimulation {
 
         let result = controller.move_shape(
             dt,
-            &rapier_query_pipeline.as_ref(),
+            &rapier_query_pipeline.query_pipeline.as_ref(),
             shape,
             &(shape_translation, shape_rotation).into(),
             movement.into(),
@@ -870,7 +930,7 @@ impl RapierContextSimulation {
         if options.apply_impulse_to_dynamic_bodies {
             controller.solve_character_collision_impulses(
                 dt,
-                rapier_query_pipeline,
+                &mut rapier_query_pipeline.query_pipeline,
                 shape,
                 shape_mass,
                 collisions.iter(),
