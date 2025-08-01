@@ -1,5 +1,13 @@
 [advisories]
 yanked = "deny"
+ignore = [
+    # paste was announced as unmaintained with no explanation or replacement
+    # See: 
+    # - https://rustsec.org/advisories/RUSTSEC-2024-0436
+    # - https://github.com/bevyengine/bevy/pull/18209
+    # Bevy relies on this in multiple indirect ways, so ignoring it is the only feasible current solution
+    "RUSTSEC-2024-0436",
+]
 
 [licenses]
 allow = [
