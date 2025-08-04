@@ -10,7 +10,7 @@ edition = "2021"
 
 [dependencies]
 rapier3d = { features = ["profiler"], version = "0.27.0-beta.0" }
-bevy_rapier3d = { version = "0.30", path = "../bevy_rapier3d" }
+bevy_rapier3d = { version = "0.31", path = "../bevy_rapier3d" }
 bevy = { version = "0.16.0", default-features = false }
 
 [dev-dependencies]
