@@ -85,7 +85,7 @@ pub fn setup_physics(mut commands: Commands) {
                 Collider::cuboid(rad, rad),
             ));
 
-            if (i + j * num) % 100 == 0 {
+            if (i + j * num).is_multiple_of(100) {
                 entity.insert(Resize);
             }
         }

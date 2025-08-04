@@ -3,7 +3,6 @@ use crate::dynamics::RapierRigidBodyHandle;
 use crate::geometry::RapierColliderHandle;
 use crate::plugin::context::systemparams::RAPIER_CONTEXT_EXPECT_ERROR;
 use crate::plugin::context::RapierContextEntityLink;
-use crate::plugin::context::RapierQueryPipeline;
 use crate::plugin::RapierConfiguration;
 use crate::prelude::context::RapierContextColliders;
 use crate::prelude::context::RapierContextSimulation;
@@ -14,6 +13,7 @@ use crate::utils;
 use bevy::prelude::*;
 use rapier::math::Isometry;
 use rapier::math::Real;
+use rapier::parry::query::DefaultQueryDispatcher;
 use rapier::pipeline::QueryFilter;
 
 /// System responsible for applying the character controller translation to the underlying
@@ -23,8 +23,7 @@ pub fn update_character_controls(
     config: Query<&RapierConfiguration>,
     mut context_access: Query<(
         &mut RapierContextSimulation,
-        &RapierContextColliders,
-        &RapierQueryPipeline,
+        &mut RapierContextColliders,
         &mut RapierRigidBodySet,
     )>,
     mut character_controllers: Query<(
@@ -54,10 +53,9 @@ pub fn update_character_controls(
             let config = config
                 .get(rapier_context_link.0)
                 .expect("Could not get [`RapierConfiguration`]");
-            let (mut context, context_colliders, query_pipeline, mut rigidbody_set) =
-                context_access
-                    .get_mut(rapier_context_link.0)
-                    .expect(RAPIER_CONTEXT_EXPECT_ERROR);
+            let (mut context, mut context_colliders, mut rigidbody_set) = context_access
+                .get_mut(rapier_context_link.0)
+                .expect(RAPIER_CONTEXT_EXPECT_ERROR);
 
             let context = &mut *context;
             let rigidbody_set = &mut *rigidbody_set;
@@ -101,6 +99,7 @@ pub fn update_character_controls(
             } else {
                 continue;
             };
+            let character_shape = character_shape.clone_dyn();
 
             let exclude_collider = collider_handle.map(|h| h.0);
 
@@ -130,28 +129,30 @@ pub fn update_character_controls(
             let collisions = &mut context.character_collisions_collector;
             collisions.clear();
 
+            let mut query_pipeline = context.broad_phase.as_query_pipeline_mut(
+                &DefaultQueryDispatcher,
+                &mut rigidbody_set.bodies,
+                &mut context_colliders.colliders,
+                filter,
+            );
+            // TODO: add filter for charactercontroller.
+
             let movement = raw_controller.move_shape(
                 context.integration_parameters.dt,
-                &rigidbody_set.bodies,
-                &context_colliders.colliders,
-                &query_pipeline.query_pipeline,
-                character_shape,
+                &query_pipeline.as_ref(),
+                &*character_shape,
                 &character_pos,
                 translation.into(),
-                filter,
                 |c| collisions.push(c),
             );
 
             if controller.apply_impulse_to_dynamic_bodies {
                 raw_controller.solve_character_collision_impulses(
                     context.integration_parameters.dt,
-                    &mut rigidbody_set.bodies,
-                    &context_colliders.colliders,
-                    &query_pipeline.query_pipeline,
-                    character_shape,
+                    &mut query_pipeline,
+                    &*character_shape,
                     character_mass,
                     collisions.iter(),
-                    filter,
                 )
             }
 
@@ -168,7 +169,7 @@ pub fn update_character_controls(
             let converted_collisions = context
                 .character_collisions_collector
                 .iter()
-                .filter_map(|c| CharacterCollision::from_raw(context_colliders, c));
+                .filter_map(|c| CharacterCollision::from_raw(&context_colliders, c));
 
             if let Some(mut output) = output {
                 output.desired_translation = controller.translation.unwrap();

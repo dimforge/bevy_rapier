@@ -9,7 +9,6 @@
 //!
 //! User documentation for `bevy_rapier` is on [the official Rapier site](https://rapier.rs/docs/).
 //!
-
 #![warn(missing_docs)]
 
 #[macro_use]

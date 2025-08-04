@@ -7,6 +7,14 @@
 - Expose `RapierBevyComponentApply`, to help with creating your own schedules when you set `default_system_setup` to `false`.
 - Add `set_local_axis1` and `set_local_axis2` to `RevoluteJoint` and `RevoluteJointBuilder`. [#666](https://github.com/dimforge/bevy_rapier/pull/666)
 
+### Modified
+
+- Update from rapier `0.25` to rapier `0.27`,
+  see [rapier's changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md).
+  - `RapierQueryPipeline` is no longer a component.
+    - Migration: Use `RapierContext` or retrieve the needed components to pass to `RapierQueryPipeline::new_scoped` and make your logic in a scoped function. This function allows capturing and returning information.
+  - a new `QueryPipelineMut`  to provide the same API as rapier. It's currently used for the character controller.
+
 ### Fix
 
 - Fix scale being applied with a frame delay. [#659](https://github.com/dimforge/bevy_rapier/pull/659)

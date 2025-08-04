@@ -91,22 +91,18 @@ pub fn cast_ray(
             return Ok(());
         };
         let context = rapier_context.single()?;
-        // Then cast the ray.
-        let hit = context.cast_ray(
-            ray.origin,
-            ray.direction.into(),
-            f32::MAX,
-            true,
-            QueryFilter::only_dynamic(),
-        );
+        context.with_query_pipeline(QueryFilter::only_dynamic(), |query_pipeline| {
+            // Then cast the ray.
+            let hit = query_pipeline.cast_ray(ray.origin, ray.direction.into(), f32::MAX, true);
 
-        if let Some((entity, _toi)) = hit {
-            // Color in blue the entity we just hit.
-            // Because of the query filter, only colliders attached to a dynamic body
-            // will get an event.
-            let color = basic::BLUE.into();
-            commands.entity(entity).insert(ColliderDebugColor(color));
-        }
+            if let Some((entity, _toi)) = hit {
+                // Color in blue the entity we just hit.
+                // Because of the query filter, only colliders attached to a dynamic body
+                // will get an event.
+                let color = basic::BLUE.into();
+                commands.entity(entity).insert(ColliderDebugColor(color));
+            }
+        });
     }
 
     Ok(())

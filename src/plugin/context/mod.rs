@@ -3,26 +3,27 @@
 pub mod systemparams;
 
 use bevy::prelude::*;
+use rapier::parry::query::QueryDispatcher;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
 use rapier::prelude::{
-    CCDSolver, ColliderHandle, ColliderSet, EventHandler, FeatureId, ImpulseJointHandle,
+    Aabb, CCDSolver, ColliderHandle, ColliderSet, EventHandler, FeatureId, ImpulseJointHandle,
     ImpulseJointSet, IntegrationParameters, IslandManager, MultibodyJointHandle, MultibodyJointSet,
     NarrowPhase, PhysicsHooks, PhysicsPipeline, QueryFilter as RapierQueryFilter, QueryPipeline,
-    Ray, Real, RigidBodyHandle, RigidBodySet,
+    QueryPipelineMut, Ray, Real, RigidBodyHandle, RigidBodySet, Shape,
 };
 
-use crate::geometry::{Collider, PointProjection, RayIntersection, ShapeCastHit};
+use crate::geometry::{PointProjection, RayIntersection, ShapeCastHit};
 use crate::math::{Rot, Vect};
-use crate::pipeline::{CollisionEvent, ContactForceEvent, EventQueue, QueryFilter};
+use crate::pipeline::{CollisionEvent, ContactForceEvent, EventQueue};
 use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query};
 
 use crate::control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput};
 use crate::dynamics::TransformInterpolation;
 use crate::parry::query::details::ShapeCastOptions;
 use crate::plugin::configuration::TimestepMode;
-use crate::prelude::{CollisionGroups, RapierRigidBodyHandle};
+use crate::prelude::{CollisionGroups, QueryFilter, RapierRigidBodyHandle};
 use rapier::control::CharacterAutostep;
 use rapier::geometry::DefaultBroadPhase;
 
@@ -105,9 +106,9 @@ impl RapierContextColliders {
             .flatten()
     }
 
-    /// Retrieve the Bevy entity the given Rapier collider (identified by its handle) is attached.
+    /// Retrieve the Bevy entity the given Rapier collider (identified by its handle) is attached to.
     pub fn collider_entity(&self, handle: ColliderHandle) -> Option<Entity> {
-        Self::collider_entity_with_set(&self.colliders, handle)
+        RapierContextColliders::collider_entity_with_set(&self.colliders, handle)
     }
 
     // Mostly used to avoid borrowing self completely.
@@ -115,9 +116,12 @@ impl RapierContextColliders {
         colliders: &ColliderSet,
         handle: ColliderHandle,
     ) -> Option<Entity> {
-        colliders
-            .get(handle)
-            .map(|c| Entity::from_bits(c.user_data as u64))
+        colliders.get(handle).map(Self::entity_from_collider)
+    }
+
+    /// Retrieve the Bevy entity the given Rapier collider is attached to.
+    pub fn entity_from_collider(collider: &rapier::prelude::Collider) -> Entity {
+        Entity::from_bits(collider.user_data as u64)
     }
 
     /// The map from entities to collider handles.
@@ -155,21 +159,137 @@ impl RapierContextJoints {
     }
 }
 
-/// The query pipeline, which performs scene queries (ray-casting, point projection, etc.)
+/// Wrapper around [QueryPipeline] to provide bevy friendly methods.
 ///
-/// This should be attached on an entity with a [`RapierContext`]
-#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-#[derive(Component, Default, Clone)]
-pub struct RapierQueryPipeline {
+/// This wrapper is designed to be short lived, made whenever necessary.
+///
+/// See [RapierQueryPipeline::new_scoped] to create one.
+#[derive(Copy, Clone)]
+pub struct RapierQueryPipeline<'a> {
     /// The query pipeline, which performs scene queries (ray-casting, point projection, etc.)
-    pub query_pipeline: QueryPipeline,
+    pub query_pipeline: QueryPipeline<'a>,
 }
 
-impl RapierQueryPipeline {
-    /// Updates the state of the query pipeline, based on the collider positions known
-    /// from the last timestep or the last call to `self.propagate_modified_body_positions_to_colliders()`.
-    pub fn update_query_pipeline(&mut self, colliders: &RapierContextColliders) {
-        self.query_pipeline.update(&colliders.colliders);
+/// Wrapper around [QueryPipelineMut] to provide bevy friendly methods.
+///
+/// This wrapper is designed to be short lived, made whenever necessary.
+///
+/// See [RapierQueryPipelineMut::new_scoped] to create one.
+pub struct RapierQueryPipelineMut<'a> {
+    /// The query pipeline, which performs scene queries (ray-casting, point projection, etc.)
+    pub query_pipeline: QueryPipelineMut<'a>,
+}
+impl<'a> RapierQueryPipelineMut<'a> {
+    /// Creates a temporary [RapierQueryPipelineMut] and passes it as a parameter to `scoped_fn`.
+    pub fn new_scoped<T>(
+        broad_phase: &DefaultBroadPhase,
+        colliders: &mut RapierContextColliders,
+        rigid_bodies: &mut RapierRigidBodySet,
+        filter: &QueryFilter<'_>,
+        dispatcher: &dyn QueryDispatcher,
+        scoped_fn: impl FnOnce(RapierQueryPipelineMut<'_>) -> T,
+    ) -> T {
+        let mut rapier_filter = RapierQueryFilter {
+            flags: filter.flags,
+            groups: filter.groups.map(CollisionGroups::into),
+            exclude_collider: filter
+                .exclude_collider
+                .and_then(|c| colliders.entity2collider.get(&c).copied()),
+            exclude_rigid_body: filter
+                .exclude_rigid_body
+                .and_then(|b| rigid_bodies.entity2body.get(&b).copied()),
+            predicate: None,
+        };
+
+        if let Some(predicate) = filter.predicate {
+            let wrapped_predicate = to_rapier_query_filter_predicate(predicate);
+            rapier_filter.predicate = Some(&wrapped_predicate);
+            let query_pipeline = broad_phase.as_query_pipeline_mut(
+                dispatcher,
+                &mut rigid_bodies.bodies,
+                &mut colliders.colliders,
+                rapier_filter,
+            );
+            scoped_fn(RapierQueryPipelineMut { query_pipeline })
+        } else {
+            let query_pipeline = broad_phase.as_query_pipeline_mut(
+                dispatcher,
+                &mut rigid_bodies.bodies,
+                &mut colliders.colliders,
+                rapier_filter,
+            );
+            scoped_fn(RapierQueryPipelineMut { query_pipeline })
+        }
+    }
+
+    /// Downgrades the mutable reference to an immutable reference.
+    pub fn as_ref(&self) -> RapierQueryPipeline {
+        RapierQueryPipeline {
+            query_pipeline: self.query_pipeline.as_ref(),
+        }
+    }
+}
+
+/// Wraps a [bevy query filter predicate](QueryFilter::predicate) taking an Entity into a [rapier query filter predicate](RapierQueryFilter::predicate)
+pub fn to_rapier_query_filter_predicate(
+    predicate: &dyn Fn(Entity) -> bool,
+) -> impl Fn(ColliderHandle, &rapier::prelude::Collider) -> bool + use<'_> {
+    |_: ColliderHandle, collider: &'_ rapier::geometry::Collider| -> bool {
+        let entity = crate::prelude::RapierContextColliders::entity_from_collider(collider);
+        (predicate)(entity)
+    }
+}
+
+impl<'a> RapierQueryPipeline<'a> {
+    /// Creates a temporary [RapierQueryPipeline] and passes it as a parameter to `scoped_fn`.
+    pub fn new_scoped<T>(
+        broad_phase: &DefaultBroadPhase,
+        colliders: &RapierContextColliders,
+        rigid_bodies: &RapierRigidBodySet,
+        filter: &QueryFilter<'_>,
+        dispatcher: &dyn QueryDispatcher,
+        scoped_fn: impl FnOnce(RapierQueryPipeline<'_>) -> T,
+    ) -> T {
+        let mut rapier_filter = RapierQueryFilter {
+            flags: filter.flags,
+            groups: filter.groups.map(CollisionGroups::into),
+            exclude_collider: filter
+                .exclude_collider
+                .and_then(|c| colliders.entity2collider.get(&c).copied()),
+            exclude_rigid_body: filter
+                .exclude_rigid_body
+                .and_then(|b| rigid_bodies.entity2body.get(&b).copied()),
+            predicate: None,
+        };
+
+        if let Some(predicate) = filter.predicate {
+            let wrapped_predicate = to_rapier_query_filter_predicate(predicate);
+            rapier_filter.predicate = Some(&wrapped_predicate);
+            let query_pipeline = broad_phase.as_query_pipeline(
+                dispatcher,
+                &rigid_bodies.bodies,
+                &colliders.colliders,
+                rapier_filter,
+            );
+            scoped_fn(RapierQueryPipeline { query_pipeline })
+        } else {
+            let query_pipeline = broad_phase.as_query_pipeline(
+                dispatcher,
+                &rigid_bodies.bodies,
+                &colliders.colliders,
+                rapier_filter,
+            );
+            scoped_fn(RapierQueryPipeline { query_pipeline })
+        }
+    }
+
+    /// Retrieves the Entity for a given collider handle.
+    pub fn collider_entity(&self, collider_handle: ColliderHandle) -> Entity {
+        RapierContextColliders::collider_entity_with_set(
+            self.query_pipeline.colliders,
+            collider_handle,
+        )
+        .unwrap()
     }
 
     /// Find the closest intersection between a ray and a set of collider.
@@ -182,33 +302,18 @@ impl RapierQueryPipeline {
     /// * `solid`: if this is `true` an impact at time 0.0 (i.e. at the ray origin) is returned if
     ///   it starts inside of a shape. If this `false` then the ray will hit the shape's boundary
     ///   even if its starts inside of it.
-    /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
-    #[expect(clippy::too_many_arguments)]
     pub fn cast_ray(
         &self,
-        rapier_colliders: &RapierContextColliders,
-        rigidbody_set: &RapierRigidBodySet,
         ray_origin: Vect,
         ray_dir: Vect,
         max_toi: Real,
         solid: bool,
-        filter: QueryFilter,
     ) -> Option<(Entity, Real)> {
         let ray = Ray::new(ray_origin.into(), ray_dir.into());
 
-        let (h, toi) =
-            rigidbody_set.with_query_filter(rapier_colliders, filter, move |filter| {
-                self.query_pipeline.cast_ray(
-                    &rigidbody_set.bodies,
-                    &rapier_colliders.colliders,
-                    &ray,
-                    max_toi,
-                    solid,
-                    filter,
-                )
-            })?;
+        let (h, toi) = self.query_pipeline.cast_ray(&ray, max_toi, solid)?;
 
-        rapier_colliders.collider_entity(h).map(|e| (e, toi))
+        Some((self.collider_entity(h), toi))
     }
 
     /// Find the closest intersection between a ray and a set of collider.
@@ -221,38 +326,26 @@ impl RapierQueryPipeline {
     /// * `solid`: if this is `true` an impact at time 0.0 (i.e. at the ray origin) is returned if
     ///   it starts inside of a shape. If this `false` then the ray will hit the shape's boundary
     ///   even if its starts inside of it.
-    /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
-    #[expect(clippy::too_many_arguments)]
     pub fn cast_ray_and_get_normal(
         &self,
-        rapier_colliders: &RapierContextColliders,
-        rigidbody_set: &RapierRigidBodySet,
         ray_origin: Vect,
         ray_dir: Vect,
         max_toi: Real,
         solid: bool,
-        filter: QueryFilter,
     ) -> Option<(Entity, RayIntersection)> {
         let ray = Ray::new(ray_origin.into(), ray_dir.into());
 
-        let (h, result) =
-            rigidbody_set.with_query_filter(rapier_colliders, filter, move |filter| {
-                self.query_pipeline.cast_ray_and_get_normal(
-                    &rigidbody_set.bodies,
-                    &rapier_colliders.colliders,
-                    &ray,
-                    max_toi,
-                    solid,
-                    filter,
-                )
-            })?;
+        let (h, result) = self
+            .query_pipeline
+            .cast_ray_and_get_normal(&ray, max_toi, solid)?;
 
-        rapier_colliders
-            .collider_entity(h)
-            .map(|e| (e, RayIntersection::from_rapier(result, ray_origin, ray_dir)))
+        Some((
+            self.collider_entity(h),
+            RayIntersection::from_rapier(result, ray_origin, ray_dir),
+        ))
     }
 
-    /// Find the all intersections between a ray and a set of collider and passes them to a callback.
+    /// Iterates through all the colliders intersecting a given ray.
     ///
     /// # Parameters
     /// * `ray_origin`: the starting point of the ray to cast.
@@ -262,75 +355,42 @@ impl RapierQueryPipeline {
     /// * `solid`: if this is `true` an impact at time 0.0 (i.e. at the ray origin) is returned if
     ///   it starts inside of a shape. If this `false` then the ray will hit the shape's boundary
     ///   even if its starts inside of it.
-    /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
-    /// * `callback`: function executed on each collider for which a ray intersection has been found.
-    ///   There is no guarantees on the order the results will be yielded. If this callback returns `false`,
-    ///   this method will exit early, ignore any further raycast.
     #[allow(clippy::too_many_arguments)]
-    pub fn intersections_with_ray(
-        &self,
-        rapier_colliders: &RapierContextColliders,
-        rigidbody_set: &RapierRigidBodySet,
+    pub fn intersect_ray(
+        &'a self,
         ray_origin: Vect,
         ray_dir: Vect,
         max_toi: Real,
         solid: bool,
-        filter: QueryFilter,
-        mut callback: impl FnMut(Entity, RayIntersection) -> bool,
-    ) {
+    ) -> impl Iterator<Item = (Entity, RayIntersection)> + 'a {
         let ray = Ray::new(ray_origin.into(), ray_dir.into());
-        let callback = |h, inter: rapier::prelude::RayIntersection| {
-            rapier_colliders
-                .collider_entity(h)
-                .map(|e| callback(e, RayIntersection::from_rapier(inter, ray_origin, ray_dir)))
-                .unwrap_or(true)
-        };
 
-        rigidbody_set.with_query_filter(rapier_colliders, filter, move |filter| {
-            self.query_pipeline.intersections_with_ray(
-                &rigidbody_set.bodies,
-                &rapier_colliders.colliders,
-                &ray,
-                max_toi,
-                solid,
-                filter,
-                callback,
-            )
-        });
+        self.query_pipeline.intersect_ray(ray, max_toi, solid).map(
+            move |(collider_handle, _, intersection)| {
+                (
+                    self.collider_entity(collider_handle),
+                    RayIntersection::from_rapier(intersection, ray_origin, ray_dir),
+                )
+            },
+        )
     }
 
-    /// Gets the handle of up to one collider intersecting the given shape.
+    /// Retrieve all the colliders intersecting the given shape.
     ///
     /// # Parameters
     /// * `shape_pos` - The position of the shape used for the intersection test.
     /// * `shape` - The shape used for the intersection test.
-    /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
-    pub fn intersection_with_shape(
-        &self,
-        rapier_colliders: &RapierContextColliders,
-        rigidbody_set: &RapierRigidBodySet,
+    pub fn intersect_shape(
+        &'a self,
         shape_pos: Vect,
         shape_rot: Rot,
-        shape: &Collider,
-        filter: QueryFilter,
-    ) -> Option<Entity> {
+        shape: &'a dyn Shape,
+    ) -> impl Iterator<Item = Entity> + 'a {
         let scaled_transform = (shape_pos, shape_rot).into();
-        let mut scaled_shape = shape.clone();
-        // TODO: how to set a good number of subdivisions, we don’t have access to the
-        //       RapierConfiguration::scaled_shape_subdivision here.
-        scaled_shape.set_scale(shape.scale, 20);
 
-        let h = rigidbody_set.with_query_filter(rapier_colliders, filter, move |filter| {
-            self.query_pipeline.intersection_with_shape(
-                &rigidbody_set.bodies,
-                &rapier_colliders.colliders,
-                &scaled_transform,
-                &*scaled_shape.raw,
-                filter,
-            )
-        })?;
-
-        rapier_colliders.collider_entity(h)
+        self.query_pipeline
+            .intersect_shape(scaled_transform, shape)
+            .map(move |(collider_handle, _)| self.collider_entity(collider_handle))
     }
 
     /// Find the projection of a point on the closest collider.
@@ -342,65 +402,30 @@ impl RapierQueryPipeline {
     ///   itself). If it is set to `false` the collider shapes are considered to be hollow
     ///   (if the point is located inside of an hollow shape, it is projected on the shape's
     ///   boundary).
-    /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     pub fn project_point(
         &self,
-        rapier_colliders: &RapierContextColliders,
-        rigidbody_set: &RapierRigidBodySet,
         point: Vect,
+        max_dist: Real,
         solid: bool,
-        filter: QueryFilter,
     ) -> Option<(Entity, PointProjection)> {
-        let (h, result) =
-            rigidbody_set.with_query_filter(rapier_colliders, filter, move |filter| {
-                self.query_pipeline.project_point(
-                    &rigidbody_set.bodies,
-                    &rapier_colliders.colliders,
-                    &point.into(),
-                    solid,
-                    filter,
-                )
-            })?;
+        let (h, result) = self
+            .query_pipeline
+            .project_point(&point.into(), max_dist, solid)?;
 
-        rapier_colliders
-            .collider_entity(h)
-            .map(|e| (e, PointProjection::from_rapier(result)))
+        Some((
+            self.collider_entity(h),
+            PointProjection::from_rapier(result),
+        ))
     }
 
     /// Find all the colliders containing the given point.
     ///
     /// # Parameters
     /// * `point` - The point used for the containment test.
-    /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
-    /// * `callback` - A function called with each collider with a shape containing the `point`.
-    ///   If this callback returns `false`, this method will exit early, ignore any
-    ///   further point projection.
-    pub fn intersections_with_point(
-        &self,
-        rapier_colliders: &RapierContextColliders,
-        rigidbody_set: &RapierRigidBodySet,
-        point: Vect,
-        filter: QueryFilter,
-        mut callback: impl FnMut(Entity) -> bool,
-    ) {
-        #[allow(clippy::redundant_closure)]
-        // False-positive, we can't move callback, closure becomes `FnOnce`
-        let callback = |h| {
-            rapier_colliders
-                .collider_entity(h)
-                .map(|e| callback(e))
-                .unwrap_or(true)
-        };
-
-        rigidbody_set.with_query_filter(rapier_colliders, filter, move |filter| {
-            self.query_pipeline.intersections_with_point(
-                &rigidbody_set.bodies,
-                &rapier_colliders.colliders,
-                &point.into(),
-                filter,
-                callback,
-            )
-        });
+    pub fn intersect_point(&'a self, point: Vect) -> impl Iterator<Item = Entity> + 'a {
+        self.query_pipeline
+            .intersect_point(point.into())
+            .map(move |(collider_handle, _)| self.collider_entity(collider_handle))
     }
 
     /// Find the projection of a point on the closest collider.
@@ -414,51 +439,37 @@ impl RapierQueryPipeline {
     ///   itself). If it is set to `false` the collider shapes are considered to be hollow
     ///   (if the point is located inside of an hollow shape, it is projected on the shape's
     ///   boundary).
-    /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     pub fn project_point_and_get_feature(
         &self,
-        rapier_colliders: &RapierContextColliders,
-        rigidbody_set: &RapierRigidBodySet,
         point: Vect,
-        filter: QueryFilter,
     ) -> Option<(Entity, PointProjection, FeatureId)> {
-        let (h, proj, fid) =
-            rigidbody_set.with_query_filter(rapier_colliders, filter, move |filter| {
-                self.query_pipeline.project_point_and_get_feature(
-                    &rigidbody_set.bodies,
-                    &rapier_colliders.colliders,
-                    &point.into(),
-                    filter,
-                )
-            })?;
+        let (h, proj, fid) = self
+            .query_pipeline
+            .project_point_and_get_feature(&point.into())?;
 
-        rapier_colliders
-            .collider_entity(h)
-            .map(|e| (e, PointProjection::from_rapier(proj), fid))
+        Some((
+            self.collider_entity(h),
+            PointProjection::from_rapier(proj),
+            fid,
+        ))
     }
 
-    /// Finds all entities of all the colliders with an Aabb intersecting the given Aabb.
-    pub fn colliders_with_aabb_intersecting_aabb(
-        &self,
-        rapier_colliders: &RapierContextColliders,
+    /// Finds all handles of all the colliders with an [`Aabb`] intersecting the given [`Aabb`].
+    ///
+    /// Note that the collider AABB taken into account is the one currently stored in the query
+    /// pipeline’s BVH. It doesn’t recompute the latest collider AABB.
+    pub fn intersect_aabb_conservative(
+        &'a self,
         #[cfg(feature = "dim2")] aabb: bevy::math::bounding::Aabb2d,
         #[cfg(feature = "dim3")] aabb: bevy::math::bounding::Aabb3d,
-        mut callback: impl FnMut(Entity) -> bool,
-    ) {
-        let scaled_aabb = rapier::prelude::Aabb {
+    ) -> impl Iterator<Item = Entity> + 'a {
+        let scaled_aabb = Aabb {
             mins: aabb.min.into(),
             maxs: aabb.max.into(),
         };
-        #[allow(clippy::redundant_closure)]
-        // False-positive, we can't move callback, closure becomes `FnOnce`
-        let callback = |h: &ColliderHandle| {
-            rapier_colliders
-                .collider_entity(*h)
-                .map(|e| callback(e))
-                .unwrap_or(true)
-        };
         self.query_pipeline
-            .colliders_with_aabb_intersecting_aabb(&scaled_aabb, callback);
+            .intersect_aabb_conservative(scaled_aabb)
+            .map(move |(collider_handle, _)| self.collider_entity(collider_handle))
     }
 
     /// Casts a shape at a constant linear velocity and retrieve the first collider it hits.
@@ -481,44 +492,25 @@ impl RapierQueryPipeline {
     ///   would result in tunnelling. If it does not (i.e. we have a separating velocity along
     ///   that normal) then the nonlinear shape-casting will attempt to find another impact,
     ///   at a time `> start_time` that could result in tunnelling.
-    /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
     #[allow(clippy::too_many_arguments)]
     pub fn cast_shape(
-        &self,
-        rapier_colliders: &RapierContextColliders,
-        rigidbody_set: &RapierRigidBodySet,
+        &'a self,
         shape_pos: Vect,
         shape_rot: Rot,
         shape_vel: Vect,
-        shape: &Collider,
+        shape: &dyn Shape,
         options: ShapeCastOptions,
-        filter: QueryFilter,
     ) -> Option<(Entity, ShapeCastHit)> {
         let scaled_transform = (shape_pos, shape_rot).into();
-        let mut scaled_shape = shape.clone();
-        // TODO: how to set a good number of subdivisions, we don’t have access to the
-        //       RapierConfiguration::scaled_shape_subdivision here.
-        scaled_shape.set_scale(shape.scale, 20);
 
         let (h, result) =
-            rigidbody_set.with_query_filter(rapier_colliders, filter, move |filter| {
-                self.query_pipeline.cast_shape(
-                    &rigidbody_set.bodies,
-                    &rapier_colliders.colliders,
-                    &scaled_transform,
-                    &shape_vel.into(),
-                    &*scaled_shape.raw,
-                    options,
-                    filter,
-                )
-            })?;
+            self.query_pipeline
+                .cast_shape(&scaled_transform, &shape_vel.into(), shape, options)?;
 
-        rapier_colliders.collider_entity(h).map(|e| {
-            (
-                e,
-                ShapeCastHit::from_rapier(result, options.compute_impact_geometry_on_penetration),
-            )
-        })
+        Some((
+            self.collider_entity(h),
+            ShapeCastHit::from_rapier(result, options.compute_impact_geometry_on_penetration),
+        ))
     }
 
     /* TODO: we need to wrap the NonlinearRigidMotion somehow.
@@ -572,85 +564,6 @@ impl RapierQueryPipeline {
         self.collider_entity(h).map(|e| (e, result))
     }
      */
-
-    /// Retrieve all the colliders intersecting the given shape.
-    ///
-    /// # Parameters
-    /// * `shapePos` - The position of the shape to test.
-    /// * `shapeRot` - The orientation of the shape to test.
-    /// * `shape` - The shape to test.
-    /// * `filter`: set of rules used to determine which collider is taken into account by this scene query.
-    /// * `callback` - A function called with the entities of each collider intersecting the `shape`.
-    #[expect(clippy::too_many_arguments)]
-    pub fn intersections_with_shape(
-        &self,
-        rapier_colliders: &RapierContextColliders,
-        rigidbody_set: &RapierRigidBodySet,
-        shape_pos: Vect,
-        shape_rot: Rot,
-        shape: &Collider,
-        filter: QueryFilter,
-        mut callback: impl FnMut(Entity) -> bool,
-    ) {
-        let scaled_transform = (shape_pos, shape_rot).into();
-        let mut scaled_shape = shape.clone();
-        // TODO: how to set a good number of subdivisions, we don’t have access to the
-        //       RapierConfiguration::scaled_shape_subdivision here.
-        scaled_shape.set_scale(shape.scale, 20);
-
-        #[allow(clippy::redundant_closure)]
-        // False-positive, we can't move callback, closure becomes `FnOnce`
-        let callback = |h| {
-            rapier_colliders
-                .collider_entity(h)
-                .map(|e| callback(e))
-                .unwrap_or(true)
-        };
-
-        rigidbody_set.with_query_filter(rapier_colliders, filter, move |filter| {
-            self.query_pipeline.intersections_with_shape(
-                &rigidbody_set.bodies,
-                &rapier_colliders.colliders,
-                &scaled_transform,
-                &*scaled_shape.raw,
-                filter,
-                callback,
-            )
-        });
-    }
-    /// Without borrowing the [`RapierContext`], calls the closure `f` once
-    /// after converting the given [`QueryFilter`] into a raw [`RapierQueryFilter`].
-    pub fn with_query_filter_elts<T>(
-        entity2collider: &HashMap<Entity, ColliderHandle>,
-        entity2body: &HashMap<Entity, RigidBodyHandle>,
-        colliders: &ColliderSet,
-        filter: QueryFilter,
-        f: impl FnOnce(RapierQueryFilter) -> T,
-    ) -> T {
-        let mut rapier_filter = RapierQueryFilter {
-            flags: filter.flags,
-            groups: filter.groups.map(CollisionGroups::into),
-            exclude_collider: filter
-                .exclude_collider
-                .and_then(|c| entity2collider.get(&c).copied()),
-            exclude_rigid_body: filter
-                .exclude_rigid_body
-                .and_then(|b| entity2body.get(&b).copied()),
-            predicate: None,
-        };
-
-        if let Some(predicate) = filter.predicate {
-            let wrapped_predicate = |h: ColliderHandle, _: &rapier::geometry::Collider| {
-                RapierContextColliders::collider_entity_with_set(colliders, h)
-                    .map(predicate)
-                    .unwrap_or(false)
-            };
-            rapier_filter.predicate = Some(&wrapped_predicate);
-            f(rapier_filter)
-        } else {
-            f(rapier_filter)
-        }
-    }
 }
 
 /// The set of rigid-bodies part of the simulation.
@@ -671,22 +584,6 @@ pub struct RapierRigidBodySet {
 }
 
 impl RapierRigidBodySet {
-    /// Calls the closure `f` once after converting the given [`QueryFilter`] into a raw [`RapierQueryFilter`].
-    pub fn with_query_filter<T>(
-        &self,
-        colliders: &RapierContextColliders,
-        filter: QueryFilter,
-        f: impl FnOnce(RapierQueryFilter) -> T,
-    ) -> T {
-        RapierQueryPipeline::with_query_filter_elts(
-            &colliders.entity2collider,
-            &self.entity2body,
-            &colliders.colliders,
-            filter,
-            f,
-        )
-    }
-
     /// The map from entities to rigid-body handles.
     pub fn entity2body(&self) -> &HashMap<Entity, RigidBodyHandle> {
         &self.entity2body
@@ -740,7 +637,6 @@ impl RapierRigidBodySet {
     RapierContextColliders,
     RapierRigidBodySet,
     RapierContextJoints,
-    RapierQueryPipeline,
     SimulationToRenderTime
 )]
 pub struct RapierContextSimulation {
@@ -873,7 +769,6 @@ impl RapierContextSimulation {
                             &mut joints.impulse_joints,
                             &mut joints.multibody_joints,
                             &mut self.ccd_solver,
-                            None,
                             hooks,
                             event_handler,
                         );
@@ -905,7 +800,6 @@ impl RapierContextSimulation {
                         &mut joints.impulse_joints,
                         &mut joints.multibody_joints,
                         &mut self.ccd_solver,
-                        None,
                         hooks,
                         event_handler,
                     );
@@ -930,7 +824,6 @@ impl RapierContextSimulation {
                         &mut joints.impulse_joints,
                         &mut joints.multibody_joints,
                         &mut self.ccd_solver,
-                        None,
                         hooks,
                         event_handler,
                     );
@@ -976,28 +869,20 @@ impl RapierContextSimulation {
     /// * `shape_mass`: the mass of the shape to be considered by the impulse calculation if
     ///   `MoveShapeOptions::apply_impulse_to_dynamic_bodies` is set to true.
     /// * `options`: configures the behavior of the automatic sliding and climbing.
-    /// * `filter`: indicates what collider or rigid-body needs to be ignored by the obstacle detection.
     /// * `events`: callback run on each obstacle hit by the shape on its path.
     #[allow(clippy::too_many_arguments)]
     pub fn move_shape(
         &mut self,
         rapier_colliders: &RapierContextColliders,
-        rapier_query_pipeline: &RapierQueryPipeline,
-        rigidbody_set: &mut RapierRigidBodySet,
+        rapier_query_pipeline: &mut RapierQueryPipelineMut<'_>,
         movement: Vect,
-        shape: &Collider,
+        shape: &dyn Shape,
         shape_translation: Vect,
         shape_rotation: Rot,
         shape_mass: Real,
         options: &MoveShapeOptions,
-        filter: QueryFilter,
         mut events: impl FnMut(CharacterCollision),
     ) -> MoveShapeOutput {
-        let mut scaled_shape = shape.clone();
-        // TODO: how to set a good number of subdivisions, we don’t have access to the
-        //       RapierConfiguration::scaled_shape_subdivision here.
-        scaled_shape.set_scale(shape.scale, 20);
-
         let up = options
             .up
             .try_into()
@@ -1024,52 +909,33 @@ impl RapierContextSimulation {
         //       the closure is ugly.
         let dt = self.integration_parameters.dt;
         let colliders = &rapier_colliders.colliders;
-        let bodies = &mut rigidbody_set.bodies;
-        let query_pipeline = &rapier_query_pipeline.query_pipeline;
         let collisions = &mut self.character_collisions_collector;
         collisions.clear();
 
-        let result = RapierQueryPipeline::with_query_filter_elts(
-            &rapier_colliders.entity2collider,
-            &rigidbody_set.entity2body,
-            &rapier_colliders.colliders,
-            filter,
-            move |filter| {
-                let result = controller.move_shape(
-                    dt,
-                    bodies,
-                    colliders,
-                    query_pipeline,
-                    (&scaled_shape).into(),
-                    &(shape_translation, shape_rotation).into(),
-                    movement.into(),
-                    filter,
-                    |c| {
-                        if let Some(collision) =
-                            CharacterCollision::from_raw_with_set(colliders, &c, true)
-                        {
-                            events(collision);
-                        }
-                        collisions.push(c);
-                    },
-                );
-
-                if options.apply_impulse_to_dynamic_bodies {
-                    controller.solve_character_collision_impulses(
-                        dt,
-                        bodies,
-                        colliders,
-                        query_pipeline,
-                        (&scaled_shape).into(),
-                        shape_mass,
-                        collisions.iter(),
-                        filter,
-                    )
+        let result = controller.move_shape(
+            dt,
+            &rapier_query_pipeline.query_pipeline.as_ref(),
+            shape,
+            &(shape_translation, shape_rotation).into(),
+            movement.into(),
+            |c| {
+                if let Some(collision) = CharacterCollision::from_raw_with_set(colliders, &c, true)
+                {
+                    events(collision);
                 }
-
-                result
+                collisions.push(c);
             },
         );
+
+        if options.apply_impulse_to_dynamic_bodies {
+            controller.solve_character_collision_impulses(
+                dt,
+                &mut rapier_query_pipeline.query_pipeline,
+                shape,
+                shape_mass,
+                collisions.iter(),
+            )
+        };
 
         MoveShapeOutput {
             effective_translation: result.translation.into(),
