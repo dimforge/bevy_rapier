@@ -34,10 +34,13 @@ jobs:
       - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
       - name: Cargo doc
         run: cargo doc --no-deps
-  test:
+  test-and-clippy:
     runs-on: ubuntu-latest
     env:
       RUSTFLAGS: -D warnings
+    strategy:
+      matrix:
+        dim: [2, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -47,21 +50,40 @@ jobs:
         with:
           prefix-key: ${{ env.RUST_CACHE_KEY }}
       - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
-      - run: cargo install cargo-all-features
-      - name: Clippy for bevy_rapier2d
-        run: cargo clippy --verbose -p bevy_rapier2d --examples
-      - name: Clippy for bevy_rapier3d
-        run: cargo clippy --verbose -p bevy_rapier3d --examples
-      - name: Clippy for bevy_rapier2d (debug-render, simd, serde)
-        run: cargo clippy --verbose -p bevy_rapier2d --features debug-render-2d,simd-stable,serde-serialize,picking-backend
-      - name: Clippy for bevy_rapier3d (debug-render, simd, serde)
-        run: cargo clippy --verbose -p bevy_rapier3d --features debug-render-3d,simd-stable,serde-serialize,picking-backend
-      - name: Test for bevy_rapier2d
-        run: cargo test --verbose -p bevy_rapier2d
-      - name: Test for bevy_rapier3d
-        run: cargo test --verbose -p bevy_rapier3d
+      - name: Clippy for bevy_rapier${{ matrix.dim }}d
+        run: cargo clippy --verbose -p bevy_rapier${{ matrix.dim }}d
+      - name: Clippy for bevy_rapier${{ matrix.dim }}d (debug-render, simd, serde)
+        run: cargo clippy --verbose -p bevy_rapier${{ matrix.dim }}d --features debug-render-${{ matrix.dim }}d,simd-stable,serde-serialize
+      - name: Test for bevy_rapier${{ matrix.dim }}d
+        run: cargo test --verbose -p bevy_rapier${{ matrix.dim }}d
+      - name: Unit Tests for bevy_rapier${{ matrix.dim }}d without default features
+        # cargo test by default also tests examples, which most need the debug render feature, so we pass `--lib` to only test the library
+        run: cargo test -p bevy_rapier${{ matrix.dim }}d --no-default-features --features dim${{ matrix.dim }} --lib
+  test-no-ambiguity:
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: ${{ env.RUST_CACHE_KEY }}
+      - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
       - name: Test for no conflicting system order ambiguity
         run: cargo run --bin ambiguity_detection
+  test-all-features:
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: ${{ env.RUST_CACHE_KEY }}
+      - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
+      - run: cargo install cargo-all-features
       - name: Check all features individually
         run: cargo check-all-features
   test-wasm:
