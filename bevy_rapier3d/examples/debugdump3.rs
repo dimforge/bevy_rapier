@@ -2,6 +2,7 @@
 //! run with:
 //! `cargo run --example debugdump3 > dump.dot && dot -Tsvg dump.dot > dump.svg`
 
+use bevy::app::PostUpdate;
 use bevy::prelude::*;
 use bevy_mod_debugdump::{schedule_graph, schedule_graph_dot};
 use bevy_rapier3d::prelude::*;

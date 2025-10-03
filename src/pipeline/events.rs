@@ -152,17 +152,17 @@ mod test {
         use bevy::prelude::*;
 
         #[derive(Resource, Reflect)]
-        pub struct EventsSaver<E: Event> {
+        pub struct EventsSaver<E: Message> {
             pub events: Vec<E>,
         }
-        impl<E: Event> Default for EventsSaver<E> {
+        impl<E: Message> Default for EventsSaver<E> {
             fn default() -> Self {
                 Self {
                     events: Default::default(),
                 }
             }
         }
-        pub fn save_events<E: Event + Clone>(
+        pub fn save_events<E: Message + Clone>(
             mut events: MessageReader<E>,
             mut saver: ResMut<EventsSaver<E>>,
         ) {

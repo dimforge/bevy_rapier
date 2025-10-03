@@ -600,7 +600,7 @@ pub mod test {
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_collider_initializes() {
         use super::*;
-        use bevy::{render::mesh::MeshPlugin, scene::ScenePlugin};
+        use bevy::{mesh::MeshPlugin, scene::ScenePlugin};
 
         let mut app = App::new();
         app.add_plugins((AssetPlugin::default(), MeshPlugin, ScenePlugin));
@@ -633,7 +633,7 @@ pub mod test {
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_scene_collider_initializes() {
         use super::*;
-        use bevy::{render::mesh::MeshPlugin, scene::ScenePlugin};
+        use bevy::{mesh::MeshPlugin, scene::ScenePlugin};
 
         let mut app = App::new();
         app.add_plugins((AssetPlugin::default(), MeshPlugin, ScenePlugin));

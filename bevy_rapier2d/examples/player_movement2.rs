@@ -6,7 +6,7 @@ fn main() {
         .add_plugins((
             DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
-                    resolution: WindowResolution::new(1000., 1000.),
+                    resolution: WindowResolution::new(1000, 1000),
                     title: "Player Movement Example".to_string(),
                     ..default()
                 }),

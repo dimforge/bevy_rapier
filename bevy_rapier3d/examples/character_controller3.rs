@@ -1,5 +1,5 @@
 use bevy::{
-    input::{mouse::MouseMotion, InputSystem},
+    input::{mouse::MouseMotion, InputSystems},
     prelude::*,
 };
 use bevy_rapier3d::{control::KinematicCharacterController, prelude::*};
@@ -25,7 +25,7 @@ fn main() {
             RapierDebugRenderPlugin::default(),
         ))
         .add_systems(Startup, (setup_player, setup_map))
-        .add_systems(PreUpdate, handle_input.after(InputSystem))
+        .add_systems(PreUpdate, handle_input.after(InputSystems))
         .add_systems(Update, player_look)
         .add_systems(FixedUpdate, player_movement)
         .run();

@@ -69,6 +69,7 @@ fn main() {
             DefaultPlugins,
             EguiPlugin {
                 enable_multipass_for_primary_context: false,
+                ..Default::default()
             },
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
@@ -248,15 +249,19 @@ fn main() {
 fn init(world: &mut World) {
     //save all entities that are in the world before setting up any example
     // to be able to always return to this state when switching from one example to the other
-    world.resource_mut::<ExamplesRes>().entities_before =
-        world.iter_entities().map(|e| e.id()).collect::<Vec<_>>();
+    world.resource_mut::<ExamplesRes>().entities_before = world
+        .query::<EntityRef>()
+        .iter(world)
+        .map(|e| e.id())
+        .collect::<Vec<_>>();
 }
 
 fn cleanup(world: &mut World) {
     let keep_alive = world.resource::<ExamplesRes>().entities_before.clone();
 
     let remove = world
-        .iter_entities()
+        .query::<EntityRef>()
+        .iter(world)
         .filter_map(|e| (!keep_alive.contains(&e.id())).then_some(e.id()))
         .collect::<Vec<_>>();
     for r in remove {
@@ -281,7 +286,7 @@ fn ui_example_system(
     mut current_example: ResMut<ExampleSelected>,
     examples_available: Res<ExampleSet>,
 ) {
-    egui::Window::new("Testbed").show(contexts.ctx_mut(), |ui| {
+    egui::Window::new("Testbed").show(contexts.ctx_mut().unwrap(), |ui| {
         let mut changed = false;
         egui::ComboBox::from_label("example")
             .width(150.0)

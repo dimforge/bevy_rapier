@@ -443,7 +443,7 @@ pub fn setup_rapier_configuration(
 mod test {
 
     use bevy::{
-        ecs::schedule::Stepping,
+        ecs::schedule::{NodeId, Stepping},
         prelude::Component,
         time::{TimePlugin, TimeUpdateStrategy},
     };
@@ -510,7 +510,7 @@ mod test {
                         .unwrap()
                         .systems()
                         .unwrap()
-                        .find(|s| s.0 == cursor.1)
+                        .find(|s| NodeId::System(s.0) == cursor.1)
                         .unwrap();
                     println!(
                         "next system: {}",
@@ -610,22 +610,16 @@ mod test {
             // render + physics
             app.update();
 
-            let context = app
-                .world_mut()
-                .query::<RapierContext>()
-                .single(app.world())
-                .unwrap();
+            let mut context_query = app.world_mut().query::<RapierContext>();
+            let context = context_query.single(app.world()).unwrap();
             assert_eq!(context.rigidbody_set.entity2body.len(), 1);
 
             // render only + remove entities
             app.update();
             // Fixed Update hasn´t run yet, so it's a risk of not having caught the bevy removed event, which will be cleaned next frame.
 
-            let context = app
-                .world_mut()
-                .query::<RapierContext>()
-                .single(app.world())
-                .unwrap();
+            let mut context_query = app.world_mut().query::<RapierContext>();
+            let context = context_query.single(app.world()).unwrap();
 
             println!("{:?}", &context.rigidbody_set.entity2body);
             assert_eq!(context.rigidbody_set.entity2body.len(), 0);
@@ -693,11 +687,8 @@ mod test {
             for _ in 0..100 {
                 app.update();
             }
-            let context = app
-                .world_mut()
-                .query::<RapierContext>()
-                .single(app.world())
-                .unwrap();
+            let mut context_query = app.world_mut().query::<RapierContext>();
+            let context = context_query.single(app.world()).unwrap();
 
             println!("{:#?}", &context.rigidbody_set.bodies);
         }
@@ -761,11 +752,8 @@ mod test {
                 .unwrap();
             approx::assert_relative_eq!(collider.scale, Vect::splat(0.1), epsilon = 1.0e-5);
 
-            let context = app
-                .world_mut()
-                .query::<RapierContext>()
-                .single(app.world())
-                .unwrap();
+            let mut context_query = app.world_mut().query::<RapierContext>();
+            let context = context_query.single(app.world()).unwrap();
             let physics_ball_radius = context
                 .colliders
                 .colliders
