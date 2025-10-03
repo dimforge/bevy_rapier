@@ -112,7 +112,7 @@ fn handle_input(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut movement: ResMut<MovementInput>,
     mut look: ResMut<LookInput>,
-    mut mouse_events: EventReader<MouseMotion>,
+    mut mouse_events: MessageReader<MouseMotion>,
 ) {
     if keyboard.pressed(KeyCode::KeyW) {
         movement.z -= 1.0;

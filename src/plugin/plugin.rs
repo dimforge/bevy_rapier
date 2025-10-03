@@ -1,13 +1,14 @@
 use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::prelude::*;
 use crate::reflect::IntegrationParametersWrapper;
+use bevy::app::DynEq;
 use bevy::ecs::{
     intern::Interned,
     schedule::{IntoScheduleConfigs, ScheduleConfigs, ScheduleLabel},
     system::{ScheduleSystem, SystemParamItem},
 };
 use bevy::platform::collections::HashSet;
-use bevy::{prelude::*, transform::TransformSystem};
+use bevy::{prelude::*, transform::TransformSystems};
 use rapier::dynamics::IntegrationParameters;
 use std::marker::PhantomData;
 
@@ -193,7 +194,7 @@ pub struct RapierBevyComponentApply;
 
 /// A set for rapier's copy of Bevy's transform propagation systems.
 ///
-/// See [`TransformSystem`](bevy::transform::TransformSystem::TransformPropagate).
+/// See [`TransformSystems`](bevy::transform::TransformSystems::Propagate).
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
 pub struct RapierTransformPropagateSet;
 
@@ -267,9 +268,9 @@ where
             .register_type::<DefaultRapierContext>()
             .register_type::<RapierContextInitialization>();
 
-        app.insert_resource(Events::<CollisionEvent>::default())
-            .insert_resource(Events::<ContactForceEvent>::default())
-            .insert_resource(Events::<MassModifiedEvent>::default());
+        app.insert_resource(Messages::<CollisionEvent>::default())
+            .insert_resource(Messages::<ContactForceEvent>::default())
+            .insert_resource(Messages::<MassModifiedEvent>::default());
         let default_world_init = app.world().get_resource::<RapierContextInitialization>();
         if let Some(world_init) = default_world_init {
             log::warn!("RapierPhysicsPlugin added but a `RapierContextInitialization` resource was already existing.\
@@ -290,7 +291,7 @@ where
         if self.schedule != PostUpdate.intern() {
             app.add_systems(
                 PostUpdate,
-                (systems::sync_removals,).before(TransformSystem::TransformPropagate),
+                (systems::sync_removals,).before(TransformSystems::Propagate),
             );
         }
 
@@ -304,7 +305,7 @@ where
                     PhysicsSet::Writeback,
                 )
                     .chain()
-                    .before(TransformSystem::TransformPropagate),
+                    .before(TransformSystems::Propagate),
             );
             app.configure_sets(
                 self.schedule,
@@ -326,7 +327,7 @@ where
             app.init_resource::<TimestepMode>();
 
             // Warn user if the timestep mode isn't in Fixed
-            if self.schedule.as_dyn_eq().dyn_eq(FixedUpdate.as_dyn_eq()) {
+            if self.schedule.dyn_eq(&FixedUpdate as &dyn DynEq) {
                 let config = app.world_mut().resource::<TimestepMode>();
                 match config {
                     TimestepMode::Fixed { .. } => {}
@@ -341,7 +342,7 @@ where
     fn finish(&self, _app: &mut App) {
         #[cfg(all(feature = "dim3", feature = "async-collider"))]
         {
-            use bevy::{asset::AssetPlugin, render::mesh::MeshPlugin, scene::ScenePlugin};
+            use bevy::{asset::AssetPlugin, mesh::MeshPlugin, scene::ScenePlugin};
             if !_app.is_plugin_added::<AssetPlugin>() {
                 _app.add_plugins(AssetPlugin::default());
             }

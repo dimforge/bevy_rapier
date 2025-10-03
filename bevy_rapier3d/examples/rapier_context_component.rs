@@ -19,7 +19,7 @@ fn main() {
 /// Demonstrates how to access a more specific component of [`RapierContext`]
 fn display_nb_colliders(
     query_context: Query<&RapierContextColliders, With<DefaultRapierContext>>,
-    mut exit: EventWriter<AppExit>,
+    mut exit: MessageWriter<AppExit>,
 ) -> Result<()> {
     let nb_colliders = query_context.single()?.colliders.len();
     println!("There are {nb_colliders} colliders.");

@@ -333,7 +333,7 @@ impl SolverContactView<'_> {
     }
     /// Whether or not this contact existed during the last timestep.
     pub fn is_new(&self) -> bool {
-        self.raw.is_new
+        self.raw.is_new == 1.0
     }
 }
 

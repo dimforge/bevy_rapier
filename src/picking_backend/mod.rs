@@ -7,14 +7,13 @@
 //! to `true` and add a [`RapierPickable`] component to the desired camera and target entities.
 
 use bevy::app::prelude::*;
+use bevy::camera::visibility::RenderLayers;
+use bevy::camera::Camera;
 use bevy::ecs::prelude::*;
-use bevy::picking::{
-    backend::{ray::RayMap, HitData, PointerHits},
-    PickSet,
-};
-use bevy::prelude::PickingPlugin;
+use bevy::picking::backend::{ray::RayMap, HitData, PointerHits};
+use bevy::picking::{PickingPlugin, PickingSystems};
+use bevy::prelude::{InheritedVisibility, ViewVisibility};
 use bevy::reflect::prelude::*;
-use bevy::render::{prelude::*, view::RenderLayers};
 use rapier::parry::query::DefaultQueryDispatcher;
 
 /// How a ray cast should handle [`Visibility`].
@@ -67,9 +66,9 @@ impl Plugin for RapierPickingPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<(RapierPickable, RapierPickingSettings)>()
             .init_resource::<RapierPickingSettings>()
-            .add_systems(PreUpdate, update_hits.in_set(PickSet::Backend));
+            .add_systems(PreUpdate, update_hits.in_set(PickingSystems::Backend));
         if !app.is_plugin_added::<PickingPlugin>() {
-            app.add_plugins(PickingPlugin::default());
+            app.add_plugins(PickingPlugin);
         }
     }
 }
@@ -88,7 +87,7 @@ pub fn update_hits(
         &crate::prelude::RapierRigidBodySet,
         &crate::prelude::RapierContextSimulation,
     )>,
-    mut output: EventWriter<PointerHits>,
+    mut output: MessageWriter<PointerHits>,
 ) {
     for (&ray_id, &ray) in ray_map.map.iter() {
         let Ok((camera, cam_pickable, cam_layers)) = picking_cameras.get(ray_id.camera) else {

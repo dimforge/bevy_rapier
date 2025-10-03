@@ -1,4 +1,5 @@
 use crate::math::{Real, Vect};
+use bevy::ecs::message::Message;
 use bevy::prelude::{Entity, Event};
 use rapier::dynamics::RigidBodySet;
 use rapier::geometry::{
@@ -16,7 +17,7 @@ use crate::prelude::{ActiveEvents, ContactForceEventThreshold};
 ///
 /// This will only get triggered if the entity has the
 /// [`ActiveEvents::COLLISION_EVENTS`] flag enabled.
-#[derive(Event, Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Event, Copy, Clone, Debug, PartialEq, Eq, Message)]
 pub enum CollisionEvent {
     /// Event occurring when two colliders start colliding
     Started(Entity, Entity, CollisionEventFlags),
@@ -29,7 +30,7 @@ pub enum CollisionEvent {
 ///
 /// This will only get triggered if the entity has the
 /// [`ActiveEvents::CONTACT_FORCE_EVENTS`] flag enabled.
-#[derive(Event, Copy, Clone, Debug, PartialEq)]
+#[derive(Event, Copy, Clone, Debug, PartialEq, Message)]
 pub struct ContactForceEvent {
     /// The first collider involved in the contact.
     pub collider1: Entity,
@@ -162,7 +163,7 @@ mod test {
             }
         }
         pub fn save_events<E: Event + Clone>(
-            mut events: EventReader<E>,
+            mut events: MessageReader<E>,
             mut saver: ResMut<EventsSaver<E>>,
         ) {
             for event in events.read() {

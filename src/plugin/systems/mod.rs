@@ -42,8 +42,8 @@ pub fn step_simulation<Hooks>(
     timestep_mode: Res<TimestepMode>,
     hooks: StaticSystemParam<Hooks>,
     time: Res<Time>,
-    mut collision_events: EventWriter<CollisionEvent>,
-    mut contact_force_events: EventWriter<ContactForceEvent>,
+    mut collision_events: MessageWriter<CollisionEvent>,
+    mut contact_force_events: MessageWriter<ContactForceEvent>,
     mut interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
 ) where
     Hooks: 'static + BevyPhysicsHooks,
@@ -108,7 +108,7 @@ pub mod tests {
 
         let mut collision_events = app
             .world_mut()
-            .get_resource_mut::<Events<CollisionEvent>>()
+            .get_resource_mut::<Messages<CollisionEvent>>()
             .unwrap();
         collision_events.send(CollisionEvent::Started(
             entity1,
@@ -152,7 +152,7 @@ pub mod tests {
 
         let mut collision_events = app
             .world_mut()
-            .get_resource_mut::<Events<CollisionEvent>>()
+            .get_resource_mut::<Messages<CollisionEvent>>()
             .unwrap();
         collision_events.send(CollisionEvent::Stopped(
             entity1,
