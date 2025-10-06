@@ -17,7 +17,7 @@ pub use rigid_body::*;
 pub use writeback::*;
 
 use crate::dynamics::{RapierRigidBodyHandle, TransformInterpolation};
-use crate::pipeline::{CollisionEvent, ContactForceEvent};
+use crate::pipeline::{CollisionMessage, ContactForceMessage};
 use crate::plugin::context::SimulationToRenderTime;
 use crate::plugin::{RapierConfiguration, TimestepMode};
 use crate::prelude::{BevyPhysicsHooks, BevyPhysicsHooksAdapter};
@@ -42,8 +42,8 @@ pub fn step_simulation<Hooks>(
     timestep_mode: Res<TimestepMode>,
     hooks: StaticSystemParam<Hooks>,
     time: Res<Time>,
-    mut collision_events: MessageWriter<CollisionEvent>,
-    mut contact_force_events: MessageWriter<ContactForceEvent>,
+    mut collision_events: MessageWriter<CollisionMessage>,
+    mut contact_force_events: MessageWriter<ContactForceMessage>,
     mut interpolation_query: Query<(&RapierRigidBodyHandle, &mut TransformInterpolation)>,
 ) where
     Hooks: 'static + BevyPhysicsHooks,
@@ -100,7 +100,7 @@ pub mod tests {
     #[test]
     fn colliding_entities_updates() {
         let mut app = App::new();
-        app.add_message::<CollisionEvent>()
+        app.add_message::<CollisionMessage>()
             .add_systems(Update, update_colliding_entities);
 
         let entity1 = app.world_mut().spawn(CollidingEntities::default()).id();
@@ -108,9 +108,9 @@ pub mod tests {
 
         let mut collision_events = app
             .world_mut()
-            .get_resource_mut::<Messages<CollisionEvent>>()
+            .get_resource_mut::<Messages<CollisionMessage>>()
             .unwrap();
-        collision_events.write(CollisionEvent::Started(
+        collision_events.write(CollisionMessage::Started(
             entity1,
             entity2,
             CollisionEventFlags::SENSOR,
@@ -152,9 +152,9 @@ pub mod tests {
 
         let mut collision_events = app
             .world_mut()
-            .get_resource_mut::<Messages<CollisionEvent>>()
+            .get_resource_mut::<Messages<CollisionMessage>>()
             .unwrap();
-        collision_events.write(CollisionEvent::Stopped(
+        collision_events.write(CollisionMessage::Stopped(
             entity1,
             entity2,
             CollisionEventFlags::SENSOR,

@@ -203,13 +203,19 @@ impl std::ops::Deref for ReadMassProperties {
 
 /// Entity that likely had their mass properties changed this frame.
 #[derive(Deref, Copy, Clone, Debug, PartialEq, Message)]
-pub struct MassModifiedEvent(pub Entity);
+pub struct MassModifiedMessage(pub Entity);
 
-impl From<Entity> for MassModifiedEvent {
+impl From<Entity> for MassModifiedMessage {
     fn from(entity: Entity) -> Self {
         Self(entity)
     }
 }
+
+#[deprecated(
+    since = "0.32.0",
+    note = "MassModifiedMessage has been renamed to MassModifiedEvent for consistency with Bevy 0.17 naming conventions. "
+)]
+pub use MassModifiedMessage as MassModifiedEvent;
 
 /// Center-of-mass, mass, and angular inertia.
 ///

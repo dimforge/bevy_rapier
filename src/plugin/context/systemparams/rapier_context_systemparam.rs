@@ -139,8 +139,8 @@ mod simulation {
     use crate::plugin::context::SimulationToRenderTime;
     use crate::plugin::ContactPairView;
     use crate::plugin::TimestepMode;
-    use crate::prelude::CollisionEvent;
-    use crate::prelude::ContactForceEvent;
+    use crate::prelude::CollisionMessage;
+    use crate::prelude::ContactForceMessage;
     use crate::prelude::RapierQueryPipelineMut;
     use crate::prelude::RapierRigidBodyHandle;
     use crate::prelude::TransformInterpolation;
@@ -195,8 +195,8 @@ mod simulation {
             gravity: Vect,
             timestep_mode: TimestepMode,
             events: Option<(
-                &MessageWriter<CollisionEvent>,
-                &MessageWriter<ContactForceEvent>,
+                &MessageWriter<CollisionMessage>,
+                &MessageWriter<ContactForceMessage>,
             )>,
             hooks: &dyn PhysicsHooks,
             time: &Time,

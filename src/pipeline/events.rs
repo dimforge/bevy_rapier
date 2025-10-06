@@ -13,25 +13,25 @@ use std::sync::RwLock;
 #[cfg(doc)]
 use crate::prelude::{ActiveEvents, ContactForceEventThreshold};
 
-/// Events occurring when two colliders start or stop colliding
+/// Message sent when two colliders start or stop colliding
 ///
 /// This will only get triggered if the entity has the
 /// [`ActiveEvents::COLLISION_EVENTS`] flag enabled.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Message)]
-pub enum CollisionEvent {
+pub enum CollisionMessage {
     /// Event occurring when two colliders start colliding
     Started(Entity, Entity, CollisionEventFlags),
     /// Event occurring when two colliders stop colliding
     Stopped(Entity, Entity, CollisionEventFlags),
 }
 
-/// Event occurring when the sum of the magnitudes of the contact forces
+/// Message sent when the sum of the magnitudes of the contact forces
 /// between two colliders exceed a threshold ([`ContactForceEventThreshold`]).
 ///
 /// This will only get triggered if the entity has the
 /// [`ActiveEvents::CONTACT_FORCE_EVENTS`] flag enabled.
 #[derive(Copy, Clone, Debug, PartialEq, Message)]
-pub struct ContactForceEvent {
+pub struct ContactForceMessage {
     /// The first collider involved in the contact.
     pub collider1: Entity,
     /// The second collider involved in the contact.
@@ -59,8 +59,8 @@ pub(crate) struct EventQueue<'a> {
     // Used to retrieve the entity of colliders that have been removed from the simulation
     // since the last physics step.
     pub deleted_colliders: &'a HashMap<ColliderHandle, Entity>,
-    pub collision_events: RwLock<Vec<CollisionEvent>>,
-    pub contact_force_events: RwLock<Vec<ContactForceEvent>>,
+    pub collision_events: RwLock<Vec<CollisionMessage>>,
+    pub contact_force_events: RwLock<Vec<ContactForceMessage>>,
 }
 
 impl EventQueue<'_> {
@@ -85,12 +85,12 @@ impl EventHandler for EventQueue<'_> {
             RapierCollisionEvent::Started(h1, h2, flags) => {
                 let e1 = self.collider2entity(colliders, h1);
                 let e2 = self.collider2entity(colliders, h2);
-                CollisionEvent::Started(e1, e2, flags)
+                CollisionMessage::Started(e1, e2, flags)
             }
             RapierCollisionEvent::Stopped(h1, h2, flags) => {
                 let e1 = self.collider2entity(colliders, h1);
                 let e2 = self.collider2entity(colliders, h2);
-                CollisionEvent::Stopped(e1, e2, flags)
+                CollisionMessage::Stopped(e1, e2, flags)
             }
         };
 
@@ -109,7 +109,7 @@ impl EventHandler for EventQueue<'_> {
     ) {
         let rapier_event =
             RapierContactForceEvent::from_contact_pair(dt, contact_pair, total_force_magnitude);
-        let event = ContactForceEvent {
+        let event = ContactForceMessage {
             collider1: self.collider2entity(colliders, rapier_event.collider1),
             collider2: self.collider2entity(colliders, rapier_event.collider2),
             total_force: rapier_event.total_force.into(),
@@ -171,10 +171,10 @@ mod test {
             }
         }
         fn run_test(app: &mut App) {
-            app.add_systems(PostUpdate, save_events::<CollisionEvent>)
-                .add_systems(PostUpdate, save_events::<ContactForceEvent>)
-                .init_resource::<EventsSaver<CollisionEvent>>()
-                .init_resource::<EventsSaver<ContactForceEvent>>();
+            app.add_systems(PostUpdate, save_events::<CollisionMessage>)
+                .add_systems(PostUpdate, save_events::<ContactForceMessage>)
+                .init_resource::<EventsSaver<CollisionMessage>>()
+                .init_resource::<EventsSaver<ContactForceMessage>>();
 
             // Simulates 60 updates per seconds
             app.insert_resource(TimeUpdateStrategy::ManualDuration(
@@ -188,12 +188,12 @@ mod test {
             }
             let saved_collisions = app
                 .world()
-                .get_resource::<EventsSaver<CollisionEvent>>()
+                .get_resource::<EventsSaver<CollisionMessage>>()
                 .unwrap();
             assert!(!saved_collisions.events.is_empty());
             let saved_contact_forces = app
                 .world()
-                .get_resource::<EventsSaver<CollisionEvent>>()
+                .get_resource::<EventsSaver<CollisionMessage>>()
                 .unwrap();
             assert!(!saved_contact_forces.events.is_empty());
         }

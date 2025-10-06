@@ -1,4 +1,4 @@
-use crate::pipeline::{CollisionEvent, ContactForceEvent};
+use crate::pipeline::{CollisionMessage, ContactForceMessage};
 use crate::prelude::*;
 use crate::reflect::IntegrationParametersWrapper;
 use bevy::app::DynEq;
@@ -268,9 +268,9 @@ where
             .register_type::<DefaultRapierContext>()
             .register_type::<RapierContextInitialization>();
 
-        app.insert_resource(Messages::<CollisionEvent>::default())
-            .insert_resource(Messages::<ContactForceEvent>::default())
-            .insert_resource(Messages::<MassModifiedEvent>::default());
+        app.insert_resource(Messages::<CollisionMessage>::default())
+            .insert_resource(Messages::<ContactForceMessage>::default())
+            .insert_resource(Messages::<MassModifiedMessage>::default());
         let default_world_init = app.world().get_resource::<RapierContextInitialization>();
         if let Some(world_init) = default_world_init {
             log::warn!("RapierPhysicsPlugin added but a `RapierContextInitialization` resource was already existing.\

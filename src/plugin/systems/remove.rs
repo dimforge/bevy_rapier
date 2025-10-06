@@ -10,7 +10,7 @@ use crate::geometry::RapierColliderHandle;
 use crate::plugin::context::{
     RapierContextColliders, RapierContextJoints, RapierContextSimulation, RapierRigidBodySet,
 };
-use crate::prelude::MassModifiedEvent;
+use crate::prelude::MassModifiedMessage;
 use crate::prelude::RigidBodyDisabled;
 use crate::prelude::Sensor;
 use bevy::ecs::query::QueryData;
@@ -43,7 +43,7 @@ pub fn sync_removals(
     mut removed_rigid_body_disabled: RemovedComponents<RigidBodyDisabled>,
     mut removed_colliders_disabled: RemovedComponents<ColliderDisabled>,
 
-    mut mass_modified: MessageWriter<MassModifiedEvent>,
+    mut mass_modified: MessageWriter<MassModifiedMessage>,
 ) {
     /*
      * Rigid-bodies removal detection.

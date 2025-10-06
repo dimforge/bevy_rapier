@@ -23,8 +23,8 @@ pub fn setup_graphics(mut commands: Commands) {
 }
 
 pub fn display_events(
-    mut collision_events: MessageReader<CollisionEvent>,
-    mut contact_force_events: MessageReader<ContactForceEvent>,
+    mut collision_events: MessageReader<CollisionMessage>,
+    mut contact_force_events: MessageReader<ContactForceMessage>,
 ) {
     for collision_event in collision_events.read() {
         println!("Received collision event: {collision_event:?}");
