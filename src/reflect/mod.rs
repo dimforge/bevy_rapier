@@ -122,6 +122,7 @@ pub struct IntegrationParametersWrapper {
     pub max_ccd_substeps: usize,
 }
 
+// These structs are duplicated in their entirety due to [`FrictionModel`] not being available in 2D, and `bevy::reflect_remote` not supporting conditional fields.
 #[cfg(feature = "dim3")]
 #[reflect_remote(IntegrationParameters)]
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -215,7 +216,7 @@ pub struct IntegrationParametersWrapper {
     pub min_island_size: usize,
     /// Maximum number of substeps performed by the  solver (default: `1`).
     pub max_ccd_substeps: usize,
-    /// The friction model used by the solver (default: `FrictionModel::Rigid`).
+    /// Friction models used for all contact constraints between two rigid-bodies.
     #[reflect(remote = FrictionModelWrapper)]
     pub friction_model: FrictionModel,
 }
