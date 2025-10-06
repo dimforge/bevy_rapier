@@ -202,7 +202,7 @@ impl std::ops::Deref for ReadMassProperties {
 }
 
 /// Entity that likely had their mass properties changed this frame.
-#[derive(Deref, Copy, Clone, Debug, PartialEq, Event, Message)]
+#[derive(Deref, Copy, Clone, Debug, PartialEq, Message)]
 pub struct MassModifiedEvent(pub Entity);
 
 impl From<Entity> for MassModifiedEvent {
