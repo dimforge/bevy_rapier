@@ -14,10 +14,11 @@ mod static_trimesh3;
 mod voxels3;
 
 use bevy::{
+    camera::visibility::RenderLayers,
     ecs::world::error::{EntityDespawnError, EntityMutableFetchError},
     prelude::*,
 };
-use bevy_egui::{egui, EguiContexts, EguiPlugin};
+use bevy_egui::{egui, EguiContexts, EguiPlugin, EguiPrimaryContextPass};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier3d::prelude::*;
 
@@ -67,10 +68,7 @@ fn main() {
     app.init_resource::<ExamplesRes>()
         .add_plugins((
             DefaultPlugins,
-            EguiPlugin {
-                enable_multipass_for_primary_context: false,
-                ..Default::default()
-            },
+            EguiPlugin::default(),
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
             WorldInspectorPlugin::new(),
@@ -95,6 +93,17 @@ fn main() {
             (Examples::StaticTrimesh3, "StaticTrimesh3").into(),
         ]))
         .init_resource::<ExampleSelected>()
+        .add_systems(PreStartup, |mut commands: Commands| {
+            commands.spawn((
+                Camera2d,
+                bevy_egui::PrimaryEguiContext,
+                Camera {
+                    order: 999,
+                    ..Default::default()
+                },
+                RenderLayers::none(),
+            ));
+        })
         //
         // boxes3
         .add_systems(
@@ -235,7 +244,7 @@ fn main() {
         )
         .add_systems(OnExit(Examples::None), init)
         .add_systems(
-            Update,
+            EguiPrimaryContextPass,
             (
                 ui_example_system,
                 change_example.run_if(resource_changed::<ExampleSelected>),

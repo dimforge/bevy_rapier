@@ -14,10 +14,11 @@ mod rope_joint2;
 mod voxels2;
 
 use bevy::{
+    camera::visibility::RenderLayers,
     ecs::world::error::{EntityDespawnError, EntityMutableFetchError},
     prelude::*,
 };
-use bevy_egui::{egui, EguiContexts, EguiPlugin};
+use bevy_egui::{egui, EguiContexts, EguiPlugin, EguiPrimaryContextPass};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier2d::prelude::*;
 
@@ -90,6 +91,17 @@ fn main() {
             (Examples::PlayerMovement2, "PlayerMovement2").into(),
         ]))
         .init_resource::<ExampleSelected>()
+        .add_systems(PreStartup, |mut commands: Commands| {
+            commands.spawn((
+                Camera2d,
+                bevy_egui::PrimaryEguiContext,
+                Camera {
+                    order: 999,
+                    ..Default::default()
+                },
+                RenderLayers::none(),
+            ));
+        })
         //
         //boxes2
         .add_systems(
@@ -240,7 +252,7 @@ fn main() {
         )
         .add_systems(OnExit(Examples::None), init)
         .add_systems(
-            Update,
+            EguiPrimaryContextPass,
             (
                 ui_example_system,
                 change_example.run_if(resource_changed::<ExampleSelected>),
