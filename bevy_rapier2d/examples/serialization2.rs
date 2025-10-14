@@ -35,6 +35,6 @@ pub fn print_physics(_context: ReadRapierContext) {
     panic!("Example 'serialization' should be run with '--features serde-serialize'.");
 }
 
-fn quit(mut exit_event: EventWriter<AppExit>) {
+fn quit(mut exit_event: MessageWriter<AppExit>) {
     exit_event.write(AppExit::Success);
 }

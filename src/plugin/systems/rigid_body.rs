@@ -136,7 +136,7 @@ pub fn apply_rigid_body_user_changes(
             Changed<AdditionalSolverIterations>,
         >,
     ),
-    mut mass_modified: EventWriter<MassModifiedEvent>,
+    mut mass_modified: MessageWriter<MassModifiedMessage>,
 ) {
     // Deal with sleeping first, because other changes may then wake-up the
     // rigid-body again.
@@ -588,7 +588,7 @@ pub fn init_rigid_bodies(
         builder = builder.enabled(disabled.is_none());
 
         if let Some(transform) = transform {
-            builder = builder.position(utils::transform_to_iso(&transform.compute_transform()));
+            builder = builder.pose(utils::transform_to_iso(&transform.compute_transform()));
         }
 
         #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled

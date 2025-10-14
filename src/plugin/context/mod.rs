@@ -16,8 +16,8 @@ use rapier::prelude::{
 
 use crate::geometry::{PointProjection, RayIntersection, ShapeCastHit};
 use crate::math::{Rot, Vect};
-use crate::pipeline::{CollisionEvent, ContactForceEvent, EventQueue};
-use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query};
+use crate::pipeline::{CollisionMessage, ContactForceMessage, EventQueue};
+use bevy::prelude::{Entity, GlobalTransform, Query};
 
 use crate::control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput};
 use crate::dynamics::TransformInterpolation;
@@ -223,7 +223,7 @@ impl<'a> RapierQueryPipelineMut<'a> {
     }
 
     /// Downgrades the mutable reference to an immutable reference.
-    pub fn as_ref(&self) -> RapierQueryPipeline {
+    pub fn as_ref(&self) -> RapierQueryPipeline<'_> {
         RapierQueryPipeline {
             query_pipeline: self.query_pipeline.as_ref(),
         }
@@ -664,9 +664,9 @@ pub struct RapierContextSimulation {
     pub(crate) deleted_colliders: HashMap<ColliderHandle, Entity>,
 
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
-    pub(crate) collision_events_to_send: Vec<CollisionEvent>,
+    pub(crate) collision_events_to_send: Vec<CollisionMessage>,
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
-    pub(crate) contact_force_events_to_send: Vec<ContactForceEvent>,
+    pub(crate) contact_force_events_to_send: Vec<ContactForceMessage>,
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub(crate) character_collisions_collector: Vec<rapier::control::CharacterCollision>,
 }
@@ -700,8 +700,8 @@ impl RapierContextSimulation {
         gravity: Vect,
         timestep_mode: TimestepMode,
         events: Option<(
-            &EventWriter<CollisionEvent>,
-            &EventWriter<ContactForceEvent>,
+            &MessageWriter<CollisionMessage>,
+            &MessageWriter<ContactForceMessage>,
         )>,
         hooks: &dyn PhysicsHooks,
         time: &Time,
@@ -848,8 +848,8 @@ impl RapierContextSimulation {
     /// that are stored in the events list
     pub fn send_bevy_events(
         &mut self,
-        collision_event_writer: &mut EventWriter<CollisionEvent>,
-        contact_force_event_writer: &mut EventWriter<ContactForceEvent>,
+        collision_event_writer: &mut MessageWriter<CollisionMessage>,
+        contact_force_event_writer: &mut MessageWriter<ContactForceMessage>,
     ) {
         for collision_event in self.collision_events_to_send.drain(..) {
             collision_event_writer.write(collision_event);

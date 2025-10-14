@@ -1,13 +1,14 @@
-use crate::pipeline::{CollisionEvent, ContactForceEvent};
+use crate::pipeline::{CollisionMessage, ContactForceMessage};
 use crate::prelude::*;
 use crate::reflect::IntegrationParametersWrapper;
+use bevy::app::DynEq;
 use bevy::ecs::{
     intern::Interned,
     schedule::{IntoScheduleConfigs, ScheduleConfigs, ScheduleLabel},
     system::{ScheduleSystem, SystemParamItem},
 };
 use bevy::platform::collections::HashSet;
-use bevy::{prelude::*, transform::TransformSystem};
+use bevy::{prelude::*, transform::TransformSystems};
 use rapier::dynamics::IntegrationParameters;
 use std::marker::PhantomData;
 
@@ -193,7 +194,7 @@ pub struct RapierBevyComponentApply;
 
 /// A set for rapier's copy of Bevy's transform propagation systems.
 ///
-/// See [`TransformSystem`](bevy::transform::TransformSystem::TransformPropagate).
+/// See [`TransformSystems`](bevy::transform::TransformSystems::Propagate).
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
 pub struct RapierTransformPropagateSet;
 
@@ -267,9 +268,9 @@ where
             .register_type::<DefaultRapierContext>()
             .register_type::<RapierContextInitialization>();
 
-        app.insert_resource(Events::<CollisionEvent>::default())
-            .insert_resource(Events::<ContactForceEvent>::default())
-            .insert_resource(Events::<MassModifiedEvent>::default());
+        app.insert_resource(Messages::<CollisionMessage>::default())
+            .insert_resource(Messages::<ContactForceMessage>::default())
+            .insert_resource(Messages::<MassModifiedMessage>::default());
         let default_world_init = app.world().get_resource::<RapierContextInitialization>();
         if let Some(world_init) = default_world_init {
             log::warn!("RapierPhysicsPlugin added but a `RapierContextInitialization` resource was already existing.\
@@ -290,7 +291,7 @@ where
         if self.schedule != PostUpdate.intern() {
             app.add_systems(
                 PostUpdate,
-                (systems::sync_removals,).before(TransformSystem::TransformPropagate),
+                (systems::sync_removals,).before(TransformSystems::Propagate),
             );
         }
 
@@ -304,7 +305,7 @@ where
                     PhysicsSet::Writeback,
                 )
                     .chain()
-                    .before(TransformSystem::TransformPropagate),
+                    .before(TransformSystems::Propagate),
             );
             app.configure_sets(
                 self.schedule,
@@ -326,7 +327,7 @@ where
             app.init_resource::<TimestepMode>();
 
             // Warn user if the timestep mode isn't in Fixed
-            if self.schedule.as_dyn_eq().dyn_eq(FixedUpdate.as_dyn_eq()) {
+            if self.schedule.dyn_eq(&FixedUpdate as &dyn DynEq) {
                 let config = app.world_mut().resource::<TimestepMode>();
                 match config {
                     TimestepMode::Fixed { .. } => {}
@@ -341,7 +342,7 @@ where
     fn finish(&self, _app: &mut App) {
         #[cfg(all(feature = "dim3", feature = "async-collider"))]
         {
-            use bevy::{asset::AssetPlugin, render::mesh::MeshPlugin, scene::ScenePlugin};
+            use bevy::{asset::AssetPlugin, mesh::MeshPlugin, scene::ScenePlugin};
             if !_app.is_plugin_added::<AssetPlugin>() {
                 _app.add_plugins(AssetPlugin::default());
             }
@@ -442,7 +443,7 @@ pub fn setup_rapier_configuration(
 mod test {
 
     use bevy::{
-        ecs::schedule::Stepping,
+        ecs::schedule::{NodeId, Stepping},
         prelude::Component,
         time::{TimePlugin, TimeUpdateStrategy},
     };
@@ -509,7 +510,7 @@ mod test {
                         .unwrap()
                         .systems()
                         .unwrap()
-                        .find(|s| s.0 == cursor.1)
+                        .find(|s| NodeId::System(s.0) == cursor.1)
                         .unwrap();
                     println!(
                         "next system: {}",
@@ -609,22 +610,16 @@ mod test {
             // render + physics
             app.update();
 
-            let context = app
-                .world_mut()
-                .query::<RapierContext>()
-                .single(app.world())
-                .unwrap();
+            let mut context_query = app.world_mut().query::<RapierContext>();
+            let context = context_query.single(app.world()).unwrap();
             assert_eq!(context.rigidbody_set.entity2body.len(), 1);
 
             // render only + remove entities
             app.update();
             // Fixed Update hasn´t run yet, so it's a risk of not having caught the bevy removed event, which will be cleaned next frame.
 
-            let context = app
-                .world_mut()
-                .query::<RapierContext>()
-                .single(app.world())
-                .unwrap();
+            let mut context_query = app.world_mut().query::<RapierContext>();
+            let context = context_query.single(app.world()).unwrap();
 
             println!("{:?}", &context.rigidbody_set.entity2body);
             assert_eq!(context.rigidbody_set.entity2body.len(), 0);
@@ -692,11 +687,8 @@ mod test {
             for _ in 0..100 {
                 app.update();
             }
-            let context = app
-                .world_mut()
-                .query::<RapierContext>()
-                .single(app.world())
-                .unwrap();
+            let mut context_query = app.world_mut().query::<RapierContext>();
+            let context = context_query.single(app.world()).unwrap();
 
             println!("{:#?}", &context.rigidbody_set.bodies);
         }
@@ -760,11 +752,8 @@ mod test {
                 .unwrap();
             approx::assert_relative_eq!(collider.scale, Vect::splat(0.1), epsilon = 1.0e-5);
 
-            let context = app
-                .world_mut()
-                .query::<RapierContext>()
-                .single(app.world())
-                .unwrap();
+            let mut context_query = app.world_mut().query::<RapierContext>();
+            let context = context_query.single(app.world()).unwrap();
             let physics_ball_radius = context
                 .colliders
                 .colliders

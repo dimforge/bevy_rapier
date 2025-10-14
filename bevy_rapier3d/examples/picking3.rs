@@ -45,15 +45,13 @@ pub fn setup_physics(mut commands: Commands) {
             },
         ))
         .observe(on_click_spawn_cube)
+        .observe(|out: On<Pointer<Out>>, mut texts: Query<&mut TextColor>| {
+            let mut text_color = texts.get_mut(out.event().entity).unwrap();
+            text_color.0 = Color::WHITE;
+        })
         .observe(
-            |out: Trigger<Pointer<Out>>, mut texts: Query<&mut TextColor>| {
-                let mut text_color = texts.get_mut(out.target()).unwrap();
-                text_color.0 = Color::WHITE;
-            },
-        )
-        .observe(
-            |over: Trigger<Pointer<Over>>, mut texts: Query<&mut TextColor>| {
-                let mut color = texts.get_mut(over.target()).unwrap();
+            |over: On<Pointer<Over>>, mut texts: Query<&mut TextColor>| {
+                let mut color = texts.get_mut(over.event().entity).unwrap();
                 color.0 = bevy::color::palettes::tailwind::CYAN_400.into();
             },
         );
@@ -67,11 +65,7 @@ pub fn setup_physics(mut commands: Commands) {
     ));
 }
 
-fn on_click_spawn_cube(
-    _click: Trigger<Pointer<Click>>,
-    mut commands: Commands,
-    mut num: Local<usize>,
-) {
+fn on_click_spawn_cube(_click: On<Pointer<Click>>, mut commands: Commands, mut num: Local<usize>) {
     let rad = 0.25;
     let colors = [
         Hsla::hsl(220.0, 1.0, 0.3),
@@ -92,8 +86,8 @@ fn on_click_spawn_cube(
     *num += 1;
 }
 
-fn on_drag_rotate(drag: Trigger<Pointer<Drag>>, mut transforms: Query<&mut Transform>) {
-    if let Ok(mut transform) = transforms.get_mut(drag.target()) {
+fn on_drag_rotate(drag: On<Pointer<Drag>>, mut transforms: Query<&mut Transform>) {
+    if let Ok(mut transform) = transforms.get_mut(drag.event().entity) {
         transform.rotate_y(drag.delta.x * 0.02);
         transform.rotate_x(drag.delta.y * 0.02);
     }
