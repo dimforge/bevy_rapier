@@ -12,7 +12,7 @@ pub fn writeback_mass_properties(
     config: Query<&RapierConfiguration>,
 
     mut mass_props: Query<&mut ReadMassProperties>,
-    mut mass_modified: EventReader<MassModifiedEvent>,
+    mut mass_modified: MessageReader<MassModifiedEvent>,
 ) {
     for entity in mass_modified.read() {
         let link = link

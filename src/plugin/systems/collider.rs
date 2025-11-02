@@ -141,7 +141,7 @@ pub fn apply_collider_user_changes(
         Changed<ColliderMassProperties>,
     >,
 
-    mut mass_modified: EventWriter<MassModifiedEvent>,
+    mut mass_modified: MessageWriter<MassModifiedEvent>,
 ) {
     for (rapier_entity, handle, transform) in changed_collider_transforms.iter() {
         let (rigidbody_set, mut context_colliders) = context
@@ -568,7 +568,7 @@ pub fn init_async_scene_colliders(
 /// Adds entity to [`CollidingEntities`] on starting collision and removes from it when the
 /// collision ends.
 pub fn update_colliding_entities(
-    mut collision_events: EventReader<CollisionEvent>,
+    mut collision_events: MessageReader<CollisionEvent>,
     mut colliding_entities: Query<&mut CollidingEntities>,
 ) {
     for event in collision_events.read() {
@@ -600,7 +600,7 @@ pub mod test {
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_collider_initializes() {
         use super::*;
-        use bevy::{render::mesh::MeshPlugin, scene::ScenePlugin};
+        use bevy::{mesh::MeshPlugin, scene::ScenePlugin};
 
         let mut app = App::new();
         app.add_plugins((AssetPlugin::default(), MeshPlugin, ScenePlugin));
@@ -633,7 +633,7 @@ pub mod test {
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_scene_collider_initializes() {
         use super::*;
-        use bevy::{render::mesh::MeshPlugin, scene::ScenePlugin};
+        use bevy::{mesh::MeshPlugin, scene::ScenePlugin};
 
         let mut app = App::new();
         app.add_plugins((AssetPlugin::default(), MeshPlugin, ScenePlugin));

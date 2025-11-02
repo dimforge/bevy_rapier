@@ -39,19 +39,32 @@ macro_rules! impl_ref_methods(
                 self.raw.heap_memory_size()
             }
 
-            /// Shortcut to [`Voxels::extents`].
+            /// Shortcut to [`Voxels::local_aabb`].
             pub fn extents(&self) -> Vect {
-                self.raw.extents().into()
+                self.raw.local_aabb().extents().into()
             }
 
-            /// Shortcut to [`Voxels::domain_center`].
+            /// Shortcut to [`Voxels::local_aabb`].
             pub fn domain_center(&self) -> Vect {
-                self.raw.domain_center().into()
+                self.raw.local_aabb().center().coords.into()
             }
 
-            /// Shortcut to [`Voxels::is_voxel_in_bounds`].
+            /// Shortcut to [`Voxels::domain`].
             pub fn is_voxel_in_bounds(&self, key: IVect) -> bool {
-                self.raw.is_voxel_in_bounds(key.into())
+                let [mins, maxs] = self.raw.domain();
+                #[cfg(feature = "dim2")]
+                {
+                    key.x >= mins.x && key.y >= mins.y && key.x < maxs.x && key.y < maxs.y
+                }
+                #[cfg(feature = "dim3")]
+                {
+                    key.x >= mins.x
+                        && key.y >= mins.y
+                        && key.z >= mins.z
+                        && key.x < maxs.x
+                        && key.y < maxs.y
+                        && key.z < maxs.z
+                }
             }
 
             /// Shortcut to [`Voxels::voxel_aabb`].
@@ -60,23 +73,51 @@ macro_rules! impl_ref_methods(
             }
 
             /// Shortcut to [`Voxels::voxel_state`].
-            pub fn voxel_state(&self, key: IVect) -> VoxelState {
+            pub fn voxel_state(&self, key: IVect) -> Option<VoxelState> {
                 self.raw.voxel_state(key.into())
             }
 
-            /// Shortcut to [`Voxels::voxel_at_point_unchecked`].
+            /// Shortcut to [`Voxels::voxel_at_point`].
             pub fn voxel_at_point_unchecked(&self, point: Vect) -> IVect {
-                self.raw.voxel_at_point_unchecked(point.into()).into()
+                let p = self.raw.voxel_at_point(point.into());
+                #[cfg(feature = "dim2")]
+                {
+                    IVect::new(p.x, p.y)
+                }
+                #[cfg(feature = "dim3")]
+                {
+                    IVect::new(p.x, p.y, p.z)
+                }
             }
 
             /// Shortcut to [`Voxels::voxel_at_point`].
             pub fn voxel_at_point(&self, pt: Vect) -> Option<IVect> {
-                self.raw.voxel_at_point(pt.into()).map(IVect::from)
+                let voxel = self.voxel_at_point_unchecked(pt);
+                if self.is_voxel_in_bounds(voxel) {
+                    Some(voxel)
+                } else {
+                    None
+                }
             }
 
-            /// Shortcut to [`Voxels::clamp_voxel`].
+            /// Shortcut to [`Voxels::domain`].
             pub fn clamp_voxel(&self, key: IVect) -> IVect {
-                self.raw.clamp_voxel(key.into()).into()
+                let [mins, maxs] = self.raw.domain();
+                #[cfg(feature = "dim2")]
+                {
+                    IVect::new(
+                        key.x.clamp(mins.x, maxs.x - 1),
+                        key.y.clamp(mins.y, maxs.y - 1),
+                    )
+                }
+                #[cfg(feature = "dim3")]
+                {
+                    IVect::new(
+                        key.x.clamp(mins.x, maxs.x - 1),
+                        key.y.clamp(mins.y, maxs.y - 1),
+                        key.z.clamp(mins.z, maxs.z - 1),
+                    )
+                }
             }
 
             /// Shortcut to [`Voxels::voxel_range_intersecting_local_aabb`].
@@ -94,8 +135,7 @@ macro_rules! impl_ref_methods(
 
             /// Shortcut to [`Voxels::align_aabb_to_grid`].
             pub fn align_aabb_to_grid(&self, aabb: &BevyAabb) -> BevyAabb {
-                aabb_bevy_from_na(&self.raw
-                    .align_aabb_to_grid(&aabb_na_from_bevy(aabb)))
+                aabb_bevy_from_na(&self.raw.align_aabb_to_grid(&aabb_na_from_bevy(aabb)))
             }
 
             /// Shortcut to [`Voxels::voxels_intersecting_local_aabb`].
@@ -141,19 +181,22 @@ pub struct VoxelsViewMut<'a> {
 impl_ref_methods!(VoxelsViewMut);
 
 impl<'a> VoxelsViewMut<'a> {
-    /// Shortcut to [`Voxels::try_set_voxel`].
+    /// Shortcut to set voxel state with bounds checking.
     pub fn try_set_voxel(&mut self, key: IVect, is_filled: bool) -> Option<VoxelState> {
-        self.raw.try_set_voxel(key.into(), is_filled)
+        if self.is_voxel_in_bounds(key) {
+            Some(self.raw.set_voxel(key.into(), is_filled))
+        } else {
+            None
+        }
     }
 
-    /// Shortcut to [`Voxels::set_voxel`].
-    pub fn set_voxel(&mut self, key: IVect, is_filled: bool) -> Option<VoxelState> {
+    /// Shortcut to to [`Voxels::set_voxel`].
+    pub fn set_voxel(&mut self, key: IVect, is_filled: bool) -> VoxelState {
         self.raw.set_voxel(key.into(), is_filled)
     }
 
-    /// Shortcut to [`Voxels::resize_domain`].
-    pub fn resize_domain(&mut self, domain_mins: IVect, domain_maxs: IVect) {
-        self.raw
-            .resize_domain(domain_mins.into(), domain_maxs.into());
+    /// Shortcut to [`Voxels::crop`].
+    pub fn crop(&mut self, domain_mins: IVect, domain_maxs: IVect) {
+        self.raw.crop(domain_mins.into(), domain_maxs.into());
     }
 }

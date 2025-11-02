@@ -2,7 +2,7 @@ use crate::plugin::context::{
     RapierContextColliders, RapierContextJoints, RapierContextSimulation, RapierRigidBodySet,
 };
 use bevy::prelude::*;
-use bevy::transform::TransformSystem;
+use bevy::transform::TransformSystems;
 use rapier::math::{Point, Real};
 use rapier::pipeline::{DebugRenderBackend, DebugRenderObject, DebugRenderPipeline};
 pub use rapier::pipeline::{DebugRenderMode, DebugRenderStyle};
@@ -118,7 +118,7 @@ impl Plugin for RapierDebugRenderPlugin {
         })
         .add_systems(
             PostUpdate,
-            debug_render_scene.after(TransformSystem::TransformPropagate),
+            debug_render_scene.after(TransformSystems::Propagate),
         );
     }
 }
