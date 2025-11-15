@@ -1,6 +1,6 @@
 use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::prelude::*;
-use crate::reflect::IntegrationParametersWrapper;
+use crate::reflect::{IntegrationParametersWrapper, SpringCoefficientsWrapper};
 use bevy::app::DynEq;
 use bevy::ecs::{
     intern::Interned,
@@ -266,7 +266,8 @@ where
             .register_type::<RapierConfiguration>()
             .register_type::<SimulationToRenderTime>()
             .register_type::<DefaultRapierContext>()
-            .register_type::<RapierContextInitialization>();
+            .register_type::<RapierContextInitialization>()
+            .register_type::<SpringCoefficientsWrapper>();
 
         app.insert_resource(Messages::<CollisionEvent>::default())
             .insert_resource(Messages::<ContactForceEvent>::default())

@@ -1,8 +1,9 @@
 use crate::math::Real;
 use bevy::reflect::reflect_remote;
+use rapier::{dynamics::IntegrationParameters, prelude::SpringCoefficients};
+
 #[cfg(feature = "dim3")]
 use rapier::dynamics::FrictionModel;
-use rapier::dynamics::IntegrationParameters;
 
 /// Friction models used for all contact constraints between two rigid-bodies.
 ///
@@ -27,6 +28,21 @@ pub enum FrictionModelWrapper {
     Coulomb,
 }
 
+#[reflect_remote(SpringCoefficients<Real>)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+/// Coefficients for a spring, typically used for configuring constraint softness for contacts and
+/// joints.
+pub struct SpringCoefficientsWrapper {
+    /// Sets the natural frequency (Hz) of the spring-like constraint.
+    ///
+    /// Higher values make the constraint stiffer and resolve constraint violations more quickly.
+    pub natural_frequency: Real,
+    /// Sets the damping ratio for the spring-like constraint.
+    ///
+    /// Larger values make the joint more compliant (allowing more drift before stabilization).
+    pub damping_ratio: Real,
+}
+
 #[cfg(not(feature = "dim3"))]
 #[reflect_remote(IntegrationParameters)]
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -46,34 +62,9 @@ pub struct IntegrationParametersWrapper {
     /// to numerical instabilities.
     pub min_ccd_dt: Real,
 
-    /// > 0: the damping ratio used by the springs for contact constraint stabilization.
-    ///
-    /// Larger values make the constraints more compliant (allowing more visible
-    /// penetrations before stabilization).
-    /// (default `5.0`).
-    pub contact_damping_ratio: Real,
-
-    /// > 0: the natural frequency used by the springs for contact constraint regularization.
-    ///
-    /// Increasing this value will make it so that penetrations get fixed more quickly at the
-    /// expense of potential jitter effects due to overshooting. In order to make the simulation
-    /// look stiffer, it is recommended to increase the [`Self::contact_damping_ratio`] instead of this
-    /// value.
-    /// (default: `30.0`).
-    pub contact_natural_frequency: Real,
-
-    /// > 0: the natural frequency used by the springs for joint constraint regularization.
-    ///
-    /// Increasing this value will make it so that penetrations get fixed more quickly.
-    /// (default: `1.0e6`).
-    pub joint_natural_frequency: Real,
-
-    /// The fraction of critical damping applied to the joint for constraints regularization.
-    ///
-    /// Larger values make the constraints more compliant (allowing more joint
-    /// drift before stabilization).
-    /// (default `1.0`).
-    pub joint_damping_ratio: Real,
+    /// Softness coefficients for contact constraints.
+    #[reflect(remote = SpringCoefficientsWrapper)]
+    pub contact_softness: SpringCoefficients<Real>,
 
     /// The coefficient in `[0, 1]` applied to warmstart impulses, i.e., impulses that are used as the
     /// initial solution (instead of 0) at the next simulation step.
@@ -114,7 +105,7 @@ pub struct IntegrationParametersWrapper {
     pub num_solver_iterations: usize,
     /// Number of internal Project Gauss Seidel (PGS) iterations run at each solver iteration (default: `1`).
     pub num_internal_pgs_iterations: usize,
-    /// The number of stabilization iterations run at each solver iterations (default: `2`).
+    /// The number of stabilization iterations run at each solver iterations (default: `1`).
     pub num_internal_stabilization_iterations: usize,
     /// Minimum number of dynamic bodies in each active island (default: `128`).
     pub min_island_size: usize,
@@ -142,34 +133,9 @@ pub struct IntegrationParametersWrapper {
     /// to numerical instabilities.
     pub min_ccd_dt: Real,
 
-    /// > 0: the damping ratio used by the springs for contact constraint stabilization.
-    ///
-    /// Larger values make the constraints more compliant (allowing more visible
-    /// penetrations before stabilization).
-    /// (default `5.0`).
-    pub contact_damping_ratio: Real,
-
-    /// > 0: the natural frequency used by the springs for contact constraint regularization.
-    ///
-    /// Increasing this value will make it so that penetrations get fixed more quickly at the
-    /// expense of potential jitter effects due to overshooting. In order to make the simulation
-    /// look stiffer, it is recommended to increase the [`Self::contact_damping_ratio`] instead of this
-    /// value.
-    /// (default: `30.0`).
-    pub contact_natural_frequency: Real,
-
-    /// > 0: the natural frequency used by the springs for joint constraint regularization.
-    ///
-    /// Increasing this value will make it so that penetrations get fixed more quickly.
-    /// (default: `1.0e6`).
-    pub joint_natural_frequency: Real,
-
-    /// The fraction of critical damping applied to the joint for constraints regularization.
-    ///
-    /// Larger values make the constraints more compliant (allowing more joint
-    /// drift before stabilization).
-    /// (default `1.0`).
-    pub joint_damping_ratio: Real,
+    /// Softness coefficients for contact constraints.
+    #[reflect(remote = SpringCoefficientsWrapper)]
+    pub contact_softness: SpringCoefficients<Real>,
 
     /// The coefficient in `[0, 1]` applied to warmstart impulses, i.e., impulses that are used as the
     /// initial solution (instead of 0) at the next simulation step.
@@ -210,7 +176,7 @@ pub struct IntegrationParametersWrapper {
     pub num_solver_iterations: usize,
     /// Number of internal Project Gauss Seidel (PGS) iterations run at each solver iteration (default: `1`).
     pub num_internal_pgs_iterations: usize,
-    /// The number of stabilization iterations run at each solver iterations (default: `2`).
+    /// The number of stabilization iterations run at each solver iterations (default: `1`).
     pub num_internal_stabilization_iterations: usize,
     /// Minimum number of dynamic bodies in each active island (default: `128`).
     pub min_island_size: usize,
