@@ -1,4 +1,4 @@
-use bevy::{diagnostic::FrameCount, prelude::*, transform::TransformSystem};
+use bevy::{diagnostic::FrameCount, prelude::*};
 use bevy_rapier3d::prelude::*;
 
 fn main() {
@@ -24,7 +24,7 @@ fn main() {
             PhysicsSet::Writeback,
         )
             .chain()
-            .before(TransformSystem::TransformPropagate),
+            .before(TransformSystems::Propagate),
     );
 
     app.add_systems(

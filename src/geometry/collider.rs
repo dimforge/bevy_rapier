@@ -10,7 +10,7 @@ use bevy::prelude::*;
 
 use bevy::platform::collections::HashSet;
 use rapier::geometry::Shape;
-use rapier::prelude::{ColliderHandle, InteractionGroups, SharedShape};
+use rapier::prelude::{ColliderHandle, InteractionGroups, InteractionTestMode, SharedShape};
 
 use crate::dynamics::{CoefficientCombineRule, MassProperties};
 use crate::math::Vect;
@@ -405,6 +405,7 @@ impl From<CollisionGroups> for InteractionGroups {
             memberships: rapier::geometry::Group::from_bits(collision_groups.memberships.bits())
                 .unwrap(),
             filter: rapier::geometry::Group::from_bits(collision_groups.filters.bits()).unwrap(),
+            test_mode: InteractionTestMode::And,
         }
     }
 }
@@ -438,6 +439,7 @@ impl From<SolverGroups> for InteractionGroups {
             memberships: rapier::geometry::Group::from_bits(solver_groups.memberships.bits())
                 .unwrap(),
             filter: rapier::geometry::Group::from_bits(solver_groups.filters.bits()).unwrap(),
+            test_mode: InteractionTestMode::And,
         }
     }
 }

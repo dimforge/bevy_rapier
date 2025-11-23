@@ -95,7 +95,7 @@ pub fn despawn(
     mut despawn: ResMut<DespawnResource>,
     query: Query<Entity, With<Despawn>>,
 ) {
-    if despawn.timer.tick(time.delta()).finished() {
+    if despawn.timer.tick(time.delta()).is_finished() {
         for entity in &query {
             println!("Despawning ground entity");
             commands.entity(entity).despawn();

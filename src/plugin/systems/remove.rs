@@ -43,7 +43,7 @@ pub fn sync_removals(
     mut removed_rigid_body_disabled: RemovedComponents<RigidBodyDisabled>,
     mut removed_colliders_disabled: RemovedComponents<ColliderDisabled>,
 
-    mut mass_modified: EventWriter<MassModifiedEvent>,
+    mut mass_modified: MessageWriter<MassModifiedEvent>,
 ) {
     /*
      * Rigid-bodies removal detection.
@@ -219,9 +219,9 @@ pub fn sync_removals(
 
 fn find_context<'a, TReturn, TQueryParams: QueryData>(
     context_writer: &'a mut Query<TQueryParams>,
-    item_finder: impl Fn(&mut TQueryParams::Item<'_>) -> Option<TReturn>,
-) -> Option<(TQueryParams::Item<'a>, TReturn)> {
-    let ret: Option<(TQueryParams::Item<'_>, TReturn)> = context_writer
+    item_finder: impl Fn(&mut TQueryParams::Item<'_, '_>) -> Option<TReturn>,
+) -> Option<(TQueryParams::Item<'a, 'a>, TReturn)> {
+    let ret: Option<(TQueryParams::Item<'_, '_>, TReturn)> = context_writer
         .iter_mut()
         .find_map(|mut context| item_finder(&mut context).map(|handle| (context, handle)));
     ret

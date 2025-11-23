@@ -17,7 +17,7 @@ use rapier::prelude::{
 use crate::geometry::{PointProjection, RayIntersection, ShapeCastHit};
 use crate::math::{Rot, Vect};
 use crate::pipeline::{CollisionEvent, ContactForceEvent, EventQueue};
-use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query};
+use bevy::prelude::{Entity, GlobalTransform, Query};
 
 use crate::control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput};
 use crate::dynamics::TransformInterpolation;
@@ -223,7 +223,7 @@ impl<'a> RapierQueryPipelineMut<'a> {
     }
 
     /// Downgrades the mutable reference to an immutable reference.
-    pub fn as_ref(&self) -> RapierQueryPipeline {
+    pub fn as_ref(&self) -> RapierQueryPipeline<'_> {
         RapierQueryPipeline {
             query_pipeline: self.query_pipeline.as_ref(),
         }
@@ -700,8 +700,8 @@ impl RapierContextSimulation {
         gravity: Vect,
         timestep_mode: TimestepMode,
         events: Option<(
-            &EventWriter<CollisionEvent>,
-            &EventWriter<ContactForceEvent>,
+            &MessageWriter<CollisionEvent>,
+            &MessageWriter<ContactForceEvent>,
         )>,
         hooks: &dyn PhysicsHooks,
         time: &Time,
@@ -848,8 +848,8 @@ impl RapierContextSimulation {
     /// that are stored in the events list
     pub fn send_bevy_events(
         &mut self,
-        collision_event_writer: &mut EventWriter<CollisionEvent>,
-        contact_force_event_writer: &mut EventWriter<ContactForceEvent>,
+        collision_event_writer: &mut MessageWriter<CollisionEvent>,
+        contact_force_event_writer: &mut MessageWriter<ContactForceEvent>,
     ) {
         for collision_event in self.collision_events_to_send.drain(..) {
             collision_event_writer.write(collision_event);

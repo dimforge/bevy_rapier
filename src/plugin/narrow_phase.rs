@@ -31,7 +31,7 @@ impl RapierContextSimulation {
     }
 
     /// All the intersection pairs involving the collider attached to the given entity, where at least one collider
-    /// involved in the intersection is a sensor.    
+    /// involved in the intersection is a sensor.
     ///
     /// The returned contact pairs identify pairs of colliders (where at least one is a sensor) with
     /// intersecting bounding-volumes. To check if any geometric overlap happened between the collider shapes, check
@@ -333,7 +333,7 @@ impl SolverContactView<'_> {
     }
     /// Whether or not this contact existed during the last timestep.
     pub fn is_new(&self) -> bool {
-        self.raw.is_new
+        self.raw.is_new == 1.0
     }
 }
 

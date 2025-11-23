@@ -123,7 +123,7 @@ pub fn ball_spawner(mut commands: Commands, time: Res<Time>, mut ball_state: Res
         return;
     }
 
-    if ball_state.timer.tick(time.delta()).finished() {
+    if ball_state.timer.tick(time.delta()).is_finished() {
         // Spawn a ball near the top of the ramp.
         let ramp_size = ramp_size();
         let rad = 0.3;

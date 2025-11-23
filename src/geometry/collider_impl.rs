@@ -2,8 +2,8 @@
 use na::DVector;
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 use {
+    bevy::mesh::{Indices, VertexAttributeValues},
     bevy::prelude::*,
-    bevy::render::mesh::{Indices, VertexAttributeValues},
 };
 
 use rapier::{

@@ -195,8 +195,8 @@ mod simulation {
             gravity: Vect,
             timestep_mode: TimestepMode,
             events: Option<(
-                &EventWriter<CollisionEvent>,
-                &EventWriter<ContactForceEvent>,
+                &MessageWriter<CollisionEvent>,
+                &MessageWriter<ContactForceEvent>,
             )>,
             hooks: &dyn PhysicsHooks,
             time: &Time,
