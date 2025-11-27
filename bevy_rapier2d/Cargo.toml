@@ -33,38 +33,62 @@ default = [
 ]
 dim2 = []
 debug-render-2d = [
-    "bevy/bevy_core_pipeline",
-    "bevy/bevy_sprite",
-    "bevy/bevy_gizmos",
+    "bevy_core_pipeline",
+    "bevy_sprite",
+    "bevy_gizmos",
     "rapier2d/debug-render",
-    "bevy/bevy_asset",
+    "bevy_asset",
 ]
 debug-render-3d = [
-    "bevy/bevy_core_pipeline",
-    "bevy/bevy_pbr",
-    "bevy/bevy_gizmos",
+    "bevy_core_pipeline",
+    "bevy_pbr",
+    "bevy_gizmos",
     "rapier2d/debug-render",
-    "bevy/bevy_asset",
+    "bevy_asset",
 ]
 rapier-debug-render = ["rapier2d/debug-render"]
 
 parallel = ["rapier2d/parallel"]
 simd-stable = ["rapier2d/simd-stable"]
 simd-nightly = ["rapier2d/simd-nightly"]
-serde-serialize = ["rapier2d/serde-serialize", "bevy/serialize", "serde"]
+serde-serialize = ["rapier2d/serde-serialize", "bevy_ecs/serialize", "serde"]
 enhanced-determinism = ["rapier2d/enhanced-determinism"]
 headless = []
-picking-backend = ["bevy/bevy_picking", "bevy/bevy_render"]
+picking-backend = ["bevy_picking", "bevy_render", "bevy_camera"]
 async-collider = [
-    "bevy/bevy_asset",
-    "bevy/bevy_scene",
-    "bevy/bevy_render",
-    "bevy/bevy_image",
+    "bevy_asset",
+    "bevy_scene",
+    "bevy_render",
+    "bevy_image",
 ]
-to-bevy-mesh = ["bevy/bevy_render", "bevy/bevy_asset"]
+to-bevy-mesh = ["bevy_render", "bevy_asset", "bevy_mesh"]
 
 [dependencies]
-bevy = { version = "0.17.3", default-features = false, features = ["std"] }
+# Bevy crates
+bevy_app = { version = "0.17.3", default-features = false }
+bevy_derive = { version = "0.17.3", default-features = false }
+bevy_ecs = { version = "0.17.3", default-features = false }
+bevy_math = { version = "0.17.3", default-features = false }
+bevy_reflect = { version = "0.17.3", default-features = false }
+bevy_time = { version = "0.17.3", default-features = false }
+bevy_transform = { version = "0.17.3", default-features = false }
+bevy_platform = { version = "0.17.3", default-features = false, features = ["std"] }
+bevy_log = { version = "0.17.3", default-features = false }
+bevy_color = { version = "0.17.3", default-features = false }
+
+# Optional bevy crates for features
+bevy_asset = { version = "0.17.3", default-features = false, optional = true }
+bevy_scene = { version = "0.17.3", default-features = false, optional = true }
+bevy_render = { version = "0.17.3", default-features = false, optional = true }
+bevy_image = { version = "0.17.3", default-features = false, optional = true }
+bevy_mesh = { version = "0.17.3", default-features = false, optional = true }
+bevy_picking = { version = "0.17.3", default-features = false, optional = true }
+bevy_camera = { version = "0.17.3", default-features = false, optional = true }
+bevy_gizmos = { version = "0.17.3", default-features = false, optional = true }
+bevy_sprite = { version = "0.17.3", default-features = false, optional = true }
+bevy_pbr = { version = "0.17.3", default-features = false, optional = true }
+bevy_core_pipeline = { version = "0.17.3", default-features = false, optional = true }
+
 nalgebra = { version = "0.34.1", features = ["convert-glam030"] }
 rapier2d = "0.31.0"
 bitflags = "2.10.0"

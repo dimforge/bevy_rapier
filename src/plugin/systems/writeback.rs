@@ -3,7 +3,7 @@ use crate::dynamics::ReadMassProperties;
 use crate::plugin::context::{RapierContextEntityLink, RapierRigidBodySet};
 use crate::plugin::RapierConfiguration;
 use crate::prelude::MassModifiedEvent;
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
 
 /// System responsible for writing updated mass properties back into the [`ReadMassProperties`] component.
 pub fn writeback_mass_properties(

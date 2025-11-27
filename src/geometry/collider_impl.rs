@@ -1,10 +1,7 @@
+#[cfg(all(feature = "dim3", feature = "async-collider"))]
+use bevy_mesh::{Indices, Mesh, VertexAttributeValues};
 #[cfg(feature = "dim2")]
 use na::DVector;
-#[cfg(all(feature = "dim3", feature = "async-collider"))]
-use {
-    bevy::mesh::{Indices, VertexAttributeValues},
-    bevy::prelude::*,
-};
 
 use rapier::{
     parry::transformation::voxelization::FillMode,

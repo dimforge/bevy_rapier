@@ -13,17 +13,20 @@ use crate::prelude::{
     RapierRigidBodyHandle, Restitution, Sensor, SolverGroups,
 };
 use crate::utils;
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_transform::prelude::*;
 use rapier::dynamics::RigidBodyHandle;
 use rapier::geometry::ColliderBuilder;
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 use {
     crate::prelude::{AsyncCollider, AsyncSceneCollider},
-    bevy::scene::SceneInstance,
+    bevy_asset::Assets,
+    bevy_mesh::{Mesh, Mesh3d},
+    bevy_scene::{SceneInstance, SceneSpawner},
 };
 
 #[cfg(feature = "dim2")]
-use bevy::math::Vec3Swizzles;
+use bevy_math::Vec3Swizzles;
 
 /// Components related to colliders.
 pub type ColliderComponents<'a> = (
@@ -345,7 +348,7 @@ pub(crate) fn collider_offset(
         if let Ok(transform) = transform_query.get(body_entity) {
             let scale_transform = Transform {
                 scale: transform.scale,
-                ..default()
+                ..Default::default()
             };
 
             child_transform = scale_transform * child_transform;
@@ -600,7 +603,11 @@ pub mod test {
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_collider_initializes() {
         use super::*;
-        use bevy::{mesh::MeshPlugin, scene::ScenePlugin};
+        use bevy_app::{App, Update};
+        use bevy_asset::AssetPlugin;
+        use bevy_math::primitives::Cuboid;
+        use bevy_mesh::MeshPlugin;
+        use bevy_scene::ScenePlugin;
 
         let mut app = App::new();
         app.add_plugins((AssetPlugin::default(), MeshPlugin, ScenePlugin));
@@ -633,7 +640,14 @@ pub mod test {
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_scene_collider_initializes() {
         use super::*;
-        use bevy::{mesh::MeshPlugin, scene::ScenePlugin};
+        use bevy_app::{App, PostUpdate};
+        use bevy_asset::AssetPlugin;
+        use bevy_ecs::world::World;
+        use bevy_ecs::name::Name;
+        use bevy_math::primitives::{Capsule3d, Cuboid};
+        use bevy_mesh::MeshPlugin;
+        use bevy_platform::collections::HashMap;
+        use bevy_scene::{Scene, ScenePlugin, SceneRoot};
 
         let mut app = App::new();
         app.add_plugins((AssetPlugin::default(), MeshPlugin, ScenePlugin));
@@ -654,7 +668,7 @@ pub mod test {
         let mut scenes = app.world_mut().resource_mut::<Assets<Scene>>();
         let scene = scenes.add(Scene::new(World::new()));
 
-        let mut named_shapes = bevy::platform::collections::HashMap::default();
+        let mut named_shapes = HashMap::default();
         named_shapes.insert("Capsule".to_string(), None);
         let parent = app
             .world_mut()

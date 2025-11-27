@@ -8,7 +8,7 @@ pub use self::revolute_joint::*;
 pub use self::rope_joint::*;
 pub use self::spring_joint::*;
 
-use bevy::reflect::Reflect;
+use bevy_reflect::Reflect;
 use rapier::dynamics::CoefficientCombineRule as RapierCoefficientCombineRule;
 
 #[cfg(feature = "dim3")]

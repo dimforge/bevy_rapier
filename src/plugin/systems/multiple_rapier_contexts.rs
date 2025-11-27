@@ -8,7 +8,7 @@ use crate::plugin::context::RapierRigidBodySet;
 use crate::plugin::context::{
     RapierContextColliders, RapierContextEntityLink, RapierContextJoints,
 };
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
 
 /// If an entity is turned into the child of something with a physics context link,
 /// the child should become a part of that physics context
