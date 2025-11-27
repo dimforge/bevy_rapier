@@ -1,8 +1,12 @@
 use crate::plugin::context::{
     RapierContextColliders, RapierContextJoints, RapierContextSimulation, RapierRigidBodySet,
 };
-use bevy::prelude::*;
-use bevy::transform::TransformSystems;
+use bevy_app::{App, Plugin, PostUpdate};
+use bevy_color::{Color, ColorToComponents, Hsla};
+use bevy_ecs::prelude::*;
+use bevy_gizmos::gizmos::Gizmos;
+use bevy_reflect::Reflect;
+use bevy_transform::TransformSystems;
 use rapier::math::{Point, Real};
 use rapier::pipeline::{DebugRenderBackend, DebugRenderObject, DebugRenderPipeline};
 pub use rapier::pipeline::{DebugRenderMode, DebugRenderStyle};

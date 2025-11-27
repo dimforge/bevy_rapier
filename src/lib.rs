@@ -21,17 +21,18 @@ pub extern crate rapier2d as rapier;
 #[cfg(feature = "dim3")]
 pub extern crate rapier3d as rapier;
 pub use rapier::parry;
+
 /// Type aliases to select the right vector/rotation types based
 /// on the dimension used by the engine.
 #[cfg(feature = "dim2")]
 pub mod math {
-    use bevy::math::Vec2;
+    use bevy_math::Vec2;
     /// The real type (f32 or f64).
     pub type Real = rapier::math::Real;
     /// The vector type.
     pub type Vect = Vec2;
     /// The integer vector type.
-    pub type IVect = bevy::math::IVec2;
+    pub type IVect = bevy_math::IVec2;
     /// The rotation type (in 2D this is an angle in radians).
     pub type Rot = Real;
 }
@@ -40,13 +41,13 @@ pub mod math {
 /// on the dimension used by the engine.
 #[cfg(feature = "dim3")]
 pub mod math {
-    use bevy::math::{Quat, Vec3};
+    use bevy_math::{Quat, Vec3};
     /// The real type (f32 or f64).
     pub type Real = rapier::math::Real;
     /// The vector type.
     pub type Vect = Vec3;
     /// The integer vector type.
-    pub type IVect = bevy::math::IVec3;
+    pub type IVect = bevy_math::IVec3;
     /// The rotation type.
     pub type Rot = Quat;
 }

@@ -1,4 +1,4 @@
-use bevy::prelude::Entity;
+use bevy_ecs::entity::Entity;
 
 pub use rapier::pipeline::QueryFilterFlags;
 

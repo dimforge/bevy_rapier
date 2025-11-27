@@ -7,7 +7,7 @@ use crate::plugin::context::DefaultRapierContext;
 use crate::plugin::context::RapierContextEntityLink;
 use crate::plugin::context::RapierContextJoints;
 use crate::plugin::context::RapierRigidBodySet;
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
 
 /// System responsible for creating new Rapier joints from the related `bevy_rapier` components.
 pub fn init_joints(

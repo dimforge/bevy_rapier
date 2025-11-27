@@ -1,19 +1,20 @@
 //! A picking backend for Rapier physics entities.
 //!
 //! By default, all colliders are pickable. Picking can be disabled for individual entities
-//! by adding [`Pickable::IGNORE`](bevy::picking::Pickable::IGNORE).
+//! by adding [`Pickable::IGNORE`](bevy_picking::Pickable::IGNORE).
 //!
 //! To make rapier picking entirely opt-in, set [`RapierPickingSettings::require_markers`]
 //! to `true` and add a [`RapierPickable`] component to the desired camera and target entities.
 
-use bevy::app::prelude::*;
-use bevy::camera::visibility::{InheritedVisibility, RenderLayers};
-use bevy::ecs::prelude::*;
-use bevy::picking::backend::ray::RayMap;
-use bevy::picking::backend::HitData;
-use bevy::picking::backend::PointerHits;
-use bevy::picking::{PickingPlugin, PickingSystems};
-use bevy::prelude::*;
+use bevy_app::prelude::*;
+use bevy_camera::visibility::{InheritedVisibility, RenderLayers, ViewVisibility};
+use bevy_camera::Camera;
+use bevy_ecs::prelude::*;
+use bevy_picking::backend::ray::RayMap;
+use bevy_picking::backend::HitData;
+use bevy_picking::backend::PointerHits;
+use bevy_picking::{PickingPlugin, PickingSystems};
+use bevy_reflect::prelude::*;
 use rapier::parry::query::DefaultQueryDispatcher;
 
 /// How a ray cast should handle [`Visibility`].
@@ -141,11 +142,11 @@ pub fn update_hits(
                 |query_pipeline| {
                     #[cfg(feature = "dim2")]
                     for entity in query_pipeline
-                        .intersect_point(bevy::math::Vec2::new(ray.origin.x, ray.origin.y))
+                        .intersect_point(bevy_math::Vec2::new(ray.origin.x, ray.origin.y))
                     {
                         let hit_data = HitData {
                             camera: ray_id.camera,
-                            position: Some(bevy::math::Vec3::new(ray.origin.x, ray.origin.y, 0.0)),
+                            position: Some(bevy_math::Vec3::new(ray.origin.x, ray.origin.y, 0.0)),
                             normal: None,
                             depth: 0.0,
                         };

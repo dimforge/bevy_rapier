@@ -3,9 +3,9 @@ use rapier::prelude::{Aabb, VoxelData, VoxelState, Voxels};
 use crate::math::{IVect, Vect};
 
 #[cfg(feature = "dim2")]
-use bevy::math::bounding::Aabb2d as BevyAabb;
+use bevy_math::bounding::Aabb2d as BevyAabb;
 #[cfg(feature = "dim3")]
-use bevy::math::bounding::Aabb3d as BevyAabb;
+use bevy_math::bounding::Aabb3d as BevyAabb;
 
 fn aabb_na_from_bevy(aabb: &BevyAabb) -> Aabb {
     rapier::parry::bounding_volume::Aabb::new(aabb.min.into(), aabb.max.into())

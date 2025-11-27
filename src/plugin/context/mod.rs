@@ -2,7 +2,11 @@
 
 pub mod systemparams;
 
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_math::bounding;
+use bevy_reflect::Reflect;
+use bevy_time::Time;
+use bevy_transform::components::GlobalTransform;
 use rapier::parry::query::QueryDispatcher;
 use std::collections::HashMap;
 use std::sync::RwLock;
@@ -17,7 +21,6 @@ use rapier::prelude::{
 use crate::geometry::{PointProjection, RayIntersection, ShapeCastHit};
 use crate::math::{Rot, Vect};
 use crate::pipeline::{CollisionEvent, ContactForceEvent, EventQueue};
-use bevy::prelude::{Entity, GlobalTransform, Query};
 
 use crate::control::{CharacterCollision, MoveShapeOptions, MoveShapeOutput};
 use crate::dynamics::TransformInterpolation;
@@ -460,8 +463,8 @@ impl<'a> RapierQueryPipeline<'a> {
     /// pipeline’s BVH. It doesn’t recompute the latest collider AABB.
     pub fn intersect_aabb_conservative(
         &'a self,
-        #[cfg(feature = "dim2")] aabb: bevy::math::bounding::Aabb2d,
-        #[cfg(feature = "dim3")] aabb: bevy::math::bounding::Aabb3d,
+        #[cfg(feature = "dim2")] aabb: bounding::Aabb2d,
+        #[cfg(feature = "dim3")] aabb: bounding::Aabb3d,
     ) -> impl Iterator<Item = Entity> + 'a {
         let scaled_aabb = Aabb {
             mins: aabb.min.into(),

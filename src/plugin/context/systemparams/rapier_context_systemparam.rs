@@ -1,7 +1,12 @@
 use crate::math::{Rot, Vect};
-use bevy::ecs::{query, system::SystemParam};
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_ecs::query::{QueryData, QueryFilter, QuerySingleError};
+use bevy_ecs::system::SystemParam;
+use bevy_time::Time;
 use rapier::prelude::Real;
+
+/// A result type for single query operations returning [`QuerySingleError`] on failure.
+pub type QuerySingleResult<T> = std::result::Result<T, QuerySingleError>;
 
 pub(crate) const RAPIER_CONTEXT_EXPECT_ERROR: &str =
     "RapierContextEntityLink.0 refers to an entity missing components from RapierContextSimulation.";
@@ -15,7 +20,7 @@ use crate::plugin::context::{
 ///
 /// This uses the [`DefaultRapierContext`] filter by default, but you can use a custom query filter with the `T` type parameter.
 #[derive(SystemParam)]
-pub struct ReadRapierContext<'w, 's, T: query::QueryFilter + 'static = With<DefaultRapierContext>> {
+pub struct ReadRapierContext<'w, 's, T: QueryFilter + 'static = With<DefaultRapierContext>> {
     /// The query used to feed components into [`RapierContext`] struct through [`ReadRapierContext::single`].
     pub rapier_context: Query<
         'w,
@@ -30,13 +35,13 @@ pub struct ReadRapierContext<'w, 's, T: query::QueryFilter + 'static = With<Defa
     >,
 }
 
-impl<'w, 's, T: query::QueryFilter + 'static> ReadRapierContext<'w, 's, T> {
+impl<'w, 's, T: QueryFilter + 'static> ReadRapierContext<'w, 's, T> {
     /// Returns a single [`RapierContext`] corresponding to the filter (T) of [`ReadRapierContext`].
     ///
-    /// If the number of query items is not exactly one, a [`bevy::ecs::query::QuerySingleError`] is returned instead.
+    /// If the number of query items is not exactly one, a [`bevy_ecs::query::QuerySingleError`] is returned instead.
     ///
     /// You can also use the underlying query [`ReadRapierContext::rapier_context`] for finer grained queries.
-    pub fn single(&self) -> Result<RapierContext<'_>> {
+    pub fn single(&self) -> QuerySingleResult<RapierContext<'_>> {
         let (simulation, colliders, joints, rigidbody_set) = self.rapier_context.single()?;
         Ok(RapierContext {
             simulation,
@@ -52,7 +57,7 @@ impl<'w, 's, T: query::QueryFilter + 'static> ReadRapierContext<'w, 's, T> {
 ///
 /// Note: This is not a component, refer to [`ReadRapierContext`], [`WriteRapierContext`], or [`RapierContextSimulation`]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize))]
-#[derive(query::QueryData)]
+#[derive(QueryData)]
 pub struct RapierContext<'a> {
     /// The Rapier context, containing all the state of the physics engine.
     pub simulation: &'a RapierContextSimulation,
@@ -68,8 +73,7 @@ pub struct RapierContext<'a> {
 ///
 /// This uses the [`DefaultRapierContext`] filter by default, but you can use a custom query filter with the `T` type parameter.
 #[derive(SystemParam)]
-pub struct WriteRapierContext<'w, 's, T: query::QueryFilter + 'static = With<DefaultRapierContext>>
-{
+pub struct WriteRapierContext<'w, 's, T: QueryFilter + 'static = With<DefaultRapierContext>> {
     /// The query used to feed components into [`RapierContext`] struct through [`ReadRapierContext::single`].
     pub rapier_context: Query<
         'w,
@@ -84,13 +88,13 @@ pub struct WriteRapierContext<'w, 's, T: query::QueryFilter + 'static = With<Def
     >,
 }
 
-impl<'w, 's, T: query::QueryFilter + 'static> WriteRapierContext<'w, 's, T> {
+impl<'w, 's, T: QueryFilter + 'static> WriteRapierContext<'w, 's, T> {
     /// Returns a single [`RapierContext`] corresponding to the filter (T) of [`WriteRapierContext`].
     ///
-    /// If the number of query items is not exactly one, a [`bevy::ecs::query::QuerySingleError`] is returned instead.
+    /// If the number of query items is not exactly one, a [`bevy_ecs::query::QuerySingleError`] is returned instead.
     ///
     /// You can also use the underlying query [`WriteRapierContext::rapier_context`] for finer grained queries.
-    pub fn single(&self) -> Result<RapierContext<'_>> {
+    pub fn single(&self) -> QuerySingleResult<RapierContext<'_>> {
         let (simulation, colliders, joints, rigidbody_set) = self.rapier_context.single()?;
         Ok(RapierContext {
             simulation,
@@ -102,10 +106,10 @@ impl<'w, 's, T: query::QueryFilter + 'static> WriteRapierContext<'w, 's, T> {
 
     /// Returns a single mutable [`RapierContextMut`] corresponding to the filter (T) of [`WriteRapierContext`].
     ///
-    /// If the number of query items is not exactly one, a [`bevy::ecs::query::QuerySingleError`] is returned instead.
+    /// If the number of query items is not exactly one, a [`bevy_ecs::query::QuerySingleError`] is returned instead.
     ///
     /// You can also use the underlying query [`WriteRapierContext::rapier_context`] for finer grained queries.
-    pub fn single_mut(&mut self) -> Result<RapierContextMut<'_>> {
+    pub fn single_mut(&mut self) -> QuerySingleResult<RapierContextMut<'_>> {
         let (simulation, colliders, joints, rigidbody_set) = self.rapier_context.single_mut()?;
         Ok(RapierContextMut {
             simulation,
@@ -397,8 +401,8 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::intersect_aabb_conservative`].
         pub fn intersect_aabb_conservative(
             &self,
-            #[cfg(feature = "dim2")] aabb: bevy::math::bounding::Aabb2d,
-            #[cfg(feature = "dim3")] aabb: bevy::math::bounding::Aabb3d,
+            #[cfg(feature = "dim2")] aabb: bevy_math::bounding::Aabb2d,
+            #[cfg(feature = "dim3")] aabb: bevy_math::bounding::Aabb3d,
             filter: QueryFilter,
             mut callback: impl FnMut(Entity) -> bool,
         ) {
@@ -532,8 +536,8 @@ mod query_pipeline {
         /// Shortcut to [`RapierQueryPipeline::intersect_aabb_conservative`].
         pub fn intersect_aabb_conservative(
             &self,
-            #[cfg(feature = "dim2")] aabb: bevy::math::bounding::Aabb2d,
-            #[cfg(feature = "dim3")] aabb: bevy::math::bounding::Aabb3d,
+            #[cfg(feature = "dim2")] aabb: bevy_math::bounding::Aabb2d,
+            #[cfg(feature = "dim3")] aabb: bevy_math::bounding::Aabb3d,
             filter: QueryFilter,
             mut callback: impl FnMut(Entity) -> bool,
         ) {

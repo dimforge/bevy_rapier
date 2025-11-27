@@ -1,20 +1,17 @@
-//! Module for utilities to convert from a [`rapier::prelude::Shape`] to a [`bevy::prelude::Mesh`].
+//! Module for utilities to convert from a [`rapier::prelude::Shape`] to a [`bevy_render::mesh::Mesh`].
 
 use super::Collider;
 use crate::rapier::prelude::Ball;
 #[cfg(feature = "dim3")]
 use crate::rapier::prelude::{Cone, Cylinder};
+use bevy_asset::RenderAssetUsages;
 #[cfg(feature = "dim2")]
-use bevy::mesh::{Capsule2dMeshBuilder, CircleMeshBuilder};
+use bevy_mesh::{Capsule2dMeshBuilder, CircleMeshBuilder};
 #[cfg(feature = "dim3")]
-use bevy::mesh::{
+use bevy_mesh::{
     Capsule3dMeshBuilder, ConeMeshBuilder, CylinderMeshBuilder, PlaneMeshBuilder, SphereMeshBuilder,
 };
-use bevy::{
-    asset::RenderAssetUsages,
-    mesh::Indices,
-    prelude::{Mesh, MeshBuilder},
-};
+use bevy_mesh::{Indices, Mesh, MeshBuilder};
 
 use rapier::prelude::{Capsule, TypedShape};
 /// Converts a [`TypedShape`] to a [`Mesh`].
@@ -28,9 +25,10 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
             // FIXME: bevy 0.16 will expose a builder for cuboids: https://github.com/bevyengine/bevy/pull/17454
             let half_extents = cuboid.half_extents;
             #[cfg(feature = "dim2")]
-            let mesh = bevy::prelude::Rectangle::new(half_extents.x * 2.0, half_extents.y * 2.0);
+            let mesh =
+                bevy_math::primitives::Rectangle::new(half_extents.x * 2.0, half_extents.y * 2.0);
             #[cfg(feature = "dim3")]
-            let mesh = bevy::prelude::Cuboid::new(
+            let mesh = bevy_math::primitives::Cuboid::new(
                 half_extents.x * 2.0,
                 half_extents.y * 2.0,
                 half_extents.z * 2.0,
@@ -49,13 +47,13 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
             let b = triangle.b.coords;
             let c = triangle.c.coords;
             #[cfg(feature = "dim2")]
-            let mesh = bevy::prelude::Triangle3d::new(
-                bevy::prelude::Vec3::new(a.x, a.y, 0.0),
-                bevy::prelude::Vec3::new(b.x, b.y, 0.0),
-                bevy::prelude::Vec3::new(c.x, c.y, 0.0),
+            let mesh = bevy_math::primitives::Triangle3d::new(
+                bevy_math::Vec3::new(a.x, a.y, 0.0),
+                bevy_math::Vec3::new(b.x, b.y, 0.0),
+                bevy_math::Vec3::new(c.x, c.y, 0.0),
             );
             #[cfg(feature = "dim3")]
-            let mesh = bevy::prelude::Triangle3d::new(a.into(), b.into(), c.into());
+            let mesh = bevy_math::primitives::Triangle3d::new(a.into(), b.into(), c.into());
 
             mesh.into()
         }
@@ -65,7 +63,7 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
                 let (vtx, idx) = _voxels.to_outline();
 
                 let mesh = Mesh::new(
-                    bevy::mesh::PrimitiveTopology::TriangleList,
+                    bevy_mesh::PrimitiveTopology::TriangleList,
                     RenderAssetUsages::default(),
                 )
                 .with_inserted_indices(Indices::U32(idx.into_iter().flatten().collect()));
@@ -94,7 +92,7 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
             let vertices: Vec<_> = vertices.iter().map(|pos| [pos.x, pos.y, pos.z]).collect();
             let indices = tri_mesh.indices();
             let mesh = Mesh::new(
-                bevy::mesh::PrimitiveTopology::TriangleList,
+                bevy_mesh::PrimitiveTopology::TriangleList,
                 RenderAssetUsages::default(),
             )
             .with_inserted_indices(Indices::U32(indices.iter().cloned().flatten().collect()));
@@ -126,7 +124,7 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
                 let (vtx, idx) = _height_field.to_trimesh();
 
                 let mesh = Mesh::new(
-                    bevy::mesh::PrimitiveTopology::TriangleList,
+                    bevy_mesh::PrimitiveTopology::TriangleList,
                     RenderAssetUsages::default(),
                 )
                 .with_inserted_indices(Indices::U32(idx.into_iter().flatten().collect()));
@@ -164,7 +162,7 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
                 .flat_map(|i| vec![0, i, i + 1])
                 .collect::<Vec<u32>>();
             let mesh = Mesh::new(
-                bevy::mesh::PrimitiveTopology::TriangleList,
+                bevy_mesh::PrimitiveTopology::TriangleList,
                 RenderAssetUsages::default(),
             )
             .with_inserted_indices(Indices::U32(indices));
@@ -179,7 +177,7 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
                 .flat_map(|i| vec![0, i, i + 1])
                 .collect::<Vec<u32>>();
             let mesh = Mesh::new(
-                bevy::mesh::PrimitiveTopology::TriangleList,
+                bevy_mesh::PrimitiveTopology::TriangleList,
                 RenderAssetUsages::default(),
             )
             .with_inserted_indices(Indices::U32(indices));
@@ -243,7 +241,7 @@ impl TryFrom<&Collider> for Mesh {
 /// Trait to convert a parry shape to a [`MeshBuilder`].
 pub trait ToMeshBuilder {
     /// Specific [`MeshBuilder`] being returned.
-    type MeshBuilder: bevy::mesh::prelude::MeshBuilder;
+    type MeshBuilder: bevy_mesh::MeshBuilder;
     /// Returns a dedicated [`MeshBuilder`].
     fn mesh_builder(&self) -> Self::MeshBuilder;
 }
@@ -262,7 +260,7 @@ impl ToMeshBuilder for &Ball {
     type MeshBuilder = SphereMeshBuilder;
 
     fn mesh_builder(&self) -> Self::MeshBuilder {
-        SphereMeshBuilder::new(self.radius, bevy::mesh::SphereKind::Ico { subdivisions: 1 })
+        SphereMeshBuilder::new(self.radius, bevy_mesh::SphereKind::Ico { subdivisions: 1 })
     }
 }
 
@@ -272,8 +270,8 @@ impl ToMeshBuilder for &rapier3d::prelude::HalfSpace {
 
     fn mesh_builder(&self) -> Self::MeshBuilder {
         PlaneMeshBuilder::new(
-            bevy::prelude::Dir3::new(self.normal.into()).unwrap_or(bevy::prelude::Dir3::Y),
-            bevy::prelude::Vec2::ONE,
+            bevy_math::Dir3::new(self.normal.into()).unwrap_or(bevy_math::Dir3::Y),
+            bevy_math::Vec2::ONE,
         )
     }
 }
@@ -283,7 +281,7 @@ impl ToMeshBuilder for &Capsule {
     type MeshBuilder = Capsule2dMeshBuilder;
 
     fn mesh_builder(&self) -> Self::MeshBuilder {
-        bevy::mesh::Capsule2dMeshBuilder::new(self.radius, self.height(), 10)
+        Capsule2dMeshBuilder::new(self.radius, self.height(), 10)
     }
 }
 
@@ -292,7 +290,7 @@ impl ToMeshBuilder for &Capsule {
     type MeshBuilder = Capsule3dMeshBuilder;
 
     fn mesh_builder(&self) -> Self::MeshBuilder {
-        bevy::mesh::Capsule3dMeshBuilder::new(self.radius, self.height(), 10, 10)
+        Capsule3dMeshBuilder::new(self.radius, self.height(), 10, 10)
     }
 }
 #[cfg(feature = "dim3")]
@@ -300,7 +298,7 @@ impl ToMeshBuilder for &Cone {
     type MeshBuilder = ConeMeshBuilder;
 
     fn mesh_builder(&self) -> Self::MeshBuilder {
-        bevy::mesh::ConeMeshBuilder::new(self.radius, self.half_height * 2.0, 16)
+        ConeMeshBuilder::new(self.radius, self.half_height * 2.0, 16)
     }
 }
 
@@ -309,6 +307,6 @@ impl ToMeshBuilder for &Cylinder {
     type MeshBuilder = CylinderMeshBuilder;
 
     fn mesh_builder(&self) -> Self::MeshBuilder {
-        bevy::mesh::CylinderMeshBuilder::new(self.radius, self.half_height * 2.0, 16)
+        CylinderMeshBuilder::new(self.radius, self.half_height * 2.0, 16)
     }
 }
