@@ -59,7 +59,6 @@ picking-backend = ["bevy_picking", "bevy_camera"]
 async-collider = [
     "bevy_asset",
     "bevy_scene",
-    "bevy_render",
     "bevy_image",
 ]
 to-bevy-mesh = ["bevy_asset", "bevy_mesh"]
