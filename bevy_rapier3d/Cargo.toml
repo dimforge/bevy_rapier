@@ -62,7 +62,7 @@ async-collider = [
     "bevy_render",
     "bevy_image",
 ]
-to-bevy-mesh = ["bevy_render", "bevy_asset", "bevy_mesh"]
+to-bevy-mesh = ["bevy_asset", "bevy_mesh"]
 
 [dependencies]
 # Bevy crates
