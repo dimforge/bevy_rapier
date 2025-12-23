@@ -1,6 +1,6 @@
 use crate::math::{Real, Vect};
 use crate::plugin::context::{RapierContextColliders, RapierContextSimulation, RapierRigidBodySet};
-use bevy::prelude::*;
+use bevy_ecs::entity::Entity;
 use rapier::geometry::{Contact, ContactManifold, ContactPair, SolverContact, SolverFlags};
 
 impl RapierContextSimulation {

@@ -1,4 +1,4 @@
-use bevy::{ecs::system::SystemParam, prelude::*};
+use bevy_ecs::{entity::Entity, system::SystemParam};
 use rapier::{
     pipeline::{ContactModificationContext, PairFilterContext},
     prelude::{PhysicsHooks, SolverFlags},

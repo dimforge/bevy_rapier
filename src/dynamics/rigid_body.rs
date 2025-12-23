@@ -1,5 +1,7 @@
 use crate::math::Vect;
-use bevy::prelude::*;
+use bevy_derive::Deref;
+use bevy_ecs::prelude::*;
+use bevy_reflect::prelude::*;
 use rapier::prelude::{
     Isometry, LockedAxes as RapierLockedAxes, RigidBodyActivation, RigidBodyHandle, RigidBodyType,
 };

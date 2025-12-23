@@ -1,4 +1,4 @@
-use bevy::prelude::Transform;
+use bevy_transform::components::Transform;
 use rapier::math::{Isometry, Real};
 
 /// Converts a Rapier isometry to a Bevy transform.
@@ -6,7 +6,7 @@ use rapier::math::{Isometry, Real};
 pub fn iso_to_transform(iso: &Isometry<Real>) -> Transform {
     Transform {
         translation: iso.translation.vector.push(0.0).into(),
-        rotation: bevy::prelude::Quat::from_rotation_z(iso.rotation.angle()),
+        rotation: bevy_math::Quat::from_rotation_z(iso.rotation.angle()),
         ..Default::default()
     }
 }
@@ -24,7 +24,7 @@ pub fn iso_to_transform(iso: &Isometry<Real>) -> Transform {
 /// Converts a Bevy transform to a Rapier isometry.
 #[cfg(feature = "dim2")]
 pub(crate) fn transform_to_iso(transform: &Transform) -> Isometry<Real> {
-    use bevy::math::Vec3Swizzles;
+    use bevy_math::Vec3Swizzles;
     Isometry::new(
         transform.translation.xy().into(),
         transform.rotation.to_scaled_axis().z,

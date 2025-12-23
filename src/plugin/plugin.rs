@@ -1,14 +1,15 @@
 use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::prelude::*;
 use crate::reflect::{IntegrationParametersWrapper, SpringCoefficientsWrapper};
-use bevy::app::DynEq;
-use bevy::ecs::{
-    intern::Interned,
-    schedule::{IntoScheduleConfigs, ScheduleConfigs, ScheduleLabel},
-    system::{ScheduleSystem, SystemParamItem},
-};
-use bevy::platform::collections::HashSet;
-use bevy::{prelude::*, transform::TransformSystems};
+use bevy_app::{App, DynEq, FixedUpdate, Plugin, PostUpdate, PreStartup};
+use bevy_ecs::intern::Interned;
+use bevy_ecs::prelude::*;
+use bevy_ecs::schedule::{IntoScheduleConfigs, ScheduleConfigs, ScheduleLabel};
+use bevy_ecs::system::{ScheduleSystem, SystemParamItem};
+use bevy_platform::collections::HashSet;
+use bevy_reflect::Reflect;
+
+use bevy_transform::TransformSystems;
 use rapier::dynamics::IntegrationParameters;
 use std::marker::PhantomData;
 
@@ -89,7 +90,7 @@ where
             default_world_setup: RapierContextInitialization::default_with_length_unit(
                 pixels_per_meter,
             ),
-            ..default()
+            ..Default::default()
         }
     }
 
@@ -137,8 +138,8 @@ where
                     .in_set(PhysicsSet::SyncBackend),
                 // Run Bevy transform propagation additionally to sync [`GlobalTransform`]
                 (
-                    bevy::transform::systems::sync_simple_transforms,
-                    bevy::transform::systems::propagate_parent_transforms,
+                    bevy_transform::systems::sync_simple_transforms,
+                    bevy_transform::systems::propagate_parent_transforms,
                 )
                     .chain()
                     .in_set(RapierTransformPropagateSet),
@@ -194,7 +195,7 @@ pub struct RapierBevyComponentApply;
 
 /// A set for rapier's copy of Bevy's transform propagation systems.
 ///
-/// See [`TransformSystems`](bevy::transform::TransformSystems::Propagate).
+/// See [`TransformSystems`](bevy_transform::TransformSystem::Propagate).
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
 pub struct RapierTransformPropagateSet;
 
@@ -343,7 +344,9 @@ where
     fn finish(&self, _app: &mut App) {
         #[cfg(all(feature = "dim3", feature = "async-collider"))]
         {
-            use bevy::{asset::AssetPlugin, mesh::MeshPlugin, scene::ScenePlugin};
+            use bevy_asset::AssetPlugin;
+            use bevy_mesh::MeshPlugin;
+            use bevy_scene::ScenePlugin;
             if !_app.is_plugin_added::<AssetPlugin>() {
                 _app.add_plugins(AssetPlugin::default());
             }
@@ -396,7 +399,7 @@ impl RapierContextInitialization {
     pub fn default_with_length_unit(length_unit: f32) -> Self {
         let integration_parameters = IntegrationParameters {
             length_unit,
-            ..default()
+            ..Default::default()
         };
 
         RapierContextInitialization::InitializeDefaultRapierContext {

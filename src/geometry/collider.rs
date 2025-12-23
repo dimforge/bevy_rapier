@@ -3,12 +3,13 @@ use std::fmt;
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 use {
     crate::geometry::{TriMeshFlags, VHACDParameters},
-    bevy::platform::collections::HashMap,
+    bevy_platform::collections::HashMap,
 };
 
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_reflect::prelude::*;
 
-use bevy::platform::collections::HashSet;
+use bevy_platform::collections::HashSet;
 use rapier::geometry::Shape;
 use rapier::prelude::{ColliderHandle, InteractionGroups, InteractionTestMode, SharedShape};
 

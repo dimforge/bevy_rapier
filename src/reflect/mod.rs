@@ -1,5 +1,5 @@
 use crate::math::Real;
-use bevy::reflect::reflect_remote;
+use bevy_reflect::reflect_remote;
 use rapier::{dynamics::IntegrationParameters, prelude::SpringCoefficients};
 
 #[cfg(feature = "dim3")]

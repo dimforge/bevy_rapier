@@ -1,6 +1,6 @@
 use crate::math::{Real, Vect};
-use bevy::ecs::message::Message;
-use bevy::prelude::Entity;
+use bevy_ecs::entity::Entity;
+use bevy_ecs::message::Message;
 use rapier::dynamics::RigidBodySet;
 use rapier::geometry::{
     ColliderHandle, ColliderSet, CollisionEvent as RapierCollisionEvent, CollisionEventFlags,

@@ -21,8 +21,9 @@ use crate::pipeline::{CollisionEvent, ContactForceEvent};
 use crate::plugin::context::SimulationToRenderTime;
 use crate::plugin::{RapierConfiguration, TimestepMode};
 use crate::prelude::{BevyPhysicsHooks, BevyPhysicsHooksAdapter};
-use bevy::ecs::system::{StaticSystemParam, SystemParamItem};
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_ecs::system::{StaticSystemParam, SystemParamItem};
+use bevy_time::Time;
 
 use super::context::{
     RapierContextColliders, RapierContextJoints, RapierContextSimulation, RapierRigidBodySet,
@@ -86,7 +87,11 @@ pub fn step_simulation<Hooks>(
 #[cfg(test)]
 #[allow(missing_docs)]
 pub mod tests {
-    use bevy::time::TimePlugin;
+    use bevy_app::{App, Update};
+    use bevy_math::{Quat, Vec3};
+    use bevy_time::TimePlugin;
+    use bevy_transform::components::GlobalTransform;
+    use bevy_transform::{TransformPlugin, components::Transform};
     use rapier::geometry::CollisionEventFlags;
     use std::f32::consts::PI;
 

@@ -1,4 +1,5 @@
-use bevy::prelude::*;
+use bevy_ecs::component::Component;
+use bevy_ecs::entity::Entity;
 use rapier::dynamics::{ImpulseJointHandle, MultibodyJointHandle};
 
 pub use rapier::dynamics::{JointAxesMask, JointAxis, MotorModel};

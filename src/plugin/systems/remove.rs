@@ -13,8 +13,8 @@ use crate::plugin::context::{
 use crate::prelude::MassModifiedEvent;
 use crate::prelude::RigidBodyDisabled;
 use crate::prelude::Sensor;
-use bevy::ecs::query::QueryData;
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_ecs::query::QueryData;
 
 /// System responsible for removing from Rapier the rigid-bodies/colliders/joints which had
 /// their related `bevy_rapier` components removed by the user (through component removal or

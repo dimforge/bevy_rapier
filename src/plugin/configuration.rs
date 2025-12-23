@@ -1,9 +1,7 @@
 //! Components used to configure a simulation run by rapier, these are not modified by bevy_rapier.
 
-use bevy::{
-    prelude::{Component, Resource},
-    reflect::Reflect,
-};
+use bevy_ecs::prelude::*;
+use bevy_reflect::Reflect;
 
 use crate::math::{Real, Vect};
 
