@@ -80,7 +80,6 @@ bevy_color = { version = "0.17.3", default-features = false }
 # Optional bevy crates for features
 bevy_asset = { version = "0.17.3", default-features = false, optional = true }
 bevy_scene = { version = "0.17.3", default-features = false, optional = true }
-bevy_render = { version = "0.17.3", default-features = false, optional = true }
 bevy_image = { version = "0.17.3", default-features = false, optional = true }
 bevy_mesh = { version = "0.17.3", default-features = false, optional = true }
 bevy_picking = { version = "0.17.3", default-features = false, optional = true }
