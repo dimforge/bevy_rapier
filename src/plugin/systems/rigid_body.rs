@@ -564,13 +564,7 @@ pub fn init_rigid_bodies(
     mut commands: Commands,
     default_context_access: Query<Entity, With<DefaultRapierContext>>,
     mut rigidbody_sets: Query<(Entity, &mut RapierRigidBodySet)>,
-    rigid_bodies: Query<
-        RigidBodyComponents,
-        Or<(
-            Without<RapierRigidBodyHandle>,
-            Changed<RapierContextEntityLink>,
-        )>,
-    >,
+    rigid_bodies: Query<RigidBodyComponents, Without<RapierRigidBodyHandle>>,
 ) {
     for (
         (entity, entity_context_link),
@@ -708,10 +702,7 @@ pub fn apply_initial_rigid_body_impulses(
     // executed yet.
     mut init_impulses: Query<
         (Entity, &RapierContextEntityLink, &mut ExternalImpulse),
-        Or<(
-            Without<RapierRigidBodyHandle>,
-            Changed<RapierContextEntityLink>,
-        )>,
+        Without<RapierRigidBodyHandle>,
     >,
 ) {
     for (entity, link, mut impulse) in init_impulses.iter_mut() {
