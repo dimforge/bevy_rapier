@@ -27,6 +27,19 @@ pub fn sync_removals(
         &mut RapierContextJoints,
         &mut RapierRigidBodySet,
     )>,
+    // Sometimes a Remove immediately followed by Add happens. These `q_has_*` queries prevent that immediate Add
+    // from being removed by this system by verifying it's still removed.
+    (
+        q_has_rigidbody_handle,
+        q_has_collider_handle,
+        q_has_multibody_joint_handle,
+        q_has_impulse_joint_handle,
+    ): (
+        Query<(), With<RapierRigidBodyHandle>>,
+        Query<(), With<RapierColliderHandle>>,
+        Query<(), With<RapierMultibodyJointHandle>>,
+        Query<(), With<RapierImpulseJointHandle>>,
+    ),
     mut removed_bodies: RemovedComponents<RapierRigidBodyHandle>,
     mut removed_colliders: RemovedComponents<RapierColliderHandle>,
     mut removed_impulse_joints: RemovedComponents<RapierImpulseJointHandle>,
@@ -48,7 +61,10 @@ pub fn sync_removals(
     /*
      * Rigid-bodies removal detection.
      */
-    for entity in removed_bodies.read() {
+    for entity in removed_bodies
+        .read()
+        .filter(|e| !q_has_rigidbody_handle.contains(*e))
+    {
         let Some(((mut context, mut context_colliders, mut joints, mut rigidbody_set), handle)) =
             find_context(&mut context_writer, |res| res.3.entity2body.remove(&entity))
         else {
@@ -90,7 +106,10 @@ pub fn sync_removals(
     /*
      * Collider removal detection.
      */
-    for entity in removed_colliders.read() {
+    for entity in removed_colliders
+        .read()
+        .filter(|e| !q_has_collider_handle.contains(*e))
+    {
         let Some(((mut context, mut context_colliders, _, mut rigidbody_set), handle)) =
             find_context(&mut context_writer, |res| {
                 res.1.entity2collider.remove(&entity)
@@ -138,7 +157,10 @@ pub fn sync_removals(
     /*
      * Impulse joint removal detection.
      */
-    for entity in removed_impulse_joints.read() {
+    for entity in removed_impulse_joints
+        .read()
+        .filter(|e| !q_has_impulse_joint_handle.contains(*e))
+    {
         let Some(((_, _, mut joints, _), handle)) = find_context(&mut context_writer, |res| {
             res.2.entity2impulse_joint.remove(&entity)
         }) else {
@@ -159,7 +181,10 @@ pub fn sync_removals(
     /*
      * Multibody joint removal detection.
      */
-    for entity in removed_multibody_joints.read() {
+    for entity in removed_multibody_joints
+        .read()
+        .filter(|e| !q_has_multibody_joint_handle.contains(*e))
+    {
         let Some(((_, _, mut joints, _), handle)) = find_context(&mut context_writer, |res| {
             res.2.entity2multibody_joint.remove(&entity)
         }) else {

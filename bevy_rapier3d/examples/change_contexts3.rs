@@ -66,6 +66,7 @@ pub fn setup_physics(
     let mut contexts = Contexts(vec![default_context]);
 
     for i in 1..N_CONTEXTS {
+        // Each context can have its own rapier configuration
         let mut config = RapierConfiguration::new(1.0);
         if i + 1 == N_CONTEXTS {
             info!("The last context will have opposite gravity");
