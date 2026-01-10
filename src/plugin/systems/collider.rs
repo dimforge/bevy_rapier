@@ -91,7 +91,11 @@ pub fn apply_collider_user_changes(
     (changed_collider_transforms, child_of_query, transform_query): (
         Query<
             (RapierEntity, &RapierColliderHandle, &GlobalTransform),
-            (Without<RapierRigidBodyHandle>, Changed<GlobalTransform>),
+            (
+                Without<RapierRigidBodyHandle>,
+                Changed<GlobalTransform>,
+                Changed<RapierContextEntityLink>,
+            ),
         >,
         Query<&ChildOf>,
         Query<&Transform>,
@@ -361,7 +365,13 @@ pub fn init_colliders(
     config: Query<&RapierConfiguration>,
     mut context_access: Query<(&mut RapierRigidBodySet, &mut RapierContextColliders)>,
     default_context_access: Query<Entity, With<DefaultRapierContext>>,
-    colliders: Query<(ColliderComponents, Option<&GlobalTransform>), Without<RapierColliderHandle>>,
+    colliders: Query<
+        (ColliderComponents, Option<&GlobalTransform>),
+        Or<(
+            Without<RapierColliderHandle>,
+            Changed<RapierContextEntityLink>,
+        )>,
+    >,
     mut rigid_body_mprops: Query<&mut ReadMassProperties>,
     child_of_query: Query<&ChildOf>,
     transform_query: Query<&Transform>,

@@ -16,11 +16,17 @@ pub fn init_joints(
     default_context_access: Query<Entity, With<DefaultRapierContext>>,
     impulse_joints: Query<
         (Entity, Option<&RapierContextEntityLink>, &ImpulseJoint),
-        Without<RapierImpulseJointHandle>,
+        Or<(
+            Without<RapierImpulseJointHandle>,
+            Changed<RapierContextEntityLink>,
+        )>,
     >,
     multibody_joints: Query<
         (Entity, Option<&RapierContextEntityLink>, &MultibodyJoint),
-        Without<RapierMultibodyJointHandle>,
+        Or<(
+            Without<RapierMultibodyJointHandle>,
+            Changed<RapierContextEntityLink>,
+        )>,
     >,
     child_of_query: Query<&ChildOf>,
 ) {

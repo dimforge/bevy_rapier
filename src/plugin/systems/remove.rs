@@ -57,6 +57,8 @@ pub fn sync_removals(
         let context = &mut *context;
         let joints = &mut *joints;
 
+        info!("Removing ent {entity:?} from context!");
+
         let _ = rigidbody_set.last_body_transform_set.remove(&handle);
         rigidbody_set.bodies.remove(
             handle,
@@ -215,6 +217,71 @@ pub fn sync_removals(
     }
 
     // TODO: what about removing forces?
+}
+
+/// Removes this entity from the physics context it's a part of
+///
+/// This will NOT remove any components from the entity, only remove it from its current simulation
+/// backend. It will NOT be re-added unless its components are modified or it is manually re-added.
+pub fn remove_all_physics(
+    entity: Entity,
+    context_writer: &mut Query<(
+        &mut RapierContextSimulation,
+        &mut RapierContextColliders,
+        &mut RapierContextJoints,
+        &mut RapierRigidBodySet,
+    )>,
+    mass_modified: &mut MessageWriter<MassModifiedEvent>,
+) {
+    let Some((mut context, mut context_colliders, mut joints, mut rigidbody_set)) =
+        context_writer.iter_mut().find(|context| {
+            context.3.entity2body.contains_key(&entity)
+                || context.1.entity2collider.contains_key(&entity)
+                || context.2.entity2impulse_joint.contains_key(&entity)
+                || context.2.entity2multibody_joint.contains_key(&entity)
+        })
+    else {
+        return;
+    };
+
+    let context = &mut *context;
+    let joints = &mut *joints;
+
+    if let Some(handle) = rigidbody_set.entity2body.remove(&entity) {
+        let _ = rigidbody_set.last_body_transform_set.remove(&handle);
+        rigidbody_set.bodies.remove(
+            handle,
+            &mut context.islands,
+            &mut context_colliders.colliders,
+            &mut joints.impulse_joints,
+            &mut joints.multibody_joints,
+            false,
+        );
+    }
+
+    if let Some(handle) = context_colliders.entity2collider.remove(&entity) {
+        let context = &mut *context;
+        let context_colliders = &mut *context_colliders;
+        if let Some(parent) = context_colliders.collider_parent(&rigidbody_set, entity) {
+            mass_modified.write(parent.into());
+        }
+
+        context_colliders.colliders.remove(
+            handle,
+            &mut context.islands,
+            &mut rigidbody_set.bodies,
+            true,
+        );
+        context.deleted_colliders.insert(handle, entity);
+    }
+
+    if let Some(handle) = joints.entity2impulse_joint.remove(&entity) {
+        joints.impulse_joints.remove(handle, true);
+    }
+
+    if let Some(handle) = joints.entity2multibody_joint.remove(&entity) {
+        joints.multibody_joints.remove(handle, true);
+    }
 }
 
 fn find_context<'a, TReturn, TQueryParams: QueryData>(

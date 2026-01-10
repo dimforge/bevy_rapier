@@ -1,13 +1,11 @@
 //! systems to support multiple physics contexts, and changes between them.
 
-use crate::dynamics::{
-    RapierImpulseJointHandle, RapierMultibodyJointHandle, RapierRigidBodyHandle,
-};
-use crate::geometry::RapierColliderHandle;
 use crate::plugin::context::RapierRigidBodySet;
 use crate::plugin::context::{
     RapierContextColliders, RapierContextEntityLink, RapierContextJoints,
 };
+use crate::plugin::systems::remove_all_physics;
+use crate::prelude::{MassModifiedMessage, RapierContextSimulation};
 use bevy::prelude::*;
 
 /// If an entity is turned into the child of something with a physics context link,
@@ -23,33 +21,34 @@ pub fn on_add_entity_with_parent(
         ),
     >,
     q_child_of: Query<&ChildOf>,
-    q_physics_world: Query<&RapierContextEntityLink>,
+    q_rapier_context_link: Query<&RapierContextEntityLink>,
     mut commands: Commands,
+    mut context_writer: Query<(
+        &mut RapierContextSimulation,
+        &mut RapierContextColliders,
+        &mut RapierContextJoints,
+        &mut RapierRigidBodySet,
+    )>,
+    mut mass_modified: MessageWriter<MassModifiedMessage>,
 ) {
     for (ent, child_of) in &q_add_entity_without_parent {
         let mut parent = Some(child_of.parent());
         while let Some(parent_entity) = parent {
-            if let Ok(pw) = q_physics_world.get(parent_entity) {
+            if let Ok(context_entity_link) = q_rapier_context_link.get(parent_entity) {
                 // Change rapier context link only if the existing link isn't the correct one.
-                if q_physics_world.get(ent).map(|x| x != pw).unwrap_or(true) {
-                    remove_old_physics(ent, &mut commands);
-                    commands.entity(ent).insert(*pw);
+                if q_rapier_context_link
+                    .get(ent)
+                    .map(|x| x != context_entity_link)
+                    .unwrap_or(true)
+                {
+                    remove_all_physics(ent, &mut context_writer, &mut mass_modified);
+                    commands.entity(ent).insert(*context_entity_link);
                 }
                 break;
             }
             parent = q_child_of.get(parent_entity).ok().map(|x| x.parent());
         }
     }
-}
-
-/// Flags the entity to have its old physics removed
-fn remove_old_physics(entity: Entity, commands: &mut Commands) {
-    commands
-        .entity(entity)
-        .remove::<RapierColliderHandle>()
-        .remove::<RapierRigidBodyHandle>()
-        .remove::<RapierMultibodyJointHandle>()
-        .remove::<RapierImpulseJointHandle>();
 }
 
 /// Reacts to modifications to [`RapierContextEntityLink`]
@@ -63,18 +62,20 @@ pub fn on_change_context(
     >,
     q_children: Query<&Children>,
     q_physics_context: Query<&RapierContextEntityLink>,
-    q_context: Query<(
-        &RapierContextColliders,
-        &RapierContextJoints,
-        &RapierRigidBodySet,
-    )>,
     mut commands: Commands,
+    mut context_writer: Query<(
+        &mut RapierContextSimulation,
+        &mut RapierContextColliders,
+        &mut RapierContextJoints,
+        &mut RapierRigidBodySet,
+    )>,
+    mut mass_modified: MessageWriter<MassModifiedMessage>,
 ) {
     for (entity, new_physics_context) in &q_changed_contexts {
-        let context = q_context.get(new_physics_context.0);
+        let context = context_writer.get(new_physics_context.0);
         // Ensure the context actually changed before removing them from the context
         if !context
-            .map(|(colliders, joints, rigidbody_set)| {
+            .map(|(_, colliders, joints, rigidbody_set)| {
                 // They are already apart of this context if any of these are true
                 colliders.entity2collider.contains_key(&entity)
                     || rigidbody_set.entity2body.contains_key(&entity)
@@ -83,13 +84,16 @@ pub fn on_change_context(
             })
             .unwrap_or(false)
         {
-            remove_old_physics(entity, &mut commands);
+            info!("Adding new context to top-level {entity:?}");
+            remove_all_physics(entity, &mut context_writer, &mut mass_modified);
             bubble_down_context_change(
                 &mut commands,
                 entity,
                 &q_children,
                 *new_physics_context,
                 &q_physics_context,
+                &mut context_writer,
+                &mut mass_modified,
             );
         }
     }
@@ -101,6 +105,13 @@ fn bubble_down_context_change(
     q_children: &Query<&Children>,
     new_physics_context: RapierContextEntityLink,
     q_physics_context: &Query<&RapierContextEntityLink>,
+    context_writer: &mut Query<(
+        &mut RapierContextSimulation,
+        &mut RapierContextColliders,
+        &mut RapierContextJoints,
+        &mut RapierRigidBodySet,
+    )>,
+    mass_modified: &mut MessageWriter<MassModifiedMessage>,
 ) {
     let Ok(children) = q_children.get(entity) else {
         return;
@@ -115,7 +126,8 @@ fn bubble_down_context_change(
             return;
         }
 
-        remove_old_physics(child, commands);
+        info!("Adding new context to child {child:?}");
+        remove_all_physics(child, context_writer, mass_modified);
         commands.entity(child).insert(new_physics_context);
 
         bubble_down_context_change(
@@ -124,6 +136,8 @@ fn bubble_down_context_change(
             q_children,
             new_physics_context,
             q_physics_context,
+            context_writer,
+            mass_modified,
         );
     });
 }
