@@ -64,7 +64,7 @@ async-collider = [
 to-bevy-mesh = ["bevy/bevy_render", "bevy/bevy_asset"]
 
 [dependencies]
-bevy = { version = "0.17.3", default-features = false, features = ["std"] }
+bevy = { version = "0.18.0", default-features = false, features = ["std"] }
 nalgebra = { version = "0.34.1", features = ["convert-glam030"] }
 rapier2d = "0.31.0"
 bitflags = "2.10.0"
@@ -72,7 +72,7 @@ log = "0.4"
 serde = { version = "1", features = ["derive"], optional = true }
 
 [dev-dependencies]
-bevy = { version = "0.17.3", default-features = false, features = [
+bevy = { version = "0.18.0", default-features = false, features = [
     "x11",
     "bevy_state",
     "bevy_window",
@@ -86,15 +86,16 @@ bevy = { version = "0.17.3", default-features = false, features = [
     "bevy_sprite",
     "bevy_sprite_render",
     "bevy_gizmos",
+    "bevy_gizmos_render",
     "bevy_color",
     "bevy_camera",
 ] }
 oorandom = "11"
 approx = "0.5.1"
 glam = { version = "0.30.9", features = ["approx"] }
-bevy-inspector-egui = "0.35.0"
-bevy_egui = "0.38.0"
-bevy_mod_debugdump = "0.14.0"
+bevy-inspector-egui = "0.36.0"
+bevy_egui = "0.39.0"
+bevy_mod_debugdump = "0.15.0"
 serde_json = "1.0"
 
 [package.metadata.docs.rs]
