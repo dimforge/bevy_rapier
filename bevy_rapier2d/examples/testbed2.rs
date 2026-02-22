@@ -13,12 +13,8 @@ mod player_movement2;
 mod rope_joint2;
 mod voxels2;
 
-use bevy::{
-    camera::visibility::RenderLayers,
-    ecs::world::error::{EntityDespawnError, EntityMutableFetchError},
-    prelude::*,
-};
-use bevy_egui::{egui, EguiContexts, EguiPlugin};
+use bevy::{camera::visibility::RenderLayers, ecs::world::error::EntityDespawnError, prelude::*};
+use bevy_egui::{egui, EguiContexts, EguiPlugin, EguiPrimaryContextPass};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier2d::prelude::*;
 
@@ -252,7 +248,7 @@ fn main() {
         )
         .add_systems(OnExit(Examples::None), init)
         .add_systems(
-            Update,
+            EguiPrimaryContextPass,
             (
                 ui_example_system,
                 change_example.run_if(resource_changed::<ExampleSelected>),
@@ -283,9 +279,7 @@ fn cleanup(world: &mut World) {
         .collect::<Vec<_>>();
 
     for r in remove {
-        if let Err(error @ EntityDespawnError(EntityMutableFetchError::AliasedMutability(_))) =
-            world.try_despawn(r)
-        {
+        if let Err(error @ EntityDespawnError(_)) = world.try_despawn(r) {
             warn!("Cleanup error: {error:?}");
         }
     }
