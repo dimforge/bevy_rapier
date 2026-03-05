@@ -264,9 +264,9 @@ pub fn apply_rigid_body_user_changes(
             .expect(RAPIER_CONTEXT_EXPECT_ERROR)
             .into_inner();
         if let Some(rb) = rigidbody_set.bodies.get_mut(handle.0) {
-            rb.set_linvel(velocity.linvel, true);
+            rb.set_linvel(velocity.linear, true);
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
-            rb.set_angvel(velocity.angvel.into(), true);
+            rb.set_angvel(velocity.angular.into(), true);
         }
     }
 
@@ -532,11 +532,11 @@ pub fn writeback_rigid_bodies(
 
             if let Some(velocity) = &mut velocity {
                 let new_vel = Velocity {
-                    linvel: rb.linvel(),
+                    linear: rb.linvel(),
                     #[cfg(feature = "dim3")]
-                    angvel: rb.angvel(),
+                    angular: rb.angvel(),
                     #[cfg(feature = "dim2")]
-                    angvel: rb.angvel(),
+                    angular: rb.angvel(),
                 };
 
                 // NOTE: we write the new value only if there was an
@@ -593,7 +593,7 @@ pub fn init_rigid_bodies(
 
         #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
         if let Some(vel) = vel {
-            builder = builder.linvel(vel.linvel.into()).angvel(vel.angvel.into());
+            builder = builder.linvel(vel.linear.into()).angvel(vel.angular.into());
         }
 
         if let Some(locked_axes) = locked_axes {

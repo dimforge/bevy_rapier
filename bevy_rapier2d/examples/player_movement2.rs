@@ -71,6 +71,6 @@ pub fn player_movement(
 
         // Update the velocity on the rigid_body_component,
         // the bevy_rapier plugin will update the Sprite transform.
-        rb_vels.linvel = move_delta * player.0;
+        rb_vels.linear = move_delta * player.0;
     }
 }

@@ -87,53 +87,53 @@ impl From<RigidBodyType> for RigidBody {
 #[reflect(Component, Default, PartialEq)]
 pub struct Velocity {
     /// The linear velocity of the [`RigidBody`].
-    pub linvel: Vect,
+    pub linear: Vect,
     /// The angular velocity of the [`RigidBody`] in radian per second.
     #[cfg(feature = "dim2")]
-    pub angvel: f32,
+    pub angular: f32,
     /// The angular velocity of the [`RigidBody`].
     #[cfg(feature = "dim3")]
-    pub angvel: Vect,
+    pub angular: Vect,
 }
 
 impl Velocity {
     /// Initialize a velocity set to zero.
     pub const fn zero() -> Self {
         Self {
-            linvel: Vect::ZERO,
+            linear: Vect::ZERO,
             #[cfg(feature = "dim2")]
-            angvel: 0.0,
+            angular: 0.0,
             #[cfg(feature = "dim3")]
-            angvel: Vect::ZERO,
+            angular: Vect::ZERO,
         }
     }
 
     /// Initialize a velocity with the given linear velocity, and an angular velocity of zero.
-    pub const fn linear(linvel: Vect) -> Self {
+    pub const fn linear(linear: Vect) -> Self {
         Self {
-            linvel,
+            linear,
             #[cfg(feature = "dim2")]
-            angvel: 0.0,
+            angular: 0.0,
             #[cfg(feature = "dim3")]
-            angvel: Vect::ZERO,
+            angular: Vect::ZERO,
         }
     }
 
     /// Initialize a velocity with the given angular velocity, and a linear velocity of zero.
     #[cfg(feature = "dim2")]
-    pub const fn angular(angvel: f32) -> Self {
+    pub const fn angular(angular: f32) -> Self {
         Self {
-            linvel: Vect::ZERO,
-            angvel,
+            linear: Vect::ZERO,
+            angular,
         }
     }
 
     /// Initialize a velocity with the given angular velocity, and a linear velocity of zero.
     #[cfg(feature = "dim3")]
-    pub const fn angular(angvel: Vect) -> Self {
+    pub const fn angular(angular: Vect) -> Self {
         Self {
-            linvel: Vect::ZERO,
-            angvel,
+            linear: Vect::ZERO,
+            angular,
         }
     }
 
@@ -144,10 +144,10 @@ impl Velocity {
     /// - `center_of_mass`: the center-of-mass (world-space) of the [`RigidBody`] the velocity belongs to.
     pub fn linear_velocity_at_point(&self, point: Vect, center_of_mass: Vect) -> Vect {
         #[cfg(feature = "dim2")]
-        return self.linvel + self.angvel * (point - center_of_mass).perp();
+        return self.linear + self.angular * (point - center_of_mass).perp();
 
         #[cfg(feature = "dim3")]
-        return self.linvel + self.angvel.cross(point - center_of_mass);
+        return self.linear + self.angular.cross(point - center_of_mass);
     }
 }
 
