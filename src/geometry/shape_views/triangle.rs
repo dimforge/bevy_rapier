@@ -40,7 +40,7 @@ macro_rules! impl_ref_methods(
             #[cfg(feature = "dim3")]
             #[inline]
             pub fn normal(&self) -> Option<Vect> {
-                self.raw.normal().map(|n| (*n).into())
+                self.raw.normal()
             }
 
             /// A vector normal of this triangle.
@@ -93,16 +93,16 @@ impl_ref_methods!(TriangleViewMut);
 impl TriangleViewMut<'_> {
     /// Set the first point of the segment.
     pub fn set_a(&mut self, a: Vect) {
-        self.raw.a = a.into();
+        self.raw.a = a;
     }
 
     /// Set the second point of the segment.
     pub fn set_b(&mut self, b: Vect) {
-        self.raw.b = b.into();
+        self.raw.b = b;
     }
 
     /// Set the third point of the segment.
     pub fn set_c(&mut self, c: Vect) {
-        self.raw.c = c.into();
+        self.raw.c = c;
     }
 }

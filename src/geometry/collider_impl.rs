@@ -1,5 +1,3 @@
-#[cfg(feature = "dim2")]
-use na::DVector;
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 use {
     bevy::mesh::{Indices, VertexAttributeValues},
@@ -8,7 +6,7 @@ use {
 
 use rapier::{
     parry::transformation::voxelization::FillMode,
-    prelude::{FeatureId, Point, Ray, SharedShape, Vector, Voxels, DIM},
+    prelude::{FeatureId, Ray, SharedShape, Vector, Voxels, DIM},
 };
 
 use super::{get_snapped_scale, shape_views::*};
@@ -37,7 +35,7 @@ impl Collider {
     pub fn compound(shapes: Vec<(Vect, Rot, Collider)>) -> Self {
         let shapes = shapes
             .into_iter()
-            .map(|(t, r, s)| ((t, r).into(), s.raw))
+            .map(|(t, r, s)| (crate::utils::pose_from(t, r), s.raw))
             .collect();
         SharedShape::compound(shapes).into()
     }
@@ -50,9 +48,11 @@ impl Collider {
     /// Initialize a new collider build with a half-space shape defined by the outward normal
     /// of its planar boundary.
     pub fn halfspace(outward_normal: Vect) -> Option<Self> {
-        use rapier::na::Unit;
         let normal = Vector::from(outward_normal);
-        Unit::try_new(normal, 1.0e-6).map(|n| SharedShape::halfspace(n).into())
+        if normal.length_squared() < 1.0e-12 {
+            return None;
+        }
+        Some(SharedShape::halfspace(normal.normalize()).into())
     }
 
     /// Initialize a new collider with a cylindrical shape defined by its half-height
@@ -100,25 +100,25 @@ impl Collider {
 
     /// Initialize a new collider with a capsule shape.
     pub fn capsule(start: Vect, end: Vect, radius: Real) -> Self {
-        SharedShape::capsule(start.into(), end.into(), radius).into()
+        SharedShape::capsule(start, end, radius).into()
     }
 
     /// Initialize a new collider with a capsule shape aligned with the `x` axis.
     pub fn capsule_x(half_height: Real, radius: Real) -> Self {
-        let p = Point::from(Vector::x() * half_height);
+        let p = Vector::X * half_height;
         SharedShape::capsule(-p, p, radius).into()
     }
 
     /// Initialize a new collider with a capsule shape aligned with the `y` axis.
     pub fn capsule_y(half_height: Real, radius: Real) -> Self {
-        let p = Point::from(Vector::y() * half_height);
+        let p = Vector::Y * half_height;
         SharedShape::capsule(-p, p, radius).into()
     }
 
     /// Initialize a new collider with a capsule shape aligned with the `z` axis.
     #[cfg(feature = "dim3")]
     pub fn capsule_z(half_height: Real, radius: Real) -> Self {
-        let p = Point::from(Vector::z() * half_height);
+        let p = Vector::Z * half_height;
         SharedShape::capsule(-p, p, radius).into()
     }
 
@@ -137,41 +137,25 @@ impl Collider {
 
     /// Initializes a collider with a segment shape.
     pub fn segment(a: Vect, b: Vect) -> Self {
-        SharedShape::segment(a.into(), b.into()).into()
+        SharedShape::segment(a, b).into()
     }
 
     /// Initializes a collider with a triangle shape.
     pub fn triangle(a: Vect, b: Vect, c: Vect) -> Self {
-        SharedShape::triangle(a.into(), b.into(), c.into()).into()
+        SharedShape::triangle(a, b, c).into()
     }
 
     /// Initializes a collider with a triangle shape with round corners.
     pub fn round_triangle(a: Vect, b: Vect, c: Vect, border_radius: Real) -> Self {
-        SharedShape::round_triangle(a.into(), b.into(), c.into(), border_radius).into()
+        SharedShape::round_triangle(a, b, c, border_radius).into()
     }
 
-    fn ivec_array_from_point_int_array(points: &[IVect]) -> Vec<Point<i32>> {
-        points
-            .iter()
-            .map(|p| {
-                #[cfg(feature = "dim3")]
-                return Point::new(p.x, p.y, p.z);
-                #[cfg(feature = "dim2")]
-                return Point::new(p.x, p.y);
-            })
-            .collect::<Vec<_>>()
+    fn ivec_array_from_point_int_array(points: &[IVect]) -> Vec<IVect> {
+        points.to_vec()
     }
 
-    fn vec_array_from_point_float_array(points: &[Vect]) -> Vec<Point<Real>> {
-        points
-            .iter()
-            .map(|p| {
-                #[cfg(feature = "dim3")]
-                return Point::new(p.x, p.y, p.z);
-                #[cfg(feature = "dim2")]
-                return Point::new(p.x, p.y);
-            })
-            .collect::<Vec<_>>()
+    fn vec_array_from_point_float_array(points: &[Vect]) -> Vec<Vect> {
+        points.to_vec()
     }
 
     /// Initializes a shape made of voxels.
@@ -185,7 +169,7 @@ impl Collider {
     /// [`Self::voxelized_convex_decomposition`].
     pub fn voxels(voxel_size: Vect, grid_coordinates: &[IVect]) -> Self {
         let shape = Voxels::new(
-            voxel_size.into(),
+            voxel_size,
             &Self::ivec_array_from_point_int_array(grid_coordinates),
         );
         SharedShape::new(shape).into()
@@ -197,7 +181,7 @@ impl Collider {
     /// The `primitive_geometry` controls the behavior of collision detection at voxels boundaries.
     pub fn voxels_from_points(voxel_size: Vect, points: &[Vect]) -> Self {
         SharedShape::voxels_from_points(
-            voxel_size.into(),
+            voxel_size,
             &Self::vec_array_from_point_float_array(points),
         )
         .into()
@@ -244,7 +228,7 @@ impl Collider {
 
     /// Initializes a collider with a polyline shape defined by its vertex and index buffers.
     pub fn polyline(vertices: Vec<Vect>, indices: Option<Vec<[u32; 2]>>) -> Self {
-        let vertices = vertices.into_iter().map(|v| v.into()).collect();
+        let vertices = vertices.into_iter().collect();
         SharedShape::polyline(vertices, indices).into()
     }
 
@@ -253,7 +237,7 @@ impl Collider {
         vertices: Vec<Vect>,
         indices: Vec<[u32; 3]>,
     ) -> Result<Self, crate::rapier::prelude::TriMeshBuilderError> {
-        let vertices = vertices.into_iter().map(|v| v.into()).collect();
+        let vertices = vertices.into_iter().collect();
         Ok(SharedShape::trimesh(vertices, indices)?.into())
     }
 
@@ -264,7 +248,7 @@ impl Collider {
         indices: Vec<[u32; 3]>,
         flags: TriMeshFlags,
     ) -> Result<Self, crate::rapier::prelude::TriMeshBuilderError> {
-        let vertices = vertices.into_iter().map(|v| v.into()).collect();
+        let vertices = vertices.into_iter().collect();
         Ok(SharedShape::trimesh_with_flags(vertices, indices, flags)?.into())
     }
 
@@ -293,7 +277,7 @@ impl Collider {
     /// Initializes a collider with a compound shape obtained from the decomposition of
     /// the given trimesh (in 3D) or polyline (in 2D) into convex parts.
     pub fn convex_decomposition(vertices: &[Vect], indices: &[[u32; DIM]]) -> Self {
-        let vertices: Vec<_> = vertices.iter().map(|v| (*v).into()).collect();
+        let vertices: Vec<_> = vertices.to_vec();
         SharedShape::convex_decomposition(&vertices, indices).into()
     }
 
@@ -304,7 +288,7 @@ impl Collider {
         indices: &[[u32; DIM]],
         border_radius: Real,
     ) -> Self {
-        let vertices: Vec<_> = vertices.iter().map(|v| (*v).into()).collect();
+        let vertices: Vec<_> = vertices.to_vec();
         SharedShape::round_convex_decomposition(&vertices, indices, border_radius).into()
     }
 
@@ -315,7 +299,7 @@ impl Collider {
         indices: &[[u32; DIM]],
         params: &VHACDParameters,
     ) -> Self {
-        let vertices: Vec<_> = vertices.iter().map(|v| (*v).into()).collect();
+        let vertices: Vec<_> = vertices.to_vec();
         SharedShape::convex_decomposition_with_params(&vertices, indices, params).into()
     }
 
@@ -327,7 +311,7 @@ impl Collider {
         params: &VHACDParameters,
         border_radius: Real,
     ) -> Self {
-        let vertices: Vec<_> = vertices.iter().map(|v| (*v).into()).collect();
+        let vertices: Vec<_> = vertices.to_vec();
         SharedShape::round_convex_decomposition_with_params(
             &vertices,
             indices,
@@ -340,7 +324,7 @@ impl Collider {
     /// Initializes a new collider with a 2D convex polygon or 3D convex polyhedron
     /// obtained after computing the convex-hull of the given points.
     pub fn convex_hull(points: &[Vect]) -> Option<Self> {
-        let points: Vec<_> = points.iter().map(|v| (*v).into()).collect();
+        let points: Vec<_> = points.to_vec();
         SharedShape::convex_hull(&points).map(Into::into)
     }
 
@@ -348,7 +332,7 @@ impl Collider {
     /// obtained after computing the convex-hull of the given points. The shape is dilated
     /// by a sphere of radius `border_radius`.
     pub fn round_convex_hull(points: &[Vect], border_radius: Real) -> Option<Self> {
-        let points: Vec<_> = points.iter().map(|v| (*v).into()).collect();
+        let points: Vec<_> = points.to_vec();
         SharedShape::round_convex_hull(&points, border_radius).map(Into::into)
     }
 
@@ -357,7 +341,6 @@ impl Collider {
     /// computed).
     #[cfg(feature = "dim2")]
     pub fn convex_polyline(points: Vec<Vect>) -> Option<Self> {
-        let points = points.into_iter().map(|v| v.into()).collect();
         SharedShape::convex_polyline(points).map(Into::into)
     }
 
@@ -366,7 +349,6 @@ impl Collider {
     /// computed). The polygon shape is dilated by a sphere of radius `border_radius`.
     #[cfg(feature = "dim2")]
     pub fn round_convex_polyline(points: Vec<Vect>, border_radius: Real) -> Option<Self> {
-        let points = points.into_iter().map(|v| v.into()).collect();
         SharedShape::round_convex_polyline(points, border_radius).map(Into::into)
     }
 
@@ -375,7 +357,7 @@ impl Collider {
     /// computed).
     #[cfg(feature = "dim3")]
     pub fn convex_mesh(points: Vec<Vect>, indices: &[[u32; 3]]) -> Option<Self> {
-        let points = points.into_iter().map(|v| v.into()).collect();
+        let points = points.into_iter().collect();
         SharedShape::convex_mesh(points, indices).map(Into::into)
     }
 
@@ -388,7 +370,7 @@ impl Collider {
         indices: &[[u32; 3]],
         border_radius: Real,
     ) -> Option<Self> {
-        let points = points.into_iter().map(|v| v.into()).collect();
+        let points = points.into_iter().collect();
         SharedShape::round_convex_mesh(points, indices, border_radius).map(Into::into)
     }
 
@@ -396,7 +378,7 @@ impl Collider {
     /// factor along each coordinate axis.
     #[cfg(feature = "dim2")]
     pub fn heightfield(heights: Vec<Real>, scale: Vect) -> Self {
-        SharedShape::heightfield(DVector::from_vec(heights), scale.into()).into()
+        SharedShape::heightfield(heights, scale).into()
     }
 
     /// Initializes a collider with a heightfield shape defined by its set of height (in
@@ -408,8 +390,8 @@ impl Collider {
             num_rows * num_cols,
             "Invalid number of heights provided."
         );
-        let heights = rapier::na::DMatrix::from_vec(num_rows, num_cols, heights);
-        SharedShape::heightfield(heights, scale.into()).into()
+        let heights = rapier::parry::utils::Array2::new(num_rows, num_cols, heights);
+        SharedShape::heightfield(heights, scale).into()
     }
 
     /// Takes a strongly typed reference of this collider.
@@ -671,7 +653,7 @@ impl Collider {
         max_dist: Real,
     ) -> Option<PointProjection> {
         self.raw
-            .project_local_point_with_max_dist(&point.into(), solid, max_dist)
+            .project_local_point_with_max_dist(point, solid, max_dist)
             .map(Into::into)
     }
 
@@ -684,9 +666,9 @@ impl Collider {
         solid: bool,
         max_dist: Real,
     ) -> Option<PointProjection> {
-        let pos = (translation, rotation).into();
+        let pos = crate::utils::pose_from(translation, rotation);
         self.raw
-            .project_point_with_max_dist(&pos, &point.into(), solid, max_dist)
+            .project_point_with_max_dist(&pos, point, solid, max_dist)
             .map(Into::into)
     }
 
@@ -694,24 +676,24 @@ impl Collider {
     ///
     /// The point is assumed to be expressed in the local-space of `self`.
     pub fn project_local_point(&self, point: Vect, solid: bool) -> PointProjection {
-        self.raw.project_local_point(&point.into(), solid).into()
+        self.raw.project_local_point(point, solid).into()
     }
 
     /// Projects a point on the boundary of `self` and returns the id of the
     /// feature the point was projected on.
     pub fn project_local_point_and_get_feature(&self, point: Vect) -> (PointProjection, FeatureId) {
-        let (proj, feat) = self.raw.project_local_point_and_get_feature(&point.into());
+        let (proj, feat) = self.raw.project_local_point_and_get_feature(point);
         (proj.into(), feat)
     }
 
     /// Computes the minimal distance between a point and `self`.
     pub fn distance_to_local_point(&self, point: Vect, solid: bool) -> Real {
-        self.raw.distance_to_local_point(&point.into(), solid)
+        self.raw.distance_to_local_point(point, solid)
     }
 
     /// Tests if the given point is inside of `self`.
     pub fn contains_local_point(&self, point: Vect) -> bool {
-        self.raw.contains_local_point(&point.into())
+        self.raw.contains_local_point(point)
     }
 
     /// Projects a point on `self` transformed by `m`.
@@ -722,8 +704,8 @@ impl Collider {
         point: Vect,
         solid: bool,
     ) -> PointProjection {
-        let pos = (translation, rotation).into();
-        self.raw.project_point(&pos, &point.into(), solid).into()
+        let pos = crate::utils::pose_from(translation, rotation);
+        self.raw.project_point(&pos, point, solid).into()
     }
 
     /// Computes the minimal distance between a point and `self` transformed by `m`.
@@ -735,8 +717,8 @@ impl Collider {
         point: Vect,
         solid: bool,
     ) -> Real {
-        let pos = (translation, rotation).into();
-        self.raw.distance_to_point(&pos, &point.into(), solid)
+        let pos = crate::utils::pose_from(translation, rotation);
+        self.raw.distance_to_point(&pos, point, solid)
     }
 
     /// Projects a point on the boundary of `self` transformed by `m` and returns the id of the
@@ -747,15 +729,15 @@ impl Collider {
         rotation: Rot,
         point: Vect,
     ) -> (PointProjection, FeatureId) {
-        let pos = (translation, rotation).into();
-        let (proj, feat) = self.raw.project_point_and_get_feature(&pos, &point.into());
+        let pos = crate::utils::pose_from(translation, rotation);
+        let (proj, feat) = self.raw.project_point_and_get_feature(&pos, point);
         (proj.into(), feat)
     }
 
     /// Tests if the given point is inside of `self` transformed by `m`.
     pub fn contains_point(&self, translation: Vect, rotation: Rot, point: Vect) -> bool {
-        let pos = (translation, rotation).into();
-        self.raw.contains_point(&pos, &point.into())
+        let pos = crate::utils::pose_from(translation, rotation);
+        self.raw.contains_point(&pos, point)
     }
 
     /// Computes the time of impact between this transform shape and a ray.
@@ -766,7 +748,7 @@ impl Collider {
         max_time_of_impact: Real,
         solid: bool,
     ) -> Option<Real> {
-        let ray = Ray::new(ray_origin.into(), ray_dir.into());
+        let ray = Ray::new(ray_origin, ray_dir);
         self.raw.cast_local_ray(&ray, max_time_of_impact, solid)
     }
 
@@ -778,7 +760,7 @@ impl Collider {
         max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
-        let ray = Ray::new(ray_origin.into(), ray_dir.into());
+        let ray = Ray::new(ray_origin, ray_dir);
         self.raw
             .cast_local_ray_and_get_normal(&ray, max_time_of_impact, solid)
             .map(|inter| RayIntersection::from_rapier(inter, ray_origin, ray_dir))
@@ -791,7 +773,7 @@ impl Collider {
         ray_dir: Vect,
         max_time_of_impact: Real,
     ) -> bool {
-        let ray = Ray::new(ray_origin.into(), ray_dir.into());
+        let ray = Ray::new(ray_origin, ray_dir);
         self.raw.intersects_local_ray(&ray, max_time_of_impact)
     }
 
@@ -805,8 +787,8 @@ impl Collider {
         max_time_of_impact: Real,
         solid: bool,
     ) -> Option<Real> {
-        let pos = (translation, rotation).into();
-        let ray = Ray::new(ray_origin.into(), ray_dir.into());
+        let pos = crate::utils::pose_from(translation, rotation);
+        let ray = Ray::new(ray_origin, ray_dir);
         self.raw.cast_ray(&pos, &ray, max_time_of_impact, solid)
     }
 
@@ -820,8 +802,8 @@ impl Collider {
         max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
-        let pos = (translation, rotation).into();
-        let ray = Ray::new(ray_origin.into(), ray_dir.into());
+        let pos = crate::utils::pose_from(translation, rotation);
+        let ray = Ray::new(ray_origin, ray_dir);
         self.raw
             .cast_ray_and_get_normal(&pos, &ray, max_time_of_impact, solid)
             .map(|inter| RayIntersection::from_rapier(inter, ray_origin, ray_dir))
@@ -836,8 +818,8 @@ impl Collider {
         ray_dir: Vect,
         max_time_of_impact: Real,
     ) -> bool {
-        let pos = (translation, rotation).into();
-        let ray = Ray::new(ray_origin.into(), ray_dir.into());
+        let pos = crate::utils::pose_from(translation, rotation);
+        let ray = Ray::new(ray_origin, ray_dir);
         self.raw.intersects_ray(&pos, &ray, max_time_of_impact)
     }
 }
@@ -850,21 +832,19 @@ impl Default for Collider {
 
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 #[allow(clippy::type_complexity)]
-fn extract_mesh_vertices_indices(mesh: &Mesh) -> Option<(Vec<na::Point3<Real>>, Vec<[u32; 3]>)> {
-    use rapier::na::point;
-
+fn extract_mesh_vertices_indices(mesh: &Mesh) -> Option<(Vec<Vector>, Vec<[u32; 3]>)> {
     let vertices = mesh.attribute(Mesh::ATTRIBUTE_POSITION)?;
     let indices = mesh.indices()?;
 
-    let vtx: Vec<_> = match vertices {
+    let vtx: Vec<Vector> = match vertices {
         VertexAttributeValues::Float32(vtx) => Some(
             vtx.chunks(3)
-                .map(|v| point![v[0] as Real, v[1] as Real, v[2] as Real])
+                .map(|v| Vector::new(v[0] as Real, v[1] as Real, v[2] as Real))
                 .collect(),
         ),
         VertexAttributeValues::Float32x3(vtx) => Some(
             vtx.iter()
-                .map(|v| point![v[0] as Real, v[1] as Real, v[2] as Real])
+                .map(|v| Vector::new(v[0] as Real, v[1] as Real, v[2] as Real))
                 .collect(),
         ),
         _ => None,

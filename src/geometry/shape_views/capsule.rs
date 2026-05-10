@@ -42,7 +42,11 @@ macro_rules! impl_ref_methods(
             /// The transformation such that `t * Y` is collinear with `b - a` and `t * origin` equals
             /// the capsule's center.
             pub fn canonical_transform(&self) -> (Vect, Rot) {
-                self.raw.canonical_transform().into()
+                let pose = self.raw.canonical_transform();
+                #[cfg(feature = "dim2")]
+                return (pose.translation, pose.rotation.angle());
+                #[cfg(feature = "dim3")]
+                return (pose.translation, pose.rotation);
             }
 
             /// The rotation `r` such that `r * Y` is collinear with `b - a`.
@@ -54,12 +58,16 @@ macro_rules! impl_ref_methods(
             /// The rotation `r` such that `r * Y` is collinear with `b - a`.
             #[cfg(feature = "dim3")]
             pub fn rotation_wrt_y(&self) -> Rot {
-                self.raw.rotation_wrt_y().into()
+                self.raw.rotation_wrt_y()
             }
 
             /// The transform `t` such that `t * Y` is collinear with `b - a` and such that `t * origin = (b + a) / 2.0`.
             pub fn transform_wrt_y(&self) -> (Vect, Rot) {
-                self.raw.transform_wrt_y().into()
+                let pose = self.raw.transform_wrt_y();
+                #[cfg(feature = "dim2")]
+                return (pose.translation, pose.rotation.angle());
+                #[cfg(feature = "dim3")]
+                return (pose.translation, pose.rotation);
             }
         }
     }
@@ -78,8 +86,8 @@ impl_ref_methods!(CapsuleViewMut);
 impl CapsuleViewMut<'_> {
     /// Set the segment of this capsule.
     pub fn set_segment(&mut self, start: Vect, end: Vect) {
-        self.raw.segment.a = start.into();
-        self.raw.segment.b = end.into();
+        self.raw.segment.a = start;
+        self.raw.segment.b = end;
     }
 
     /// Set the radius of this capsule.

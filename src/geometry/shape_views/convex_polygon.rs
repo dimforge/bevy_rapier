@@ -11,12 +11,12 @@ pub struct ConvexPolygonView<'a> {
 impl ConvexPolygonView<'_> {
     /// The vertices of this convex polygon.
     pub fn points(&self) -> impl ExactSizeIterator<Item = Vect> + '_ {
-        self.raw.points().iter().map(|pt| (*pt).into())
+        self.raw.points().iter().copied()
     }
 
     /// The normals of the edges of this convex polygon.
     pub fn normals(&self) -> impl ExactSizeIterator<Item = Vect> + '_ {
-        self.raw.normals().iter().map(|n| (**n).into())
+        self.raw.normals().iter().copied()
     }
 }
 
@@ -29,12 +29,12 @@ pub struct ConvexPolygonViewMut<'a> {
 impl ConvexPolygonViewMut<'_> {
     /// The vertices of this convex polygon.
     pub fn points(&self) -> impl ExactSizeIterator<Item = Vect> + '_ {
-        self.raw.points().iter().map(|pt| (*pt).into())
+        self.raw.points().iter().copied()
     }
 
     /// The normals of the edges of this convex polygon.
     pub fn normals(&self) -> impl ExactSizeIterator<Item = Vect> + '_ {
-        self.raw.normals().iter().map(|n| (**n).into())
+        self.raw.normals().iter().copied()
     }
 
     // TODO: add modifications.

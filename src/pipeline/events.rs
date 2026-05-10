@@ -112,9 +112,9 @@ impl EventHandler for EventQueue<'_> {
         let event = ContactForceEvent {
             collider1: self.collider2entity(colliders, rapier_event.collider1),
             collider2: self.collider2entity(colliders, rapier_event.collider2),
-            total_force: rapier_event.total_force.into(),
+            total_force: rapier_event.total_force,
             total_force_magnitude: rapier_event.total_force_magnitude,
-            max_force_direction: rapier_event.max_force_direction.into(),
+            max_force_direction: rapier_event.max_force_direction,
             max_force_magnitude: rapier_event.max_force_magnitude,
         };
 

@@ -14,8 +14,11 @@ impl CompoundView<'_> {
     #[inline]
     pub fn shapes(&self) -> impl ExactSizeIterator<Item = (Vect, Rot, ColliderView<'_>)> {
         self.raw.shapes().iter().map(|(pos, shape)| {
-            let (tra, rot) = (*pos).into();
-            (tra, rot, shape.as_typed_shape().into())
+            #[cfg(feature = "dim2")]
+            let rot = pos.rotation.angle();
+            #[cfg(feature = "dim3")]
+            let rot = pos.rotation;
+            (pos.translation, rot, shape.as_typed_shape().into())
         })
     }
 }

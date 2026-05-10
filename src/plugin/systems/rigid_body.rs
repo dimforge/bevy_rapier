@@ -264,7 +264,7 @@ pub fn apply_rigid_body_user_changes(
             .expect(RAPIER_CONTEXT_EXPECT_ERROR)
             .into_inner();
         if let Some(rb) = rigidbody_set.bodies.get_mut(handle.0) {
-            rb.set_linvel(velocity.linvel.into(), true);
+            rb.set_linvel(velocity.linvel, true);
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             rb.set_angvel(velocity.angvel.into(), true);
         }
@@ -317,7 +317,7 @@ pub fn apply_rigid_body_user_changes(
         if let Some(rb) = rigidbody_set.bodies.get_mut(handle.0) {
             rb.reset_forces(true);
             rb.reset_torques(true);
-            rb.add_force(forces.force.into(), true);
+            rb.add_force(forces.force, true);
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             rb.add_torque(forces.torque.into(), true);
         }
@@ -329,7 +329,7 @@ pub fn apply_rigid_body_user_changes(
             .expect(RAPIER_CONTEXT_EXPECT_ERROR)
             .into_inner();
         if let Some(rb) = rigidbody_set.bodies.get_mut(handle.0) {
-            rb.apply_impulse(impulses.impulse.into(), true);
+            rb.apply_impulse(impulses.impulse, true);
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             rb.apply_torque_impulse(impulses.torque_impulse.into(), true);
             impulses.reset();
@@ -532,9 +532,9 @@ pub fn writeback_rigid_bodies(
 
             if let Some(velocity) = &mut velocity {
                 let new_vel = Velocity {
-                    linvel: (*rb.linvel()).into(),
+                    linvel: rb.linvel(),
                     #[cfg(feature = "dim3")]
-                    angvel: (*rb.angvel()).into(),
+                    angvel: rb.angvel(),
                     #[cfg(feature = "dim2")]
                     angvel: rb.angvel(),
                 };
@@ -719,7 +719,7 @@ pub fn apply_initial_rigid_body_impulses(
             // Make sure the mass-properties are computed.
             rb.recompute_mass_properties_from_colliders(&context_colliders.colliders);
             // Apply the impulse.
-            rb.apply_impulse(impulse.impulse.into(), false);
+            rb.apply_impulse(impulse.impulse, false);
 
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             rb.apply_torque_impulse(impulse.torque_impulse.into(), false);

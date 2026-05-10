@@ -40,13 +40,13 @@ impl CharacterCollision {
         RapierContextColliders::collider_entity_with_set(colliders, c.handle).map(|entity| {
             CharacterCollision {
                 entity,
-                character_translation: c.character_pos.translation.vector.into(),
+                character_translation: c.character_pos.translation,
                 #[cfg(feature = "dim2")]
                 character_rotation: c.character_pos.rotation.angle(),
                 #[cfg(feature = "dim3")]
-                character_rotation: c.character_pos.rotation.into(),
-                translation_applied: c.translation_applied.into(),
-                translation_remaining: c.translation_remaining.into(),
+                character_rotation: c.character_pos.rotation,
+                translation_applied: c.translation_applied,
+                translation_remaining: c.translation_remaining,
                 hit: ShapeCastHit::from_rapier(c.hit, details_always_computed),
             }
         })
@@ -93,7 +93,7 @@ impl Default for MoveShapeOptions {
     fn default() -> Self {
         let def = rapier::control::KinematicCharacterController::default();
         Self {
-            up: def.up.into(),
+            up: def.up,
             offset: def.offset,
             slide: def.slide,
             autostep: def.autostep,
@@ -167,8 +167,12 @@ impl KinematicCharacterController {
             include_dynamic_bodies: autostep.include_dynamic_bodies,
         });
 
+        if self.up.length_squared() < 1.0e-12 {
+            return None;
+        }
+
         Some(rapier::control::KinematicCharacterController {
-            up: self.up.try_into().ok()?,
+            up: self.up.normalize(),
             offset: self.offset,
             slide: self.slide,
             autostep,
@@ -187,7 +191,7 @@ impl Default for KinematicCharacterController {
             translation: None,
             custom_shape: None,
             custom_mass: None,
-            up: def.up.into(),
+            up: def.up,
             offset: def.offset,
             slide: def.slide,
             autostep: def.autostep,

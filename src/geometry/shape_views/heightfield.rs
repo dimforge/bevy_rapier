@@ -25,7 +25,7 @@ macro_rules! impl_ref_methods(
 
             /// The scale factor applied to this heightfield.
             pub fn scale(&self) -> Vect {
-                (*self.raw.scale()).into()
+                self.raw.scale()
             }
 
             /// The width of a single cell of this heightfield.
@@ -40,19 +40,17 @@ macro_rules! impl_ref_methods(
 
             /// Index of the cell a point is on after vertical projection.
             pub fn cell_at_point(&self, point: Vect) -> Option<usize> {
-                self.raw.cell_at_point(&point.into())
+                self.raw.cell_at_point(point)
             }
 
             /// Iterator through all the segments of this heightfield.
             pub fn segments(&self) -> impl Iterator<Item = (Vect, Vect)> + '_ {
-                self.raw.segments().map(|seg| (seg.a.into(), seg.b.into()))
+                self.raw.segments().map(|seg| (seg.a, seg.b))
             }
 
             /// The i-th segment of the heightfield if it has not been removed.
             pub fn segment_at(&self, i: usize) -> Option<(Vect, Vect)> {
-                self.raw
-                    .segment_at(i)
-                    .map(|seg| (seg.a.into(), seg.b.into()))
+                self.raw.segment_at(i).map(|seg| (seg.a, seg.b))
             }
 
             /// Is the i-th segment of this heightfield removed?
@@ -75,12 +73,12 @@ macro_rules! impl_ref_methods(
 
             /// The height at each cell endpoint.
             pub fn heights(&self) -> &[Real] {
-                self.raw.heights().as_slice()
+                self.raw.heights().data()
             }
 
             /// The scale factor applied to this heightfield.
             pub fn scale(&self) -> Vect {
-                (*self.raw.scale()).into()
+                self.raw.scale()
             }
 
             /// The width (extent along its local `x` axis) of each cell of this heightmap, including the scale factor.
@@ -105,14 +103,12 @@ macro_rules! impl_ref_methods(
 
             /// Index of the cell a point is on after vertical projection.
             pub fn cell_at_point(&self, point: Vect) -> Option<(usize, usize)> {
-                self.raw.cell_at_point(&point.into())
+                self.raw.cell_at_point(point)
             }
 
             /// Iterator through all the triangles of this heightfield.
             pub fn triangles(&self) -> impl Iterator<Item = (Vect, Vect, Vect)> + '_ {
-                self.raw
-                    .triangles()
-                    .map(|tri| (tri.a.into(), tri.b.into(), tri.c.into()))
+                self.raw.triangles().map(|tri| (tri.a, tri.b, tri.c))
             }
 
             /// The two triangles at the cell (i, j) of this heightfield.
@@ -126,8 +122,8 @@ macro_rules! impl_ref_methods(
             ) -> (Option<(Vect, Vect, Vect)>, Option<(Vect, Vect, Vect)>) {
                 let (tri1, tri2) = self.raw.triangles_at(i, j);
                 (
-                    tri1.map(|tri| (tri.a.into(), tri.b.into(), tri.c.into())),
-                    tri2.map(|tri| (tri.a.into(), tri.b.into(), tri.c.into())),
+                    tri1.map(|tri| (tri.a, tri.b, tri.c)),
+                    tri2.map(|tri| (tri.a, tri.b, tri.c)),
                 )
             }
 
@@ -138,7 +134,7 @@ macro_rules! impl_ref_methods(
 
             /// The statuses of all the cells of this heightfield, in column-major order.
             pub fn cells_statuses(&self) -> &[HeightFieldCellStatus] {
-                self.raw.cells_statuses().as_slice()
+                self.raw.cells_statuses().data()
             }
         }
     }
@@ -171,6 +167,6 @@ impl HeightFieldViewMut<'_> {
 
     /// The mutable statuses of all the cells of this heightfield.
     pub fn cells_statuses_mut(&mut self) -> &mut [HeightFieldCellStatus] {
-        self.raw.cells_statuses_mut().as_mut_slice()
+        self.raw.cells_statuses_mut().data_mut()
     }
 }

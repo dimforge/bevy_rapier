@@ -11,8 +11,7 @@ use crate::prelude::KinematicCharacterController;
 use crate::prelude::KinematicCharacterControllerOutput;
 use crate::utils;
 use bevy::prelude::*;
-use rapier::math::Isometry;
-use rapier::math::Real;
+use rapier::math::Pose;
 use rapier::parry::query::DefaultQueryDispatcher;
 use rapier::pipeline::QueryFilter;
 
@@ -83,7 +82,7 @@ pub fn update_character_controls(
             let (character_shape, character_pos) = if let Some((scaled_shape, tra, rot)) =
                 &scaled_custom_shape
             {
-                let mut shape_pos: Isometry<Real> = (*tra, *rot).into();
+                let mut shape_pos: Pose = utils::pose_from(*tra, *rot);
 
                 if let Some(body) = body_handle.and_then(|h| rigidbody_set.bodies.get(h.0)) {
                     shape_pos = body.position() * shape_pos
@@ -142,7 +141,7 @@ pub fn update_character_controls(
                 &query_pipeline.as_ref(),
                 &*character_shape,
                 &character_pos,
-                translation.into(),
+                translation,
                 |c| collisions.push(c),
             );
 
@@ -173,7 +172,7 @@ pub fn update_character_controls(
 
             if let Some(mut output) = output {
                 output.desired_translation = controller.translation.unwrap();
-                output.effective_translation = movement.translation.into();
+                output.effective_translation = movement.translation;
                 output.grounded = movement.grounded;
                 output.collisions.clear();
                 output.collisions.extend(converted_collisions);
@@ -183,7 +182,7 @@ pub fn update_character_controls(
                     .entity(entity)
                     .insert(KinematicCharacterControllerOutput {
                         desired_translation: controller.translation.unwrap(),
-                        effective_translation: movement.translation.into(),
+                        effective_translation: movement.translation,
                         grounded: movement.grounded,
                         collisions: converted_collisions.collect(),
                         is_sliding_down_slope: movement.is_sliding_down_slope,

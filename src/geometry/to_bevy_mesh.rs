@@ -45,9 +45,9 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
         }
         TypedShape::Triangle(triangle) => {
             // FIXME: bevy 0.16 will expose a builder for triangles: https://github.com/bevyengine/bevy/pull/17454
-            let a = triangle.a.coords;
-            let b = triangle.b.coords;
-            let c = triangle.c.coords;
+            let a = triangle.a;
+            let b = triangle.b;
+            let c = triangle.c;
             #[cfg(feature = "dim2")]
             let mesh = bevy::prelude::Triangle3d::new(
                 bevy::prelude::Vec3::new(a.x, a.y, 0.0),
@@ -55,7 +55,7 @@ pub fn typed_shape_to_mesh(typed_shape: &TypedShape) -> Option<Mesh> {
                 bevy::prelude::Vec3::new(c.x, c.y, 0.0),
             );
             #[cfg(feature = "dim3")]
-            let mesh = bevy::prelude::Triangle3d::new(a.into(), b.into(), c.into());
+            let mesh = bevy::prelude::Triangle3d::new(a, b, c);
 
             mesh.into()
         }
@@ -272,7 +272,7 @@ impl ToMeshBuilder for &rapier3d::prelude::HalfSpace {
 
     fn mesh_builder(&self) -> Self::MeshBuilder {
         PlaneMeshBuilder::new(
-            bevy::prelude::Dir3::new(self.normal.into()).unwrap_or(bevy::prelude::Dir3::Y),
+            bevy::prelude::Dir3::new(self.normal).unwrap_or(bevy::prelude::Dir3::Y),
             bevy::prelude::Vec2::ONE,
         )
     }

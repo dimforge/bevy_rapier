@@ -1,7 +1,7 @@
 use crate::math::Vect;
 use bevy::prelude::*;
 use rapier::prelude::{
-    Isometry, LockedAxes as RapierLockedAxes, RigidBodyActivation, RigidBodyHandle, RigidBodyType,
+    LockedAxes as RapierLockedAxes, Pose, RigidBodyActivation, RigidBodyHandle, RigidBodyType,
 };
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 
@@ -244,7 +244,7 @@ impl MassProperties {
     #[cfg(feature = "dim2")]
     pub fn into_rapier(self) -> rapier::dynamics::MassProperties {
         rapier::dynamics::MassProperties::new(
-            self.local_center_of_mass.into(),
+            self.local_center_of_mass,
             self.mass,
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
             self.principal_inertia.into(),
@@ -255,10 +255,10 @@ impl MassProperties {
     #[cfg(feature = "dim3")]
     pub fn into_rapier(self) -> rapier::dynamics::MassProperties {
         rapier::dynamics::MassProperties::with_principal_inertia_frame(
-            self.local_center_of_mass.into(),
+            self.local_center_of_mass,
             self.mass,
-            self.principal_inertia.into(),
-            self.principal_inertia_local_frame.into(),
+            self.principal_inertia,
+            self.principal_inertia_local_frame,
         )
     }
 
@@ -588,16 +588,16 @@ impl Default for Damping {
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component)]
 pub struct TransformInterpolation {
     /// The starting point of the interpolation.
-    pub start: Option<Isometry<f32>>,
+    pub start: Option<Pose>,
     /// The end point of the interpolation.
-    pub end: Option<Isometry<f32>>,
+    pub end: Option<Pose>,
 }
 
 impl TransformInterpolation {
     /// Interpolates between the start and end positions with `t` in the range `[0..1]`.
-    pub fn lerp_slerp(&self, t: f32) -> Option<Isometry<f32>> {
+    pub fn lerp_slerp(&self, t: f32) -> Option<Pose> {
         if let (Some(start), Some(end)) = (self.start, self.end) {
-            Some(start.lerp_slerp(&end, t))
+            Some(start.lerp(&end, t))
         } else {
             None
         }

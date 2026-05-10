@@ -11,7 +11,7 @@ pub struct ConvexPolyhedronView<'a> {
 impl ConvexPolyhedronView<'_> {
     /// The vertices of this convex polygon.
     pub fn points(&self) -> impl ExactSizeIterator<Item = Vect> + '_ {
-        self.raw.points().iter().map(|pt| (*pt).into())
+        self.raw.points().iter().copied()
     }
 
     // TODO: add retrieval of topology information.
@@ -26,7 +26,7 @@ pub struct ConvexPolyhedronViewMut<'a> {
 impl ConvexPolyhedronViewMut<'_> {
     /// The vertices of this convex polygon.
     pub fn points(&self) -> impl ExactSizeIterator<Item = Vect> + '_ {
-        self.raw.points().iter().map(|pt| (*pt).into())
+        self.raw.points().iter().copied()
     }
 
     // TODO: add retrieval of topology information and modification.

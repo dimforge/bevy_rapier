@@ -155,12 +155,12 @@ impl ContactManifoldView<'_> {
 
     /// The contact normal of all the contacts of this manifold, expressed in the local space of the first shape.
     pub fn local_n1(&self) -> Vect {
-        self.raw.local_n1.into()
+        self.raw.local_n1
     }
 
     /// The contact normal of all the contacts of this manifold, expressed in the local space of the second shape.
     pub fn local_n2(&self) -> Vect {
-        self.raw.local_n2.into()
+        self.raw.local_n2
     }
 
     /// The first subshape involved in this contact manifold.
@@ -200,7 +200,7 @@ impl ContactManifoldView<'_> {
 
     /// The world-space contact normal shared by all the contact in this contact manifold.
     pub fn normal(&self) -> Vect {
-        self.raw.data.normal.into()
+        self.raw.data.normal
     }
 
     /// The contacts that will be seen by the constraints solver for computing forces.
@@ -255,12 +255,12 @@ pub struct ContactView<'a> {
 impl ContactView<'_> {
     /// The contact point in the local-space of the first shape.
     pub fn local_p1(&self) -> Vect {
-        self.raw.local_p1.into()
+        self.raw.local_p1
     }
 
     /// The contact point in the local-space of the second shape.
     pub fn local_p2(&self) -> Vect {
-        self.raw.local_p2.into()
+        self.raw.local_p2
     }
 
     /// The distance between the two contact points.
@@ -309,7 +309,7 @@ pub struct SolverContactView<'a> {
 impl SolverContactView<'_> {
     /// The world-space contact point.
     pub fn point(&self) -> Vect {
-        self.raw.point.into()
+        self.raw.point
     }
     /// The distance between the two original contacts points along the contact normal.
     /// If negative, this is measures the penetration depth.
@@ -329,7 +329,7 @@ impl SolverContactView<'_> {
     /// This is set to zero by default. Set to a non-zero value to
     /// simulate, e.g., conveyor belts.
     pub fn tangent_velocity(&self) -> Vect {
-        self.raw.tangent_velocity.into()
+        self.raw.tangent_velocity
     }
     /// Whether or not this contact existed during the last timestep.
     pub fn is_new(&self) -> bool {
@@ -379,7 +379,7 @@ impl ContactPairView<'_> {
 
     /// Is there any active contact in this contact pair?
     pub fn has_any_active_contact(&self) -> bool {
-        self.raw.has_any_active_contact
+        self.raw.has_any_active_contact()
     }
 
     /// Finds the contact with the smallest signed distance.

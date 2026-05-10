@@ -13,7 +13,7 @@ macro_rules! impl_ref_methods(
         impl<'a> $View<'a> {
             /// The halfspace planar boundary's outward normal.
             pub fn normal(&self) -> Vect {
-                (*self.raw.normal).into()
+                self.raw.normal
             }
         }
     }
@@ -32,9 +32,9 @@ impl_ref_methods!(HalfSpaceViewMut);
 impl HalfSpaceViewMut<'_> {
     /// Set the normal of the half-space.
     pub fn set_normal(&mut self, normal: Vect) {
-        let normal: rapier::math::Vector<_> = normal.into();
-        if let Some(unit_normal) = na::Unit::try_new(normal, 1.0e-6) {
-            self.raw.normal = unit_normal;
+        let normal: rapier::math::Vector = normal;
+        if normal.length_squared() >= 1.0e-12 {
+            self.raw.normal = normal.normalize();
         }
     }
 }

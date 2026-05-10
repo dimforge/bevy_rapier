@@ -28,7 +28,7 @@ impl PointProjection {
     pub(crate) fn from_rapier(raw: rapier::parry::query::PointProjection) -> Self {
         Self {
             is_inside: raw.is_inside,
-            point: raw.point.into(),
+            point: raw.point,
         }
     }
 }
@@ -36,7 +36,7 @@ impl From<rapier::parry::query::PointProjection> for PointProjection {
     fn from(projection: rapier::parry::query::PointProjection) -> PointProjection {
         PointProjection {
             is_inside: projection.is_inside,
-            point: projection.point.into(),
+            point: projection.point,
         }
     }
 }
@@ -70,7 +70,7 @@ impl RayIntersection {
         Self {
             time_of_impact: inter.time_of_impact,
             point: unscaled_origin + unscaled_dir * inter.time_of_impact,
-            normal: inter.normal.into(),
+            normal: inter.normal,
             feature: inter.feature,
         }
     }
@@ -113,10 +113,10 @@ impl ShapeCastHit {
             (_, ShapeCastStatus::Failed) => None,
             (false, ShapeCastStatus::PenetratingOrWithinTargetDist) => None,
             _ => Some(ShapeCastHitDetails {
-                witness1: hit.witness1.into(),
-                witness2: hit.witness2.into(),
-                normal1: hit.normal1.into(),
-                normal2: hit.normal2.into(),
+                witness1: hit.witness1,
+                witness2: hit.witness2,
+                normal1: hit.normal1,
+                normal2: hit.normal2,
             }),
         };
         Self {

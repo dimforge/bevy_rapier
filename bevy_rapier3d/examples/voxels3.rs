@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
-use rapier3d::math::Isometry;
+use rapier3d::math::Pose;
 
 fn main() {
     App::new()
@@ -58,7 +58,7 @@ pub fn setup_physics(mut commands: Commands) {
     }
     let collider = Collider::voxels_from_points(voxel_size, &samples);
     let ground_position = Vec3::new(voxel_size.x / 2f32, 0.0, voxel_size.z / 2f32);
-    let floor_aabb = collider.raw.compute_aabb(&Isometry::identity());
+    let floor_aabb = collider.raw.compute_aabb(&Pose::IDENTITY);
     commands.spawn((Transform::from_translation(ground_position), collider));
 
     /*
