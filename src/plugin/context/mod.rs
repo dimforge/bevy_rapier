@@ -408,9 +408,7 @@ impl<'a> RapierQueryPipeline<'a> {
         max_dist: Real,
         solid: bool,
     ) -> Option<(Entity, PointProjection)> {
-        let (h, result) = self
-            .query_pipeline
-            .project_point(point, max_dist, solid)?;
+        let (h, result) = self.query_pipeline.project_point(point, max_dist, solid)?;
 
         Some((
             self.collider_entity(h),
@@ -443,9 +441,7 @@ impl<'a> RapierQueryPipeline<'a> {
         &self,
         point: Vect,
     ) -> Option<(Entity, PointProjection, FeatureId)> {
-        let (h, proj, fid) = self
-            .query_pipeline
-            .project_point_and_get_feature(point)?;
+        let (h, proj, fid) = self.query_pipeline.project_point_and_get_feature(point)?;
 
         Some((
             self.collider_entity(h),

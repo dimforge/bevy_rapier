@@ -180,11 +180,8 @@ impl Collider {
     /// Each voxel has the size `voxel_size` and contains at least one point from `centers`.
     /// The `primitive_geometry` controls the behavior of collision detection at voxels boundaries.
     pub fn voxels_from_points(voxel_size: Vect, points: &[Vect]) -> Self {
-        SharedShape::voxels_from_points(
-            voxel_size,
-            &Self::vec_array_from_point_float_array(points),
-        )
-        .into()
+        SharedShape::voxels_from_points(voxel_size, &Self::vec_array_from_point_float_array(points))
+            .into()
     }
 
     /// Initializes a voxels shape obtained from the decomposition of the given trimesh (in 3D)

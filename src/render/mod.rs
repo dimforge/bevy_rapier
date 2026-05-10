@@ -175,13 +175,7 @@ impl<'world, 'state, 'world2, 'state2, 'a, 'c, 'd, 'v, 'p> DebugRenderBackend
     for BevyLinesRenderBackend<'world, 'state, 'world2, 'state2, 'a, 'c, 'd, 'v, 'p>
 {
     #[cfg(feature = "dim2")]
-    fn draw_line(
-        &mut self,
-        object: DebugRenderObject,
-        a: Vector,
-        b: Vector,
-        color: [f32; 4],
-    ) {
+    fn draw_line(&mut self, object: DebugRenderObject, a: Vector, b: Vector, color: [f32; 4]) {
         if !self.drawing_enabled(object) {
             return;
         }
@@ -195,13 +189,7 @@ impl<'world, 'state, 'world2, 'state2, 'a, 'c, 'd, 'v, 'p> DebugRenderBackend
     }
 
     #[cfg(feature = "dim3")]
-    fn draw_line(
-        &mut self,
-        object: DebugRenderObject,
-        a: Vector,
-        b: Vector,
-        color: [f32; 4],
-    ) {
+    fn draw_line(&mut self, object: DebugRenderObject, a: Vector, b: Vector, color: [f32; 4]) {
         if !self.drawing_enabled(object) {
             return;
         }

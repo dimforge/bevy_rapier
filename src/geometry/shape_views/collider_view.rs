@@ -374,22 +374,20 @@ impl<'a> ColliderView<'a> {
                 Some(Either::Right(b)) => SharedShape::new(b),
             },
             #[cfg(feature = "dim3")]
-            ColliderView::RoundCone(c) => {
-                match c.raw.inner_shape.scaled(scale, num_subdivisions) {
-                    None => {
-                        log::error!("Failed to apply scale {scale} to RoundCone shape.");
-                        SharedShape::ball(0.0)
-                    }
-                    Some(Either::Left(scaled)) => SharedShape::new(RoundShape {
-                        border_radius: c.raw.border_radius,
-                        inner_shape: scaled,
-                    }),
-                    Some(Either::Right(scaled)) => SharedShape::new(RoundShape {
-                        border_radius: c.raw.border_radius,
-                        inner_shape: scaled,
-                    }),
+            ColliderView::RoundCone(c) => match c.raw.inner_shape.scaled(scale, num_subdivisions) {
+                None => {
+                    log::error!("Failed to apply scale {scale} to RoundCone shape.");
+                    SharedShape::ball(0.0)
                 }
-            }
+                Some(Either::Left(scaled)) => SharedShape::new(RoundShape {
+                    border_radius: c.raw.border_radius,
+                    inner_shape: scaled,
+                }),
+                Some(Either::Right(scaled)) => SharedShape::new(RoundShape {
+                    border_radius: c.raw.border_radius,
+                    inner_shape: scaled,
+                }),
+            },
             ColliderView::Compound(c) => {
                 let mut scaled = Vec::with_capacity(c.shapes().len());
 
