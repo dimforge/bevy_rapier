@@ -131,10 +131,16 @@ fn bubble_down_context_change(
 #[cfg(test)]
 mod test {
     use crate::plugin::{
-        context::{RapierContextEntityLink, RapierContextSimulation},
+        context::{
+            DefaultRapierContext, RapierContextEntityLink, RapierContextSimulation,
+            RapierRigidBodySet,
+        },
         NoUserData, PhysicsSet, RapierPhysicsPlugin,
     };
-    use crate::prelude::{ActiveEvents, Collider, ContactForceEventThreshold, RigidBody, Sensor};
+    use crate::prelude::{
+        ActiveEvents, Collider, ContactForceEventThreshold, RapierColliderHandle,
+        RapierRigidBodyHandle, RigidBody, Sensor,
+    };
     use bevy::prelude::*;
     use bevy::time::{TimePlugin, TimeUpdateStrategy};
     use rapier::math::Real;
@@ -226,6 +232,143 @@ mod test {
                         Marker::<'R'>,
                     ));
                 });
+        }
+    }
+
+    /// Regression test for `sync_removals` deleting a freshly-reinserted body when an entity is
+    /// migrated between Rapier contexts in `.in_fixed_schedule()` mode.
+    ///
+    /// When the schedule is not `PostUpdate`, `RapierPhysicsPlugin` registers `sync_removals` in
+    /// both the configured schedule's `SyncBackend` chain *and* in `PostUpdate` as a safety net
+    /// for events that would otherwise be missed. Each registration owns an independent
+    /// `RemovedComponents<RapierRigidBodyHandle>` cursor, so both copies process the same removal
+    /// event. Without a guard, the PostUpdate copy walks all contexts via `find_context` after
+    /// `init_rigid_bodies` has reinserted the body in the new context, finds the freshly-created
+    /// `entity2body` entry, and deletes it — leaving the entity with a live
+    /// `RapierRigidBodyHandle` component and no body in any rapier set.
+    ///
+    /// This test reproduces that pattern (link swap + handle removal) and asserts the body lives
+    /// in the new context after a few app updates.
+    #[test]
+    pub fn body_survives_context_migration_via_handle_swap() {
+        let mut app = App::new();
+        app.add_plugins((
+            TransformPlugin,
+            TimePlugin,
+            RapierPhysicsPlugin::<NoUserData>::default().in_fixed_schedule(),
+        ));
+        app.insert_resource(TimeUpdateStrategy::ManualDuration(
+            std::time::Duration::from_secs_f32(1.0 / 60.0),
+        ));
+        app.insert_resource(Time::<Fixed>::from_hz(60.0));
+        app.add_systems(Startup, setup_body);
+        app.finish();
+
+        // Run a few frames so the default context is created, `setup_body` runs, and the body is
+        // registered in the default context's `entity2body`.
+        for _ in 0..3 {
+            app.update();
+        }
+
+        let body_entity = app
+            .world_mut()
+            .query_filtered::<Entity, With<MigrationTarget>>()
+            .single(app.world())
+            .expect("body entity exists");
+        let default_ctx_entity = app
+            .world_mut()
+            .query_filtered::<Entity, With<DefaultRapierContext>>()
+            .single(app.world())
+            .expect("default context exists");
+
+        assert!(
+            app.world()
+                .entity(default_ctx_entity)
+                .get::<RapierRigidBodySet>()
+                .unwrap()
+                .entity2body()
+                .contains_key(&body_entity),
+            "pre-migration: body must be registered in the default context",
+        );
+
+        // Spawn a second context. `setup_rapier_configuration` will attach `RapierConfiguration`
+        // on the next update.
+        let new_ctx_entity = app
+            .world_mut()
+            .spawn(RapierContextSimulation::default())
+            .id();
+        app.update();
+
+        // Migrate: swap the entity's `RapierContextEntityLink` and drop its handles. This is the
+        // exact pattern that triggered the dual-`sync_removals` deletion bug.
+        {
+            let world = app.world_mut();
+            let mut entity_mut = world.entity_mut(body_entity);
+            entity_mut.insert(RapierContextEntityLink(new_ctx_entity));
+            entity_mut.remove::<RapierRigidBodyHandle>();
+            entity_mut.remove::<RapierColliderHandle>();
+        }
+
+        // Run enough frames so both `sync_removals` copies process the removal event and
+        // `init_rigid_bodies` / `init_colliders` re-create the body in the new context.
+        for _ in 0..3 {
+            app.update();
+        }
+
+        let world = app.world();
+        let new_set = world
+            .entity(new_ctx_entity)
+            .get::<RapierRigidBodySet>()
+            .unwrap();
+        let default_set = world
+            .entity(default_ctx_entity)
+            .get::<RapierRigidBodySet>()
+            .unwrap();
+
+        assert!(
+            new_set.entity2body().contains_key(&body_entity),
+            "body must live in the new context after migration; \
+             a stale removal event must not delete the freshly-reinserted body",
+        );
+        assert!(
+            !default_set.entity2body().contains_key(&body_entity),
+            "body must no longer be registered in the original context",
+        );
+
+        let handle = world
+            .entity(body_entity)
+            .get::<RapierRigidBodyHandle>()
+            .expect("entity must have a fresh `RapierRigidBodyHandle`");
+        let mapped = new_set
+            .entity2body()
+            .get(&body_entity)
+            .expect("new context's `entity2body` must contain the migrated entity");
+        assert_eq!(
+            handle.0, *mapped,
+            "the entity's `RapierRigidBodyHandle` component must reference the new context's body",
+        );
+
+        return;
+
+        #[derive(Component)]
+        pub struct MigrationTarget;
+
+        #[cfg(feature = "dim3")]
+        fn cuboid(hx: Real, hy: Real, hz: Real) -> Collider {
+            Collider::cuboid(hx, hy, hz)
+        }
+        #[cfg(feature = "dim2")]
+        fn cuboid(hx: Real, hy: Real, _hz: Real) -> Collider {
+            Collider::cuboid(hx, hy)
+        }
+
+        pub fn setup_body(mut commands: Commands) {
+            commands.spawn((
+                Transform::from_xyz(0.0, 0.0, 0.0),
+                RigidBody::Dynamic,
+                cuboid(0.5, 0.5, 0.5),
+                MigrationTarget,
+            ));
         }
     }
 }
