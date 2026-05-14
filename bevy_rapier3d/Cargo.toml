@@ -1,6 +1,6 @@
 [package]
 name = "bevy_rapier3d"
-version = "0.33.0"
+version = "0.34.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 description = "3-dimensional physics engine in Rust, official Bevy plugin."
 documentation = "http://docs.rs/bevy_rapier3d"

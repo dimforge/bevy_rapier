@@ -1,5 +1,64 @@
 # Changelog
 
+## v0.34.0 (14 May 2026)
+
+### Added
+
+- New `change_contexts3` 3D example demonstrating how to move an entity between physics contexts.
+  [#684](https://github.com/dimforge/bevy_rapier/pull/684)
+
+### Modified
+
+- Update from rapier `0.31` to rapier `0.32`. [#692](https://github.com/dimforge/bevy_rapier/pull/692)
+  See [rapier's changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md) for details.
+  - Most `Collider`, joint, and query-pipeline APIs now take `glam` vectors/rotations directly instead of
+    nalgebra `Point`s/`Isometry`s. For example, `Collider::capsule`, `Collider::segment`,
+    `Collider::triangle`, `Collider::voxels`, `RapierQueryPipeline::cast_ray`, `project_point`,
+    `intersect_shape`, `cast_shape`, etc. no longer require `.into()` conversions on input vectors.
+  - `TransformInterpolation::{start, end}` are now `Option<Pose>` instead of `Option<Isometry<f32>>`.
+  - `iso_to_transform` now takes a `&Pose` instead of `&Isometry<Real>`.
+  - `SolverContactView::is_new` now compares an internal float; the public boolean API is preserved.
+  - `ContactPairView::has_any_active_contact` is now a method call on the underlying contact pair.
+- Renamed `Velocity` fields: `linvel` → `linear` and `angvel` → `angular`.
+  [#690](https://github.com/dimforge/bevy_rapier/pull/690)
+
+### Fix
+
+- Fix context swapping failing when physics runs in a schedule other than `PostUpdate`: a stray run
+  of `sync_removals` was removing handles that had just been added.
+  [#684](https://github.com/dimforge/bevy_rapier/pull/684)
+
+## v0.33.0 (06 March 2026)
+
+### Modified
+
+- Update Bevy to `0.18`. [#686](https://github.com/dimforge/bevy_rapier/pull/686)
+  - Examples now require the `bevy_gizmos_render` feature.
+  - The testbed examples moved their UI systems to the new `EguiPrimaryContextPass` schedule.
+
+## v0.32.0 (24 February 2026)
+
+### Added
+
+- Reflection support for `SpringCoefficients` (used by the new contact softness parameters) and, in 3D,
+  for `FrictionModel` (`Simplified` / `Coulomb`). [#680](https://github.com/dimforge/bevy_rapier/pull/680)
+- New `voxels2_no_collider` 2D example demonstrating `Voxels` shapes without a collider.
+  [#680](https://github.com/dimforge/bevy_rapier/pull/680)
+
+### Modified
+
+- Update Bevy to `0.17.3`. [#680](https://github.com/dimforge/bevy_rapier/pull/680)
+  - Migrated from Bevy's `Event`/`Events`/`EventReader`/`EventWriter` to the new
+    `Message`/`Messages`/`MessageReader`/`MessageWriter` API. `CollisionEvent`, `ContactForceEvent`,
+    and `MassModifiedEvent` now derive `Message` instead of `Event`.
+  - Renamed `TransformSystem::TransformPropagate` usages to `TransformSystems::Propagate`.
+  - `PickSet` → `PickingSystems` for the picking backend.
+- Update from rapier `0.27` to rapier `0.31`. [#680](https://github.com/dimforge/bevy_rapier/pull/680)
+  See [rapier's changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md) for details.
+  - `IntegrationParametersWrapper` reflection now exposes `contact_softness` (a `SpringCoefficients`),
+    `warmstart_coefficient`, and `length_unit`, replacing the previous `contact_damping_ratio` and
+    `contact_natural_frequency` fields.
+
 ## v0.31.0 (04 August 2025)
 
 ### Added
