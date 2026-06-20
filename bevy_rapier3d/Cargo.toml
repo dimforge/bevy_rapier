@@ -65,7 +65,7 @@ async-collider = [
 to-bevy-mesh = ["bevy/bevy_render", "bevy/bevy_asset"]
 
 [dependencies]
-bevy = { version = "0.18.1", default-features = false, features = ["std"] }
+bevy = { version = "0.19.0", default-features = false, features = ["std"] }
 nalgebra = { version = "0.34.2", features = ["convert-glam030"] }
 rapier3d = "0.32.0"
 bitflags = "2.10.0"
@@ -73,7 +73,7 @@ log = "0.4"
 serde = { version = "1", features = ["derive"], optional = true }
 
 [dev-dependencies]
-bevy = { version = "0.18.1", default-features = false, features = [
+bevy = { version = "0.19.0", default-features = false, features = [
     "bevy_window",
     "x11",
     "tonemapping_luts",
@@ -86,10 +86,10 @@ bevy = { version = "0.18.1", default-features = false, features = [
     "bevy_gizmos_render",
 ] }
 approx = "0.5.1"
-glam = { version = "0.30.9", features = ["approx"] }
-bevy-inspector-egui = "0.36.0"
-bevy_egui = "0.39.1"
-bevy_mod_debugdump = "0.15.0"
+glam = { version = "0.32.1", features = ["approx"] }
+bevy-inspector-egui = "0.37.0"
+bevy_egui = "0.40.0"
+bevy_mod_debugdump = "0.16.0"
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
