@@ -58,7 +58,7 @@ headless = []
 picking-backend = ["bevy/bevy_picking", "bevy/bevy_render"]
 async-collider = [
     "bevy/bevy_asset",
-    "bevy/bevy_scene",
+    "bevy/bevy_world_serialization",
     "bevy/bevy_render",
     "bevy/bevy_image",
 ]
@@ -66,8 +66,8 @@ to-bevy-mesh = ["bevy/bevy_render", "bevy/bevy_asset"]
 
 [dependencies]
 bevy = { version = "0.19.0", default-features = false, features = ["std"] }
-nalgebra = { version = "0.34.2", features = ["convert-glam030"] }
-rapier3d = "0.32.0"
+nalgebra = { version = "0.34.2", features = ["convert-glam032"] }
+rapier3d = { workspace = true }
 bitflags = "2.10.0"
 log = "0.4"
 serde = { version = "1", features = ["derive"], optional = true }

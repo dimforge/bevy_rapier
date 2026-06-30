@@ -2,6 +2,10 @@
 members = ["bevy_rapier2d", "bevy_rapier3d", "bevy_rapier_benches3d", "ci"]
 resolver = "2"
 
+[workspace.dependencies]
+rapier2d = { git = "https://github.com/Buncys/rapier.git", rev = "ff6af7e3e0c55f5c331f02388f3d3d7b560aff0b" }
+rapier3d = { git = "https://github.com/Buncys/rapier.git", rev = "ff6af7e3e0c55f5c331f02388f3d3d7b560aff0b" }
+
 [profile.dev]
 # Use slightly better optimization by default, as examples otherwise seem laggy.
 opt-level = 1
