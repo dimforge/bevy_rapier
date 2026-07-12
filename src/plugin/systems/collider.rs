@@ -19,7 +19,7 @@ use rapier::geometry::ColliderBuilder;
 #[cfg(all(feature = "dim3", feature = "async-collider"))]
 use {
     crate::prelude::{AsyncCollider, AsyncSceneCollider},
-    bevy::scene::SceneInstance,
+    bevy::world_serialization::WorldInstance,
 };
 
 #[cfg(feature = "dim2")]
@@ -533,8 +533,8 @@ pub fn init_async_colliders(
 pub fn init_async_scene_colliders(
     mut commands: Commands,
     meshes: Res<Assets<Mesh>>,
-    scene_spawner: Res<SceneSpawner>,
-    async_colliders: Query<(Entity, &SceneInstance, &AsyncSceneCollider)>,
+    scene_spawner: If<Res<WorldInstanceSpawner>>,
+    async_colliders: Query<(Entity, &WorldInstance, &AsyncSceneCollider)>,
     children: Query<&Children>,
     mesh_handles: Query<(&Name, &Mesh3d)>,
 ) {
@@ -600,10 +600,10 @@ pub mod test {
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_collider_initializes() {
         use super::*;
-        use bevy::{mesh::MeshPlugin, scene::ScenePlugin};
+        use bevy::{mesh::MeshPlugin, world_serialization::WorldSerializationPlugin};
 
         let mut app = App::new();
-        app.add_plugins((AssetPlugin::default(), MeshPlugin, ScenePlugin));
+        app.add_plugins((AssetPlugin::default(), MeshPlugin, WorldSerializationPlugin));
         app.add_systems(Update, init_async_colliders);
 
         app.finish();
@@ -633,10 +633,10 @@ pub mod test {
     #[cfg(all(feature = "dim3", feature = "async-collider"))]
     fn async_scene_collider_initializes() {
         use super::*;
-        use bevy::{mesh::MeshPlugin, scene::ScenePlugin};
+        use bevy::{mesh::MeshPlugin, world_serialization::WorldSerializationPlugin};
 
         let mut app = App::new();
-        app.add_plugins((AssetPlugin::default(), MeshPlugin, ScenePlugin));
+        app.add_plugins((AssetPlugin::default(), MeshPlugin, WorldSerializationPlugin));
         app.add_systems(PostUpdate, init_async_scene_colliders);
 
         let mut meshes = app.world_mut().resource_mut::<Assets<Mesh>>();
@@ -651,15 +651,15 @@ pub mod test {
             .spawn((Name::new("Capsule"), Mesh3d(capsule_handle)))
             .id();
 
-        let mut scenes = app.world_mut().resource_mut::<Assets<Scene>>();
-        let scene = scenes.add(Scene::new(World::new()));
+        let mut scenes = app.world_mut().resource_mut::<Assets<WorldAsset>>();
+        let scene = scenes.add(WorldAsset::new(World::new()));
 
         let mut named_shapes = bevy::platform::collections::HashMap::default();
         named_shapes.insert("Capsule".to_string(), None);
         let parent = app
             .world_mut()
             .spawn((
-                SceneRoot(scene),
+                WorldAssetRoot(scene),
                 AsyncSceneCollider {
                     named_shapes,
                     ..Default::default()

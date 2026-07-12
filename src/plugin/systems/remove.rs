@@ -13,7 +13,7 @@ use crate::plugin::context::{
 use crate::prelude::MassModifiedEvent;
 use crate::prelude::RigidBodyDisabled;
 use crate::prelude::Sensor;
-use bevy::ecs::query::QueryData;
+use bevy::ecs::query::IterQueryData;
 use bevy::prelude::*;
 
 /// System responsible for removing from Rapier the rigid-bodies/colliders/joints which had
@@ -242,7 +242,7 @@ pub fn sync_removals(
     // TODO: what about removing forces?
 }
 
-fn find_context<'a, TReturn, TQueryParams: QueryData>(
+fn find_context<'a, TReturn, TQueryParams: IterQueryData>(
     context_writer: &'a mut Query<TQueryParams>,
     item_finder: impl Fn(&mut TQueryParams::Item<'_, '_>) -> Option<TReturn>,
 ) -> Option<(TQueryParams::Item<'a, 'a>, TReturn)> {

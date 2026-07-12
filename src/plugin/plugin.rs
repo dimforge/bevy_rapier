@@ -343,15 +343,17 @@ where
     fn finish(&self, _app: &mut App) {
         #[cfg(all(feature = "dim3", feature = "async-collider"))]
         {
-            use bevy::{asset::AssetPlugin, mesh::MeshPlugin, scene::ScenePlugin};
+            use bevy::{
+                asset::AssetPlugin, mesh::MeshPlugin, world_serialization::WorldSerializationPlugin,
+            };
             if !_app.is_plugin_added::<AssetPlugin>() {
                 _app.add_plugins(AssetPlugin::default());
             }
             if !_app.is_plugin_added::<MeshPlugin>() {
                 _app.add_plugins(MeshPlugin);
             }
-            if !_app.is_plugin_added::<ScenePlugin>() {
-                _app.add_plugins(ScenePlugin);
+            if !_app.is_plugin_added::<WorldSerializationPlugin>() {
+                _app.add_plugins(WorldSerializationPlugin);
             }
         }
     }

@@ -13,7 +13,11 @@ mod player_movement2;
 mod rope_joint2;
 mod voxels2;
 
-use bevy::{camera::visibility::RenderLayers, ecs::world::error::EntityDespawnError, prelude::*};
+use bevy::{
+    camera::visibility::RenderLayers,
+    ecs::{resource::IsResource, world::error::EntityDespawnError},
+    prelude::*,
+};
 use bevy_egui::{egui, EguiContexts, EguiPlugin, EguiPrimaryContextPass};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier2d::prelude::*;
@@ -67,8 +71,13 @@ fn main() {
             EguiPlugin::default(),
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(10.0),
             RapierDebugRenderPlugin::default(),
-            WorldInspectorPlugin::new(),
         ))
+        // `bevy-inspector-egui` unconditionally registers an `InspectorEguiImpl` for
+        // `GizmoConfigStore`, which panics unless the type has already been registered.
+        // Bevy 0.19 no longer registers it automatically, so do it here before adding
+        // the inspector plugin.
+        .register_type::<GizmoConfigStore>()
+        .add_plugins(WorldInspectorPlugin::new())
         .register_type::<Examples>()
         .register_type::<ExamplesRes>()
         .register_type::<ExampleSelected>()
@@ -261,11 +270,12 @@ fn main() {
 
 fn init(world: &mut World) {
     // save all entities that are in the world before setting up any example
-    // to be able to always return to this state when switching from one example to the other
+    // to be able to always return to this state when switching from one example to the other.
+    // Resource-backed entities (carrying `IsResource`) are excluded: in Bevy 0.19 resources are
+    // stored as entities, and despawning them in `cleanup` panics.
     world.resource_mut::<ExamplesRes>().entities_before = world
-        .query::<EntityRef>()
+        .query_filtered::<Entity, Without<IsResource>>()
         .iter(world)
-        .map(|e| e.id())
         .collect::<Vec<_>>();
 }
 
@@ -273,12 +283,17 @@ fn cleanup(world: &mut World) {
     let keep_alive = world.resource::<ExamplesRes>().entities_before.clone();
 
     let remove = world
-        .query::<EntityRef>()
+        .query_filtered::<Entity, Without<IsResource>>()
         .iter(world)
-        .filter_map(|e| (!keep_alive.contains(&e.id())).then_some(e.id()))
+        .filter(|e| !keep_alive.contains(e))
         .collect::<Vec<_>>();
 
     for r in remove {
+        // The entity may already have been despawned as part of a parent's despawn cascade;
+        // skip it in that case to avoid a flood of spurious "invalid entity" warnings.
+        if !world.entities().contains(r) {
+            continue;
+        }
         if let Err(error @ EntityDespawnError(_)) = world.try_despawn(r) {
             warn!("Cleanup error: {error:?}");
         }

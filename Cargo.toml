@@ -2,6 +2,10 @@
 members = ["bevy_rapier2d", "bevy_rapier3d", "bevy_rapier_benches3d", "ci"]
 resolver = "2"
 
+[workspace.dependencies]
+rapier2d = "=0.33.0-alpha"
+rapier3d = "=0.33.0-alpha"
+
 [profile.dev]
 # Use slightly better optimization by default, as examples otherwise seem laggy.
 opt-level = 1
