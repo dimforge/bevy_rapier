@@ -10,7 +10,7 @@ edition = "2021"
 
 [dependencies]
 rapier3d = { workspace = true }
-bevy_rapier3d = { version = "0.34", path = "../bevy_rapier3d" }
+bevy_rapier3d = { version = "0.35", path = "../bevy_rapier3d" }
 bevy = { version = "0.19.0", default-features = false }
 
 [dev-dependencies]

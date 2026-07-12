@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.35.0 (12 July 2026)
+
+### Modified
+
+- Update to bevy 0.19.
+
 ## v0.34.0 (14 May 2026)
 
 ### Added
