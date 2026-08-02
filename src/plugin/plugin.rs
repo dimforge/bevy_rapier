@@ -538,7 +538,7 @@ mod test {
                     .single(app.world())
                     .unwrap();
 
-                println!("{:?}", &rigidbody_set.entity2body);
+                println!("{:?}", rigidbody_set.entity2body);
             }
             let rigidbody_set = app
                 .world_mut()
@@ -624,7 +624,7 @@ mod test {
             let mut context_query = app.world_mut().query::<RapierContext>();
             let context = context_query.single(app.world()).unwrap();
 
-            println!("{:?}", &context.rigidbody_set.entity2body);
+            println!("{:?}", context.rigidbody_set.entity2body);
             assert_eq!(context.rigidbody_set.entity2body.len(), 0);
         }
 
@@ -694,7 +694,7 @@ mod test {
             let mut context_query = app.world_mut().query::<RapierContext>();
             let context = context_query.single(app.world()).unwrap();
 
-            println!("{:#?}", &context.rigidbody_set.bodies);
+            println!("{:#?}", context.rigidbody_set.bodies);
         }
 
         pub fn init_rapier_configuration(

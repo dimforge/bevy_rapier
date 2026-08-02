@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+### Modified
+
+- Update to bevy `0.20` (currently tracking bevy’s `main` branch).
+- Update from rapier `0.34` to rapier `0.35`.
+  See [rapier's changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md) for details.
+  - Removed the `simd-stable` and `simd-nightly` features: SIMD is now always enabled in rapier.
+    The new `simd8` feature widens the solver’s SIMD from 4 to 8 lanes (f32 only, needs an AVX2-capable
+    target). Just drop `simd-stable`/`simd-nightly` from your `Cargo.toml`.
+  - `SolverContactView::point` is now derived from the contact’s per-body anchors, and
+    `SolverContactView::{friction, restitution}` report the value of the contact’s manifold, since
+    rapier made both coefficients per-manifold instead of per-contact.
+  - The `enhanced-determinism` and `serde-serialize` features can’t currently be enabled together:
+    `enhanced-determinism` turns on `glam/scalar-math`, for which glam doesn’t implement `serde` on
+    `BVec3A`/`BVec4A`, which `bevy_reflect` requires when bevy’s `serialize` feature is on.
+
 ## v0.35.0 (12 July 2026)
 
 ### Modified

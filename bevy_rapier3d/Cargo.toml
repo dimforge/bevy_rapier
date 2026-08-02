@@ -50,11 +50,12 @@ debug-render-3d = [
 rapier-debug-render = ["rapier3d/debug-render"]
 
 parallel = ["rapier3d/parallel"]
-simd-stable = ["rapier3d/simd-stable"]
-simd-nightly = ["rapier3d/simd-nightly"]
+simd8 = ["rapier3d/simd8"]
 serde-serialize = ["rapier3d/serde-serialize", "bevy/serialize", "serde"]
 enhanced-determinism = ["rapier3d/enhanced-determinism"]
 headless = []
+# Depends on bevy_egui / bevy-inspector-egui / bevy_mod_debugdump which don't support bevy main yet.
+egui-examples = []
 picking-backend = ["bevy/bevy_picking", "bevy/bevy_render"]
 async-collider = [
     "bevy/bevy_asset",
@@ -65,18 +66,19 @@ async-collider = [
 to-bevy-mesh = ["bevy/bevy_render", "bevy/bevy_asset"]
 
 [dependencies]
-bevy = { version = "0.19.0", default-features = false, features = ["std"] }
-nalgebra = { version = "0.34.2", features = ["convert-glam032"] }
+bevy = { version = "0.20.0-dev", default-features = false, features = ["std"] }
+nalgebra = { version = "0.35", features = ["convert-glam033"] }
 rapier3d = { workspace = true }
 bitflags = "2.10.0"
 log = "0.4"
 serde = { version = "1", features = ["derive"], optional = true }
 
 [dev-dependencies]
-bevy = { version = "0.19.0", default-features = false, features = [
+bevy = { version = "0.20.0-dev", default-features = false, features = [
     "bevy_window",
     "x11",
     "tonemapping_luts",
+    "zstd_rust",
     "bevy_state",
     "bevy_debug_stepping",
     "bevy_text",
@@ -86,10 +88,10 @@ bevy = { version = "0.19.0", default-features = false, features = [
     "bevy_gizmos_render",
 ] }
 approx = "0.5.1"
-glam = { version = "0.32.1", features = ["approx"] }
-bevy-inspector-egui = "0.37.0"
-bevy_egui = "0.40.0"
-bevy_mod_debugdump = "0.16.0"
+glam = { version = "0.33", features = ["approx"] }
+#bevy-inspector-egui = "0.37.0" # FIXME: re-enable once it supports bevy main
+#bevy_egui = "0.40.0" # FIXME: re-enable once it supports bevy main
+#bevy_mod_debugdump = "0.16.0" # FIXME: re-enable once it supports bevy main
 
 [package.metadata.docs.rs]
 # Enable all the features when building the docs on docs.rs
@@ -97,10 +99,14 @@ features = ["debug-render-3d", "serde-serialize", "async-collider"]
 
 [package.metadata.cargo-all-features]
 
-denylist = ["simd-nightly"]
-
-# Features "dim2" and "dim3" are incompatible, so skip permutations including them
-skip_feature_sets = [["enhanced-determinism", "simd-stable"]]
+# Features "dim2" and "dim3" are incompatible, so skip permutations including them.
+# `enhanced-determinism` + `serde-serialize` is skipped because the former enables
+# `glam/scalar-math`, for which glam doesn’t implement `serde` on `BVec3A`/`BVec4A`,
+# which `bevy_reflect` needs when bevy’s `serialize` feature is on.
+skip_feature_sets = [
+    ["enhanced-determinism", "simd8"],
+    ["enhanced-determinism", "serde-serialize"],
+]
 
 always_include_features = ["dim3"]
 
@@ -115,4 +121,8 @@ required-features = ["picking-backend"]
 
 [[example]]
 name = "testbed3"
-required-features = ["picking-backend"]
+required-features = ["picking-backend", "egui-examples"]
+
+[[example]]
+name = "debugdump3"
+required-features = ["egui-examples"]

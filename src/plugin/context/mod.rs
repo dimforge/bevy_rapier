@@ -432,16 +432,16 @@ impl<'a> RapierQueryPipeline<'a> {
     ///
     /// # Parameters
     /// * `point` - The point to project.
-    /// * `solid` - If this is set to `true` then the collider shapes are considered to
-    ///   be plain (if the point is located inside of a plain shape, its projection is the point
-    ///   itself). If it is set to `false` the collider shapes are considered to be hollow
-    ///   (if the point is located inside of an hollow shape, it is projected on the shape's
-    ///   boundary).
+    /// * `max_dist` - Colliders further away than this distance from the point are ignored.
+    ///   Pass `Real::MAX` to search among all the colliders.
     pub fn project_point_and_get_feature(
         &self,
         point: Vect,
+        max_dist: Real,
     ) -> Option<(Entity, PointProjection, FeatureId)> {
-        let (h, proj, fid) = self.query_pipeline.project_point_and_get_feature(point)?;
+        let (h, proj, fid) = self
+            .query_pipeline
+            .project_point_and_get_feature(point, max_dist)?;
 
         Some((
             self.collider_entity(h),
@@ -622,8 +622,8 @@ impl RapierRigidBodySet {
         let impulse_joint = joints.impulse_joints.get(*joint_handle)?;
         let revolute_joint = impulse_joint.data.as_revolute()?;
 
-        let rb1 = &self.bodies[impulse_joint.body1];
-        let rb2 = &self.bodies[impulse_joint.body2];
+        let rb1 = &self.bodies[impulse_joint.body1()];
+        let rb2 = &self.bodies[impulse_joint.body2()];
         Some(revolute_joint.angle(rb1.rotation(), rb2.rotation()))
     }
 }
@@ -658,7 +658,8 @@ pub struct RapierContextSimulation {
     /// The integration parameters, controlling various low-level coefficient of the simulation.
     pub integration_parameters: IntegrationParameters,
     #[cfg_attr(feature = "serde-serialize", serde(skip))]
-    pub(crate) event_handler: Option<Box<dyn EventHandler>>,
+    // NOTE: rapier only requires `EventHandler: Sync`, but bevy components must be `Send` too.
+    pub(crate) event_handler: Option<Box<dyn EventHandler + Send>>,
     // This maps the handles of colliders that have been deleted since the last
     // physics update, to the entity they was attached to.
     /// NOTE: this map is needed to handle despawning.
@@ -725,6 +726,7 @@ impl RapierContextSimulation {
         let event_handler = self
             .event_handler
             .as_deref()
+            .map(|handler| handler as &dyn EventHandler)
             .or_else(|| event_queue.as_ref().map(|q| q as &dyn EventHandler))
             .unwrap_or(&() as &dyn EventHandler);
 
