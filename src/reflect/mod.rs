@@ -66,6 +66,14 @@ pub struct IntegrationParametersWrapper {
     #[reflect(remote = SpringCoefficientsWrapper)]
     pub contact_softness: SpringCoefficients<Real>,
 
+    /// Softness coefficients for contact constraints where one side is a fixed body.
+    ///
+    /// Stiffer than [`IntegrationParameters::contact_softness`] by default so bodies are
+    /// held firmly against static walls/floors; set equal to
+    /// [`IntegrationParameters::contact_softness`] to disable.
+    #[reflect(remote = SpringCoefficientsWrapper)]
+    pub static_contact_softness: SpringCoefficients<Real>,
+
     /// The coefficient in `[0, 1]` applied to warmstart impulses, i.e., impulses that are used as the
     /// initial solution (instead of 0) at the next simulation step.
     ///
@@ -101,16 +109,34 @@ pub struct IntegrationParametersWrapper {
     ///
     /// This value is implicitly scaled by [`IntegrationParameters::length_unit`].
     pub normalized_prediction_distance: Real,
+    /// Maximum linear velocity a body may have after each solver substep (default: `400.0` m/s).
+    ///
+    /// This value is implicitly scaled by [`IntegrationParameters::length_unit`].
+    pub normalized_max_linear_velocity: Real,
     /// The number of solver iterations run by the constraints solver for calculating forces (default: `4`).
     pub num_solver_iterations: usize,
     /// Number of internal Project Gauss Seidel (PGS) iterations run at each solver iteration (default: `1`).
     pub num_internal_pgs_iterations: usize,
     /// The number of stabilization iterations run at each solver iterations (default: `1`).
     pub num_internal_stabilization_iterations: usize,
-    /// Minimum number of dynamic bodies in each active island (default: `128`).
-    pub min_island_size: usize,
     /// Maximum number of substeps performed by the  solver (default: `1`).
     pub max_ccd_substeps: usize,
+    /// If enabled, contact manifolds of a collider pair sharing (nearly) the same normal are
+    /// merged into one "cluster" manifold before constraint generation (default: `true`, 3D only).
+    pub contact_clustering: bool,
+    /// If enabled, a contact pair that barely moved since its last full narrow-phase update
+    /// skips contact determination and keeps its existing contact points (default: `true`).
+    pub contact_recycling: bool,
+    /// Maximum relative-pose drift below which a contact pair may be recycled instead of fully
+    /// updated (default: `0.05`). Only used when contact recycling is enabled.
+    ///
+    /// This value is implicitly scaled by [`IntegrationParameters::length_unit`].
+    pub normalized_contact_recycle_distance: Real,
+    /// If `false`, friction is only solved during the unbiased (relax) pass of each substep
+    /// instead of both passes (default: `false`).
+    pub friction_in_bias_pass: bool,
+    /// If enabled, impulse-joint constraints are warm-started like contacts (default: `false`).
+    pub warmstart_joints: bool,
 }
 
 // These structs are duplicated in their entirety due to [`FrictionModel`] not being available in 2D, and `bevy::reflect_remote` not supporting conditional fields.
@@ -137,6 +163,14 @@ pub struct IntegrationParametersWrapper {
     #[reflect(remote = SpringCoefficientsWrapper)]
     pub contact_softness: SpringCoefficients<Real>,
 
+    /// Softness coefficients for contact constraints where one side is a fixed body.
+    ///
+    /// Stiffer than [`IntegrationParameters::contact_softness`] by default so bodies are
+    /// held firmly against static walls/floors; set equal to
+    /// [`IntegrationParameters::contact_softness`] to disable.
+    #[reflect(remote = SpringCoefficientsWrapper)]
+    pub static_contact_softness: SpringCoefficients<Real>,
+
     /// The coefficient in `[0, 1]` applied to warmstart impulses, i.e., impulses that are used as the
     /// initial solution (instead of 0) at the next simulation step.
     ///
@@ -172,16 +206,34 @@ pub struct IntegrationParametersWrapper {
     ///
     /// This value is implicitly scaled by [`IntegrationParameters::length_unit`].
     pub normalized_prediction_distance: Real,
+    /// Maximum linear velocity a body may have after each solver substep (default: `400.0` m/s).
+    ///
+    /// This value is implicitly scaled by [`IntegrationParameters::length_unit`].
+    pub normalized_max_linear_velocity: Real,
     /// The number of solver iterations run by the constraints solver for calculating forces (default: `4`).
     pub num_solver_iterations: usize,
     /// Number of internal Project Gauss Seidel (PGS) iterations run at each solver iteration (default: `1`).
     pub num_internal_pgs_iterations: usize,
     /// The number of stabilization iterations run at each solver iterations (default: `1`).
     pub num_internal_stabilization_iterations: usize,
-    /// Minimum number of dynamic bodies in each active island (default: `128`).
-    pub min_island_size: usize,
     /// Maximum number of substeps performed by the  solver (default: `1`).
     pub max_ccd_substeps: usize,
+    /// If enabled, contact manifolds of a collider pair sharing (nearly) the same normal are
+    /// merged into one "cluster" manifold before constraint generation (default: `true`, 3D only).
+    pub contact_clustering: bool,
+    /// If enabled, a contact pair that barely moved since its last full narrow-phase update
+    /// skips contact determination and keeps its existing contact points (default: `true`).
+    pub contact_recycling: bool,
+    /// Maximum relative-pose drift below which a contact pair may be recycled instead of fully
+    /// updated (default: `0.05`). Only used when contact recycling is enabled.
+    ///
+    /// This value is implicitly scaled by [`IntegrationParameters::length_unit`].
+    pub normalized_contact_recycle_distance: Real,
+    /// If `false`, friction is only solved during the unbiased (relax) pass of each substep
+    /// instead of both passes (default: `false`).
+    pub friction_in_bias_pass: bool,
+    /// If enabled, impulse-joint constraints are warm-started like contacts (default: `false`).
+    pub warmstart_joints: bool,
     /// Friction models used for all contact constraints between two rigid-bodies.
     #[reflect(remote = FrictionModelWrapper)]
     pub friction_model: FrictionModel,

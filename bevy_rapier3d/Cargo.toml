@@ -50,8 +50,7 @@ debug-render-3d = [
 rapier-debug-render = ["rapier3d/debug-render"]
 
 parallel = ["rapier3d/parallel"]
-simd-stable = ["rapier3d/simd-stable"]
-simd-nightly = ["rapier3d/simd-nightly"]
+simd8 = ["rapier3d/simd8"]
 serde-serialize = ["rapier3d/serde-serialize", "bevy/serialize", "serde"]
 enhanced-determinism = ["rapier3d/enhanced-determinism"]
 headless = []
@@ -97,10 +96,12 @@ features = ["debug-render-3d", "serde-serialize", "async-collider"]
 
 [package.metadata.cargo-all-features]
 
-denylist = ["simd-nightly"]
+# `enhanced-determinism` enables `glam/scalar-math` (through parry), which removes the serde
+# impls of `glam::BVec3A`/`BVec4A` that `bevy_reflect` requires unconditionally.
+denylist = ["enhanced-determinism"]
 
 # Features "dim2" and "dim3" are incompatible, so skip permutations including them
-skip_feature_sets = [["enhanced-determinism", "simd-stable"]]
+skip_feature_sets = [["enhanced-determinism", "simd8"]]
 
 always_include_features = ["dim3"]
 
