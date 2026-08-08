@@ -2,7 +2,7 @@ use crate::math::{Real, Vect};
 use crate::plugin::context::{RapierContextColliders, RapierContextSimulation, RapierRigidBodySet};
 use bevy::prelude::*;
 use rapier::geometry::{
-    Contact, ContactManifold, ContactPair, NEW_CONTACT_BIT, SolverContact, SolverFlags,
+    Contact, ContactManifold, ContactPair, SolverContact, SolverFlags, NEW_CONTACT_BIT,
 };
 
 impl RapierContextSimulation {
