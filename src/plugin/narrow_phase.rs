@@ -1,7 +1,10 @@
 use crate::math::{Real, Vect};
 use crate::plugin::context::{RapierContextColliders, RapierContextSimulation, RapierRigidBodySet};
 use bevy::prelude::*;
-use rapier::geometry::{Contact, ContactManifold, ContactPair, SolverContact, SolverFlags};
+use rapier::geometry::{
+    Contact, ContactManifold, ContactManifoldData, ContactPair, SolverContact, SolverFlags,
+    NEW_CONTACT_BIT,
+};
 
 impl RapierContextSimulation {
     /// All the contact pairs involving the non-sensor collider attached to the given entity.
@@ -214,7 +217,11 @@ impl ContactManifoldView<'_> {
             .data
             .solver_contacts
             .get(i)
-            .map(|raw| SolverContactView { raw })
+            .map(|raw| SolverContactView {
+                rigidbody_set: self.rigidbody_set,
+                manifold_data: &self.raw.data,
+                raw,
+            })
     }
 
     /// The contacts that will be seen by the constraints solver for computing forces.
@@ -223,7 +230,11 @@ impl ContactManifoldView<'_> {
             .data
             .solver_contacts
             .iter()
-            .map(|raw| SolverContactView { raw })
+            .map(|raw| SolverContactView {
+                rigidbody_set: self.rigidbody_set,
+                manifold_data: &self.raw.data,
+                raw,
+            })
     }
 
     /// The relative dominance of the bodies involved in this contact manifold.
@@ -302,6 +313,9 @@ impl ContactView<'_> {
 
 /// Read-only access to the properties of a single solver contact.
 pub struct SolverContactView<'a> {
+    rigidbody_set: &'a RapierRigidBodySet,
+    /// The data of the contact manifold this solver contact is part of.
+    pub manifold_data: &'a ContactManifoldData,
     /// The raw solver contact from Rapier.
     pub raw: &'a SolverContact,
 }
@@ -309,7 +323,10 @@ pub struct SolverContactView<'a> {
 impl SolverContactView<'_> {
     /// The world-space contact point.
     pub fn point(&self) -> Vect {
-        self.raw.point
+        let (p1, p2) = self
+            .manifold_data
+            .solver_contact_world_points(self.raw, &self.rigidbody_set.bodies);
+        (p1 + p2) / 2.0
     }
     /// The distance between the two original contacts points along the contact normal.
     /// If negative, this is measures the penetration depth.
@@ -318,11 +335,11 @@ impl SolverContactView<'_> {
     }
     /// The effective friction coefficient at this contact point.
     pub fn friction(&self) -> Real {
-        self.raw.friction
+        self.manifold_data.friction
     }
     /// The effective restitution coefficient at this contact point.
     pub fn restitution(&self) -> Real {
-        self.raw.restitution
+        self.manifold_data.restitution
     }
     /// The desired tangent relative velocity at the contact point.
     ///
@@ -333,7 +350,7 @@ impl SolverContactView<'_> {
     }
     /// Whether or not this contact existed during the last timestep.
     pub fn is_new(&self) -> bool {
-        self.raw.is_new == 1.0
+        self.raw.contact_id[0] & NEW_CONTACT_BIT != 0
     }
 }
 

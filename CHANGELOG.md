@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+### Modified
+
+- Update from rapier `0.33.0-alpha` to rapier `0.35.0-glamx0.2`.
+  See [rapier's changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md) for details.
+  - Removed the `simd-stable` and `simd-nightly` features: SIMD is now always enabled in rapier.
+    The new `simd8` feature widens the solver’s SIMD from 4 to 8 lanes (f32 only, incompatible
+    with `enhanced-determinism`).
+  - `SolverContactView::{friction, restitution}` now read from the contact manifold data (rapier
+    stores them per-manifold), and `SolverContactView::point` is reconstructed from the body-local
+    contact anchors; the public API is preserved.
+  - Custom event handlers assigned to `RapierContextSimulation` must now be `Send + Sync`.
+- Known issue: the `enhanced-determinism` feature currently fails to compile with bevy, because
+  parry enables `glam/scalar-math` which removes the serde impls of `glam::BVec3A`/`BVec4A` that
+  `bevy_reflect` requires unconditionally.
+
 ## v0.35.0 (12 July 2026)
 
 ### Modified
