@@ -174,12 +174,12 @@ impl<'world, 'state, 'world2, 'state2, 'a, 'c, 'd, 'v, 'p>
 impl<'world, 'state, 'world2, 'state2, 'a, 'c, 'd, 'v, 'p> DebugRenderBackend
     for BevyLinesRenderBackend<'world, 'state, 'world2, 'state2, 'a, 'c, 'd, 'v, 'p>
 {
+    fn filter_object(&self, object: DebugRenderObject) -> bool {
+        self.drawing_enabled(object)
+    }
+
     #[cfg(feature = "dim2")]
     fn draw_line(&mut self, object: DebugRenderObject, a: Vector, b: Vector, color: [f32; 4]) {
-        if !self.drawing_enabled(object) {
-            return;
-        }
-
         let color = self.object_color(object, color);
         self.gizmos.line(
             [a.x, a.y, 0.0].into(),
@@ -190,10 +190,6 @@ impl<'world, 'state, 'world2, 'state2, 'a, 'c, 'd, 'v, 'p> DebugRenderBackend
 
     #[cfg(feature = "dim3")]
     fn draw_line(&mut self, object: DebugRenderObject, a: Vector, b: Vector, color: [f32; 4]) {
-        if !self.drawing_enabled(object) {
-            return;
-        }
-
         let color = self.object_color(object, color);
         self.gizmos.line(
             [a.x, a.y, a.z].into(),
