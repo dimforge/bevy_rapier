@@ -197,6 +197,46 @@ impl<'world, 'state, 'world2, 'state2, 'a, 'c, 'd, 'v, 'p> DebugRenderBackend
             Color::hsla(color[0], color[1], color[2], color[3]),
         )
     }
+
+    #[cfg(feature = "dim2")]
+    fn draw_polyline(
+        &mut self,
+        object: DebugRenderObject,
+        vertices: &[Vector],
+        indices: &[[u32; 2]],
+        transform: &rapier::prelude::Pose,
+        scale: Vector,
+        color: rapier::prelude::DebugColor,
+    ) {
+        let color = self.object_color(object, color);
+        let color_hsla = Color::hsla(color[0], color[1], color[2], color[3]);
+        for idx in indices {
+            let a = *transform * (vertices[idx[0] as usize] * scale);
+            let b = *transform * (vertices[idx[1] as usize] * scale);
+            self.gizmos
+                .line([a.x, a.y, 0.0].into(), [b.x, b.y, 0.0].into(), color_hsla)
+        }
+    }
+
+    #[cfg(feature = "dim3")]
+    fn draw_polyline(
+        &mut self,
+        object: DebugRenderObject,
+        vertices: &[Vector],
+        indices: &[[u32; 2]],
+        transform: &rapier::prelude::Pose,
+        scale: Vector,
+        color: rapier::prelude::DebugColor,
+    ) {
+        let color = self.object_color(object, color);
+        let color_hsla = Color::hsla(color[0], color[1], color[2], color[3]);
+        for idx in indices {
+            let a = *transform * (vertices[idx[0] as usize] * scale);
+            let b = *transform * (vertices[idx[1] as usize] * scale);
+            self.gizmos
+                .line([a.x, a.y, a.z].into(), [b.x, b.y, b.z].into(), color_hsla)
+        }
+    }
 }
 
 fn debug_render_scene<'a>(
